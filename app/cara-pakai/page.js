@@ -39,16 +39,16 @@ const steps = [
 export default function CaraPakaiPage() {
   return (
     <div className="mx-auto max-w-content px-5 py-14">
-      <p className="text-sm font-medium text-teal">Panduan</p>
-      <h1 className="mt-2 font-display text-3xl font-semibold text-ink">Cara menggunakan Artapedia</h1>
-      <p className="mt-3 max-w-xl text-sm text-muted">
+      <p className="fade-up text-sm font-semibold uppercase tracking-wide text-teal-bright">Panduan</p>
+      <h1 className="fade-up delay-1 mt-2 font-display text-display-sm font-semibold text-ink sm:text-display-md">Cara menggunakan Artapedia</h1>
+      <p className="fade-up delay-2 mt-3 max-w-xl text-sm leading-relaxed text-muted">
         Tujuh langkah ini mencakup seluruh alur, dari menyimpan kode akun sampai menerima kode OTP.
       </p>
 
       <ol className="mt-10 space-y-8">
         {steps.map((s, i) => (
-          <li key={s.title} className="flex gap-5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-teal/40 font-display text-sm text-teal-bright">
+          <li key={s.title} className="hover-lift fade-up flex gap-5 rounded-2xl p-2" style={{ animationDelay: `${0.06 * i}s` }}>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-teal/40 bg-teal-soft font-display text-sm text-teal-bright">
               {i + 1}
             </span>
             <div>
@@ -59,9 +59,10 @@ export default function CaraPakaiPage() {
         ))}
       </ol>
 
-      <div className="mt-12 rounded-2xl border border-amber/25 bg-amber-soft p-6">
-        <h3 className="font-display text-base font-medium text-ink">Kehilangan kode akun?</h3>
-        <p className="mt-2 text-sm text-muted">
+      <div className="fade-up relative mt-12 overflow-hidden rounded-2xl border border-amber/25 bg-amber-soft p-6">
+        <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-amber/15 blur-2xl" />
+        <h3 className="relative font-display text-base font-medium text-ink">Kehilangan kode akun?</h3>
+        <p className="relative mt-2 text-sm leading-relaxed text-muted">
           Karena web ini tidak memakai sistem login, saldo dan riwayat hanya bisa diakses lewat kode akun yang tersimpan
           di perangkat kamu. Kalau kode hilang dan tidak dicatat di tempat lain, saldo di kode tersebut tidak bisa
           dipulihkan. Selalu salin kode akun ke tempat yang aman sesaat setelah pertama kali membuka web ini.

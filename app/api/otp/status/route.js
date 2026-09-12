@@ -29,7 +29,12 @@ export async function GET(req) {
       status: data?.status || order.status,
       otpCode: data?.otp_code || order.otpCode,
       otpMsg: data?.otp_msg || order.otpMsg,
-      phoneNumber: order.phoneNumber
+      phoneNumber: order.phoneNumber,
+      serviceName: order.serviceName,
+      countryName: order.countryName,
+      price: order.price,
+      createdAt: order.createdAt,
+      refunded: order.refunded || false
     });
   } catch (err) {
     console.error(err?.response?.data || err);

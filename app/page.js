@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useUser } from "@/app/providers";
-import SignalCard from "@/components/SignalCard";
+import OtpMascot from "@/components/OtpMascot";
 
 const quickActions = [
   {
@@ -54,6 +54,19 @@ const quickActions = [
         <path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
       </svg>
     )
+  },
+  {
+    href: "/referral",
+    label: "Undang Teman",
+    bg: "bg-teal-soft",
+    fg: "text-teal-bright",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M3.5 19c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M17 8h4M19 6v4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    )
   }
 ];
 
@@ -94,10 +107,10 @@ export default function HomePage() {
   return (
     <div className="mx-auto max-w-content px-5 pb-16 pt-6">
       {/* Dashboard header: brand + balance + akun */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="fade-up flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber text-sm font-bold text-white">A</span>
-          <span className="font-display text-lg font-semibold text-ink">Artapedia</span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber text-sm font-bold text-white shadow-soft">A</span>
+          <span className="font-display text-lg font-semibold tracking-tight text-ink">Artapedia</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -110,7 +123,7 @@ export default function HomePage() {
           <button
             onClick={copyToken}
             title="Salin kode akun"
-            className="card-shadow relative flex h-10 w-10 items-center justify-center rounded-full border border-line bg-amber-soft text-sm font-semibold text-amber-bright"
+            className="press card-shadow relative flex h-10 w-10 items-center justify-center rounded-full border border-line bg-amber-soft text-sm font-semibold text-amber-bright"
           >
             {(token || "?")[0]?.toUpperCase()}
             <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface bg-teal" />
@@ -121,53 +134,57 @@ export default function HomePage() {
 
       {/* Hero banner */}
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-        <div className="card-shadow relative overflow-hidden rounded-2xl bg-ink px-6 py-7 sm:px-8">
-          <div className="absolute -right-10 -top-16 h-56 w-56 rounded-full bg-teal/25 blur-3xl" />
-          <div className="absolute -bottom-16 left-10 h-48 w-48 rounded-full bg-amber/20 blur-3xl" />
+        <div className="fade-up delay-1 card-shadow relative overflow-hidden rounded-3xl bg-ink px-6 py-8 sm:px-10 sm:py-11">
+          <div className="absolute -right-14 -top-20 h-64 w-64 rounded-full bg-amber/25 blur-3xl" />
+          <div className="absolute -bottom-20 left-6 h-52 w-52 rounded-full bg-teal/25 blur-3xl" />
+          <div className="pointer-events-none absolute inset-0 opacity-[0.06] [background-image:radial-gradient(circle,white_1px,transparent_1px)] [background-size:16px_16px]" />
           <div className="relative">
-            <p className="text-xs font-medium uppercase tracking-wide text-teal-bright/90">Layanan utama</p>
-            <h1 className="mt-3 font-display text-2xl font-semibold leading-tight text-white sm:text-3xl">
-              Nomor OTP siap pakai, ratusan layanan
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-soft/90">Layanan utama</p>
+            <h1 className="mt-3 font-display text-3xl font-semibold leading-[1.05] tracking-tight text-white sm:text-display-md">
+              Nomor OTP siap pakai,
+              <br className="hidden sm:block" /> ratusan layanan
             </h1>
-            <p className="mt-2 max-w-md text-sm text-white/70">
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-white/65">
               Praktis dan aman digunakan — dari deposit sampai kode OTP, semuanya berjalan otomatis.
             </p>
             <Link
               href="/otp"
-              className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-ink transition hover:bg-white/90"
+              className="press mt-6 inline-flex items-center gap-1.5 rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-ink shadow-soft transition-colors hover:bg-amber hover:text-white"
             >
               Beli Nomor
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="transition-transform group-hover:translate-x-0.5">
                 <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </Link>
           </div>
         </div>
 
-        <div className="hidden lg:block">
-          <SignalCard />
+        <div className="fade-up delay-2">
+          <OtpMascot />
         </div>
       </div>
 
       {/* Quick actions */}
-      <div className="card-shadow mt-4 grid grid-cols-4 gap-2 rounded-2xl border border-line bg-surface p-4 sm:gap-4 sm:p-5">
+      <div className="fade-up delay-2 card-shadow mt-4 grid grid-cols-5 gap-2 rounded-2xl border border-line bg-surface p-4 sm:gap-4 sm:p-5">
         {quickActions.map((a) => (
-          <Link key={a.href} href={a.href} className="flex flex-col items-center gap-2 text-center">
-            <span className={`flex h-12 w-12 items-center justify-center rounded-full ${a.bg} ${a.fg}`}>{a.icon}</span>
+          <Link key={a.href} href={a.href} className="hover-lift flex flex-col items-center gap-2 rounded-xl p-1.5 text-center">
+            <span className={`flex h-12 w-12 items-center justify-center rounded-full ${a.bg} ${a.fg} transition-transform duration-200`}>
+              {a.icon}
+            </span>
             <span className="text-xs font-medium text-ink sm:text-sm">{a.label}</span>
           </Link>
         ))}
       </div>
 
       {/* Status / value props grid */}
-      <div className="mt-10">
-        <h2 className="font-display text-lg font-semibold text-ink sm:text-xl">Kenapa pakai Artapedia</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="fade-up delay-3 mt-12">
+        <h2 className="font-display text-display-sm font-semibold text-ink">Kenapa pakai Artapedia</h2>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {statusItems.map((s) => (
-            <div key={s.title} className="card-shadow flex items-start justify-between gap-3 rounded-2xl border border-line bg-surface p-4">
+            <div key={s.title} className="hover-lift card-shadow flex items-start justify-between gap-3 rounded-2xl border border-line bg-surface p-4">
               <div>
                 <p className="text-sm font-medium text-ink">{s.title}</p>
-                <p className="mt-1 text-xs text-muted">{s.desc}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted">{s.desc}</p>
               </div>
               <span className="mt-1 flex shrink-0 items-center gap-1.5 rounded-full bg-teal-soft px-2.5 py-1 text-[11px] font-medium text-teal-bright">
                 <span className="h-1.5 w-1.5 rounded-full bg-teal" />
@@ -179,10 +196,10 @@ export default function HomePage() {
       </div>
 
       {/* Service available */}
-      <div className="mt-10">
+      <div className="mt-12">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold text-ink sm:text-xl">Layanan Tersedia</h2>
-          <Link href="/otp" className="text-xs font-medium text-teal-bright hover:underline">
+          <h2 className="font-display text-display-sm font-semibold text-ink">Layanan Tersedia</h2>
+          <Link href="/otp" className="underline-grow text-xs font-medium text-teal-bright">
             Lihat semua
           </Link>
         </div>
@@ -191,8 +208,8 @@ export default function HomePage() {
           {["Semua", "Populer", "Chat", "Marketplace"].map((tab, i) => (
             <span
               key={tab}
-              className={`shrink-0 rounded-full border px-4 py-1.5 text-xs font-medium ${
-                i === 0 ? "border-ink bg-ink text-white" : "border-line text-muted"
+              className={`press shrink-0 rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
+                i === 0 ? "border-ink bg-ink text-white" : "border-line text-muted hover:border-amber/40 hover:text-ink"
               }`}
             >
               {tab}
@@ -203,13 +220,14 @@ export default function HomePage() {
         <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-5">
           {servicesLoading
             ? Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="animate-pulse rounded-2xl border border-line bg-surface2 p-4" />
+                <div key={i} className="skeleton h-[92px] rounded-2xl border border-line" />
               ))
-            : services.map((s) => (
+            : services.map((s, i) => (
                 <Link
                   key={s.service_code}
                   href={`/otp?q=${encodeURIComponent(s.service_name || "")}`}
-                  className="card-shadow flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface p-3 text-center"
+                  style={{ animationDelay: `${0.03 * i}s` }}
+                  className="scale-in hover-lift card-shadow flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface p-3 text-center"
                 >
                   {s.service_img ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -226,15 +244,15 @@ export default function HomePage() {
       </div>
 
       {/* Cara kerja */}
-      <div className="mt-10 rounded-2xl border border-line bg-surface2 px-5 py-8 sm:px-8">
-        <h2 className="font-display text-lg font-semibold text-ink sm:text-xl">Cara kerjanya</h2>
-        <div className="mt-6 grid gap-6 sm:grid-cols-3">
+      <div className="mt-12 rounded-3xl border border-line bg-surface2 px-5 py-9 sm:px-10">
+        <h2 className="font-display text-display-sm font-semibold text-ink">Cara kerjanya</h2>
+        <div className="mt-7 grid gap-7 sm:grid-cols-3">
           {steps.map((s) => (
-            <div key={s.n}>
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink font-display text-sm text-white">
+            <div key={s.n} className="hover-lift rounded-2xl p-1">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ink font-display text-sm text-white">
                 {s.n}
               </span>
-              <h3 className="mt-3 font-display text-base font-medium text-ink">{s.title}</h3>
+              <h3 className="mt-3.5 font-display text-base font-medium text-ink">{s.title}</h3>
               <p className="mt-1.5 text-sm leading-relaxed text-muted">{s.desc}</p>
             </div>
           ))}
@@ -242,14 +260,16 @@ export default function HomePage() {
       </div>
 
       {/* CTA */}
-      <div className="mt-10 rounded-2xl border border-amber/25 bg-amber-soft px-6 py-10 text-center sm:px-16">
-        <h2 className="font-display text-xl font-semibold text-ink sm:text-2xl">Siap coba sekarang?</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+      <div className="relative mt-12 overflow-hidden rounded-3xl border border-amber/25 bg-amber-soft px-6 py-12 text-center sm:px-16">
+        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-amber/20 blur-3xl" />
+        <div className="pointer-events-none absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-teal/15 blur-3xl" />
+        <h2 className="relative font-display text-display-sm font-semibold text-ink">Siap coba sekarang?</h2>
+        <p className="relative mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
           Mulai dari deposit Rp2.000. Kode akun kamu sudah siap dipakai, tidak perlu daftar apa pun.
         </p>
         <Link
           href="/deposit"
-          className="mt-5 inline-block rounded-lg bg-amber px-6 py-3 text-sm font-medium text-white transition hover:bg-amber-bright"
+          className="press relative mt-6 inline-block rounded-lg bg-amber px-6 py-3 text-sm font-medium text-white shadow-glow transition-colors hover:bg-amber-bright"
         >
           Deposit sekarang
         </Link>

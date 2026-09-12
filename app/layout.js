@@ -14,13 +14,17 @@ export const metadata = {
     "Deposit saldo otomatis via QRIS dan beli nomor OTP untuk berbagai layanan (WhatsApp, Telegram, Google, dan lainnya), diproses otomatis 24 jam."
 };
 
+export const viewport = {
+  themeColor: "#F5F1E8"
+};
+
 export default function RootLayout({ children }) {
   return (
-    <html lang="id" className={`${display.variable} ${body.variable}`}>
-      <body className="min-h-screen bg-bg font-body text-ink antialiased">
+    <html lang="id" className={`${display.variable} ${body.variable} scroll-smooth`}>
+      <body className="min-h-screen bg-bg font-body text-ink antialiased selection:bg-amber/20 selection:text-amber-bright">
         <UserProvider>
           <Navbar />
-          <main className="pb-20 md:pb-0">{children}</main>
+          <main className="pb-24 md:pb-0">{children}</main>
           <Footer />
           <BottomNav />
         </UserProvider>

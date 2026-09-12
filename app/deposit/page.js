@@ -80,10 +80,10 @@ export default function DepositPage() {
 
   return (
     <div className="mx-auto max-w-content px-5 py-14">
-      <div className="max-w-xl">
-        <p className="text-sm font-medium text-amber">Deposit</p>
-        <h1 className="mt-2 font-display text-3xl font-semibold text-ink">Isi saldo pakai QRIS</h1>
-        <p className="mt-3 text-sm text-muted">
+      <div className="fade-up max-w-xl">
+        <p className="text-sm font-semibold uppercase tracking-wide text-amber-bright">Deposit</p>
+        <h1 className="mt-2 font-display text-display-sm font-semibold text-ink sm:text-display-md">Isi saldo pakai QRIS</h1>
+        <p className="mt-3 text-sm leading-relaxed text-muted">
           Saldo minimal Rp{MIN.toLocaleString("id-ID")}, maksimal Rp{MAX.toLocaleString("id-ID")} per transaksi.
           Saldo masuk otomatis setelah pembayaran terkonfirmasi.
         </p>
@@ -91,7 +91,7 @@ export default function DepositPage() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_1fr]">
         {!order ? (
-          <form onSubmit={submit} className="rounded-2xl border border-line bg-surface p-6">
+          <form onSubmit={submit} className="fade-up delay-1 card-shadow rounded-2xl border border-line bg-surface p-6">
             <label className="text-sm font-medium text-ink">Pilih nominal cepat</label>
             <div className="mt-3 grid grid-cols-3 gap-2">
               {QUICK.map((v) => (
@@ -99,9 +99,9 @@ export default function DepositPage() {
                   type="button"
                   key={v}
                   onClick={() => pickAmount(v)}
-                  className={`rounded-lg border px-3 py-2 text-xs font-medium transition ${
+                  className={`press rounded-lg border px-3 py-2 text-xs font-medium transition-all duration-200 ${
                     Number(amount) === v
-                      ? "border-amber bg-amber-soft text-amber-bright"
+                      ? "border-amber bg-amber-soft text-amber-bright shadow-soft"
                       : "border-line text-muted hover:border-amber/50 hover:text-ink"
                   }`}
                 >
@@ -111,7 +111,7 @@ export default function DepositPage() {
             </div>
 
             <label className="mt-5 block text-sm font-medium text-ink">Atau masukkan nominal lain</label>
-            <div className="mt-2 flex items-center rounded-lg border border-line bg-bg px-3">
+            <div className="mt-2 flex items-center rounded-lg border border-line bg-bg px-3 transition-colors focus-within:border-amber">
               <span className="text-sm text-muted">Rp</span>
               <input
                 type="number"
@@ -124,25 +124,25 @@ export default function DepositPage() {
               />
             </div>
 
-            {error && <p className="mt-3 text-sm text-rose">{error}</p>}
+            {error && <p className="mt-3 animate-fade-up text-sm text-rose">{error}</p>}
 
             <button
               type="submit"
               disabled={loading || !token}
-              className="mt-6 w-full rounded-lg bg-amber px-5 py-3 text-sm font-medium text-white transition hover:bg-amber-bright disabled:opacity-60"
+              className="press mt-6 w-full rounded-lg bg-amber px-5 py-3 text-sm font-medium text-white shadow-soft transition-colors hover:bg-amber-bright disabled:opacity-60"
             >
               {loading ? "Memproses..." : "Buat pembayaran QRIS"}
             </button>
 
             <p className="mt-4 text-xs text-muted">
-              Saldo kamu saat ini: <span className="text-ink">Rp{balance.toLocaleString("id-ID")}</span>
+              Saldo kamu saat ini: <span className="font-medium text-ink">Rp{balance.toLocaleString("id-ID")}</span>
             </p>
           </form>
         ) : (
-          <div className="rounded-2xl border border-line bg-surface p-6 text-center">
+          <div className="scale-in card-shadow rounded-2xl border border-line bg-surface p-6 text-center">
             {status === "completed" ? (
               <div>
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal-soft text-teal">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal-soft text-teal animate-scale-in">
                   ✓
                 </div>
                 <h2 className="mt-4 font-display text-xl font-semibold text-ink">Deposit berhasil</h2>
@@ -151,7 +151,7 @@ export default function DepositPage() {
                 </p>
                 <button
                   onClick={resetForm}
-                  className="mt-6 rounded-lg border border-line px-5 py-2.5 text-sm text-ink hover:border-teal"
+                  className="press mt-6 rounded-lg border border-line px-5 py-2.5 text-sm text-ink transition-colors hover:border-teal hover:text-teal-bright"
                 >
                   Deposit lagi
                 </button>
@@ -161,21 +161,21 @@ export default function DepositPage() {
                 <p className="text-sm text-muted">Scan QRIS berikut menggunakan e-wallet atau m-banking</p>
                 {order.qrImage ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={order.qrImage} alt="Kode QRIS pembayaran" className="mx-auto mt-4 h-56 w-56 rounded-lg bg-white p-2" />
+                  <img src={order.qrImage} alt="Kode QRIS pembayaran" className="mx-auto mt-4 h-56 w-56 rounded-lg bg-white p-2 shadow-soft" />
                 ) : (
                   <p className="mt-4 text-sm text-rose">QR tidak tersedia, coba buat ulang transaksi.</p>
                 )}
                 <p className="mt-4 font-display text-2xl font-semibold text-ink">
                   Rp{Number(order.amount).toLocaleString("id-ID")}
                 </p>
-                <div className="mt-4 flex items-center justify-center gap-2 text-xs text-teal">
+                <div className="mt-4 flex items-center justify-center gap-2 text-xs font-medium text-teal-bright">
                   <span className="signal-pulse h-1.5 w-1.5 rounded-full bg-teal" />
                   Menunggu pembayaran...
                 </div>
                 <p className="mt-4 text-xs text-muted">Kode order: {order.orderId}</p>
                 <button
                   onClick={resetForm}
-                  className="mt-6 text-xs text-muted underline underline-offset-4 hover:text-ink"
+                  className="underline-grow mt-6 text-xs text-muted hover:text-ink"
                 >
                   Batalkan & buat transaksi baru
                 </button>
@@ -184,13 +184,13 @@ export default function DepositPage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-line bg-bg p-6">
+        <div className="fade-up delay-2 rounded-2xl border border-line bg-surface2 p-6">
           <h3 className="font-display text-base font-medium text-ink">Yang perlu kamu tahu</h3>
-          <ul className="mt-4 space-y-3 text-sm text-muted">
-            <li>Pembayaran diverifikasi otomatis oleh sistem, biasanya dalam hitungan detik setelah QRIS discan.</li>
-            <li>Saldo tidak bisa ditarik tunai kembali dan hanya bisa dipakai untuk transaksi di dalam Artapedia.</li>
-            <li>Simpan kode akun kamu (lihat menu saldo di pojok kanan atas) untuk mengecek riwayat deposit kapan saja.</li>
-            <li>Kalau QRIS kedaluwarsa sebelum dibayar, cukup buat transaksi baru — belum ada saldo yang terpotong.</li>
+          <ul className="mt-4 space-y-3 text-sm leading-relaxed text-muted">
+            <li className="flex gap-2.5"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber" />Pembayaran diverifikasi otomatis oleh sistem, biasanya dalam hitungan detik setelah QRIS discan.</li>
+            <li className="flex gap-2.5"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber" />Saldo tidak bisa ditarik tunai kembali dan hanya bisa dipakai untuk transaksi di dalam Artapedia.</li>
+            <li className="flex gap-2.5"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber" />Simpan kode akun kamu (lihat menu saldo di pojok kanan atas) untuk mengecek riwayat deposit kapan saja.</li>
+            <li className="flex gap-2.5"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber" />Kalau QRIS kedaluwarsa sebelum dibayar, cukup buat transaksi baru — belum ada saldo yang terpotong.</li>
           </ul>
         </div>
       </div>

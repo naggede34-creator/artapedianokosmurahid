@@ -3,29 +3,29 @@ import Link from "next/link";
 export default function Footer() {
   return (
     <footer className="hidden border-t border-line bg-surface md:block">
-      <div className="mx-auto grid max-w-content gap-8 px-5 py-10 sm:grid-cols-3">
+      <div className="mx-auto grid max-w-content gap-8 px-5 py-12 sm:grid-cols-3">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber text-sm font-bold text-white">A</span>
-            <span className="font-display text-base font-semibold text-ink">Artapedia</span>
+            <span className="font-display text-base font-semibold tracking-tight text-ink">Artapedia</span>
           </div>
-          <p className="mt-3 max-w-xs text-sm text-muted">
+          <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted">
             Deposit dan beli nomor OTP untuk berbagai layanan, diproses otomatis 24 jam.
           </p>
         </div>
         <div>
-          <p className="text-sm font-medium text-ink">Navigasi</p>
-          <div className="mt-3 flex flex-col gap-2 text-sm text-muted">
-            <Link href="/deposit" className="hover:text-ink">Deposit Saldo</Link>
-            <Link href="/otp" className="hover:text-ink">Beli Nomor OTP</Link>
-            <Link href="/riwayat" className="hover:text-ink">Riwayat Transaksi</Link>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Navigasi</p>
+          <div className="mt-3 flex flex-col gap-2.5 text-sm text-ink/80">
+            <Link href="/deposit" className="underline-grow w-fit transition-colors hover:text-amber-bright">Deposit Saldo</Link>
+            <Link href="/otp" className="underline-grow w-fit transition-colors hover:text-amber-bright">Beli Nomor OTP</Link>
+            <Link href="/riwayat" className="underline-grow w-fit transition-colors hover:text-amber-bright">Riwayat Transaksi</Link>
           </div>
         </div>
         <div>
-          <p className="text-sm font-medium text-ink">Bantuan</p>
-          <div className="mt-3 flex flex-col gap-2 text-sm text-muted">
-            <Link href="/cara-pakai" className="hover:text-ink">Cara Menggunakan Web</Link>
-            <Link href="/syarat" className="hover:text-ink">Syarat & Ketentuan</Link>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Bantuan</p>
+          <div className="mt-3 flex flex-col gap-2.5 text-sm text-ink/80">
+            <Link href="/cara-pakai" className="underline-grow w-fit transition-colors hover:text-amber-bright">Cara Menggunakan Web</Link>
+            <Link href="/syarat" className="underline-grow w-fit transition-colors hover:text-amber-bright">Syarat & Ketentuan</Link>
           </div>
         </div>
       </div>

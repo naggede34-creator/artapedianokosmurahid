@@ -26,7 +26,24 @@ export async function POST(req) {
     }
     if (!token) throw new Error("Gagal membuat kode akun, coba lagi.");
 
-    await users.insertOne({ token, balance: 0, createdAt: new Date() });
+    // Kalau user baru datang dari link undangan teman (?ref=TOKEN), catat siapa yang mengundang.
+    // Bonusnya baru dicairkan ke pengundang saat user ini deposit pertama kali (lihat deposit/webhook).
+    let referredBy = null;
+    const refCandidate = typeof body.ref === "string" ? body.ref.trim() : "";
+    if (refCandidate && refCandidate !== token) {
+      const referrer = await users.findOne({ token: refCandidate });
+      if (referrer) referredBy = referrer.token;
+    }
+
+    await users.insertOne({
+      token,
+      balance: 0,
+      referredBy,
+      referralCount: 0,
+      referralEarnings: 0,
+      referralBonusGiven: false,
+      createdAt: new Date()
+    });
     return NextResponse.json({ token, balance: 0 });
   } catch (err) {
     console.error(err);

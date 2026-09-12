@@ -1,0 +1,182 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+const CANCEL_COOLDOWN_MS = 3 * 60 * 1000;
+
+function fmtCountdown(ms) {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+}
+
+const STATUS_LABEL = {
+  pending: "Menunggu kode",
+  completed: "Kode diterima",
+  received: "Kode diterima",
+  canceled: "Dibatalkan",
+  expired: "Kedaluwarsa"
+};
+
+export default function OtpOrderPanel({ order, token, onClose, onChanged }) {
+  const [status, setStatus] = useState({
+    status: order.status || "pending",
+    otpCode: order.otpCode || null,
+    otpMsg: order.otpMsg || null
+  });
+  const [now, setNow] = useState(Date.now());
+  const [cancelling, setCancelling] = useState(false);
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState("");
+  const pollRef = useRef(null);
+  const tickRef = useRef(null);
+
+  const isFinal = ["completed", "received", "canceled", "expired"].includes(status.status);
+
+  useEffect(() => {
+    if (isFinal) return undefined;
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/otp/status?order_id=${order.orderId}&token=${token}`);
+        const data = await res.json();
+        if (res.ok) {
+          setStatus({ status: data.status, otpCode: data.otpCode, otpMsg: data.otpMsg });
+          if (["completed", "received", "canceled", "expired"].includes(data.status)) {
+            clearInterval(pollRef.current);
+            onChanged?.();
+          }
+        }
+      } catch (e) {
+        /* coba lagi di interval berikutnya */
+      }
+    }, 4000);
+    return () => clearInterval(pollRef.current);
+  }, [order.orderId, token, isFinal]);
+
+  useEffect(() => {
+    tickRef.current = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(tickRef.current);
+  }, []);
+
+  const createdAtMs = new Date(order.createdAt).getTime();
+  const cooldownRemaining = CANCEL_COOLDOWN_MS - (now - createdAtMs);
+  const canCancel = !isFinal && !status.otpCode && cooldownRemaining <= 0;
+
+  function copy(value, label) {
+    if (!value) return;
+    navigator.clipboard?.writeText(value);
+    setCopied(label);
+    setTimeout(() => setCopied(""), 1200);
+  }
+
+  async function cancelOrder() {
+    setError("");
+    setCancelling(true);
+    try {
+      const res = await fetch("/api/otp/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, orderId: order.orderId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        clearInterval(pollRef.current);
+        setStatus({ status: "canceled", otpCode: null });
+        onChanged?.();
+      } else {
+        setError(data.error || "Gagal membatalkan pesanan.");
+      }
+    } finally {
+      setCancelling(false);
+    }
+  }
+
+  return (
+    <div className="scale-in card-shadow rounded-2xl border border-line bg-surface p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-ink">
+            {order.serviceName} <span className="font-normal text-muted">· {order.countryName}</span>
+          </p>
+          <p className="mt-0.5 text-xs text-muted">Order #{order.orderId}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <StatusPill status={status.status} />
+          {onClose && (
+            <button onClick={onClose} className="press rounded-md p-1 text-muted transition-colors hover:text-ink" aria-label="Tutup">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-line bg-surface2 p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted">Nomor</p>
+          <button onClick={() => copy(order.phoneNumber, "nomor")} className="underline-grow text-xs font-medium text-teal-bright">
+            {copied === "nomor" ? "Tersalin" : "Salin"}
+          </button>
+        </div>
+        <p className="mt-1 font-mono text-xl text-ink sm:text-2xl">{order.phoneNumber}</p>
+      </div>
+
+      <div className="mt-3 rounded-xl border border-line bg-bg p-4">
+        {status.otpCode ? (
+          <div className="code-reveal">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-teal-bright">Kode OTP diterima</p>
+              <button onClick={() => copy(status.otpCode, "kode")} className="underline-grow text-xs font-medium text-teal-bright">
+                {copied === "kode" ? "Tersalin" : "Salin"}
+              </button>
+            </div>
+            <p className="mt-1 font-mono text-3xl tracking-[0.3em] text-ink">{status.otpCode}</p>
+            {status.otpMsg && <p className="mt-2 text-xs text-muted">{status.otpMsg}</p>}
+          </div>
+        ) : status.status === "canceled" ? (
+          <p className="text-sm text-rose">Pesanan dibatalkan, saldo sudah dikembalikan.</p>
+        ) : status.status === "expired" ? (
+          <p className="text-sm text-rose">Pesanan kedaluwarsa sebelum kode masuk.</p>
+        ) : (
+          <div className="flex items-center gap-2 text-sm font-medium text-teal-bright">
+            <span className="signal-pulse h-1.5 w-1.5 rounded-full bg-teal" />
+            Menunggu kode OTP masuk...
+          </div>
+        )}
+      </div>
+
+      {error && <p className="mt-3 text-sm text-rose">{error}</p>}
+
+      {!isFinal && !status.otpCode && (
+        <div className="mt-5">
+          <button
+            onClick={cancelOrder}
+            disabled={!canCancel || cancelling}
+            className="press w-full rounded-lg border border-rose/40 px-5 py-2.5 text-sm text-rose transition-colors hover:border-rose hover:bg-rose-soft disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          >
+            {cancelling ? "Membatalkan..." : canCancel ? "Batalkan & refund" : `Bisa dibatalkan dalam ${fmtCountdown(cooldownRemaining)}`}
+          </button>
+          {!canCancel && (
+            <p className="mt-1.5 text-xs text-muted">
+              Dikasih waktu 3 menit dulu supaya kode OTP sempat masuk sebelum bisa dibatalkan.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatusPill({ status }) {
+  const map = {
+    pending: "border-amber/40 text-amber-bright bg-amber-soft",
+    completed: "border-teal/40 text-teal-bright bg-teal-soft",
+    received: "border-teal/40 text-teal-bright bg-teal-soft",
+    canceled: "border-rose/30 text-rose bg-rose-soft",
+    expired: "border-rose/30 text-rose bg-rose-soft"
+  };
+  const cls = map[status] || "border-line text-muted bg-surface2";
+  return <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${cls}`}>{STATUS_LABEL[status] || status}</span>;
+}

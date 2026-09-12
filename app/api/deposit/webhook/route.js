@@ -35,6 +35,19 @@ export async function POST(req) {
         { returnDocument: "after" }
       );
       await deposits.updateOne({ orderId: order_id }, { $set: { credited: true } });
+
+      // Program undang teman: begitu user yang diundang deposit pertama kali,
+      // pengundang dapat bonus persentase dari nominal deposit itu (sekali saja per user).
+      if (updatedUser?.referredBy && !updatedUser.referralBonusGiven) {
+        const percent = Number(process.env.REFERRAL_BONUS_PERCENT || 0);
+        const bonus = percent > 0 ? Math.floor((deposit.amount * percent) / 100) : 0;
+        await users.updateOne(
+          { token: updatedUser.referredBy },
+          { $inc: { balance: bonus, referralEarnings: bonus, referralCount: 1 } }
+        );
+        await users.updateOne({ token: updatedUser.token }, { $set: { referralBonusGiven: true } });
+      }
+
       sendTelegramNotif(
         depositSuccessNotif({
           orderId: order_id,

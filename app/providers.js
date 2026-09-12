@@ -9,11 +9,13 @@ export function UserProvider({ children }) {
   const [balance, setBalance] = useState(0);
   const [ready, setReady] = useState(false);
 
-  const init = useCallback(async (existingToken) => {
+  const init = useCallback(async (existingToken, ref) => {
+    const body = existingToken ? { token: existingToken } : {};
+    if (!existingToken && ref) body.ref = ref;
     const res = await fetch("/api/user/init", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(existingToken ? { token: existingToken } : {})
+      body: JSON.stringify(body)
     });
     const data = await res.json();
     if (res.ok) {
@@ -27,7 +29,8 @@ export function UserProvider({ children }) {
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("artapedia_token") : null;
-    init(saved || undefined)
+    const ref = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("ref") : null;
+    init(saved || undefined, ref || undefined)
       .catch(() => init())
       .finally(() => setReady(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -87,6 +87,51 @@ Buka http://localhost:3000
 - `/riwayat` — Riwayat deposit & pembelian OTP
 - `/cara-pakai` — Panduan penggunaan
 - `/syarat` — Syarat & Ketentuan
+- `/referral` — Program undang teman, tampilkan link & bonus referral user
+
+## Bot Telegram untuk Owner
+
+Owner bisa kontrol saldo user & lihat data langsung dari chat Telegram, tanpa buka database.
+
+**1. Siapkan bot & env var**
+
+- Kalau belum punya bot, buat lewat [@BotFather](https://t.me/BotFather), ambil tokennya.
+- Isi `TELEGRAM_BOT_TOKEN` di env (boleh pakai bot yang sama dengan notifikasi channel, boleh beda).
+- Chat bot kamu sekali (kirim `/start`), lalu buka
+  `https://api.telegram.org/bot<TOKEN>/getUpdates` di browser untuk lihat `chat.id` kamu.
+- Isi `TELEGRAM_OWNER_IDS` dengan chat_id tadi (pisahkan koma kalau owner lebih dari satu).
+  Hanya chat_id yang terdaftar di sini yang bisa menjalankan perintah bot.
+- Isi `TELEGRAM_WEBHOOK_SECRET` bebas dengan string acak (opsional tapi disarankan).
+
+**2. Daftarkan webhook ke Telegram** (jalankan sekali setelah deploy, ganti domain & token):
+
+```
+curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://domainkamu.vercel.app/api/telegram/webhook&secret_token=<isi_sama_dengan_TELEGRAM_WEBHOOK_SECRET>"
+```
+
+**3. Perintah yang tersedia** (kirim ke bot dari akun owner):
+
+- `/addsaldo TOKEN NOMINAL` — tambah saldo user, contoh `/addsaldo AP-1234-ABCD-5678 10000`
+- `/kurangisaldo TOKEN NOMINAL` — kurangi saldo user
+- `/cekuser TOKEN` — lihat detail satu user (saldo, referral, tanggal daftar)
+- `/listuser [halaman]` — daftar user terbaru, 10 per halaman
+- `/statistik` — ringkasan total user, total saldo beredar, dan total bonus referral
+- `/help` — tampilkan menu perintah
+
+Chat_id yang tidak terdaftar di `TELEGRAM_OWNER_IDS` akan diabaikan begitu saja
+(bot tidak membalas apa pun), supaya panel ini tidak "bocor" ke orang lain.
+
+## Program undang teman (referral)
+
+- Tiap user, kode akunnya sendiri sekaligus jadi kode referral. Link undangannya
+  ditampilkan di halaman `/referral`, formatnya `https://domainkamu.com/?ref=KODE_AKUN`.
+- Saat orang baru buka link itu, akun barunya otomatis tertaut sebagai "diundang oleh"
+  pemilik kode tersebut (tersimpan di field `referredBy`).
+- Begitu user yang diundang itu **berhasil deposit untuk pertama kalinya**, pengundang
+  otomatis dapat bonus saldo sebesar `REFERRAL_BONUS_PERCENT`% dari nominal deposit
+  tersebut (diproses di `app/api/deposit/webhook/route.js`). Bonus hanya cair sekali
+  per user yang diundang, supaya tidak bisa disalahgunakan dengan deposit berkali-kali.
+- Set `REFERRAL_BONUS_PERCENT=0` di env kalau ingin menonaktifkan program ini sementara.
 
 ## Sistem akun tanpa login
 

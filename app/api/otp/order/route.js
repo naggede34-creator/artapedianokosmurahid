@@ -69,6 +69,7 @@ export async function POST(req) {
       phoneNumber: data.phone_number,
       price: sellPrice,
       expiredAt: data.expired_at || null,
+      createdAt: new Date().toISOString(),
       balance: updated.balance
     });
   } catch (err) {

@@ -62,16 +62,16 @@ const sections = [
 export default function SyaratPage() {
   return (
     <div className="mx-auto max-w-content px-5 py-14">
-      <p className="text-sm font-medium text-amber">Legal</p>
-      <h1 className="mt-2 font-display text-3xl font-semibold text-ink">Syarat & Ketentuan</h1>
-      <p className="mt-3 max-w-xl text-sm text-muted">
+      <p className="fade-up text-sm font-semibold uppercase tracking-wide text-amber-bright">Legal</p>
+      <h1 className="fade-up delay-1 mt-2 font-display text-display-sm font-semibold text-ink sm:text-display-md">Syarat & Ketentuan</h1>
+      <p className="fade-up delay-2 mt-3 max-w-xl text-sm leading-relaxed text-muted">
         Dengan menggunakan Artapedia untuk deposit saldo atau membeli nomor OTP, kamu dianggap sudah membaca dan
         menyetujui seluruh ketentuan berikut.
       </p>
 
       <div className="mt-10 space-y-10">
-        {sections.map((s) => (
-          <div key={s.title} className="border-t border-line pt-6">
+        {sections.map((s, i) => (
+          <div key={s.title} className="fade-up border-t border-line pt-6" style={{ animationDelay: `${0.04 * i}s` }}>
             <h2 className="font-display text-lg font-medium text-ink">{s.title}</h2>
             <div className="mt-3 space-y-2">
               {s.body.map((p, idx) => (
