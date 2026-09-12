@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html, body {
+  background-color: #F1F4F9;
+  color: #121826;
+}
+
+body {
+  font-family: var(--font-body), sans-serif;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display), sans-serif;
+  letter-spacing: -0.01em;
+}
+
+* {
+  scrollbar-color: #CBD3E0 #F1F4F9;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #F1F4F9; }
+::-webkit-scrollbar-thumb { background: #CBD3E0; border-radius: 999px; }
+
+:focus-visible {
+  outline: 2px solid #0FB8A0;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.signal-pulse {
+  animation: signalPulse 2.4s ease-in-out infinite;
+}
+@keyframes signalPulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+.code-reveal {
+  animation: codeReveal 0.5s ease forwards;
+}
+@keyframes codeReveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card-shadow {
+  box-shadow: 0 1px 2px rgba(18, 24, 38, 0.04), 0 8px 24px -12px rgba(18, 24, 38, 0.12);
+}
