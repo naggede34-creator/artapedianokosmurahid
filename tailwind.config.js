@@ -7,36 +7,36 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Warm paper base — bukan biru-abu generik.
-        bg: "#F5F1E8",
-        surface: "#FFFDF9",
-        surface2: "#EFE7D8",
-        line: "#E3D9C4",
-        ink: "#211C16",
-        muted: "#7C7264",
+        // Base silver-blue-putih — dasar netral terang.
+        bg: "#EEF2F9",
+        surface: "#FFFFFF",
+        surface2: "#E6EBF4",
+        line: "#D6DDE9",
+        ink: "#0D1117",
+        muted: "#6B7684",
 
-        // "amber" -> clay terracotta jadi warna brand utama.
+        // "amber" -> BIRU jadi warna brand utama.
         amber: {
-          DEFAULT: "#C1592D",
-          soft: "#FBEADD",
-          bright: "#93401C"
+          DEFAULT: "#2F6FED",
+          soft: "#E5EDFF",
+          bright: "#1D4ED8"
         },
-        // "teal" -> pine hijau tua, dipakai untuk status sukses/aktif.
+        // "teal" -> PINK, dipakai untuk status sukses/aktif.
         teal: {
-          DEFAULT: "#2F6E58",
-          soft: "#E3EEE6",
-          bright: "#1F4E3E"
+          DEFAULT: "#EC4899",
+          soft: "#FCE7F3",
+          bright: "#BE185D"
         },
-        // "rose" -> berry keunguan-merah tua untuk warning/bahaya.
+        // "rose" -> pink kemerahan tua untuk warning/bahaya.
         rose: {
-          DEFAULT: "#A23E4C",
-          soft: "#F5E7E7",
-          bright: "#7C2E39"
+          DEFAULT: "#D6336C",
+          soft: "#FBE4ED",
+          bright: "#9D174D"
         },
-        // Aksen tambahan untuk highlight & ilustrasi kecil.
+        // Aksen tambahan (silver) untuk highlight & ilustrasi kecil.
         ochre: {
-          DEFAULT: "#D9A441",
-          soft: "#FBF2DE"
+          DEFAULT: "#AEB8C7",
+          soft: "#F1F3F8"
         }
       },
       fontFamily: {

@@ -106,31 +106,42 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-content px-5 pb-16 pt-6">
-      {/* Dashboard header: brand + balance + akun */}
+      {/* Dashboard header: brand + balance */}
       <div className="fade-up flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber text-sm font-bold text-white shadow-soft">A</span>
           <span className="font-display text-lg font-semibold tracking-tight text-ink">Artapedia</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="card-shadow rounded-full border border-line bg-surface px-3.5 py-1.5 text-right">
-            <p className="text-[11px] leading-none text-muted">Saldo kamu</p>
-            <p className="mt-0.5 text-sm font-semibold leading-none text-ink">
-              {ready ? `Rp${balance.toLocaleString("id-ID")}` : "..."}
-            </p>
-          </div>
-          <button
-            onClick={copyToken}
-            title="Salin kode akun"
-            className="press card-shadow relative flex h-10 w-10 items-center justify-center rounded-full border border-line bg-amber-soft text-sm font-semibold text-amber-bright"
-          >
-            {(token || "?")[0]?.toUpperCase()}
-            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface bg-teal" />
-          </button>
+        <div className="card-shadow rounded-full border border-line bg-surface px-3.5 py-1.5 text-right">
+          <p className="text-[11px] leading-none text-muted">Saldo kamu</p>
+          <p className="mt-0.5 text-sm font-semibold leading-none text-ink">
+            {ready ? `Rp${balance.toLocaleString("id-ID")}` : "..."}
+          </p>
         </div>
       </div>
-      {copied && <p className="mt-1.5 text-right text-xs text-teal-bright">Kode akun disalin</p>}
+
+      {/* Kode akun: langsung tampil di dashboard, tidak perlu klik dulu */}
+      <div className="fade-up delay-1 card-shadow mt-3 flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-soft text-xs font-semibold text-amber-bright">
+            {(token || "?")[0]?.toUpperCase()}
+            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-teal" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[11px] leading-none text-muted">Kode akun kamu</p>
+            <code className="mt-1 block truncate font-mono text-sm font-semibold leading-none text-ink">
+              {ready ? token || "-" : "..."}
+            </code>
+          </div>
+        </div>
+        <button
+          onClick={copyToken}
+          className="press shrink-0 rounded-full border border-line bg-surface2 px-3.5 py-1.5 text-xs font-medium text-ink transition-colors duration-200 hover:border-amber/40 hover:text-amber-bright"
+        >
+          {copied ? "Tersalin!" : "Salin kode"}
+        </button>
+      </div>
 
       {/* Hero banner */}
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
