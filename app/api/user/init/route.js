@@ -11,7 +11,11 @@ export async function POST(req) {
     if (body.token) {
       const existing = await users.findOne({ token: body.token });
       if (existing) {
-        return NextResponse.json({ token: existing.token, balance: existing.balance });
+        return NextResponse.json({
+          token: existing.token,
+          balance: existing.balance,
+          createdAt: existing.createdAt || null
+        });
       }
       return NextResponse.json({ error: "Kode akun tidak ditemukan." }, { status: 404 });
     }
@@ -36,6 +40,7 @@ export async function POST(req) {
       if (referrer) referredBy = referrer.token;
     }
 
+    const createdAt = new Date();
     await users.insertOne({
       token,
       balance: 0,
@@ -43,12 +48,12 @@ export async function POST(req) {
       referralCount: 0,
       referralEarnings: 0,
       referralBonusGiven: false,
-      createdAt: new Date()
+      createdAt
     });
 
     sendTelegramNotif(newUserNotif({ token, referredBy }));
 
-    return NextResponse.json({ token, balance: 0 });
+    return NextResponse.json({ token, balance: 0, createdAt });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Terjadi kesalahan server." }, { status: 500 });

@@ -46,6 +46,7 @@ const UserContext = createContext(null);
 export function UserProvider({ children }) {
   const [token, setToken] = useState(null);
   const [balance, setBalance] = useState(0);
+  const [joinedAt, setJoinedAt] = useState(null);
   const [ready, setReady] = useState(false);
 
   const init = useCallback(async (existingToken, ref) => {
@@ -61,6 +62,7 @@ export function UserProvider({ children }) {
       localStorage.setItem("artapedia_token", data.token);
       setToken(data.token);
       setBalance(data.balance);
+      setJoinedAt(data.createdAt || null);
       return data;
     }
     throw new Error(data.error || "Gagal memuat akun.");
@@ -95,7 +97,7 @@ export function UserProvider({ children }) {
   );
 
   return (
-    <UserContext.Provider value={{ token, balance, ready, setBalance, refreshBalance, restoreToken }}>
+    <UserContext.Provider value={{ token, balance, joinedAt, ready, setBalance, refreshBalance, restoreToken }}>
       {children}
     </UserContext.Provider>
   );

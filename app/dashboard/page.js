@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@/app/providers";
+import AccountInfoModal from "@/components/AccountInfoModal";
 
 function greeting() {
   const h = new Date().getHours();
@@ -41,11 +42,12 @@ function MiniBars({ data, keyName, colorClass }) {
 }
 
 export default function DashboardPage() {
-  const { token, balance, ready } = useUser();
+  const { token, balance, joinedAt, ready } = useUser();
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [board, setBoard] = useState([]);
   const [boardLoading, setBoardLoading] = useState(true);
+  const [accountModalOpen, setAccountModalOpen] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -78,9 +80,18 @@ export default function DashboardPage() {
             {ready && token ? `${token.slice(0, 10)}…` : "Memuat akun..."}
           </p>
         </div>
-        <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-soft text-xl">
-          {new Date().getHours() < 18 ? "☀️" : "🌙"}
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setAccountModalOpen(true)}
+            className="press flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:border-amber hover:text-amber-bright"
+          >
+            <span aria-hidden="true">ℹ️</span>
+            Info Akun
+          </button>
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-soft text-xl">
+            {new Date().getHours() < 18 ? "☀️" : "🌙"}
+          </span>
+        </div>
       </div>
 
       {/* Saldo */}
@@ -249,6 +260,14 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      <AccountInfoModal
+        open={accountModalOpen}
+        onClose={() => setAccountModalOpen(false)}
+        token={token}
+        balance={balance}
+        joinedAt={joinedAt}
+      />
     </div>
   );
 }
