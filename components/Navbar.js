@@ -36,13 +36,13 @@ export default function Navbar() {
 
   return (
     <header
-      className={`sticky top-0 z-50 border-b bg-surface/90 backdrop-blur-md transition-shadow duration-300 ${
-        scrolled ? "border-line shadow-soft" : "border-transparent"
+      className={`sticky top-0 z-50 transition-shadow duration-300 ${
+        scrolled ? "glass shadow-lift" : "bg-transparent"
       }`}
     >
       <div className="mx-auto flex max-w-content items-center justify-between gap-4 px-5 py-3.5">
         <Link href="/" className="group flex items-center gap-2.5">
-          <span className="press flex h-8 w-8 items-center justify-center rounded-lg bg-amber text-sm font-bold text-white shadow-soft transition-transform duration-300 group-hover:-rotate-6">
+          <span className="btn-3d flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber to-amber-bright text-sm font-bold text-white shadow-3d transition-transform duration-300 group-hover:-rotate-6">
             A
           </span>
           <span className="font-display text-lg font-semibold tracking-tight text-ink">Artapedia</span>

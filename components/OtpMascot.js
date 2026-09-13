@@ -7,6 +7,7 @@ export default function OtpMascot() {
   return (
     <div className="float-slow relative mx-auto w-full max-w-[280px]">
       <div className="absolute -inset-8 -z-10 rounded-full bg-amber/14 blur-3xl" />
+      <div className="mascot-platform absolute bottom-2 left-1/2 -z-10 h-16 w-[220px] -translate-x-1/2 rounded-full" aria-hidden="true" />
 
       <svg viewBox="0 0 300 335" className="w-full drop-shadow-[0_18px_30px_rgba(13,17,23,0.18)]">
         <defs>

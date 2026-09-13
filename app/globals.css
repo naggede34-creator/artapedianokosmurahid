@@ -168,3 +168,96 @@ h1, h2, h3, h4 {
 .underline-grow:hover::after {
   transform: scaleX(1);
 }
+
+/* ---- Aurora background: blob biru & pink yang bergerak pelan di belakang seluruh halaman ---- */
+.aurora-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.aurora-blob {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(60px);
+  opacity: 0.35;
+  animation: blobMove 16s ease-in-out infinite;
+}
+
+/* ---- Glassmorphism ---- */
+.glass {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.glass-dark {
+  background: rgba(13, 17, 23, 0.65);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ---- Kartu bergaya 3D: perspektif + tilt lewat JS (lihat components/TiltCard.js) ---- */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.tilt-inner {
+  transform-style: preserve-3d;
+  transition: transform 0.15s ease-out, box-shadow 0.3s ease;
+  will-change: transform;
+}
+
+/* ---- Cincin glow berputar: satu momen dekoratif untuk elemen paling penting (hero/CTA) ---- */
+.glow-ring {
+  position: relative;
+  isolation: isolate;
+}
+.glow-ring::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, #2f6fed, #ec4899, #aeb8c7, #2f6fed);
+  animation: spinSlow 6s linear infinite;
+  opacity: 0.85;
+}
+.glow-ring::after {
+  content: "";
+  position: absolute;
+  inset: 1.5px;
+  z-index: -1;
+  border-radius: inherit;
+  background: inherit;
+}
+
+/* ---- Tombol bergaya 3D: bevel atas terang, dasar gelap, "ditekan" saat aktif ---- */
+.btn-3d {
+  position: relative;
+  transform: translateY(0);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-3d:hover {
+  transform: translateY(-2px);
+}
+.btn-3d:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 -1px 0 rgba(13, 17, 23, 0.1) inset, 0 6px 14px -8px rgba(47, 111, 237, 0.35) !important;
+}
+
+/* ---- Platform elips 3D di bawah maskot, memberi ilusi ia "melayang" di atas panggung ---- */
+.mascot-platform {
+  background: radial-gradient(ellipse at center, rgba(47, 111, 237, 0.35) 0%, rgba(236, 72, 153, 0.18) 55%, transparent 75%);
+  transform: rotateX(70deg);
+  animation: platformSpin 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-blob,
+  .glow-ring::before,
+  .mascot-platform {
+    animation: none !important;
+  }
+}
