@@ -1,18 +1,27 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ANNOUNCEMENTS } from "@/lib/announcements";
+import { useEffect, useMemo, useState } from "react";
 
 const CATEGORIES = ["Semua", "Informasi", "Promo", "Penting"];
 
 export default function InformasiPage() {
   const [tab, setTab] = useState("pengumuman"); // pengumuman | kotak-masuk
   const [category, setCategory] = useState("Semua");
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/announcements/public")
+      .then((r) => r.json())
+      .then((d) => setItems(Array.isArray(d.items) ? d.items : []))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(() => {
-    if (category === "Semua") return ANNOUNCEMENTS;
-    return ANNOUNCEMENTS.filter((a) => a.category === category);
-  }, [category]);
+    if (category === "Semua") return items;
+    return items.filter((a) => a.category === category);
+  }, [category, items]);
 
   return (
     <div className="mx-auto max-w-content px-5 py-8">
@@ -62,35 +71,45 @@ export default function InformasiPage() {
           </div>
 
           <div className="mt-4 flex flex-col gap-3">
-            {filtered.map((a, i) => (
-              <article
-                key={a.id}
-                className={`fade-up card-shadow rounded-2xl border border-line bg-surface p-5 delay-${Math.min(i + 5, 6)}`}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-soft text-lg">
-                    {a.icon}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-display text-sm font-semibold text-ink">{a.title}</h3>
-                      <span className="rounded bg-teal-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase text-teal-bright">
-                        {a.category}
+            {loading ? (
+              <div className="flex flex-col gap-3">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="skeleton h-28 rounded-2xl border border-line" />
+                ))}
+              </div>
+            ) : (
+              <>
+                {filtered.map((a, i) => (
+                  <article
+                    key={a.id}
+                    className={`fade-up card-shadow rounded-2xl border border-line bg-surface p-5 delay-${Math.min(i + 5, 6)}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-soft text-lg">
+                        {a.icon}
                       </span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-display text-sm font-semibold text-ink">{a.title}</h3>
+                          <span className="rounded bg-teal-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase text-teal-bright">
+                            {a.category}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-[11px] text-muted">🕒 {a.date}</p>
+                      </div>
                     </div>
-                    <p className="mt-0.5 text-[11px] text-muted">🕒 {a.date}</p>
-                  </div>
-                </div>
-                <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-ink/90">{a.body}</p>
-                <div className="mt-4 flex items-center gap-4 border-t border-line pt-3 text-xs text-muted">
-                  <span className="flex items-center gap-1">👁 {a.views}</span>
-                  <span className="flex items-center gap-1">❤️ {a.likes}</span>
-                  <span className="flex items-center gap-1">🔥 {a.fire}</span>
-                </div>
-              </article>
-            ))}
-            {filtered.length === 0 && (
-              <p className="py-10 text-center text-sm text-muted">Belum ada pengumuman untuk kategori ini.</p>
+                    <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-ink/90">{a.body}</p>
+                    <div className="mt-4 flex items-center gap-4 border-t border-line pt-3 text-xs text-muted">
+                      <span className="flex items-center gap-1">👁 {a.views}</span>
+                      <span className="flex items-center gap-1">❤️ {a.likes}</span>
+                      <span className="flex items-center gap-1">🔥 {a.fire}</span>
+                    </div>
+                  </article>
+                ))}
+                {filtered.length === 0 && (
+                  <p className="py-10 text-center text-sm text-muted">Belum ada pengumuman untuk kategori ini.</p>
+                )}
+              </>
             )}
           </div>
         </>

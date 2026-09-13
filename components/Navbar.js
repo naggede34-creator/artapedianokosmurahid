@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useUser } from "@/app/providers";
 import ThemeToggle from "@/components/ThemeToggle";
 import Sidebar from "@/components/Sidebar";
+import InfoBell from "@/components/InfoBell";
 
 const links = [
   { href: "/dashboard", label: "Dashboard" },
@@ -17,7 +18,7 @@ const links = [
 ];
 
 export default function Navbar() {
-  const { token, balance, ready } = useUser();
+  const { token, name, balance, ready } = useUser();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -87,6 +88,7 @@ export default function Navbar() {
             </span>
             {ready ? `Rp${balance.toLocaleString("id-ID")}` : "Memuat..."}
           </button>
+          <InfoBell />
           <ThemeToggle className="hidden sm:inline-flex" />
         </div>
       </div>
@@ -94,6 +96,7 @@ export default function Navbar() {
       {open && (
         <div className="expand-down border-t border-line bg-surface2 px-5 py-4">
           <div className="mx-auto max-w-content">
+            {name && <p className="mb-1 text-sm font-semibold text-ink">Halo, {name} 👋</p>}
             <p className="text-xs text-muted">Kode akun kamu (simpan baik-baik, ini kunci ke saldo & riwayat):</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <code className="rounded border border-line bg-surface px-3 py-1.5 font-mono text-sm text-amber-bright">

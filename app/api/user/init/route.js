@@ -14,6 +14,7 @@ export async function POST(req) {
         return NextResponse.json({
           token: existing.token,
           balance: existing.balance,
+          name: existing.name || null,
           createdAt: existing.createdAt || null
         });
       }

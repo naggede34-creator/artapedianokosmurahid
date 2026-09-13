@@ -202,6 +202,28 @@ h1, h2, h3, h4 {
   100% { background-position: -100% 0; }
 }
 
+/* ---- Animasi kembang api untuk sambutan pengguna baru (WelcomeIntro) ---- */
+.firework-burst {
+  width: 6px;
+  height: 6px;
+}
+.firework-particle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  opacity: 0;
+  animation: fireworkFly 1.4s ease-out infinite;
+}
+@keyframes fireworkFly {
+  0% { opacity: 0; transform: rotate(var(--r, 0deg)) translateX(0) scale(1); }
+  8% { opacity: 1; }
+  70% { opacity: 0.8; }
+  100% { opacity: 0; transform: rotate(var(--r, 0deg)) translateX(46px) scale(0.4); }
+}
+
 .expand-down {
   animation: expandDown 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
   transform-origin: top;

@@ -42,7 +42,7 @@ function MiniBars({ data, keyName, colorClass }) {
 }
 
 export default function DashboardPage() {
-  const { token, balance, joinedAt, ready } = useUser();
+  const { token, name, balance, joinedAt, ready } = useUser();
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [board, setBoard] = useState([]);
@@ -77,17 +77,10 @@ export default function DashboardPage() {
         <div>
           <p className="text-sm text-muted">{greeting()},</p>
           <p className="font-display text-lg font-semibold text-ink">
-            {ready && token ? `${token.slice(0, 10)}…` : "Memuat akun..."}
+            {ready && token ? (name ? name : `${token.slice(0, 10)}…`) : "Memuat akun..."}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setAccountModalOpen(true)}
-            className="press flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:border-amber hover:text-amber-bright"
-          >
-            <span aria-hidden="true">ℹ️</span>
-            Info Akun
-          </button>
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-soft text-xl">
             {new Date().getHours() < 18 ? "☀️" : "🌙"}
           </span>
@@ -103,6 +96,18 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {/* Info Akun */}
+      <div className="fade-up delay-1 mt-3 flex justify-center">
+        <button
+          onClick={() => setAccountModalOpen(true)}
+          className="press flex items-center gap-1.5 rounded-full border border-line bg-surface px-4 py-1.5 text-xs font-medium text-ink transition-colors hover:border-amber hover:text-amber-bright"
+        >
+          <span aria-hidden="true">ℹ️</span>
+          Info Akun
+        </button>
+      </div>
+
 
       {/* Stat grid */}
       <div className="fade-up delay-2 mt-4 grid grid-cols-3 gap-3">

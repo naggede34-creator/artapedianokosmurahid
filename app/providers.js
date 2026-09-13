@@ -46,6 +46,7 @@ const UserContext = createContext(null);
 export function UserProvider({ children }) {
   const [token, setToken] = useState(null);
   const [balance, setBalance] = useState(0);
+  const [name, setName] = useState(null);
   const [joinedAt, setJoinedAt] = useState(null);
   const [ready, setReady] = useState(false);
 
@@ -62,6 +63,7 @@ export function UserProvider({ children }) {
       localStorage.setItem("artapedia_token", data.token);
       setToken(data.token);
       setBalance(data.balance);
+      setName(data.name || null);
       setJoinedAt(data.createdAt || null);
       return data;
     }
@@ -96,8 +98,26 @@ export function UserProvider({ children }) {
     [init]
   );
 
+  const updateName = useCallback(
+    async (newName) => {
+      if (!token) return;
+      const res = await fetch("/api/user/name", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, name: newName })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menyimpan nama.");
+      setName(data.name || null);
+      return data;
+    },
+    [token]
+  );
+
   return (
-    <UserContext.Provider value={{ token, balance, joinedAt, ready, setBalance, refreshBalance, restoreToken }}>
+    <UserContext.Provider
+      value={{ token, balance, name, joinedAt, ready, setBalance, refreshBalance, restoreToken, updateName }}
+    >
       {children}
     </UserContext.Provider>
   );

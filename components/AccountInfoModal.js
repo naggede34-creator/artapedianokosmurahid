@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useUser } from "@/app/providers";
 
 function formatJoinDate(value) {
   if (!value) return "-";
@@ -10,7 +11,11 @@ function formatJoinDate(value) {
 }
 
 export default function AccountInfoModal({ open, onClose, token, balance, joinedAt }) {
+  const { name, updateName } = useUser();
   const [copied, setCopied] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [nameMsg, setNameMsg] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -21,8 +26,13 @@ export default function AccountInfoModal({ open, onClose, token, balance, joined
   }, [open]);
 
   useEffect(() => {
-    if (!open) setCopied(false);
-  }, [open]);
+    if (!open) {
+      setCopied(false);
+      setNameMsg("");
+    } else {
+      setNameInput(name || "");
+    }
+  }, [open, name]);
 
   if (!open) return null;
 
@@ -31,6 +41,21 @@ export default function AccountInfoModal({ open, onClose, token, balance, joined
     navigator.clipboard?.writeText(token);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  }
+
+  async function saveName(e) {
+    e.preventDefault();
+    setSavingName(true);
+    setNameMsg("");
+    try {
+      await updateName(nameInput.trim());
+      setNameMsg("Nama tersimpan.");
+    } catch (err) {
+      setNameMsg(err.message || "Gagal menyimpan nama.");
+    } finally {
+      setSavingName(false);
+      setTimeout(() => setNameMsg(""), 2500);
+    }
   }
 
   return (
@@ -59,6 +84,30 @@ export default function AccountInfoModal({ open, onClose, token, balance, joined
         </div>
 
         <div className="flex flex-col gap-4 p-5">
+          <form onSubmit={saveName}>
+            <p className="text-xs font-medium text-muted">Nama Tampilan</p>
+            <div className="mt-1.5 flex items-center gap-2">
+              <input
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                maxLength={24}
+                placeholder="Masukkan nama kamu"
+                className="min-w-0 flex-1 rounded-xl border border-line bg-surface2 px-3 py-2.5 text-sm text-ink outline-none focus:border-amber"
+              />
+              <button
+                type="submit"
+                disabled={savingName}
+                className="btn-3d flex-shrink-0 rounded-xl bg-gradient-to-r from-amber to-amber-bright px-3.5 py-2.5 text-xs font-medium text-white shadow-3d disabled:opacity-60"
+              >
+                {savingName ? "..." : "Simpan"}
+              </button>
+            </div>
+            {nameMsg && <p className="mt-1.5 text-[11px] font-medium text-teal-bright">{nameMsg}</p>}
+            <p className="mt-1.5 text-[11px] text-muted">
+              Nama ini akan ditampilkan di website kamu (misalnya di sapaan Dashboard).
+            </p>
+          </form>
+
           <div>
             <p className="text-xs font-medium text-muted">Kode Akun</p>
             <div className="mt-1.5 flex items-center gap-2">

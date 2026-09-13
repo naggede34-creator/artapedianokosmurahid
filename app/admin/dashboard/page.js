@@ -38,6 +38,18 @@ export default function AdminDashboardPage() {
   const [voucherSubmitting, setVoucherSubmitting] = useState(false);
   const [voucherMsg, setVoucherMsg] = useState("");
 
+  const [broadcasts, setBroadcasts] = useState([]);
+  const [broadcastsLoading, setBroadcastsLoading] = useState(true);
+  const [broadcastInput, setBroadcastInput] = useState("");
+  const [broadcastSubmitting, setBroadcastSubmitting] = useState(false);
+  const [broadcastMsg, setBroadcastMsg] = useState("");
+
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+  const [announcementForm, setAnnouncementForm] = useState({ category: "Informasi", title: "", body: "" });
+  const [announcementSubmitting, setAnnouncementSubmitting] = useState(false);
+  const [announcementMsg, setAnnouncementMsg] = useState("");
+
   const loadSettings = useCallback(async () => {
     const res = await fetch("/api/admin/settings");
     if (res.status === 401) return router.push("/admin/login");
@@ -87,13 +99,125 @@ export default function AdminDashboardPage() {
     }
   }, [router]);
 
+  const loadBroadcasts = useCallback(async () => {
+    setBroadcastsLoading(true);
+    try {
+      const res = await fetch("/api/admin/broadcasts");
+      if (res.status === 401) return router.push("/admin/login");
+      const data = await res.json();
+      setBroadcasts(Array.isArray(data.items) ? data.items : []);
+    } finally {
+      setBroadcastsLoading(false);
+    }
+  }, [router]);
+
+  const loadAnnouncements = useCallback(async () => {
+    setAnnouncementsLoading(true);
+    try {
+      const res = await fetch("/api/admin/announcements");
+      if (res.status === 401) return router.push("/admin/login");
+      const data = await res.json();
+      setAnnouncements(Array.isArray(data.items) ? data.items : []);
+    } finally {
+      setAnnouncementsLoading(false);
+    }
+  }, [router]);
+
   useEffect(() => {
     loadSettings();
     loadUsers("");
     loadStats();
     loadVouchers();
+    loadBroadcasts();
+    loadAnnouncements();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function submitBroadcast(e) {
+    e.preventDefault();
+    setBroadcastMsg("");
+    setBroadcastSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/broadcasts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: broadcastInput.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengirim broadcast.");
+      setBroadcastMsg("Broadcast terkirim & langsung tampil ke semua user.");
+      setBroadcastInput("");
+      loadBroadcasts();
+    } catch (err) {
+      setBroadcastMsg(err.message);
+    } finally {
+      setBroadcastSubmitting(false);
+      setTimeout(() => setBroadcastMsg(""), 3000);
+    }
+  }
+
+  async function toggleBroadcast(id) {
+    await fetch("/api/admin/broadcasts/toggle", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id })
+    });
+    loadBroadcasts();
+  }
+
+  async function deleteBroadcast(id) {
+    await fetch("/api/admin/broadcasts/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id })
+    });
+    loadBroadcasts();
+  }
+
+  async function submitAnnouncement(e) {
+    e.preventDefault();
+    setAnnouncementMsg("");
+    setAnnouncementSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/announcements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: announcementForm.category,
+          title: announcementForm.title.trim(),
+          body: announcementForm.body.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal membuat pengumuman.");
+      setAnnouncementMsg("Pengumuman diterbitkan.");
+      setAnnouncementForm({ category: "Informasi", title: "", body: "" });
+      loadAnnouncements();
+    } catch (err) {
+      setAnnouncementMsg(err.message);
+    } finally {
+      setAnnouncementSubmitting(false);
+      setTimeout(() => setAnnouncementMsg(""), 3000);
+    }
+  }
+
+  async function toggleAnnouncement(id) {
+    await fetch("/api/admin/announcements/toggle", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id })
+    });
+    loadAnnouncements();
+  }
+
+  async function deleteAnnouncement(id) {
+    await fetch("/api/admin/announcements/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id })
+    });
+    loadAnnouncements();
+  }
 
   async function submitVoucher(e) {
     e.preventDefault();
@@ -376,6 +500,169 @@ export default function AdminDashboardPage() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Broadcast */}
+      <div className="glass mt-8 rounded-2xl p-5 shadow-soft sm:p-6">
+        <h2 className="font-display text-base font-semibold text-ink">Broadcast (Banner Mengambang)</h2>
+        <p className="mt-1 text-xs text-muted">Pesan ini muncul mengambang di atas semua halaman untuk semua user.</p>
+        <form onSubmit={submitBroadcast} className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <input
+            value={broadcastInput}
+            onChange={(e) => setBroadcastInput(e.target.value)}
+            placeholder="Tulis pesan broadcast..."
+            maxLength={240}
+            required
+            className="min-w-0 flex-1 rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+          />
+          <button
+            type="submit"
+            disabled={broadcastSubmitting}
+            className="btn-3d shrink-0 rounded-lg bg-gradient-to-r from-amber to-amber-bright px-4 py-2.5 text-sm font-medium text-white shadow-3d disabled:opacity-60"
+          >
+            {broadcastSubmitting ? "Mengirim..." : "Kirim Broadcast"}
+          </button>
+        </form>
+        {broadcastMsg && <p className="mt-2 text-xs font-medium text-teal-bright">{broadcastMsg}</p>}
+
+        <div className="glass mt-4 overflow-x-auto rounded-xl shadow-soft">
+          <table className="w-full min-w-[520px] text-sm">
+            <thead>
+              <tr className="border-b border-line text-left text-xs text-muted">
+                <th className="px-4 py-2.5 font-medium">Pesan</th>
+                <th className="px-4 py-2.5 font-medium">Dibuat</th>
+                <th className="px-4 py-2.5 font-medium">Status</th>
+                <th className="px-4 py-2.5 font-medium text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {broadcastsLoading ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-5 text-center text-muted">Memuat...</td>
+                </tr>
+              ) : broadcasts.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-5 text-center text-muted">Belum ada broadcast.</td>
+                </tr>
+              ) : (
+                broadcasts.map((b) => (
+                  <tr key={b.id} className="border-b border-line last:border-0">
+                    <td className="max-w-[260px] truncate px-4 py-2.5 text-ink">{b.message}</td>
+                    <td className="px-4 py-2.5 text-xs text-muted">{fmtDate(b.createdAt)}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`rounded-full border px-2 py-0.5 text-xs ${b.active ? "border-teal/40 text-teal-bright" : "border-rose/30 text-rose"}`}>
+                        {b.active ? "Aktif" : "Nonaktif"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <div className="flex justify-end gap-1.5">
+                        <button
+                          onClick={() => toggleBroadcast(b.id)}
+                          className="btn-3d rounded-md border border-line px-2 py-1 text-xs font-medium text-ink hover:border-amber"
+                        >
+                          {b.active ? "Nonaktifkan" : "Aktifkan"}
+                        </button>
+                        <button
+                          onClick={() => deleteBroadcast(b.id)}
+                          className="btn-3d rounded-md border border-rose/40 px-2 py-1 text-xs font-medium text-rose hover:bg-rose-soft"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Kelola Informasi / Pengumuman */}
+      <div className="glass mt-8 rounded-2xl p-5 shadow-soft sm:p-6">
+        <h2 className="font-display text-base font-semibold text-ink">Kelola Informasi (Pusat Informasi)</h2>
+        <p className="mt-1 text-xs text-muted">Muncul di menu Informasi dan lonceng notifikasi di semua halaman.</p>
+        <form onSubmit={submitAnnouncement} className="mt-4 grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-[0.9fr_2fr]">
+            <select
+              value={announcementForm.category}
+              onChange={(e) => setAnnouncementForm((f) => ({ ...f, category: e.target.value }))}
+              className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+            >
+              <option value="Informasi">Informasi</option>
+              <option value="Promo">Promo</option>
+              <option value="Penting">Penting</option>
+            </select>
+            <input
+              value={announcementForm.title}
+              onChange={(e) => setAnnouncementForm((f) => ({ ...f, title: e.target.value }))}
+              placeholder="Judul pengumuman"
+              required
+              maxLength={120}
+              className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+            />
+          </div>
+          <textarea
+            value={announcementForm.body}
+            onChange={(e) => setAnnouncementForm((f) => ({ ...f, body: e.target.value }))}
+            placeholder="Isi pengumuman..."
+            required
+            rows={3}
+            maxLength={1000}
+            className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+          />
+          <button
+            type="submit"
+            disabled={announcementSubmitting}
+            className="btn-3d self-start rounded-lg bg-gradient-to-r from-teal to-teal-bright px-4 py-2.5 text-sm font-medium text-white shadow-3d disabled:opacity-60"
+          >
+            {announcementSubmitting ? "Menerbitkan..." : "Terbitkan"}
+          </button>
+        </form>
+        {announcementMsg && <p className="mt-2 text-xs font-medium text-teal-bright">{announcementMsg}</p>}
+
+        <div className="mt-4 flex flex-col gap-2.5">
+          {announcementsLoading ? (
+            <p className="py-4 text-center text-sm text-muted">Memuat...</p>
+          ) : announcements.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted">Belum ada pengumuman.</p>
+          ) : (
+            announcements.map((a) => (
+              <div key={a.id} className="flex items-start gap-3 rounded-xl border border-line bg-surface p-3.5">
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-amber-soft text-base">
+                  {a.icon}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-ink">{a.title}</p>
+                    <span className="rounded bg-teal-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase text-teal-bright">
+                      {a.category}
+                    </span>
+                    <span className={`rounded-full border px-2 py-0.5 text-[10px] ${a.active ? "border-teal/40 text-teal-bright" : "border-rose/30 text-rose"}`}>
+                      {a.active ? "Aktif" : "Nonaktif"}
+                    </span>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted">{a.body}</p>
+                  <p className="mt-1 text-[11px] text-muted">{fmtDate(a.createdAt)}</p>
+                </div>
+                <div className="flex flex-shrink-0 flex-col gap-1.5">
+                  <button
+                    onClick={() => toggleAnnouncement(a.id)}
+                    className="btn-3d rounded-md border border-line px-2 py-1 text-xs font-medium text-ink hover:border-amber"
+                  >
+                    {a.active ? "Nonaktifkan" : "Aktifkan"}
+                  </button>
+                  <button
+                    onClick={() => deleteAnnouncement(a.id)}
+                    className="btn-3d rounded-md border border-rose/40 px-2 py-1 text-xs font-medium text-rose hover:bg-rose-soft"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
