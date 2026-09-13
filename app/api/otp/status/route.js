@@ -28,14 +28,21 @@ export async function GET(req) {
     // angka dari teks SMS kalau field kode dedicated tidak ada.
     function extractCode(d) {
       if (!d) return null;
+      // RumahOTP mengisi field kode dengan literal "-" kalau kode belum masuk
+      // (bukan kosong/null), jadi nilai "-" (atau varian strip lain) harus dianggap
+      // "belum ada kode", bukan kode yang valid.
+      const isPlaceholder = (v) => {
+        const s = String(v).trim();
+        return s === "" || s === "-" || s === "--" || s === "—" || s.toLowerCase() === "null";
+      };
       const directFields = ["otp_code", "code", "sms_code", "otpCode", "full_sms", "verification_code"];
       for (const f of directFields) {
-        if (d[f] !== undefined && d[f] !== null && String(d[f]).trim() !== "") return String(d[f]).trim();
+        if (d[f] !== undefined && d[f] !== null && !isPlaceholder(d[f])) return String(d[f]).trim();
       }
       const textFields = ["sms", "message", "sms_text", "full_sms_text", "text"];
       for (const f of textFields) {
         const text = d[f];
-        if (typeof text === "string" && text.trim()) {
+        if (typeof text === "string" && text.trim() && !isPlaceholder(text)) {
           const match = text.match(/\b\d{3,8}\b/);
           if (match) return match[0];
         }
