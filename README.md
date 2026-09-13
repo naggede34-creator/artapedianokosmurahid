@@ -4,6 +4,36 @@ Website deposit saldo otomatis (QRIS via Pakasir) dan pembelian nomor OTP untuk
 semua layanan (via RumahOTP), dibangun dengan Next.js dan siap deploy ke Vercel.
 Tidak memakai bot Telegram — website ini berdiri sendiri.
 
+## Redesain tampilan (terbaru)
+
+- **Palet warna baru**: biru, biru tua (navy), putih, silver, hitam — menggantikan
+  aksen pink/teal versi sebelumnya. Semua warna kini dibaca dari CSS variable di
+  `app/globals.css` (`:root` untuk mode terang, `.dark` untuk mode gelap), jadi
+  mengubah brand di masa depan cukup edit satu file itu.
+- **Mode terang/gelap**: tombol sakelar (`components/ThemeToggle.js`) tersedia di
+  Navbar, Sidebar, dan menu akun. Default-nya selalu **terang**, pilihan user
+  disimpan di `localStorage` dan langsung diterapkan lagi di kunjungan berikutnya
+  tanpa kedipan (lihat skrip inline di `app/layout.js`).
+- **Sidebar menu** (`components/Sidebar.js`) baru berisi: Dashboard, Order OTP
+  Utama/Kedua, Deposit Saldo, Transfer Saldo, Mutasi Saldo, Riwayat Transaksi,
+  Daftar Harga, Pusat Informasi, Bantuan (FAQ), dan link Docs Server 1/2 — dibuka
+  lewat ikon hamburger di Navbar.
+- **Halaman baru**:
+  - `/dashboard` — ringkasan saldo, statistik (total transaksi, OTP berhasil,
+    deposit sukses), grafik order & spending 30 hari, dan peringkat 10 user
+    dengan pesanan sukses terbanyak.
+  - `/harga` — Daftar Harga per aplikasi & negara.
+  - `/informasi` — Pusat Informasi dengan tab Pengumuman/Kotak Masuk (konten
+    pengumuman ada di `lib/announcements.js`, edit manual — belum tersambung DB).
+  - `/faq` — Bantuan (FAQ) dengan pencarian, langkah cara order, kebijakan
+    refund, dan accordion pertanyaan umum.
+  - `/transfer` — Transfer Saldo antar akun (API: `app/api/transfer/route.js`).
+  - `/mutasi` — Mutasi Saldo, gabungan riwayat deposit masuk & pemakaian OTP
+    keluar.
+- **API baru**: `app/api/user/stats/route.js` (statistik dashboard per akun) dan
+  `app/api/leaderboard/orders/route.js` (peringkat berdasarkan pesanan OTP
+  sukses).
+
 Catatan penting: fitur "Order Akun Telegram" (stok akun fake/scam/polosan) dari
 source bot lama SENGAJA TIDAK dipindahkan ke web ini.
 
@@ -75,7 +105,22 @@ Buka http://localhost:3000
    - `OTP_MARKUP_PERCENT` (contoh: 0, atau isi angka kalau mau ambil untung dari harga RumahOTP — bisa diubah lagi kapan saja lewat Dashboard Admin tanpa deploy ulang)
    - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_ADS_LINK`, `TELEGRAM_ADS_TEXT` (opsional, lihat bagian 4)
    - `ADMIN_CODE` (kode rahasia untuk masuk Dashboard Admin, default `arta12123` kalau tidak diisi — sangat disarankan ganti sendiri)
-   - `TELEGRAM_CHANNEL_1`, `TELEGRAM_CHANNEL_2` (opsional, link channel yang ditampilkan di notifikasi Telegram & footer web — default sudah diisi link channel kamu)
+   - `TELEGRAM_CHANNEL_1`, `TELEGRAM_CHANNEL_2` (opsional, link channel yang ditampilkan di notifikasi Telegram & tombol "Channel Info"/"Group Diskusi" di web — default sudah diisi link channel kamu)
+   - `NEOXR_API_KEY` (opsional, apikey untuk fitur CS AI di pojok kanan bawah web — kalau tidak diisi, otomatis pakai apikey default yang sudah ditanam di kode)
+
+## Fitur CS AI & tombol bantuan
+
+- Tombol bulat di pojok kanan bawah (semua halaman publik) membuka 3 pilihan: **Tanya CS AI**,
+  **Channel Info**, dan **Group Diskusi**.
+- **Channel Info** & **Group Diskusi** mengarah ke link Telegram di `TELEGRAM_CHANNEL_1` /
+  `TELEGRAM_CHANNEL_2` (lihat di atas) — ganti env var itu kalau link channel kamu berubah.
+- **Tanya CS AI** membuka jendela chat yang memanggil `app/api/cs/route.js`, yang meneruskan
+  pertanyaan user ke API GPT-4 pihak ketiga (`https://api.neoxr.eu/api/gpt4`, lihat `lib/neoxr.js`)
+  lengkap dengan konteks singkat tentang cara kerja Artapedia (deposit, beli OTP, refund, dll),
+  supaya jawabannya relevan. AI ini **tidak** bisa melihat data akun/saldo user secara langsung —
+  untuk kendala yang butuh data spesifik, arahkan user ke Channel Info/Group Diskusi.
+- Karena mengandalkan API pihak ketiga gratis, sebaiknya pantau kestabilannya; kalau API tidak
+  merespons, widget akan menampilkan pesan error dan menyarankan hubungi admin manual.
 
 ### Dashboard Admin
 

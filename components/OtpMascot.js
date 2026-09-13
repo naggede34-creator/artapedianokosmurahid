@@ -1,7 +1,7 @@
 // Maskot hero: karakter anime chibi lucu yang lagi pegang HP dengan kode OTP di layarnya.
 // Sengaja digambar manual pakai bentuk-bentuk SVG (bukan gambar impor) supaya
 // ringan dan gampang diubah warnanya kalau brand berubah nanti.
-// Palet: biru (rambut & hoodie), hitam (outline & aksen), putih (kulit & layar), pink (blush & aksen), silver (highlight).
+// Palet: biru (rambut & hoodie), hitam (outline & aksen), putih (kulit & layar), navy tua (blush & aksen), silver (highlight).
 
 export default function OtpMascot() {
   return (
@@ -23,10 +23,10 @@ export default function OtpMascot() {
         {/* bayangan di lantai */}
         <ellipse cx="150" cy="320" rx="72" ry="10" fill="#0D1117" opacity="0.08" />
 
-        {/* kilau dekoratif: pink & silver */}
+        {/* kilau dekoratif: navy & silver */}
         <path
           d="M40 50 L42.5 57.5 L50 60 L42.5 62.5 L40 70 L37.5 62.5 L30 60 L37.5 57.5 Z"
-          fill="#EC4899"
+          fill="#1E3A5F"
           className="twinkle"
         />
         <path
@@ -34,7 +34,7 @@ export default function OtpMascot() {
           fill="#AEB8C7"
           className="twinkle twinkle-delay-1"
         />
-        <circle cx="248" cy="228" r="4" fill="#EC4899" className="twinkle twinkle-delay-2" />
+        <circle cx="248" cy="228" r="4" fill="#1E3A5F" className="twinkle twinkle-delay-2" />
 
         {/* hoodie / badan */}
         <rect x="58" y="150" width="184" height="165" rx="72" fill="#2F6FED" />
@@ -44,8 +44,8 @@ export default function OtpMascot() {
         {/* tali hoodie */}
         <line x1="132" y1="180" x2="128" y2="214" stroke="#0D1117" strokeWidth="3" strokeLinecap="round" />
         <line x1="168" y1="180" x2="172" y2="214" stroke="#0D1117" strokeWidth="3" strokeLinecap="round" />
-        <circle cx="128" cy="217" r="4.5" fill="#EC4899" />
-        <circle cx="172" cy="217" r="4.5" fill="#EC4899" />
+        <circle cx="128" cy="217" r="4.5" fill="#1E3A5F" />
+        <circle cx="172" cy="217" r="4.5" fill="#1E3A5F" />
 
         {/* lengan (di belakang HP) */}
         <rect x="46" y="188" width="60" height="26" rx="13" fill="#1D4ED8" transform="rotate(-20 46 201)" />
@@ -60,9 +60,9 @@ export default function OtpMascot() {
         {/* wajah (kulit) */}
         <ellipse cx="150" cy="108" rx="62" ry="58" fill="#FFF4EC" />
 
-        {/* pipi blush pink */}
-        <ellipse cx="110" cy="128" rx="12" ry="7" fill="#EC4899" opacity="0.45" />
-        <ellipse cx="190" cy="128" rx="12" ry="7" fill="#EC4899" opacity="0.45" />
+        {/* pipi blush navy */}
+        <ellipse cx="110" cy="128" rx="12" ry="7" fill="#1E3A5F" opacity="0.45" />
+        <ellipse cx="190" cy="128" rx="12" ry="7" fill="#1E3A5F" opacity="0.45" />
 
         {/* mata anime besar - kiri */}
         <ellipse cx="122" cy="112" rx="16" ry="19" fill="#FFFFFF" />
@@ -99,7 +99,7 @@ export default function OtpMascot() {
         <rect x="90" y="150" width="120" height="165" rx="22" fill="#0D1117" />
         <rect x="99" y="159" width="102" height="147" rx="14" fill="#FFFFFF" />
         <g clipPath="url(#mascotScreen)">
-          <circle className="signal-pulse" cx="112" cy="178" r="4" fill="#EC4899" />
+          <circle className="signal-pulse" cx="112" cy="178" r="4" fill="#1E3A5F" />
           <text x="121" y="182" fontSize="9" fill="#1D4ED8" fontWeight="600">
             Kode masuk
           </text>
@@ -131,7 +131,7 @@ export default function OtpMascot() {
         <circle cx="200" cy="207" r="15" fill="none" stroke="#0D1117" strokeWidth="1.4" opacity="0.25" />
 
         {/* badge sukses di pojok HP */}
-        <circle cx="213" cy="150" r="16" fill="#EC4899" stroke="#FFFFFF" strokeWidth="3" />
+        <circle cx="213" cy="150" r="16" fill="#1E3A5F" stroke="#FFFFFF" strokeWidth="3" />
         <path d="M205 150 l5.5 5.5 L221 143" stroke="#FFFFFF" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </svg>
     </div>

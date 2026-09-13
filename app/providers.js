@@ -2,6 +2,45 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
+const THEME_KEY = "artapedia_theme";
+const ThemeContext = createContext(null);
+
+// Default selalu "light" kecuali user pernah memilih "dark" sebelumnya
+// (disimpan di localStorage). Skrip inline di layout.js sudah menaruh
+// class "dark" di <html> sebelum React aktif, supaya tidak ada kedipan.
+export function ThemeProvider({ children }) {
+  const [theme, setThemeState] = useState("light");
+
+  useEffect(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem(THEME_KEY) : null;
+    setThemeState(saved === "dark" ? "dark" : "light");
+  }, []);
+
+  const applyTheme = useCallback((next) => {
+    setThemeState(next);
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.toggle("dark", next === "dark");
+    }
+    if (typeof window !== "undefined") {
+      localStorage.setItem(THEME_KEY, next);
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    applyTheme(theme === "dark" ? "light" : "dark");
+  }, [theme, applyTheme]);
+
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme: applyTheme, toggleTheme }}>{children}</ThemeContext.Provider>
+  );
+}
+
+export function useTheme() {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error("useTheme harus dipakai di dalam ThemeProvider");
+  return ctx;
+}
+
 const UserContext = createContext(null);
 
 export function UserProvider({ children }) {

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
+import SupportWidget from "@/components/SupportWidget";
 
 export default function SiteChrome({ children }) {
   const pathname = usePathname();
@@ -13,6 +14,8 @@ export default function SiteChrome({ children }) {
   const [checked, setChecked] = useState(false);
   const [maintenance, setMaintenance] = useState(false);
   const [maintenanceMsg, setMaintenanceMsg] = useState("");
+  const [channelInfo, setChannelInfo] = useState("https://t.me/kkaelnokosmurah");
+  const [channelGroup, setChannelGroup] = useState("https://t.me/diskusiduniotp");
 
   useEffect(() => {
     if (isAdmin) {
@@ -24,6 +27,8 @@ export default function SiteChrome({ children }) {
       .then((d) => {
         setMaintenance(!!d.maintenance);
         setMaintenanceMsg(d.maintenanceMsg || "");
+        if (d.channelInfo) setChannelInfo(d.channelInfo);
+        if (d.channelGroup) setChannelGroup(d.channelGroup);
       })
       .catch(() => setMaintenance(false))
       .finally(() => setChecked(true));
@@ -42,6 +47,7 @@ export default function SiteChrome({ children }) {
       <main className="pb-24 md:pb-0">{children}</main>
       <Footer />
       <BottomNav />
+      <SupportWidget channelInfo={channelInfo} channelGroup={channelGroup} />
     </>
   );
 }

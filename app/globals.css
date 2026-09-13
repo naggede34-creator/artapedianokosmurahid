@@ -2,20 +2,82 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Palet warna: biru, biru tua (navy), putih, silver, hitam.
+  Nilai dalam format "R G B" (tanpa rgb()) supaya Tailwind bisa menambah
+  opacity lewat rgb(var(--x) / <alpha-value>).
+*/
 :root {
   color-scheme: light;
+
+  --c-bg: 240 244 250;         /* putih kebiruan / silver muda */
+  --c-surface: 255 255 255;    /* putih */
+  --c-surface2: 230 236 246;   /* silver muda */
+  --c-surface3: 219 227 240;   /* silver */
+  --c-line: 213 221 235;       /* garis silver */
+  --c-ink: 10 18 34;           /* hampir hitam, bernuansa navy */
+  --c-muted: 100 112 132;      /* abu kebiruan */
+
+  --c-blue: 37 99 235;         /* blue-600, brand utama */
+  --c-blue-soft: 224 234 255;
+  --c-blue-bright: 29 63 176;  /* blue-800-ish, lebih tua */
+
+  --c-navy: 15 23 42;          /* slate-900 / biru tua nyaris hitam */
+  --c-navy-soft: 226 231 240;
+  --c-navy-bright: 3 7 18;     /* hitam kebiruan */
+
+  --c-danger: 220 38 38;
+  --c-danger-soft: 254 226 226;
+  --c-danger-bright: 153 27 27;
+
+  --c-silver: 148 163 184;     /* slate-400 */
+  --c-silver-soft: 241 245 249;
+
+  --c-success: 22 163 74;
+  --c-success-soft: 220 252 231;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --c-bg: 6 11 22;             /* hitam kebiruan pekat */
+  --c-surface: 13 20 36;
+  --c-surface2: 19 28 48;
+  --c-surface3: 27 38 61;
+  --c-line: 36 48 74;
+  --c-ink: 233 239 249;        /* putih keperakan */
+  --c-muted: 148 163 184;
+
+  --c-blue: 59 130 246;        /* blue-500, sedikit lebih terang di gelap */
+  --c-blue-soft: 22 37 66;
+  --c-blue-bright: 147 197 253;
+
+  --c-navy: 148 163 184;       /* silver terang jadi aksen kedua di dark mode */
+  --c-navy-soft: 27 38 61;
+  --c-navy-bright: 226 232 240;
+
+  --c-danger: 248 113 113;
+  --c-danger-soft: 55 20 24;
+  --c-danger-bright: 254 202 202;
+
+  --c-silver: 100 116 139;
+  --c-silver-soft: 22 30 48;
+
+  --c-success: 74 222 128;
+  --c-success-soft: 12 40 24;
 }
 
 html, body {
-  background-color: #EEF2F9;
-  color: #0D1117;
+  background-color: rgb(var(--c-bg));
+  color: rgb(var(--c-ink));
 }
 
 body {
   font-family: var(--font-body), sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
   /* Tekstur ringan: grain halus + dot-grid samar, bukan putih polos. */
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"),
-    radial-gradient(circle, rgba(13, 17, 23, 0.06) 1px, transparent 1px);
+    radial-gradient(circle, rgb(var(--c-ink) / 0.06) 1px, transparent 1px);
   background-size: 120px 120px, 20px 20px;
   background-attachment: fixed, fixed;
 }
@@ -26,15 +88,15 @@ h1, h2, h3, h4 {
 }
 
 * {
-  scrollbar-color: #C7D0E0 #EEF2F9;
+  scrollbar-color: rgb(var(--c-surface3)) rgb(var(--c-bg));
 }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: #EEF2F9; }
-::-webkit-scrollbar-thumb { background: #C7D0E0; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #2F6FED; }
+::-webkit-scrollbar-track { background: rgb(var(--c-bg)); }
+::-webkit-scrollbar-thumb { background: rgb(var(--c-surface3)); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-blue)); }
 
 :focus-visible {
-  outline: 2px solid #2F6FED;
+  outline: 2px solid rgb(var(--c-blue));
   outline-offset: 2px;
 }
 
@@ -65,7 +127,7 @@ h1, h2, h3, h4 {
 }
 
 .card-shadow {
-  box-shadow: 0 1px 2px rgba(13, 17, 23, 0.05), 0 10px 28px -14px rgba(13, 17, 23, 0.16);
+  box-shadow: 0 1px 2px rgb(var(--c-navy) / 0.05), 0 10px 28px -14px rgb(var(--c-navy) / 0.16);
 }
 
 /* Halus: kartu naik sedikit saat di-hover, bukan animasi mencolok. */
@@ -74,7 +136,7 @@ h1, h2, h3, h4 {
 }
 .hover-lift:hover {
   transform: translateY(-3px);
-  box-shadow: 0 18px 34px -18px rgba(13, 17, 23, 0.28);
+  box-shadow: 0 18px 34px -18px rgb(var(--c-navy) / 0.28);
 }
 .hover-lift:active {
   transform: translateY(-1px) scale(0.99);
@@ -131,7 +193,7 @@ h1, h2, h3, h4 {
 
 /* Shimmer lembut untuk skeleton loading, ganti dari pulse polos. */
 .skeleton {
-  background: linear-gradient(90deg, #E6EBF4 25%, #F4F6FB 37%, #E6EBF4 63%);
+  background: linear-gradient(90deg, rgb(var(--c-surface2)) 25%, rgb(var(--c-surface)) 37%, rgb(var(--c-surface2)) 63%);
   background-size: 400% 100%;
   animation: shimmerMove 1.6s ease-in-out infinite;
 }
@@ -169,7 +231,7 @@ h1, h2, h3, h4 {
   transform: scaleX(1);
 }
 
-/* ---- Aurora background: blob biru & pink yang bergerak pelan di belakang seluruh halaman ---- */
+/* ---- Aurora background: blob biru & navy yang bergerak pelan di belakang seluruh halaman ---- */
 .aurora-bg {
   position: fixed;
   inset: 0;
@@ -181,22 +243,22 @@ h1, h2, h3, h4 {
   position: absolute;
   border-radius: 999px;
   filter: blur(60px);
-  opacity: 0.35;
+  opacity: 0.28;
   animation: blobMove 16s ease-in-out infinite;
 }
 
 /* ---- Glassmorphism ---- */
 .glass {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgb(var(--c-surface) / 0.66);
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid rgb(var(--c-surface) / 0.5);
 }
 .glass-dark {
-  background: rgba(13, 17, 23, 0.65);
+  background: rgb(var(--c-navy-bright) / 0.65);
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgb(255 255 255 / 0.08);
 }
 
 /* ---- Kartu bergaya 3D: perspektif + tilt lewat JS (lihat components/TiltCard.js) ---- */
@@ -220,7 +282,7 @@ h1, h2, h3, h4 {
   inset: -2px;
   z-index: -1;
   border-radius: inherit;
-  background: conic-gradient(from 0deg, #2f6fed, #ec4899, #aeb8c7, #2f6fed);
+  background: conic-gradient(from 0deg, rgb(var(--c-blue)), rgb(var(--c-navy)), rgb(var(--c-silver)), rgb(var(--c-blue)));
   animation: spinSlow 6s linear infinite;
   opacity: 0.85;
 }
@@ -244,14 +306,49 @@ h1, h2, h3, h4 {
 }
 .btn-3d:active {
   transform: translateY(1px);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 -1px 0 rgba(13, 17, 23, 0.1) inset, 0 6px 14px -8px rgba(47, 111, 237, 0.35) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 -1px 0 rgba(2, 8, 23, 0.1) inset, 0 6px 14px -8px rgba(37, 99, 235, 0.35) !important;
 }
 
 /* ---- Platform elips 3D di bawah maskot, memberi ilusi ia "melayang" di atas panggung ---- */
 .mascot-platform {
-  background: radial-gradient(ellipse at center, rgba(47, 111, 237, 0.35) 0%, rgba(236, 72, 153, 0.18) 55%, transparent 75%);
+  background: radial-gradient(ellipse at center, rgb(var(--c-blue) / 0.35) 0%, rgb(var(--c-navy) / 0.18) 55%, transparent 75%);
   transform: rotateX(70deg);
   animation: platformSpin 6s ease-in-out infinite;
+}
+
+/* ---- Sakelar terang/gelap ---- */
+.theme-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgb(var(--c-surface3));
+  border: 1px solid rgb(var(--c-line));
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+  cursor: pointer;
+}
+.theme-switch[data-on="true"] {
+  background: rgb(var(--c-blue));
+  border-color: rgb(var(--c-blue));
+}
+.theme-switch .knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgb(var(--c-surface));
+  box-shadow: 0 1px 3px rgba(2, 8, 23, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.theme-switch[data-on="true"] .knob {
+  transform: translateX(20px);
 }
 
 @media (prefers-reduced-motion: reduce) {

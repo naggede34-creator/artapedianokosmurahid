@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 
 const tabs = [
   {
-    href: "/",
-    label: "Home",
+    href: "/dashboard",
+    label: "Dashboard",
     icon: (active) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <path
@@ -64,7 +64,7 @@ export default function BottomNav() {
     <nav className="glass fixed inset-x-0 bottom-0 z-50 shadow-[0_-8px_24px_-16px_rgba(13,17,23,0.25)] md:hidden">
       <div className="mx-auto flex max-w-content items-stretch justify-between px-2">
         {tabs.map((t) => {
-          const active = t.href === "/" ? pathname === "/" : pathname.startsWith(t.href);
+          const active = pathname?.startsWith(t.href);
           return (
             <Link
               key={t.href}

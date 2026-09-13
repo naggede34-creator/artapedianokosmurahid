@@ -16,16 +16,20 @@ export default function Footer() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">Navigasi</p>
           <div className="mt-3 flex flex-col gap-2.5 text-sm text-ink/80">
+            <Link href="/dashboard" className="underline-grow w-fit transition-colors hover:text-amber-bright">Dashboard</Link>
             <Link href="/deposit" className="underline-grow w-fit transition-colors hover:text-amber-bright">Deposit Saldo</Link>
             <Link href="/otp" className="underline-grow w-fit transition-colors hover:text-amber-bright">Beli Nomor OTP</Link>
+            <Link href="/transfer" className="underline-grow w-fit transition-colors hover:text-amber-bright">Transfer Saldo</Link>
+            <Link href="/mutasi" className="underline-grow w-fit transition-colors hover:text-amber-bright">Mutasi Saldo</Link>
             <Link href="/riwayat" className="underline-grow w-fit transition-colors hover:text-amber-bright">Riwayat Transaksi</Link>
-            <Link href="/referral" className="underline-grow w-fit transition-colors hover:text-amber-bright">Undang Teman</Link>
-            <Link href="/leaderboard" className="underline-grow w-fit transition-colors hover:text-amber-bright">Leaderboard</Link>
           </div>
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">Bantuan &amp; Komunitas</p>
           <div className="mt-3 flex flex-col gap-2.5 text-sm text-ink/80">
+            <Link href="/harga" className="underline-grow w-fit transition-colors hover:text-amber-bright">Daftar Harga</Link>
+            <Link href="/informasi" className="underline-grow w-fit transition-colors hover:text-amber-bright">Pusat Informasi</Link>
+            <Link href="/faq" className="underline-grow w-fit transition-colors hover:text-amber-bright">Bantuan (FAQ)</Link>
             <Link href="/cara-pakai" className="underline-grow w-fit transition-colors hover:text-amber-bright">Cara Menggunakan Web</Link>
             <Link href="/syarat" className="underline-grow w-fit transition-colors hover:text-amber-bright">Syarat & Ketentuan</Link>
             <a
