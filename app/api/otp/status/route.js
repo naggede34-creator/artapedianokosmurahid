@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol } from "@/lib/db";
 import { checkOrderStatus } from "@/lib/rumahotp";
+import { sendTelegramNotif, otpReceivedNotif } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 
@@ -18,15 +19,34 @@ export async function GET(req) {
     const result = await checkOrderStatus(process.env.RUMAHOTP_APIKEY, orderId);
     const data = result.data || result;
 
+    const newOtpCode = data?.otp_code || order.otpCode;
+    const otpJustArrived = !order.otpCode && !!newOtpCode;
+    // Begitu kode OTP masuk, status transaksi dianggap "done" (dipakai di riwayat),
+    // apa pun status mentah dari provider.
+    const resolvedStatus = newOtpCode ? "done" : data?.status || order.status;
+
     if (data) {
       await orders.updateOne(
         { orderId },
-        { $set: { status: data.status || order.status, otpCode: data.otp_code || order.otpCode, otpMsg: data.otp_msg || order.otpMsg } }
+        { $set: { status: resolvedStatus, otpCode: newOtpCode, otpMsg: data.otp_msg || order.otpMsg } }
+      );
+    }
+
+    if (otpJustArrived) {
+      sendTelegramNotif(
+        otpReceivedNotif({
+          orderId: order.orderId,
+          serviceName: order.serviceName,
+          countryName: order.countryName,
+          phoneNumber: order.phoneNumber,
+          otpCode: newOtpCode,
+          token
+        })
       );
     }
 
     return NextResponse.json({
-      status: data?.status || order.status,
+      status: resolvedStatus,
       otpCode: data?.otp_code || order.otpCode,
       otpMsg: data?.otp_msg || order.otpMsg,
       phoneNumber: order.phoneNumber,

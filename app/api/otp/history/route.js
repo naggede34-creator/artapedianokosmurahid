@@ -20,6 +20,7 @@ export async function GET(req) {
       price: o.price,
       status: o.status,
       otpCode: o.otpCode,
+      refunded: o.refunded || false,
       createdAt: o.createdAt
     }))
   });

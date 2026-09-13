@@ -16,6 +16,11 @@ export default function DepositPage() {
   const [status, setStatus] = useState("pending");
   const pollRef = useRef(null);
 
+  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherLoading, setVoucherLoading] = useState(false);
+  const [voucherMsg, setVoucherMsg] = useState("");
+  const [voucherError, setVoucherError] = useState("");
+
   useEffect(() => () => clearInterval(pollRef.current), []);
 
   function pickAmount(v) {
@@ -76,6 +81,30 @@ export default function DepositPage() {
     setAmount("");
     setStatus("pending");
     clearInterval(pollRef.current);
+  }
+
+  async function redeemVoucher(e) {
+    e.preventDefault();
+    setVoucherMsg("");
+    setVoucherError("");
+    if (!voucherCode.trim() || !token) return;
+    setVoucherLoading(true);
+    try {
+      const res = await fetch("/api/voucher/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, code: voucherCode.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengklaim voucher.");
+      setVoucherMsg(`Berhasil! Rp${Number(data.amount).toLocaleString("id-ID")} masuk ke saldo kamu.`);
+      setVoucherCode("");
+      refreshBalance();
+    } catch (err) {
+      setVoucherError(err.message);
+    } finally {
+      setVoucherLoading(false);
+    }
   }
 
   return (
@@ -184,7 +213,30 @@ export default function DepositPage() {
           </div>
         )}
 
+        <div>
         <div className="fade-up delay-2 rounded-2xl border border-line bg-surface2 p-6">
+          <h3 className="font-display text-base font-medium text-ink">Punya kode voucher?</h3>
+          <p className="mt-1.5 text-xs text-muted">Tukarkan kode voucher untuk tambahan saldo gratis.</p>
+          <form onSubmit={redeemVoucher} className="mt-3 flex gap-2">
+            <input
+              value={voucherCode}
+              onChange={(e) => setVoucherCode(e.target.value)}
+              placeholder="Kode voucher"
+              className="min-w-0 flex-1 rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm uppercase text-ink outline-none focus:border-teal"
+            />
+            <button
+              type="submit"
+              disabled={voucherLoading || !token}
+              className="press shrink-0 rounded-lg border border-teal/40 px-4 py-2.5 text-sm font-medium text-teal-bright transition-colors hover:bg-teal-soft disabled:opacity-60"
+            >
+              {voucherLoading ? "..." : "Klaim"}
+            </button>
+          </form>
+          {voucherMsg && <p className="mt-2 text-xs font-medium text-teal-bright">{voucherMsg}</p>}
+          {voucherError && <p className="mt-2 text-xs text-rose">{voucherError}</p>}
+        </div>
+
+        <div className="fade-up delay-2 mt-6 rounded-2xl border border-line bg-surface2 p-6">
           <h3 className="font-display text-base font-medium text-ink">Yang perlu kamu tahu</h3>
           <ul className="mt-4 space-y-3 text-sm leading-relaxed text-muted">
             <li className="flex gap-2.5"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber" />Pembayaran diverifikasi otomatis oleh sistem, biasanya dalam hitungan detik setelah QRIS discan.</li>
@@ -192,6 +244,7 @@ export default function DepositPage() {
             <li className="flex gap-2.5"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber" />Simpan kode akun kamu (lihat menu saldo di pojok kanan atas) untuk mengecek riwayat deposit kapan saja.</li>
             <li className="flex gap-2.5"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber" />Kalau QRIS kedaluwarsa sebelum dibayar, cukup buat transaksi baru — belum ada saldo yang terpotong.</li>
           </ul>
+        </div>
         </div>
       </div>
     </div>

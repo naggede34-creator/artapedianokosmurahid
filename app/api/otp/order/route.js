@@ -50,6 +50,12 @@ export async function POST(req) {
       otpCode: null,
       otpMsg: null,
       refunded: false,
+      // Disimpan supaya bisa dipakai order ulang otomatis (fitur "Ganti Nomor") tanpa
+      // user harus pilih layanan/negara dari awal lagi.
+      numberId,
+      providerId,
+      operatorId: operatorId || null,
+      basePrice: Number(basePrice || 0),
       createdAt: new Date(),
       expiredAt: data.expired_at ? new Date(data.expired_at) : null
     });

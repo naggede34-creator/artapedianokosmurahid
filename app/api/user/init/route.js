@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
 import { generateUserToken } from "@/lib/token";
+import { sendTelegramNotif, newUserNotif } from "@/lib/telegram";
 
 export async function POST(req) {
   try {
@@ -44,6 +45,9 @@ export async function POST(req) {
       referralBonusGiven: false,
       createdAt: new Date()
     });
+
+    sendTelegramNotif(newUserNotif({ token, referredBy }));
+
     return NextResponse.json({ token, balance: 0 });
   } catch (err) {
     console.error(err);

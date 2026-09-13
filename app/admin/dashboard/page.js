@@ -29,6 +29,15 @@ export default function AdminDashboardPage() {
   const [balanceMsg, setBalanceMsg] = useState("");
   const formRef = useRef(null);
 
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  const [vouchers, setVouchers] = useState([]);
+  const [vouchersLoading, setVouchersLoading] = useState(true);
+  const [voucherForm, setVoucherForm] = useState({ code: "", amount: "", maxUses: "1" });
+  const [voucherSubmitting, setVoucherSubmitting] = useState(false);
+  const [voucherMsg, setVoucherMsg] = useState("");
+
   const loadSettings = useCallback(async () => {
     const res = await fetch("/api/admin/settings");
     if (res.status === 401) return router.push("/admin/login");
@@ -54,11 +63,73 @@ export default function AdminDashboardPage() {
     [router, search]
   );
 
+  const loadStats = useCallback(async () => {
+    setStatsLoading(true);
+    try {
+      const res = await fetch("/api/admin/stats");
+      if (res.status === 401) return router.push("/admin/login");
+      const data = await res.json();
+      setStats(data);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [router]);
+
+  const loadVouchers = useCallback(async () => {
+    setVouchersLoading(true);
+    try {
+      const res = await fetch("/api/admin/vouchers");
+      if (res.status === 401) return router.push("/admin/login");
+      const data = await res.json();
+      setVouchers(Array.isArray(data.items) ? data.items : []);
+    } finally {
+      setVouchersLoading(false);
+    }
+  }, [router]);
+
   useEffect(() => {
     loadSettings();
     loadUsers("");
+    loadStats();
+    loadVouchers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function submitVoucher(e) {
+    e.preventDefault();
+    setVoucherMsg("");
+    setVoucherSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/vouchers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: voucherForm.code.trim(),
+          amount: Number(voucherForm.amount),
+          maxUses: Number(voucherForm.maxUses) || 1
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal membuat voucher.");
+      setVoucherMsg(`Voucher ${data.code} berhasil dibuat.`);
+      setVoucherForm({ code: "", amount: "", maxUses: "1" });
+      loadVouchers();
+    } catch (err) {
+      setVoucherMsg(err.message);
+    } finally {
+      setVoucherSubmitting(false);
+      setTimeout(() => setVoucherMsg(""), 3000);
+    }
+  }
+
+  async function toggleVoucher(code) {
+    await fetch("/api/admin/vouchers/toggle", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code })
+    });
+    loadVouchers();
+  }
 
   async function saveMarkup() {
     setSavingMarkup(true);
@@ -158,6 +229,154 @@ export default function AdminDashboardPage() {
           value={settings ? (settings.maintenance ? "Maintenance" : "Online") : "..."}
           accent={settings?.maintenance ? "text-rose" : "text-teal-bright"}
         />
+      </div>
+
+      {/* Statistik 7 hari terakhir */}
+      <div className="glass mt-8 rounded-2xl p-5 shadow-soft sm:p-6">
+        <h2 className="font-display text-base font-semibold text-ink">Statistik 7 Hari Terakhir</h2>
+        {statsLoading ? (
+          <div className="mt-4 h-32 animate-pulse rounded-lg bg-surface2" />
+        ) : stats ? (
+          <>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <StatCard label="Order OTP (7 hari)" value={`${stats.totals.orderCount}`} />
+              <StatCard label="Omzet OTP (7 hari)" value={`Rp${stats.totals.orderRevenue.toLocaleString("id-ID")}`} accent="text-teal-bright" />
+            </div>
+
+            <p className="mt-6 text-xs font-medium text-muted">Omzet order OTP per hari</p>
+            <div className="mt-2 flex items-end gap-2" style={{ height: 120 }}>
+              {stats.days.map((d) => {
+                const max = Math.max(1, ...stats.days.map((x) => x.orderRevenue));
+                const h = Math.round((d.orderRevenue / max) * 100);
+                return (
+                  <div key={d.date} className="flex flex-1 flex-col items-center gap-1.5">
+                    <div className="flex w-full flex-1 items-end">
+                      <div
+                        className="w-full rounded-t-md bg-gradient-to-t from-amber to-amber-bright transition-all"
+                        style={{ height: `${Math.max(h, 3)}%` }}
+                        title={`Rp${d.orderRevenue.toLocaleString("id-ID")}`}
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted">{d.date.slice(5)}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+              <div>
+                <p className="text-xs font-medium text-muted">Layanan paling laris</p>
+                <ul className="mt-2 space-y-1.5">
+                  {stats.topServices.length === 0 && <li className="text-xs text-muted">Belum ada data.</li>}
+                  {stats.topServices.map((s) => (
+                    <li key={s.name} className="flex items-center justify-between text-sm text-ink">
+                      <span className="truncate">{s.name}</span>
+                      <span className="shrink-0 rounded-full bg-amber-soft px-2 py-0.5 text-xs font-medium text-amber-bright">{s.count}x</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted">Negara paling laris</p>
+                <ul className="mt-2 space-y-1.5">
+                  {stats.topCountries.length === 0 && <li className="text-xs text-muted">Belum ada data.</li>}
+                  {stats.topCountries.map((c) => (
+                    <li key={c.name} className="flex items-center justify-between text-sm text-ink">
+                      <span className="truncate">{c.name}</span>
+                      <span className="shrink-0 rounded-full bg-teal-soft px-2 py-0.5 text-xs font-medium text-teal-bright">{c.count}x</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="mt-4 text-sm text-muted">Gagal memuat statistik.</p>
+        )}
+      </div>
+
+      {/* Voucher saldo */}
+      <div className="glass mt-8 rounded-2xl p-5 shadow-soft sm:p-6">
+        <h2 className="font-display text-base font-semibold text-ink">Voucher Saldo</h2>
+        <form onSubmit={submitVoucher} className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_0.8fr_auto]">
+          <input
+            value={voucherForm.code}
+            onChange={(e) => setVoucherForm((f) => ({ ...f, code: e.target.value }))}
+            placeholder="Kode (kosongkan = otomatis)"
+            className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm uppercase text-ink outline-none focus:border-amber"
+          />
+          <input
+            type="number"
+            min="1"
+            value={voucherForm.amount}
+            onChange={(e) => setVoucherForm((f) => ({ ...f, amount: e.target.value }))}
+            placeholder="Nominal"
+            required
+            className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+          />
+          <input
+            type="number"
+            min="1"
+            value={voucherForm.maxUses}
+            onChange={(e) => setVoucherForm((f) => ({ ...f, maxUses: e.target.value }))}
+            placeholder="Kuota klaim"
+            className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+          />
+          <button
+            type="submit"
+            disabled={voucherSubmitting}
+            className="btn-3d rounded-lg bg-gradient-to-r from-teal to-teal-bright px-4 py-2.5 text-sm font-medium text-white shadow-3d disabled:opacity-60"
+          >
+            {voucherSubmitting ? "..." : "Buat"}
+          </button>
+        </form>
+        {voucherMsg && <p className="mt-2 text-xs font-medium text-teal-bright">{voucherMsg}</p>}
+
+        <div className="glass mt-4 overflow-x-auto rounded-xl shadow-soft">
+          <table className="w-full min-w-[520px] text-sm">
+            <thead>
+              <tr className="border-b border-line text-left text-xs text-muted">
+                <th className="px-4 py-2.5 font-medium">Kode</th>
+                <th className="px-4 py-2.5 font-medium">Nominal</th>
+                <th className="px-4 py-2.5 font-medium">Klaim</th>
+                <th className="px-4 py-2.5 font-medium">Status</th>
+                <th className="px-4 py-2.5 font-medium text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vouchersLoading ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-5 text-center text-muted">Memuat...</td>
+                </tr>
+              ) : vouchers.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-5 text-center text-muted">Belum ada voucher.</td>
+                </tr>
+              ) : (
+                vouchers.map((v) => (
+                  <tr key={v.code} className="border-b border-line last:border-0">
+                    <td className="px-4 py-2.5 font-mono text-xs text-ink">{v.code}</td>
+                    <td className="px-4 py-2.5 text-ink">Rp{v.amount.toLocaleString("id-ID")}</td>
+                    <td className="px-4 py-2.5 text-xs text-muted">{v.usedCount}/{v.maxUses}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`rounded-full border px-2 py-0.5 text-xs ${v.active ? "border-teal/40 text-teal-bright" : "border-rose/30 text-rose"}`}>
+                        {v.active ? "Aktif" : "Nonaktif"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <button
+                        onClick={() => toggleVoucher(v.code)}
+                        className="btn-3d rounded-md border border-line px-2 py-1 text-xs font-medium text-ink hover:border-amber"
+                      >
+                        {v.active ? "Nonaktifkan" : "Aktifkan"}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Pengaturan */}

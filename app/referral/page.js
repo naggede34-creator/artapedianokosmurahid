@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useUser } from "@/app/providers";
 
 export default function ReferralPage() {
@@ -88,6 +89,14 @@ export default function ReferralPage() {
           <li>Saat teman itu deposit pertama kali dan berhasil, bonus langsung masuk ke saldo kamu.</li>
         </ol>
       </div>
+
+      <Link
+        href="/leaderboard"
+        className="fade-up hover-lift mt-6 flex items-center justify-between rounded-2xl border border-teal/25 bg-teal-soft px-6 py-4 text-sm font-medium text-teal-bright transition-colors"
+      >
+        🏆 Lihat leaderboard pengundang teman bulan ini
+        <span>→</span>
+      </Link>
     </div>
   );
 }

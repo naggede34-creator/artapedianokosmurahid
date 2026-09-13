@@ -15,32 +15,40 @@ const STATUS_LABEL = {
   pending: "Menunggu kode",
   completed: "Kode diterima",
   received: "Kode diterima",
+  done: "Kode diterima",
   canceled: "Dibatalkan",
   expired: "Kedaluwarsa"
 };
 
 export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyAgain, refreshSignal }) {
+  // activeOrder disimpan sebagai state (bukan langsung pakai prop order) supaya setelah
+  // "Ganti Nomor" berhasil, panel ini bisa langsung menampilkan nomor baru tanpa perlu
+  // ditutup-buka lagi.
+  const [activeOrder, setActiveOrder] = useState(order);
   const [status, setStatus] = useState({
     status: order.status || "pending",
     otpCode: order.otpCode || null,
     otpMsg: order.otpMsg || null
   });
+  const [refunded, setRefunded] = useState(Boolean(order.refunded));
   const [now, setNow] = useState(Date.now());
   const [cancelling, setCancelling] = useState(false);
+  const [replacing, setReplacing] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
   const pollRef = useRef(null);
   const tickRef = useRef(null);
 
-  const isFinal = ["completed", "received", "canceled", "expired"].includes(status.status);
+  const isFinal = ["completed", "received", "done", "canceled", "expired"].includes(status.status);
 
   async function fetchStatus() {
     try {
-      const res = await fetch(`/api/otp/status?order_id=${order.orderId}&token=${token}`);
+      const res = await fetch(`/api/otp/status?order_id=${activeOrder.orderId}&token=${token}`);
       const data = await res.json();
       if (res.ok) {
         setStatus({ status: data.status, otpCode: data.otpCode, otpMsg: data.otpMsg });
-        if (["completed", "received", "canceled", "expired"].includes(data.status)) {
+        setRefunded(Boolean(data.refunded));
+        if (["completed", "received", "done", "canceled", "expired"].includes(data.status)) {
           clearInterval(pollRef.current);
           onChanged?.();
         }
@@ -55,7 +63,7 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
     pollRef.current = setInterval(fetchStatus, 4000);
     return () => clearInterval(pollRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [order.orderId, token, isFinal]);
+  }, [activeOrder.orderId, token, isFinal]);
 
   // Tombol refresh manual di luar (header "Pesanan Pending") memicu fetch status seketika.
   useEffect(() => {
@@ -69,9 +77,10 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
     return () => clearInterval(tickRef.current);
   }, []);
 
-  const createdAtMs = new Date(order.createdAt).getTime();
+  const createdAtMs = new Date(activeOrder.createdAt).getTime();
   const cooldownRemaining = CANCEL_COOLDOWN_MS - (now - createdAtMs);
   const canCancel = !isFinal && !status.otpCode && cooldownRemaining <= 0;
+  const canReplace = status.status === "expired" && !status.otpCode && !refunded;
 
   function copy(value, label) {
     if (!value) return;
@@ -87,12 +96,13 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
       const res = await fetch("/api/otp/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, orderId: order.orderId })
+        body: JSON.stringify({ token, orderId: activeOrder.orderId })
       });
       const data = await res.json();
       if (res.ok) {
         clearInterval(pollRef.current);
         setStatus({ status: "canceled", otpCode: null });
+        setRefunded(true);
         onChanged?.();
       } else {
         setError(data.error || "Gagal membatalkan pesanan.");
@@ -102,14 +112,52 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
     }
   }
 
+  async function replaceNumber() {
+    setError("");
+    setReplacing(true);
+    try {
+      const res = await fetch("/api/otp/replace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, orderId: activeOrder.orderId })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Gagal mengganti nomor.");
+        return;
+      }
+      setRefunded(true);
+      if (data.replaced) {
+        // Ganti panel ini jadi menampilkan pesanan baru, seolah baru saja dibeli lagi.
+        setActiveOrder({
+          orderId: data.orderId,
+          phoneNumber: data.phoneNumber,
+          price: data.price,
+          createdAt: data.createdAt,
+          serviceName: activeOrder.serviceName,
+          countryName: activeOrder.countryName
+        });
+        setStatus({ status: "pending", otpCode: null, otpMsg: null });
+        setRefunded(false);
+        setNow(Date.now());
+      } else {
+        // Provider tidak ada stok pengganti -> saldo sudah dikembalikan penuh.
+        setError(data.message || "Saldo sudah dikembalikan.");
+      }
+      onChanged?.();
+    } finally {
+      setReplacing(false);
+    }
+  }
+
   return (
     <div className="scale-in glass rounded-2xl p-5 shadow-card-3d sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-ink">
-            {order.serviceName} <span className="font-normal text-muted">· {order.countryName}</span>
+            {activeOrder.serviceName} <span className="font-normal text-muted">· {activeOrder.countryName}</span>
           </p>
-          <p className="mt-0.5 text-xs text-muted">Order #{order.orderId}</p>
+          <p className="mt-0.5 text-xs text-muted">Order #{activeOrder.orderId}</p>
         </div>
         <div className="flex items-center gap-2">
           <StatusPill status={status.status} />
@@ -126,11 +174,11 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
       <div className="mt-4 rounded-xl border border-line bg-surface2 p-4">
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted">Nomor</p>
-          <button onClick={() => copy(order.phoneNumber, "nomor")} className="underline-grow text-xs font-medium text-teal-bright">
+          <button onClick={() => copy(activeOrder.phoneNumber, "nomor")} className="underline-grow text-xs font-medium text-teal-bright">
             {copied === "nomor" ? "Tersalin" : "Salin"}
           </button>
         </div>
-        <p className="mt-1 font-mono text-xl text-ink sm:text-2xl">{order.phoneNumber}</p>
+        <p className="mt-1 font-mono text-xl text-ink sm:text-2xl">{activeOrder.phoneNumber}</p>
       </div>
 
       <div className="mt-3 rounded-xl border border-line bg-bg p-4">
@@ -148,7 +196,9 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
         ) : status.status === "canceled" ? (
           <p className="text-sm text-rose">Pesanan dibatalkan, saldo sudah dikembalikan.</p>
         ) : status.status === "expired" ? (
-          <p className="text-sm text-rose">Pesanan kedaluwarsa sebelum kode masuk.</p>
+          <p className="text-sm text-rose">
+            {refunded ? "Pesanan kedaluwarsa. Saldo sudah dikembalikan." : "Pesanan kedaluwarsa sebelum kode masuk."}
+          </p>
         ) : (
           <div className="flex items-center gap-2 text-sm font-medium text-teal-bright">
             <span className="signal-pulse h-1.5 w-1.5 rounded-full bg-teal" />
@@ -168,6 +218,15 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
             Beli lagi
           </button>
         )}
+        {canReplace && (
+          <button
+            onClick={replaceNumber}
+            disabled={replacing}
+            className="btn-3d flex-1 rounded-lg border border-teal/40 px-5 py-2.5 text-sm font-medium text-teal-bright transition-colors hover:bg-teal-soft disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+          >
+            {replacing ? "Memproses..." : "Ganti Nomor"}
+          </button>
+        )}
         {!isFinal && !status.otpCode && (
           <button
             onClick={cancelOrder}
@@ -181,6 +240,9 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
       {!isFinal && !status.otpCode && !canCancel && (
         <p className="mt-1.5 text-xs text-muted">Tunggu {fmtCountdown(cooldownRemaining)} sebelum klik batal.</p>
       )}
+      {canReplace && (
+        <p className="mt-1.5 text-xs text-muted">Nomor lama tidak dapat kode. Ganti nomor tidak potong saldo lagi.</p>
+      )}
     </div>
   );
 }
@@ -190,6 +252,7 @@ function StatusPill({ status }) {
     pending: "border-amber/40 text-amber-bright bg-amber-soft",
     completed: "border-teal/40 text-teal-bright bg-teal-soft",
     received: "border-teal/40 text-teal-bright bg-teal-soft",
+    done: "border-teal/40 text-teal-bright bg-teal-soft",
     canceled: "border-rose/30 text-rose bg-rose-soft",
     expired: "border-rose/30 text-rose bg-rose-soft"
   };

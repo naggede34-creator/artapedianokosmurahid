@@ -19,6 +19,8 @@ export default function Footer() {
             <Link href="/deposit" className="underline-grow w-fit transition-colors hover:text-amber-bright">Deposit Saldo</Link>
             <Link href="/otp" className="underline-grow w-fit transition-colors hover:text-amber-bright">Beli Nomor OTP</Link>
             <Link href="/riwayat" className="underline-grow w-fit transition-colors hover:text-amber-bright">Riwayat Transaksi</Link>
+            <Link href="/referral" className="underline-grow w-fit transition-colors hover:text-amber-bright">Undang Teman</Link>
+            <Link href="/leaderboard" className="underline-grow w-fit transition-colors hover:text-amber-bright">Leaderboard</Link>
           </div>
         </div>
         <div>

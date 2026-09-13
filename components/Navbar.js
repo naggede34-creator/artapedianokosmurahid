@@ -9,6 +9,8 @@ const links = [
   { href: "/deposit", label: "Deposit" },
   { href: "/otp", label: "Beli OTP" },
   { href: "/riwayat", label: "Riwayat" },
+  { href: "/referral", label: "Undang Teman" },
+  { href: "/leaderboard", label: "Leaderboard" },
   { href: "/cara-pakai", label: "Cara Pakai" },
   { href: "/syarat", label: "Syarat & Ketentuan" }
 ];

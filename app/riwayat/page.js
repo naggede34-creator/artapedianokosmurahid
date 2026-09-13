@@ -1,8 +1,53 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@/app/providers";
 import OtpOrderPanel from "@/components/OtpOrderPanel";
+
+const OTP_STATUS_OPTIONS = [
+  { value: "", label: "Semua status" },
+  { value: "pending", label: "Menunggu kode" },
+  { value: "done", label: "Kode diterima" },
+  { value: "canceled", label: "Dibatalkan" },
+  { value: "expired", label: "Kedaluwarsa" }
+];
+
+const DEPOSIT_STATUS_OPTIONS = [
+  { value: "", label: "Semua status" },
+  { value: "pending", label: "Menunggu bayar" },
+  { value: "completed", label: "Berhasil" },
+  { value: "expired", label: "Kedaluwarsa" }
+];
+
+const STATUS_LABEL_ID = {
+  pending: "Menunggu",
+  completed: "Berhasil",
+  done: "Kode diterima",
+  received: "Kode diterima",
+  canceled: "Dibatalkan",
+  expired: "Kedaluwarsa"
+};
+
+function toCsv(rows, headers) {
+  const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const lines = [headers.map((h) => escape(h.label)).join(",")];
+  for (const row of rows) {
+    lines.push(headers.map((h) => escape(row[h.key])).join(","));
+  }
+  return lines.join("\n");
+}
+
+function downloadCsv(filename, csv) {
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 
 export default function RiwayatPage() {
   const { token } = useUser();
@@ -11,6 +56,8 @@ export default function RiwayatPage() {
   const [otpOrders, setOtpOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openOrder, setOpenOrder] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [search, setSearch] = useState("");
 
   function loadHistory() {
     if (!token) return;
@@ -30,6 +77,59 @@ export default function RiwayatPage() {
     loadHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  // Reset filter saat pindah tab, biar tidak kebawa filter dari tab sebelumnya.
+  useEffect(() => {
+    setStatusFilter("");
+    setSearch("");
+  }, [tab]);
+
+  const filteredDeposits = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return deposits.filter((d) => {
+      if (statusFilter && d.status !== statusFilter) return false;
+      if (q && !d.orderId.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [deposits, statusFilter, search]);
+
+  const filteredOtp = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return otpOrders.filter((o) => {
+      if (statusFilter && o.status !== statusFilter) return false;
+      if (
+        q &&
+        !`${o.serviceName} ${o.countryName} ${o.phoneNumber} ${o.orderId}`.toLowerCase().includes(q)
+      )
+        return false;
+      return true;
+    });
+  }, [otpOrders, statusFilter, search]);
+
+  function exportCsv() {
+    if (tab === "deposit") {
+      const csv = toCsv(filteredDeposits, [
+        { key: "orderId", label: "Kode Order" },
+        { key: "amount", label: "Nominal" },
+        { key: "status", label: "Status" },
+        { key: "createdAt", label: "Tanggal" }
+      ]);
+      downloadCsv(`riwayat-deposit-${Date.now()}.csv`, csv);
+    } else {
+      const csv = toCsv(filteredOtp, [
+        { key: "orderId", label: "Kode Order" },
+        { key: "serviceName", label: "Layanan" },
+        { key: "countryName", label: "Negara" },
+        { key: "phoneNumber", label: "Nomor" },
+        { key: "price", label: "Harga" },
+        { key: "status", label: "Status" },
+        { key: "createdAt", label: "Tanggal" }
+      ]);
+      downloadCsv(`riwayat-otp-${Date.now()}.csv`, csv);
+    }
+  }
+
+  const statusOptions = tab === "deposit" ? DEPOSIT_STATUS_OPTIONS : OTP_STATUS_OPTIONS;
 
   return (
     <div className="mx-auto max-w-content px-5 py-14">
@@ -56,6 +156,32 @@ export default function RiwayatPage() {
         </button>
       </div>
 
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-amber"
+        >
+          {statusOptions.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={tab === "deposit" ? "Cari kode order..." : "Cari layanan/negara/nomor/kode order..."}
+          className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm text-ink outline-none focus:border-amber sm:max-w-xs"
+        />
+        <button
+          onClick={exportCsv}
+          className="btn-3d ml-auto rounded-lg border border-line px-3.5 py-2 text-sm font-medium text-ink transition-colors hover:border-teal hover:text-teal-bright"
+        >
+          Ekspor CSV
+        </button>
+      </div>
+
       <div className="scale-in mt-6 overflow-hidden rounded-2xl border border-line shadow-soft">
         {loading ? (
           <div className="space-y-2 p-4">
@@ -64,8 +190,10 @@ export default function RiwayatPage() {
             ))}
           </div>
         ) : tab === "deposit" ? (
-          deposits.length === 0 ? (
-            <p className="p-6 text-sm text-muted">Belum ada riwayat deposit.</p>
+          filteredDeposits.length === 0 ? (
+            <p className="p-6 text-sm text-muted">
+              {deposits.length === 0 ? "Belum ada riwayat deposit." : "Tidak ada transaksi yang cocok dengan filter."}
+            </p>
           ) : (
             <table className="w-full text-left text-sm">
               <thead className="bg-surface text-xs uppercase text-muted">
@@ -77,7 +205,7 @@ export default function RiwayatPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {deposits.map((d) => (
+                {filteredDeposits.map((d) => (
                   <tr key={d.orderId} className="transition-colors hover:bg-surface2/60">
                     <td className="px-4 py-3 font-mono text-xs text-ink">{d.orderId}</td>
                     <td className="px-4 py-3 text-ink">Rp{Number(d.amount).toLocaleString("id-ID")}</td>
@@ -90,8 +218,10 @@ export default function RiwayatPage() {
               </tbody>
             </table>
           )
-        ) : otpOrders.length === 0 ? (
-          <p className="p-6 text-sm text-muted">Belum ada riwayat pembelian nomor OTP.</p>
+        ) : filteredOtp.length === 0 ? (
+          <p className="p-6 text-sm text-muted">
+            {otpOrders.length === 0 ? "Belum ada riwayat pembelian nomor OTP." : "Tidak ada transaksi yang cocok dengan filter."}
+          </p>
         ) : (
           <table className="w-full text-left text-sm">
             <thead className="bg-surface text-xs uppercase text-muted">
@@ -105,7 +235,7 @@ export default function RiwayatPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {otpOrders.map((o) => (
+              {filteredOtp.map((o) => (
                 <tr key={o.orderId} className="transition-colors hover:bg-surface2/60">
                   <td className="px-4 py-3 text-ink">
                     {o.serviceName}
@@ -155,5 +285,5 @@ function StatusBadge({ status }) {
     expired: "text-rose border-rose/40"
   };
   const cls = map[status] || "text-muted border-line";
-  return <span className={`rounded-full border px-2.5 py-1 text-xs ${cls}`}>{status || "-"}</span>;
+  return <span className={`rounded-full border px-2.5 py-1 text-xs ${cls}`}>{STATUS_LABEL_ID[status] || status || "-"}</span>;
 }
