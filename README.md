@@ -72,8 +72,16 @@ Buka http://localhost:3000
    - `RUMAHOTP_APIKEY`
    - `DEPOSIT_MIN_AMOUNT` (contoh: 2000)
    - `DEPOSIT_MAX_AMOUNT` (contoh: 1000000)
-   - `OTP_MARKUP_PERCENT` (contoh: 0, atau isi angka kalau mau ambil untung dari harga RumahOTP)
+   - `OTP_MARKUP_PERCENT` (contoh: 0, atau isi angka kalau mau ambil untung dari harga RumahOTP — bisa diubah lagi kapan saja lewat Dashboard Admin tanpa deploy ulang)
    - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_ADS_LINK`, `TELEGRAM_ADS_TEXT` (opsional, lihat bagian 4)
+   - `ADMIN_CODE` (kode rahasia untuk masuk Dashboard Admin, default `arta12123` kalau tidak diisi — sangat disarankan ganti sendiri)
+   - `TELEGRAM_CHANNEL_1`, `TELEGRAM_CHANNEL_2` (opsional, link channel yang ditampilkan di notifikasi Telegram & footer web — default sudah diisi link channel kamu)
+
+### Dashboard Admin
+
+- Buka web, scroll ke paling bawah, klik teks "ARTA PEDIA iD" di baris copyright — ini gerbang masuk ke `/admin/login`.
+- Masukkan kode admin (`ADMIN_CODE`, default `arta12123`).
+- Di dashboard bisa: ubah markup harga jual OTP, nyalakan/matikan mode maintenance (menutup seluruh web dari user biasa), lihat daftar user + total saldo beredar, serta tambah/kurangi saldo user manual (otomatis terkirim notifikasi detail ke channel Telegram).
 4. Klik Deploy.
 5. Setelah dapat domain (mis. `artapedia.vercel.app`), buka Pakasir dashboard dan
    set Callback URL project ke `https://artapedia.vercel.app/api/deposit/webhook`.

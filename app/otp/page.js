@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useUser } from "@/app/providers";
 import OtpOrderPanel from "@/components/OtpOrderPanel";
-
-const STEP_LABELS = ["Layanan", "Negara", "Operator", "Konfirmasi", "Nomor aktif"];
+import BuySheet from "@/components/BuySheet";
 
 // WhatsApp selalu tampil paling atas, sisanya tetap mengikuti urutan asli dari RumahOTP.
 function sortWithWaFirst(items) {
@@ -34,31 +33,17 @@ export default function OtpPage() {
   );
 }
 
+const ACTIVE_ORDER_KEY = "artapedia_active_otp_order";
+
 function OtpPageInner() {
   const { token, balance, refreshBalance } = useUser();
   const searchParams = useSearchParams();
 
-  const [step, setStep] = useState(0);
   const [services, setServices] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(true);
-  const [search, setSearch] = useState(searchParams.get("q") || "");
-
-  const [selectedService, setSelectedService] = useState(null);
-  const [countries, setCountries] = useState([]);
-  const [countriesLoading, setCountriesLoading] = useState(false);
-
-  const [selectedCountry, setSelectedCountry] = useState(null);
-  const [selectedProvider, setSelectedProvider] = useState(null);
-
-  const [operators, setOperators] = useState([]);
-  const [operatorsLoading, setOperatorsLoading] = useState(false);
-  const [selectedOperator, setSelectedOperator] = useState(null);
-
-  const [buying, setBuying] = useState(false);
-  const [buyError, setBuyError] = useState("");
   const [order, setOrder] = useState(null);
-
-  const ACTIVE_ORDER_KEY = "artapedia_active_otp_order";
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [refreshSignal, setRefreshSignal] = useState(0);
 
   useEffect(() => {
     fetch("/api/otp/services")
@@ -66,6 +51,12 @@ function OtpPageInner() {
       .then((d) => setServices(sortWithWaFirst(Array.isArray(d.items) ? d.items : [])))
       .catch(() => setServices([]))
       .finally(() => setServicesLoading(false));
+  }, []);
+
+  // Kalau datang dari ?q=, langsung buka sheet buat cari layanan itu.
+  useEffect(() => {
+    if (searchParams.get("q")) setSheetOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Pulihkan order aktif kalau halaman ini di-refresh, biar OTP-nya nggak "hilang".
@@ -77,111 +68,22 @@ function OtpPageInner() {
       const saved = JSON.parse(raw);
       if (saved?.token === token && saved?.order?.orderId) {
         setOrder(saved.order);
-        setStep(4);
       }
     } catch (e) {
       /* abaikan data tersimpan yang korup */
     }
   }, [token]);
 
-  const filteredServices = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return services;
-    return services.filter((s) => (s.service_name || "").toLowerCase().includes(q));
-  }, [services, search]);
+  const popularIcons = useMemo(() => services.slice(0, 4), [services]);
 
-  async function chooseService(svc) {
-    setSelectedService(svc);
-    setSelectedCountry(null);
-    setSelectedProvider(null);
-    setSelectedOperator(null);
-    setCountries([]);
-    setStep(1);
-    setCountriesLoading(true);
+  function handleOrderCreated(newOrder) {
+    setOrder(newOrder);
+    setSheetOpen(false);
+    refreshBalance();
     try {
-      const res = await fetch(`/api/otp/countries?service_id=${encodeURIComponent(svc.service_code)}`);
-      const data = await res.json();
-      setCountries(Array.isArray(data.items) ? data.items : []);
+      localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify({ token, order: newOrder }));
     } catch (e) {
-      setCountries([]);
-    } finally {
-      setCountriesLoading(false);
-    }
-  }
-
-  async function chooseProvider(country, provider) {
-    setSelectedCountry(country);
-    setSelectedProvider(provider);
-    setSelectedOperator(null);
-    setOperators([]);
-    setStep(2);
-    setOperatorsLoading(true);
-    try {
-      const res = await fetch(
-        `/api/otp/operators?country=${encodeURIComponent(country.name)}&provider_id=${encodeURIComponent(provider.provider_id)}`
-      );
-      const data = await res.json();
-      const items = Array.isArray(data.items) ? data.items : [];
-      setOperators(items);
-      if (items.length <= 1) {
-        setSelectedOperator(items[0] || null);
-        setStep(3);
-      }
-    } catch (e) {
-      setOperators([]);
-      setStep(3);
-    } finally {
-      setOperatorsLoading(false);
-    }
-  }
-
-  function chooseOperator(op) {
-    setSelectedOperator(op);
-    setStep(3);
-  }
-
-  async function confirmBuy() {
-    setBuyError("");
-    setBuying(true);
-    try {
-      const res = await fetch("/api/otp/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token,
-          numberId: selectedCountry.number_id,
-          providerId: selectedProvider.provider_id,
-          operatorId: selectedOperator?.id || null,
-          basePrice: selectedProvider.price,
-          serviceName: selectedService.service_name,
-          countryName: selectedCountry.name
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal membeli nomor.");
-      const newOrder = {
-        orderId: data.orderId,
-        phoneNumber: data.phoneNumber,
-        price: data.price,
-        createdAt: data.createdAt,
-        serviceName: selectedService.service_name,
-        countryName: selectedCountry.name,
-        status: "pending",
-        otpCode: null,
-        otpMsg: null
-      };
-      setOrder(newOrder);
-      setStep(4);
-      refreshBalance();
-      try {
-        localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify({ token, order: newOrder }));
-      } catch (e) {
-        /* localStorage penuh/diblokir, tidak fatal */
-      }
-    } catch (err) {
-      setBuyError(err.message);
-    } finally {
-      setBuying(false);
+      /* localStorage penuh/diblokir, tidak fatal */
     }
   }
 
@@ -193,213 +95,107 @@ function OtpPageInner() {
     }
   }
 
-  function startOver() {
-    clearActiveOrder();
-    setStep(0);
-    setSelectedService(null);
-    setSelectedCountry(null);
-    setSelectedProvider(null);
-    setSelectedOperator(null);
-    setOrder(null);
-    setBuyError("");
-  }
-
   return (
-    <div className="mx-auto max-w-content px-5 py-14">
+    <div className="mx-auto max-w-content px-5 py-10">
       <p className="fade-up text-sm font-semibold uppercase tracking-wide text-teal-bright">Beli Nomor OTP</p>
       <h1 className="fade-up delay-1 mt-2 font-display text-display-sm font-semibold text-ink sm:text-display-md">
-        Semua layanan, satu alur pembelian
+        Nomor & kode OTP dalam satu tempat
       </h1>
       <p className="fade-up delay-2 mt-3 max-w-xl text-sm leading-relaxed text-muted">
-        Bukan cuma WhatsApp — pilih dari seluruh layanan yang tersedia, lalu negara dan operator dengan harga yang tampil di depan.
+        Pilih aplikasi, negara, lalu order — nomor dan kode OTP-nya langsung tampil di sini begitu masuk.
       </p>
 
-      <div className="fade-up delay-3 mt-8 flex flex-wrap gap-2 text-xs">
-        {STEP_LABELS.map((label, i) => (
-          <div
-            key={label}
-            className={`rounded-full border px-3 py-1.5 transition-all duration-300 ${
-              i === step
-                ? "border-teal bg-teal-soft text-teal-bright shadow-soft"
-                : i < step
-                ? "border-line text-ink"
-                : "border-line text-muted"
-            }`}
-          >
-            {i + 1}. {label}
-          </div>
-        ))}
-      </div>
-
-      <div className="scale-in mt-8 rounded-2xl border border-line bg-surface p-6 shadow-soft">
-        {step === 0 && (
-          <div>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari layanan, contoh: WhatsApp, Telegram, Google..."
-              className="w-full rounded-lg border border-line bg-bg px-4 py-3 text-sm text-ink outline-none transition-colors focus:border-teal"
-            />
-            {servicesLoading ? (
-              <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="skeleton h-[52px] rounded-xl border border-line" />
-                ))}
-              </div>
-            ) : filteredServices.length === 0 ? (
-              <p className="mt-6 text-sm text-muted">Layanan tidak ditemukan. Coba kata kunci lain.</p>
-            ) : (
-              <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredServices.map((s) => (
-                  <button
-                    key={s.service_code}
-                    onClick={() => chooseService(s)}
-                    className="hover-lift flex items-center gap-3 rounded-xl border border-line bg-bg px-4 py-3 text-left text-sm text-ink transition-colors hover:border-teal"
-                  >
-                    {s.service_img ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={s.service_img} alt="" className="h-7 w-7 rounded object-contain" />
-                    ) : (
-                      <span className="flex h-7 w-7 items-center justify-center rounded bg-surface2 text-xs text-muted">
-                        {(s.service_name || "?")[0]}
-                      </span>
-                    )}
-                    <span className="line-clamp-2">{s.service_name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {step === 1 && (
-          <div>
-            <button onClick={() => setStep(0)} className="underline-grow text-xs text-muted hover:text-ink">
-              ← Ganti layanan
-            </button>
-            <p className="mt-3 text-sm text-muted">
-              Layanan: <span className="font-medium text-ink">{selectedService?.service_name}</span>
-            </p>
-            {countriesLoading ? (
-              <div className="mt-5 space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="skeleton h-[84px] rounded-xl border border-line" />
-                ))}
-              </div>
-            ) : countries.length === 0 ? (
-              <p className="mt-6 text-sm text-muted">Belum ada stok untuk layanan ini. Coba layanan lain.</p>
-            ) : (
-              <div className="mt-5 space-y-3">
-                {countries.map((c) => (
-                  <div key={c.number_id} className="rounded-xl border border-line bg-bg p-4">
-                    <div className="flex items-center gap-3">
-                      {c.img ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={c.img} alt="" className="h-6 w-6 rounded-full object-cover" />
-                      ) : null}
-                      <span className="text-sm font-medium text-ink">{c.name}</span>
-                      <span className="text-xs text-muted">Stok {c.stock_total ?? "-"}</span>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {(c.pricelist || []).map((p) => (
-                        <button
-                          key={p.provider_id}
-                          disabled={p.available === false || p.stock === 0}
-                          onClick={() => chooseProvider(c, p)}
-                          className="press rounded-lg border border-line px-3 py-2 text-xs text-ink transition-colors hover:border-teal hover:bg-teal-soft disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          Rp{Number(p.sell_price ?? p.price).toLocaleString("id-ID")}
-                          <span className="ml-1 text-muted">· stok {p.stock ?? "-"}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {step === 2 && (
-          <div>
-            <button onClick={() => setStep(1)} className="underline-grow text-xs text-muted hover:text-ink">
-              ← Ganti negara
-            </button>
-            {operatorsLoading ? (
-              <div className="mt-5 grid gap-2 sm:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="skeleton h-[44px] rounded-lg border border-line" />
-                ))}
-              </div>
-            ) : operators.length === 0 ? (
-              <p className="mt-6 text-sm text-muted">Tidak ada pilihan operator spesifik, lanjut ke konfirmasi.</p>
-            ) : (
-              <div className="mt-5 grid gap-2 sm:grid-cols-3">
-                {operators.map((op) => (
-                  <button
-                    key={op.id}
-                    onClick={() => chooseOperator(op)}
-                    className="hover-lift rounded-lg border border-line bg-bg px-4 py-3 text-sm text-ink transition-colors hover:border-teal"
-                  >
-                    {op.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {step === 3 && selectedService && selectedCountry && selectedProvider && (
-          <div>
-            <button onClick={() => setStep(2)} className="underline-grow text-xs text-muted hover:text-ink">
-              ← Kembali
-            </button>
-            <h3 className="mt-3 font-display text-lg font-medium text-ink">Konfirmasi pembelian</h3>
-            <dl className="mt-4 space-y-2 text-sm">
-              <Row label="Layanan" value={selectedService.service_name} />
-              <Row label="Negara" value={selectedCountry.name} />
-              <Row label="Operator" value={selectedOperator?.name || "Otomatis"} />
-              <Row label="Harga" value={`Rp${Number(selectedProvider.sell_price ?? selectedProvider.price).toLocaleString("id-ID")}`} />
-              <Row label="Saldo kamu" value={`Rp${balance.toLocaleString("id-ID")}`} />
-            </dl>
-            {buyError && <p className="mt-4 text-sm text-rose">{buyError}</p>}
+      {/* Pesanan Pending */}
+      <div className="fade-up delay-2 mt-7">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-base font-semibold text-ink">Pesanan Pending</h2>
+          {order && (
             <button
-              onClick={confirmBuy}
-              disabled={buying}
-              className="press mt-6 w-full rounded-lg bg-teal px-5 py-3 text-sm font-medium text-white shadow-soft transition-colors hover:bg-teal-bright disabled:opacity-60 sm:w-auto"
+              onClick={() => setRefreshSignal((n) => n + 1)}
+              className="btn-3d flex h-8 w-8 items-center justify-center rounded-full border border-line text-muted transition-colors hover:text-amber-bright"
+              aria-label="Segarkan status"
             >
-              {buying ? "Memproses..." : "Beli nomor sekarang"}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <path d="M4 4v5h5M20 20v-5h-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M4.6 15a8 8 0 1 0 1.5-8.4L4 9M19.4 9a8 8 0 0 1-1.5 8.4L20 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
-        {step === 4 && order && (
-          <div>
+        <div className="mt-3">
+          {order ? (
             <OtpOrderPanel
               order={order}
               token={token}
+              refreshSignal={refreshSignal}
+              onBuyAgain={() => setSheetOpen(true)}
               onChanged={() => {
                 refreshBalance();
                 clearActiveOrder();
               }}
             />
-            <div className="mt-4">
-              <button onClick={startOver} className="press rounded-lg border border-line px-5 py-2.5 text-sm text-ink transition-colors hover:border-teal hover:text-teal-bright">
-                Beli nomor lain
+          ) : (
+            <div className="glass flex flex-col items-center gap-3 rounded-2xl px-6 py-10 text-center shadow-soft">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-surface2 text-2xl">📦</span>
+              <div>
+                <p className="text-sm font-medium text-ink">Tidak ada pesanan</p>
+                <p className="mt-1 text-xs text-muted">Pesanan aktif akan muncul disini</p>
+              </div>
+              <button
+                onClick={() => setSheetOpen(true)}
+                className="btn-3d mt-1 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-ink to-[#1D2A4A] px-5 py-2.5 text-sm font-medium text-white shadow-3d"
+              >
+                + Buat Pesanan
               </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
-  );
-}
 
-function Row({ label, value }) {
-  return (
-    <div className="flex items-center justify-between border-b border-line pb-2">
-      <dt className="text-muted">{label}</dt>
-      <dd className="font-medium text-ink">{value}</dd>
+      {/* Banner Beli Nomor Virtual */}
+      <div className="glow-ring fade-up delay-3 mt-8 rounded-3xl">
+        <button
+          onClick={() => setSheetOpen(true)}
+          className="relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-3xl bg-gradient-to-br from-amber via-amber-bright to-teal-bright px-5 py-5 text-left shadow-card-3d sm:px-7"
+        >
+          <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
+          <div className="relative min-w-0">
+            <p className="font-display text-base font-semibold text-white sm:text-lg">Beli Nomor Virtual</p>
+            <p className="mt-1 max-w-xs text-xs leading-relaxed text-white/75">
+              Baca dulu ketentuan sebelum membeli, biar sama-sama nyaman.
+            </p>
+            <div className="mt-3 flex items-center gap-1.5">
+              {popularIcons.map((s) =>
+                s.service_img ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={s.service_code} src={s.service_img} alt="" className="h-7 w-7 rounded-full border-2 border-white/70 bg-white object-contain p-0.5" />
+                ) : (
+                  <span key={s.service_code} className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white/70 bg-white text-[10px] text-ink">
+                    {(s.service_name || "?")[0]}
+                  </span>
+                )
+              )}
+              <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white/70 bg-ink/70 text-[10px] font-medium text-white">
+                +{Math.max(services.length - popularIcons.length, 0)}
+              </span>
+            </div>
+          </div>
+          <span className="btn-3d relative shrink-0 rounded-full bg-white px-4 py-2 text-sm font-medium text-ink shadow-3d">
+            Beli Nomor →
+          </span>
+        </button>
+      </div>
+
+      <BuySheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        services={services}
+        servicesLoading={servicesLoading}
+        token={token}
+        balance={balance}
+        onOrderCreated={handleOrderCreated}
+      />
     </div>
   );
 }

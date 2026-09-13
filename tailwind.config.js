@@ -105,6 +105,14 @@ module.exports = {
         platformSpin: {
           "0%, 100%": { transform: "rotateX(70deg) rotate(0deg)" },
           "50%": { transform: "rotateX(70deg) rotate(8deg)" }
+        },
+        sheetUp: {
+          "0%": { transform: "translateY(100%)" },
+          "100%": { transform: "translateY(0)" }
+        },
+        fadeIn: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" }
         }
       },
       animation: {
@@ -115,7 +123,9 @@ module.exports = {
         "expand-down": "expandDown 0.22s cubic-bezier(0.22,1,0.36,1) both",
         "blob-move": "blobMove 14s ease-in-out infinite",
         "spin-slow": "spinSlow 6s linear infinite",
-        "platform-spin": "platformSpin 6s ease-in-out infinite"
+        "platform-spin": "platformSpin 6s ease-in-out infinite",
+        "sheet-up": "sheetUp 0.32s cubic-bezier(0.22,1,0.36,1) both",
+        "fade-in": "fadeIn 0.22s ease-out both"
       }
     }
   },

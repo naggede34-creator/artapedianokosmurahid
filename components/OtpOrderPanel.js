@@ -19,7 +19,7 @@ const STATUS_LABEL = {
   expired: "Kedaluwarsa"
 };
 
-export default function OtpOrderPanel({ order, token, onClose, onChanged }) {
+export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyAgain, refreshSignal }) {
   const [status, setStatus] = useState({
     status: order.status || "pending",
     otpCode: order.otpCode || null,
@@ -34,25 +34,35 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged }) {
 
   const isFinal = ["completed", "received", "canceled", "expired"].includes(status.status);
 
+  async function fetchStatus() {
+    try {
+      const res = await fetch(`/api/otp/status?order_id=${order.orderId}&token=${token}`);
+      const data = await res.json();
+      if (res.ok) {
+        setStatus({ status: data.status, otpCode: data.otpCode, otpMsg: data.otpMsg });
+        if (["completed", "received", "canceled", "expired"].includes(data.status)) {
+          clearInterval(pollRef.current);
+          onChanged?.();
+        }
+      }
+    } catch (e) {
+      /* coba lagi di interval berikutnya */
+    }
+  }
+
   useEffect(() => {
     if (isFinal) return undefined;
-    pollRef.current = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/otp/status?order_id=${order.orderId}&token=${token}`);
-        const data = await res.json();
-        if (res.ok) {
-          setStatus({ status: data.status, otpCode: data.otpCode, otpMsg: data.otpMsg });
-          if (["completed", "received", "canceled", "expired"].includes(data.status)) {
-            clearInterval(pollRef.current);
-            onChanged?.();
-          }
-        }
-      } catch (e) {
-        /* coba lagi di interval berikutnya */
-      }
-    }, 4000);
+    pollRef.current = setInterval(fetchStatus, 4000);
     return () => clearInterval(pollRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order.orderId, token, isFinal]);
+
+  // Tombol refresh manual di luar (header "Pesanan Pending") memicu fetch status seketika.
+  useEffect(() => {
+    if (refreshSignal === undefined) return;
+    fetchStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshSignal]);
 
   useEffect(() => {
     tickRef.current = setInterval(() => setNow(Date.now()), 1000);
@@ -93,7 +103,7 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged }) {
   }
 
   return (
-    <div className="scale-in card-shadow rounded-2xl border border-line bg-surface p-5 sm:p-6">
+    <div className="scale-in glass rounded-2xl p-5 shadow-card-3d sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-ink">
@@ -149,21 +159,27 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged }) {
 
       {error && <p className="mt-3 text-sm text-rose">{error}</p>}
 
-      {!isFinal && !status.otpCode && (
-        <div className="mt-5">
+      <div className="mt-5 flex flex-wrap gap-2.5">
+        {onBuyAgain && (
+          <button
+            onClick={onBuyAgain}
+            className="btn-3d flex-1 rounded-lg border border-amber/40 px-5 py-2.5 text-sm font-medium text-amber-bright transition-colors hover:bg-amber-soft sm:flex-none"
+          >
+            Beli lagi
+          </button>
+        )}
+        {!isFinal && !status.otpCode && (
           <button
             onClick={cancelOrder}
             disabled={!canCancel || cancelling}
-            className="press w-full rounded-lg border border-rose/40 px-5 py-2.5 text-sm text-rose transition-colors hover:border-rose hover:bg-rose-soft disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            className="btn-3d flex-1 rounded-lg border border-rose/40 px-5 py-2.5 text-sm text-rose transition-colors hover:border-rose hover:bg-rose-soft disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
           >
-            {cancelling ? "Membatalkan..." : canCancel ? "Batalkan & refund" : `Bisa dibatalkan dalam ${fmtCountdown(cooldownRemaining)}`}
+            {cancelling ? "Membatalkan..." : "Batal"}
           </button>
-          {!canCancel && (
-            <p className="mt-1.5 text-xs text-muted">
-              Dikasih waktu 3 menit dulu supaya kode OTP sempat masuk sebelum bisa dibatalkan.
-            </p>
-          )}
-        </div>
+        )}
+      </div>
+      {!isFinal && !status.otpCode && !canCancel && (
+        <p className="mt-1.5 text-xs text-muted">Tunggu {fmtCountdown(cooldownRemaining)} sebelum klik batal.</p>
       )}
     </div>
   );

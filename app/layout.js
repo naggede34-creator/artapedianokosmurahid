@@ -1,9 +1,7 @@
 import { Space_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 import { UserProvider } from "./providers";
-import Navbar from "@/components/Navbar";
-import BottomNav from "@/components/BottomNav";
-import Footer from "@/components/Footer";
+import SiteChrome from "@/components/SiteChrome";
 
 const display = Space_Grotesk({ subsets: ["latin"], variable: "--font-display", weight: ["500", "600", "700"] });
 const body = Inter({ subsets: ["latin"], variable: "--font-body", weight: ["400", "500", "600"] });
@@ -28,10 +26,7 @@ export default function RootLayout({ children }) {
           <span className="aurora-blob bottom-[-15%] left-[20%] h-[360px] w-[360px] bg-ochre [animation-delay:-9s]" />
         </div>
         <UserProvider>
-          <Navbar />
-          <main className="pb-24 md:pb-0">{children}</main>
-          <Footer />
-          <BottomNav />
+          <SiteChrome>{children}</SiteChrome>
         </UserProvider>
       </body>
     </html>

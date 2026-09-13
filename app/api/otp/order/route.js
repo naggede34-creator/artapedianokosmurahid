@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { usersCol, otpOrdersCol } from "@/lib/db";
 import { createOrder } from "@/lib/rumahotp";
 import { sendTelegramNotif, otpPurchaseNotif } from "@/lib/telegram";
-
-const MARKUP = Number(process.env.OTP_MARKUP_PERCENT || 0);
+import { getSettings } from "@/lib/settings";
 
 export async function POST(req) {
   try {
@@ -12,11 +11,13 @@ export async function POST(req) {
       return NextResponse.json({ error: "Parameter kurang." }, { status: 400 });
     }
 
+    const { markupPercent } = await getSettings();
+
     const users = await usersCol();
     const user = await users.findOne({ token });
     if (!user) return NextResponse.json({ error: "Kode akun tidak ditemukan." }, { status: 404 });
 
-    const sellPrice = Math.ceil(Number(basePrice || 0) * (1 + MARKUP / 100));
+    const sellPrice = Math.ceil(Number(basePrice || 0) * (1 + markupPercent / 100));
     if (user.balance < sellPrice) {
       return NextResponse.json({ error: "Saldo tidak cukup. Silakan deposit dulu." }, { status: 400 });
     }

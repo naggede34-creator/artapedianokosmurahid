@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="hidden border-t border-line bg-surface md:block">
-      <div className="mx-auto grid max-w-content gap-8 px-5 py-12 sm:grid-cols-3">
+    <footer className="border-t border-line bg-surface">
+      <div className="mx-auto hidden max-w-content gap-8 px-5 py-12 sm:grid-cols-3 md:grid">
         <div>
           <div className="flex items-center gap-2.5">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber text-sm font-bold text-white">A</span>
@@ -22,15 +22,36 @@ export default function Footer() {
           </div>
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Bantuan</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Bantuan &amp; Komunitas</p>
           <div className="mt-3 flex flex-col gap-2.5 text-sm text-ink/80">
             <Link href="/cara-pakai" className="underline-grow w-fit transition-colors hover:text-amber-bright">Cara Menggunakan Web</Link>
             <Link href="/syarat" className="underline-grow w-fit transition-colors hover:text-amber-bright">Syarat & Ketentuan</Link>
+            <a
+              href="https://t.me/kkaelnokosmurah"
+              target="_blank"
+              rel="noreferrer"
+              className="underline-grow flex w-fit items-center gap-1.5 transition-colors hover:text-teal-bright"
+            >
+              📢 Channel Info & Promo
+            </a>
+            <a
+              href="https://t.me/diskusiduniotp"
+              target="_blank"
+              rel="noreferrer"
+              className="underline-grow flex w-fit items-center gap-1.5 transition-colors hover:text-teal-bright"
+            >
+              💬 Diskusi Dunia OTP
+            </a>
           </div>
         </div>
       </div>
-      <div className="border-t border-line px-5 py-4 text-center text-xs text-muted">
-        © {new Date().getFullYear()} Artapedia. Seluruh transaksi diproses otomatis oleh sistem.
+      <div className="border-t border-line px-5 py-4 text-center text-xs text-muted md:border-t-0">
+        {/* Pintu masuk admin: sengaja dibuat terlihat seperti teks biasa, bukan tombol. */}
+        © {new Date().getFullYear()}{" "}
+        <Link href="/admin/login" className="text-inherit no-underline hover:text-inherit">
+          ARTA PEDIA iD
+        </Link>
+        . Seluruh transaksi diproses otomatis oleh sistem.
       </div>
     </footer>
   );
