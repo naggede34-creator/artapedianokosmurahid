@@ -97,18 +97,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Info Akun */}
-      <div className="fade-up delay-1 mt-3 flex justify-center">
-        <button
-          onClick={() => setAccountModalOpen(true)}
-          className="press flex items-center gap-1.5 rounded-full border border-line bg-surface px-4 py-1.5 text-xs font-medium text-ink transition-colors hover:border-amber hover:text-amber-bright"
-        >
-          <span aria-hidden="true">ℹ️</span>
-          Info Akun
-        </button>
-      </div>
-
-
       {/* Stat grid */}
       <div className="fade-up delay-2 mt-4 grid grid-cols-3 gap-3">
         <StatCard
@@ -173,6 +161,18 @@ export default function DashboardPage() {
           Isi Saldo
         </Link>
       </div>
+
+      {/* Info Akun - kotak besar */}
+      <button
+        onClick={() => setAccountModalOpen(true)}
+        className="hover-lift card-shadow fade-up delay-3 mt-3 flex w-full flex-col items-center gap-2.5 rounded-2xl border border-line bg-surface py-7 text-sm font-medium text-ink"
+      >
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-soft text-2xl text-amber-bright">
+          ℹ️
+        </span>
+        <span className="text-base font-semibold">Info Akun</span>
+        <span className="text-xs font-normal text-muted">Nama, kode akun & saldo kamu</span>
+      </button>
 
       {/* Orders chart */}
       <div className="fade-up delay-4 card-shadow mt-4 rounded-2xl border border-line bg-surface p-5">
