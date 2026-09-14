@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { usersCol, depositsCol } from "@/lib/db";
 import { createTransaction } from "@/lib/pakasir";
-import { createDeposit } from "@/lib/rumahotp";
+import { createDeposit, toEpochMs } from "@/lib/rumahotp";
 import { getSettings } from "@/lib/settings";
 import { sendTelegramNotif, depositPendingNotif } from "@/lib/telegram";
 import QRCode from "qrcode";
@@ -63,7 +63,7 @@ export async function POST(req) {
       const result = await createTransaction(process.env.PAKASIR_PROJECT, process.env.PAKASIR_APIKEY, orderId, amt, "qris");
       const payment = result.payment || result;
       qrisString = payment.payment_number || payment.qr_string || null;
-      expiredAt = payment.expired_at || null;
+      expiredAt = toEpochMs(payment.expired_at || null);
       paymentUrl = payment.payment_url || null;
       adminFee = toNumberOrNull(pickField(payment, ["fee", "admin_fee", "total_fee"]));
       totalAmount = toNumberOrNull(pickField(payment, ["total_amount", "amount_total", "total"])) ?? amt;
@@ -72,7 +72,12 @@ export async function POST(req) {
       const data = result.data || result;
       qrisString = pickField(data, ["qr_string", "qris", "payment_number", "qris_string", "qr_code", "qris_content"]);
       qrImage = pickField(data, ["qr_image", "qr_image_url"]);
-      expiredAt = pickField(data, ["expired_at", "expire_at", "expires_at", "expired"]);
+      // Ambil epoch ms yang paling bisa dipercaya duluan (field *_ts), baru
+      // jatuh ke bentuk lain — toEpochMs() menormalkan apapun bentuknya jadi
+      // angka epoch ms yang benar, jadi urutan di sini cuma soal prioritas.
+      expiredAt = toEpochMs(
+        pickField(data, ["expired_at_ts", "expires_at_ts", "expired_ts", "expired", "expired_at", "expire_at", "expires_at"])
+      );
       paymentUrl = pickField(data, ["payment_url", "checkout_url", "payment_link"]);
       providerRef = pickField(data, ["id", "order_id", "trx_id", "reference", "deposit_id"]) || orderId;
       adminFee = toNumberOrNull(pickField(data, ["fee", "admin_fee", "biaya_admin", "total_fee"]));
@@ -86,6 +91,12 @@ export async function POST(req) {
           fee: curr.fee ?? null,
           diterima: curr.diterima ?? null
         };
+        // Untuk metode qris, biaya admin & total kadang cuma ada di dalam
+        // "currency" (bukan di top-level data) meski satuannya sama-sama IDR.
+        if (curr.type === "IDR") {
+          if (adminFee === null) adminFee = toNumberOrNull(curr.fee);
+          if (totalAmount === null) totalAmount = toNumberOrNull(curr.total);
+        }
       }
       if (!qrisString && !qrImage && !paymentUrl) {
         return NextResponse.json(
