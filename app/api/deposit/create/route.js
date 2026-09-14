@@ -68,7 +68,7 @@ export async function POST(req) {
       adminFee = toNumberOrNull(pickField(payment, ["fee", "admin_fee", "total_fee"]));
       totalAmount = toNumberOrNull(pickField(payment, ["total_amount", "amount_total", "total"])) ?? amt;
     } else {
-      const result = await createDeposit(process.env.RUMAHOTP_APIKEY, { amount: amt, orderId, paymentId: paymentMethod });
+      const result = await createDeposit(process.env.RUMAHOTP_APIKEY, { amount: amt, paymentId: paymentMethod });
       const data = result.data || result;
       qrisString = pickField(data, ["qr_string", "qris", "payment_number", "qris_string", "qr_code", "qris_content"]);
       qrImage = pickField(data, ["qr_image", "qr_image_url"]);

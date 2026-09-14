@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { depositsCol, usersCol } from "@/lib/db";
 import { checkTransaction } from "@/lib/pakasir";
-import { checkDepositSmart } from "@/lib/rumahotp";
+import { checkDeposit } from "@/lib/rumahotp";
 import { sendTelegramNotif, depositSuccessNotif } from "@/lib/telegram";
 
 function pickField(obj, names) {
@@ -46,7 +46,7 @@ export async function POST(req) {
     // Double-check langsung ke provider terkait supaya webhook palsu tidak bisa mengisi saldo.
     let verifiedStatus;
     if (deposit.provider === "rumahotp") {
-      const verify = await checkDepositSmart(process.env.RUMAHOTP_APIKEY, deposit.orderId, deposit.providerRef);
+      const verify = await checkDeposit(process.env.RUMAHOTP_APIKEY, deposit.providerRef || deposit.orderId);
       const data = verify.data || verify;
       console.log("[deposit/webhook] rumahotp verify raw:", JSON.stringify(data));
       verifiedStatus = normalizeRumahOtpStatus(pickField(data, ["status"]) || rawStatus);

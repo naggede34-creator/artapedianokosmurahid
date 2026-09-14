@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { depositsCol, usersCol } from "@/lib/db";
 import { checkTransaction } from "@/lib/pakasir";
-import { checkDepositSmart } from "@/lib/rumahotp";
+import { checkDeposit } from "@/lib/rumahotp";
 import { sendTelegramNotif, depositSuccessNotif } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +38,11 @@ export async function GET(req) {
     if (deposit.status !== "completed") {
       try {
         if (deposit.provider === "rumahotp") {
-          const result = await checkDepositSmart(process.env.RUMAHOTP_APIKEY, orderId, deposit.providerRef);
+          // Endpoint get_status RumahOTP butuh "deposit_id" = ID transaksi yang
+          // MEREKA generate & balikin waktu create (disimpan sbg providerRef),
+          // bukan order_id kita. Kalau field ini kosong (data lama sebelum fix
+          // ini), fallback ke orderId walau kemungkinan besar tidak akan cocok.
+          const result = await checkDeposit(process.env.RUMAHOTP_APIKEY, deposit.providerRef || orderId);
           const data = result.data || result;
           console.log("[deposit/status] rumahotp raw:", JSON.stringify(data));
           const rawStatus = pickField(data, ["status"]);

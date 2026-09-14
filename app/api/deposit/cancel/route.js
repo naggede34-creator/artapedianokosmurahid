@@ -33,18 +33,12 @@ export async function POST(req) {
       }
     } else if (deposit.provider === "rumahotp") {
       try {
-        // Sama seperti pengecekan status: coba ID kita sendiri dulu (yang pasti valid
-        // karena itu yang dikirim waktu create), baru ID RumahOTP kalau itu gagal.
-        await cancelDeposit(process.env.RUMAHOTP_APIKEY, orderId);
+        // deposit/cancel butuh "deposit_id" = ID dari RumahOTP (providerRef),
+        // bukan order_id kita.
+        await cancelDeposit(process.env.RUMAHOTP_APIKEY, deposit.providerRef || orderId);
       } catch (e) {
-        if (deposit.providerRef && deposit.providerRef !== orderId) {
-          try {
-            await cancelDeposit(process.env.RUMAHOTP_APIKEY, deposit.providerRef);
-          } catch (e2) {
-            // Tidak fatal — status lokal sudah "canceled" dan QRIS yang belum dibayar
-            // otomatis kedaluwarsa sendiri di sisi RumahOTP.
-          }
-        }
+        // Tidak fatal — status lokal sudah "canceled" dan QRIS yang belum dibayar
+        // otomatis kedaluwarsa sendiri di sisi RumahOTP.
       }
     }
 
