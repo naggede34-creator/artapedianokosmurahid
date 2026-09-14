@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { depositsCol, usersCol } from "@/lib/db";
 import { checkTransaction } from "@/lib/pakasir";
-import { checkDeposit } from "@/lib/rumahotp";
+import { checkDepositSmart } from "@/lib/rumahotp";
 import { sendTelegramNotif, depositSuccessNotif } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
@@ -38,8 +38,9 @@ export async function GET(req) {
     if (deposit.status !== "completed") {
       try {
         if (deposit.provider === "rumahotp") {
-          const result = await checkDeposit(process.env.RUMAHOTP_APIKEY, deposit.providerRef || orderId);
+          const result = await checkDepositSmart(process.env.RUMAHOTP_APIKEY, orderId, deposit.providerRef);
           const data = result.data || result;
+          console.log("[deposit/status] rumahotp raw:", JSON.stringify(data));
           const rawStatus = pickField(data, ["status"]);
           const newStatus = rawStatus ? normalizeRumahOtpStatus(rawStatus) : null;
           if (newStatus && newStatus !== deposit.status) {
