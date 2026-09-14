@@ -1,31 +1,61 @@
 import { NextResponse } from "next/server";
 import { depositsCol, usersCol } from "@/lib/db";
 import { checkTransaction } from "@/lib/pakasir";
+import { checkDeposit } from "@/lib/rumahotp";
 import { sendTelegramNotif, depositSuccessNotif } from "@/lib/telegram";
 
-// Set URL ini di dashboard Pakasir (Project -> Callback URL):
+function pickField(obj, names) {
+  for (const n of names) {
+    if (obj?.[n] !== undefined && obj[n] !== null && obj[n] !== "") return obj[n];
+  }
+  return null;
+}
+
+function normalizeRumahOtpStatus(raw) {
+  const s = String(raw || "").toLowerCase();
+  if (["success", "completed", "paid", "done"].includes(s)) return "completed";
+  if (["cancel", "canceled", "cancelled", "expired", "expire", "failed"].includes(s)) return "canceled";
+  return "pending";
+}
+
+// Set URL callback ini di dua tempat kalau kedua provider dipakai:
+// - Dashboard Pakasir (Project -> Callback URL)
+// - Dashboard RumahOTP (Deposit -> Callback URL) — field JSON body webhook mereka
+//   belum sempat diverifikasi ke dokumentasi resminya, jadi kode di bawah nyoba
+//   beberapa kemungkinan nama field order id yang umum dipakai (order_id/orderId/
+//   reference/trx_id) sambil tetap double-check langsung ke RumahOTP sebelum
+//   nge-kredit saldo, supaya webhook palsu tidak bisa tembus.
 // https://domainkamu.vercel.app/api/deposit/webhook
 export async function POST(req) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { order_id, status } = body;
-    if (!order_id) return NextResponse.json({ error: "order_id kosong." }, { status: 400 });
+    // Body callback RumahOTP dibungkus { success, data: {...} } sama seperti respons
+    // create/get_status, dan field ID transaksinya bernama "id" (bukan order_id).
+    const payload = body?.data || body;
+    const orderId = pickField(payload, ["id", "order_id", "orderId", "reference", "trx_id", "trxId"]);
+    const rawStatus = pickField(payload, ["status"]);
+    if (!orderId) return NextResponse.json({ error: "order_id kosong." }, { status: 400 });
 
     const deposits = await depositsCol();
-    const deposit = await deposits.findOne({ orderId: order_id });
+    // orderId dari body webhook bisa jadi order_id internal kita ATAU ID transaksi
+    // milik provider (providerRef) tergantung field mana yang mereka echo balik,
+    // jadi dicocokkan ke keduanya.
+    const deposit = await deposits.findOne({ $or: [{ orderId }, { providerRef: orderId }] });
     if (!deposit) return NextResponse.json({ error: "Order tidak ditemukan." }, { status: 404 });
 
-    // Double-check langsung ke Pakasir supaya webhook palsu tidak bisa mengisi saldo.
-    const verify = await checkTransaction(
-      process.env.PAKASIR_PROJECT,
-      process.env.PAKASIR_APIKEY,
-      order_id,
-      deposit.amount
-    );
-    const tx = verify.transaction || verify;
-    const verifiedStatus = tx.status || status;
+    // Double-check langsung ke provider terkait supaya webhook palsu tidak bisa mengisi saldo.
+    let verifiedStatus;
+    if (deposit.provider === "rumahotp") {
+      const verify = await checkDeposit(process.env.RUMAHOTP_APIKEY, deposit.providerRef || deposit.orderId);
+      const data = verify.data || verify;
+      verifiedStatus = normalizeRumahOtpStatus(pickField(data, ["status"]) || rawStatus);
+    } else {
+      const verify = await checkTransaction(process.env.PAKASIR_PROJECT, process.env.PAKASIR_APIKEY, deposit.orderId, deposit.amount);
+      const tx = verify.transaction || verify;
+      verifiedStatus = tx.status || rawStatus;
+    }
 
-    await deposits.updateOne({ orderId: order_id }, { $set: { status: verifiedStatus } });
+    await deposits.updateOne({ orderId: deposit.orderId }, { $set: { status: verifiedStatus } });
 
     if (verifiedStatus === "completed" && !deposit.credited) {
       const users = await usersCol();
@@ -34,7 +64,7 @@ export async function POST(req) {
         { $inc: { balance: deposit.amount } },
         { returnDocument: "after" }
       );
-      await deposits.updateOne({ orderId: order_id }, { $set: { credited: true } });
+      await deposits.updateOne({ orderId: deposit.orderId }, { $set: { credited: true } });
 
       // Program undang teman: begitu user yang diundang deposit pertama kali,
       // pengundang dapat bonus persentase dari nominal deposit itu (sekali saja per user).
@@ -50,7 +80,7 @@ export async function POST(req) {
 
       sendTelegramNotif(
         depositSuccessNotif({
-          orderId: order_id,
+          orderId: deposit.orderId,
           amount: deposit.amount,
           token: deposit.token,
           balance: updatedUser?.balance ?? 0

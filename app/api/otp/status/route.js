@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { otpOrdersCol } from "@/lib/db";
+import { otpOrdersCol, usersCol } from "@/lib/db";
 import { checkOrderStatus } from "@/lib/rumahotp";
-import { sendTelegramNotif, otpReceivedNotif } from "@/lib/telegram";
+import { sendTelegramNotif, otpReceivedNotif, otpAutoRefundNotif } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +74,38 @@ export async function GET(req) {
       );
     }
 
+    // Provider bisa membatalkan/mengedaluwarsakan pesanan sendiri (bukan lewat tombol
+    // batal di web ini) — misalnya nomor ditarik otomatis di sisi mereka. Kalau itu
+    // terjadi, status lokal ikut berubah jadi terminal di atas, tapi saldo user belum
+    // tentu ikut dikembalikan. Refund di sini juga supaya saldo tidak pernah "nyangkut"
+    // hanya karena user tidak sempat pencet tombol batal duluan.
+    let autoRefundBalance = null;
+    if (resolvedStatus !== "done" && knownTerminal.includes(resolvedStatus) && !order.refunded) {
+      const claimed = await orders.findOneAndUpdate(
+        { orderId, token, refunded: false },
+        { $set: { refunded: true } },
+        { returnDocument: "after" }
+      );
+      if (claimed) {
+        const users = await usersCol();
+        const updatedUser = await users.findOneAndUpdate(
+          { token },
+          { $inc: { balance: order.price } },
+          { returnDocument: "after" }
+        );
+        autoRefundBalance = updatedUser?.balance;
+        sendTelegramNotif(
+          otpAutoRefundNotif({
+            orderId: order.orderId,
+            serviceName: order.serviceName,
+            countryName: order.countryName,
+            price: order.price,
+            token
+          })
+        );
+      }
+    }
+
     if (otpJustArrived) {
       sendTelegramNotif(
         otpReceivedNotif({
@@ -96,7 +128,8 @@ export async function GET(req) {
       countryName: order.countryName,
       price: order.price,
       createdAt: order.createdAt,
-      refunded: order.refunded || false
+      refunded: autoRefundBalance !== null ? true : order.refunded || false,
+      balance: autoRefundBalance !== null ? autoRefundBalance : undefined
     });
   } catch (err) {
     console.error(err?.response?.data || err);

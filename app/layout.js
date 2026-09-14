@@ -34,6 +34,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id" className={`${display.variable} ${body.variable} scroll-smooth`}>
       <head>
+        {/* Cadangan buat browser dalam-app Telegram yang kadang tetap nyimpen cache
+            halaman lama walau header Cache-Control dari server sudah bilang jangan. */}
+        <meta httpEquiv="Cache-Control" content="no-store, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-screen bg-bg font-body text-ink antialiased selection:bg-amber/20 selection:text-amber-bright">

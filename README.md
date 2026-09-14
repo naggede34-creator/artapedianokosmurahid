@@ -59,6 +59,29 @@ source bot lama SENGAJA TIDAK dipindahkan ke web ini.
 2. Ambil API Key di menu Profile → Developer.
 3. Pastikan saldo akun RumahOTP kamu cukup, karena setiap pembelian nomor oleh
    user di web akan memotong saldo RumahOTP kamu di belakang layar.
+4. RumahOTP juga dipakai sebagai metode QRIS otomatis KEDUA untuk halaman
+   `/deposit` (selain Pakasir) — lihat "Deposit QRIS ganda" di bawah.
+
+## Deposit QRIS ganda (Pakasir + RumahOTP)
+
+- Halaman `/deposit` sekarang mendukung dua metode QRIS otomatis: **Pakasir**
+  dan **RumahOTP** (`GET /v2/deposit/create`, `/v2/deposit/get_status`,
+  `/v1/deposit/cancel` di `lib/rumahotp.js`, mengikuti Developer Docs resmi
+  RumahOTP). Tidak ada opsi crypto/USDT yang ditampilkan ke user — sengaja
+  cuma QRIS.
+- Admin bisa nyalakan salah satu, dua-duanya, atau matikan semua metode
+  sementara dari **Dashboard Admin** tanpa deploy ulang, plus atur persen
+  biaya admin per metode yang ditampilkan sebagai estimasi ke user sebelum
+  bayar (nominal pasti yang dipotong tetap mengikuti respons resmi provider
+  saat transaksi dibuat).
+- Alur halaman deposit (Jumlah → Metode → Konfirmasi → Payment) sengaja dibuat
+  mirip tampilan RumahOTP sendiri: nominal cepat dengan label (Hemat/Populer/
+  Rekomen/Juragan/Bosman/VVIP), kartu "Detail Pembayaran", QR + countdown
+  waktu kedaluwarsa, serta tombol Download/Batalkan/"Saya sudah membayar".
+- Kalau ternyata nama field respons RumahOTP (biaya admin, total pembayaran,
+  ID transaksi, dst.) sedikit beda dari dugaan di kode, cukup sesuaikan daftar
+  nama field di `pickField(...)` pada `app/api/deposit/create/route.js` dan
+  `app/api/deposit/status/route.js` — tidak perlu ubah tempat lain.
 
 ## 4. (Opsional) Notifikasi Telegram
 

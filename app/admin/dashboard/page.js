@@ -15,6 +15,7 @@ export default function AdminDashboardPage() {
   const [markupInput, setMarkupInput] = useState("");
   const [savingMarkup, setSavingMarkup] = useState(false);
   const [savingMaintenance, setSavingMaintenance] = useState(false);
+  const [savingProviders, setSavingProviders] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState("");
 
   const [users, setUsers] = useState([]);
@@ -288,6 +289,38 @@ export default function AdminDashboardPage() {
       if (res.ok) setSettings(data);
     } finally {
       setSavingMaintenance(false);
+    }
+  }
+
+  async function toggleDepositProvider(key) {
+    setSavingProviders(true);
+    try {
+      const next = { ...settings.depositProviders, [key]: !settings.depositProviders?.[key] };
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ depositProviders: next })
+      });
+      const data = await res.json();
+      if (res.ok) setSettings(data);
+    } finally {
+      setSavingProviders(false);
+    }
+  }
+
+  async function saveFeePercent(key, value) {
+    setSavingProviders(true);
+    try {
+      const next = { ...settings.depositFeePercent, [key]: Number(value) || 0 };
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ depositFeePercent: next })
+      });
+      const data = await res.json();
+      if (res.ok) setSettings(data);
+    } finally {
+      setSavingProviders(false);
     }
   }
 
@@ -712,6 +745,56 @@ export default function AdminDashboardPage() {
               </button>
             </div>
             <p className="mt-1.5 text-[11px] text-muted">Kalau aktif, semua halaman publik diganti layar maintenance. Halaman admin tetap bisa diakses.</p>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted">Metode deposit QRIS aktif</label>
+            <div className="mt-1.5 space-y-2">
+              {[
+                { key: "pakasir", label: "QRIS - Pakasir" },
+                { key: "rumahotp", label: "QRIS - RumahOTP (otomatis)" }
+              ].map((p) => (
+                <div key={p.key} className="rounded-lg border border-line bg-surface px-3.5 py-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-ink">{p.label}</span>
+                    <button
+                      onClick={() => toggleDepositProvider(p.key)}
+                      disabled={!settings || savingProviders}
+                      className={`btn-3d relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+                        settings?.depositProviders?.[p.key] ? "bg-teal" : "bg-line"
+                      }`}
+                      aria-label={`Toggle ${p.label}`}
+                    >
+                      <span
+                        className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                          settings?.depositProviders?.[p.key] ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="text-[11px] text-muted">Biaya admin (estimasi tampilan)</span>
+                    <input
+                      key={`${p.key}-${settings?.depositFeePercent?.[p.key] ?? 0}`}
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      defaultValue={settings?.depositFeePercent?.[p.key] ?? 0}
+                      onBlur={(e) => saveFeePercent(p.key, e.target.value)}
+                      disabled={!settings || savingProviders}
+                      className="w-16 rounded-md border border-line bg-bg px-2 py-1 text-xs text-ink outline-none focus:border-amber"
+                    />
+                    <span className="text-[11px] text-muted">%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[11px] text-muted">
+              Bisa nyalain salah satu, dua-duanya, atau matiin semua sementara. User cuma bisa pilih metode yang aktif di sini saat deposit.
+              Persen biaya admin cuma dipakai untuk estimasi yang ditampilkan ke user sebelum bayar — nominal pasti yang dipotong tetap
+              mengikuti respons resmi dari provider saat transaksi dibuat.
+            </p>
           </div>
         </div>
         {settingsMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{settingsMsg}</p>}
