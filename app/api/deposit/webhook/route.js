@@ -3,6 +3,7 @@ import { depositsCol, usersCol } from "@/lib/db";
 import { checkTransaction } from "@/lib/pakasir";
 import { checkDeposit } from "@/lib/rumahotp";
 import { sendTelegramNotif, depositSuccessNotif } from "@/lib/telegram";
+import { awardDepositCashback } from "@/lib/loyalty";
 
 function pickField(obj, names) {
   for (const n of names) {
@@ -67,6 +68,8 @@ export async function POST(req) {
       );
       await deposits.updateOne({ orderId: deposit.orderId }, { $set: { credited: true } });
 
+      const cashback = await awardDepositCashback(deposit.token, deposit.amount);
+
       // Program undang teman: begitu user yang diundang deposit pertama kali,
       // pengundang dapat bonus persentase dari nominal deposit itu (sekali saja per user).
       if (updatedUser?.referredBy && !updatedUser.referralBonusGiven) {
@@ -79,12 +82,14 @@ export async function POST(req) {
         await users.updateOne({ token: updatedUser.token }, { $set: { referralBonusGiven: true } });
       }
 
+      const finalUser = cashback > 0 ? await users.findOne({ token: deposit.token }) : updatedUser;
       sendTelegramNotif(
         depositSuccessNotif({
           orderId: deposit.orderId,
           amount: deposit.amount,
           token: deposit.token,
-          balance: updatedUser?.balance ?? 0
+          balance: finalUser?.balance ?? 0,
+          cashback
         })
       );
     }

@@ -6,12 +6,14 @@ import { useUser } from "@/app/providers";
 import ThemeToggle from "@/components/ThemeToggle";
 import Sidebar from "@/components/Sidebar";
 import InfoBell from "@/components/InfoBell";
+import InviteButton from "@/components/InviteButton";
 
 const links = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/otp", label: "Beli OTP" },
   { href: "/deposit", label: "Deposit" },
   { href: "/riwayat", label: "Riwayat" },
+  { href: "/loyalitas", label: "Poin & Level" },
   { href: "/harga", label: "Daftar Harga" },
   { href: "/informasi", label: "Informasi" },
   { href: "/faq", label: "Bantuan" }
@@ -88,6 +90,7 @@ export default function Navbar() {
             </span>
             {ready ? `Rp${balance.toLocaleString("id-ID")}` : "Memuat..."}
           </button>
+          <InviteButton />
           <InfoBell />
           <ThemeToggle className="hidden sm:inline-flex" />
         </div>

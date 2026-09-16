@@ -48,6 +48,7 @@ export default function DashboardPage() {
   const [board, setBoard] = useState([]);
   const [boardLoading, setBoardLoading] = useState(true);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
+  const [loyalty, setLoyalty] = useState(null);
 
   useEffect(() => {
     if (!token) return;
@@ -57,6 +58,14 @@ export default function DashboardPage() {
       .then((d) => setStats(d.error ? null : d))
       .catch(() => setStats(null))
       .finally(() => setStatsLoading(false));
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(`/api/loyalty/info?token=${encodeURIComponent(token)}`)
+      .then((r) => r.json())
+      .then((d) => setLoyalty(d.error ? null : d))
+      .catch(() => setLoyalty(null));
   }, [token]);
 
   useEffect(() => {
@@ -81,6 +90,13 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/loyalitas"
+            className="press flex items-center gap-1.5 rounded-full border border-line bg-surface2 px-3 py-1.5 text-xs font-medium text-ink hover:border-amber/40"
+          >
+            <span>{loyalty?.badge?.icon || "🥉"}</span>
+            <span>{loyalty?.badge?.name || "Bronze"}</span>
+          </Link>
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-soft text-xl">
             {new Date().getHours() < 18 ? "☀️" : "🌙"}
           </span>

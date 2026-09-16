@@ -42,8 +42,13 @@ export default function AdminDashboardPage() {
   const [broadcasts, setBroadcasts] = useState([]);
   const [broadcastsLoading, setBroadcastsLoading] = useState(true);
   const [broadcastInput, setBroadcastInput] = useState("");
+  const [broadcastStart, setBroadcastStart] = useState("");
+  const [broadcastEnd, setBroadcastEnd] = useState("");
   const [broadcastSubmitting, setBroadcastSubmitting] = useState(false);
   const [broadcastMsg, setBroadcastMsg] = useState("");
+
+  const [savingLoyalty, setSavingLoyalty] = useState(false);
+  const [loyaltyMsg, setLoyaltyMsg] = useState("");
 
   const [announcements, setAnnouncements] = useState([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(true);
@@ -142,12 +147,22 @@ export default function AdminDashboardPage() {
       const res = await fetch("/api/admin/broadcasts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: broadcastInput.trim() })
+        body: JSON.stringify({
+          message: broadcastInput.trim(),
+          startAt: broadcastStart || null,
+          endAt: broadcastEnd || null
+        })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal mengirim broadcast.");
-      setBroadcastMsg("Broadcast terkirim & langsung tampil ke semua user.");
+      setBroadcastMsg(
+        broadcastStart || broadcastEnd
+          ? "Broadcast terjadwal tersimpan."
+          : "Broadcast terkirim & langsung tampil ke semua user."
+      );
       setBroadcastInput("");
+      setBroadcastStart("");
+      setBroadcastEnd("");
       loadBroadcasts();
     } catch (err) {
       setBroadcastMsg(err.message);
@@ -321,6 +336,27 @@ export default function AdminDashboardPage() {
       if (res.ok) setSettings(data);
     } finally {
       setSavingProviders(false);
+    }
+  }
+
+  async function saveLoyalty(patch) {
+    setSavingLoyalty(true);
+    setLoyaltyMsg("");
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ loyalty: patch })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSettings(data);
+      setLoyaltyMsg("Pengaturan loyalitas tersimpan.");
+    } catch (e) {
+      setLoyaltyMsg("Gagal menyimpan pengaturan loyalitas.");
+    } finally {
+      setSavingLoyalty(false);
+      setTimeout(() => setLoyaltyMsg(""), 2500);
     }
   }
 
@@ -557,6 +593,27 @@ export default function AdminDashboardPage() {
             {broadcastSubmitting ? "Mengirim..." : "Kirim Broadcast"}
           </button>
         </form>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          <div>
+            <label className="text-[11px] text-muted">Mulai tampil (opsional, untuk flash sale)</label>
+            <input
+              type="datetime-local"
+              value={broadcastStart}
+              onChange={(e) => setBroadcastStart(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2 text-xs text-ink outline-none focus:border-amber"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] text-muted">Berhenti tampil (opsional)</label>
+            <input
+              type="datetime-local"
+              value={broadcastEnd}
+              onChange={(e) => setBroadcastEnd(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-2 text-xs text-ink outline-none focus:border-amber"
+            />
+          </div>
+        </div>
+        <p className="mt-1.5 text-[11px] text-muted">Kosongkan kalau mau broadcast langsung tampil terus sampai dinonaktifkan manual.</p>
         {broadcastMsg && <p className="mt-2 text-xs font-medium text-teal-bright">{broadcastMsg}</p>}
 
         <div className="glass mt-4 overflow-x-auto rounded-xl shadow-soft">
@@ -798,6 +855,91 @@ export default function AdminDashboardPage() {
           </div>
         </div>
         {settingsMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{settingsMsg}</p>}
+      </div>
+
+      {/* Loyalitas & Cashback */}
+      <div className="glass mt-8 rounded-2xl p-5 shadow-soft sm:p-6">
+        <h2 className="font-display text-base font-semibold text-ink">Loyalitas & Cashback</h2>
+        <p className="mt-1 text-xs text-muted">
+          Poin didapat dari transaksi OTP sukses, cashback didapat langsung tiap deposit berhasil, badge dihitung dari total nominal transaksi OTP sukses.
+        </p>
+        <div className="mt-4 grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className="text-xs font-medium text-muted">Poin per Rp1.000 transaksi OTP sukses</label>
+            <input
+              key={`ppr-${settings?.loyalty?.pointsPerRupiah}`}
+              type="number"
+              step="0.1"
+              min="0"
+              defaultValue={settings?.loyalty?.pointsPerRupiah ?? 0}
+              onBlur={(e) => saveLoyalty({ pointsPerRupiah: e.target.value })}
+              disabled={!settings || savingLoyalty}
+              className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted">Nilai tukar 1 poin (Rp)</label>
+            <input
+              key={`prv-${settings?.loyalty?.pointRupiahValue}`}
+              type="number"
+              min="0"
+              defaultValue={settings?.loyalty?.pointRupiahValue ?? 0}
+              onBlur={(e) => saveLoyalty({ pointRupiahValue: e.target.value })}
+              disabled={!settings || savingLoyalty}
+              className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted">Minimal poin untuk ditukar</label>
+            <input
+              key={`mrp-${settings?.loyalty?.minRedeemPoints}`}
+              type="number"
+              min="1"
+              defaultValue={settings?.loyalty?.minRedeemPoints ?? 1}
+              onBlur={(e) => saveLoyalty({ minRedeemPoints: e.target.value })}
+              disabled={!settings || savingLoyalty}
+              className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted">Cashback deposit (%)</label>
+            <input
+              key={`cbd-${settings?.loyalty?.cashbackDepositPercent}`}
+              type="number"
+              step="0.1"
+              min="0"
+              defaultValue={settings?.loyalty?.cashbackDepositPercent ?? 0}
+              onBlur={(e) => saveLoyalty({ cashbackDepositPercent: e.target.value })}
+              disabled={!settings || savingLoyalty}
+              className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted">Threshold badge Silver (total transaksi Rp)</label>
+            <input
+              key={`bts-${settings?.loyalty?.badgeThresholds?.silver}`}
+              type="number"
+              min="0"
+              defaultValue={settings?.loyalty?.badgeThresholds?.silver ?? 0}
+              onBlur={(e) => saveLoyalty({ badgeThresholds: { silver: e.target.value } })}
+              disabled={!settings || savingLoyalty}
+              className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted">Threshold badge Gold (total transaksi Rp)</label>
+            <input
+              key={`btg-${settings?.loyalty?.badgeThresholds?.gold}`}
+              type="number"
+              min="0"
+              defaultValue={settings?.loyalty?.badgeThresholds?.gold ?? 0}
+              onBlur={(e) => saveLoyalty({ badgeThresholds: { gold: e.target.value } })}
+              disabled={!settings || savingLoyalty}
+              className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+            />
+          </div>
+        </div>
+        {loyaltyMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{loyaltyMsg}</p>}
       </div>
 
       {/* Tambah/Kurangi Saldo */}

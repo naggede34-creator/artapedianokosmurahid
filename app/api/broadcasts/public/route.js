@@ -6,8 +6,15 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const col = await broadcastsCol();
+    const now = new Date();
     const list = await col
-      .find({ active: { $ne: false } })
+      .find({
+        active: { $ne: false },
+        $and: [
+          { $or: [{ startAt: null }, { startAt: { $exists: false } }, { startAt: { $lte: now } }] },
+          { $or: [{ endAt: null }, { endAt: { $exists: false } }, { endAt: { $gte: now } }] }
+        ]
+      })
       .sort({ createdAt: -1 })
       .limit(5)
       .toArray();

@@ -78,6 +78,25 @@ const ICONS = {
       <rect x="3" y="4.5" width="18" height="15" rx="2" stroke="currentColor" strokeWidth="1.7" />
       <path d="m7 9.5 3 2.5-3 2.5M12.5 15h4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  ),
+  star: (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
+      <path d="m12 3.5 2.6 5.3 5.8.85-4.2 4.1 1 5.75L12 16.7l-5.2 2.8 1-5.75-4.2-4.1 5.8-.85Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+    </svg>
+  ),
+  gift: (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
+      <rect x="3.5" y="9" width="17" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M3.5 12.5h17M12 9v11" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M12 9C9 9 8 7.5 8 6.3A2.3 2.3 0 0 1 12 4.8 2.3 2.3 0 0 1 16 6.3C16 7.5 15 9 12 9Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+    </svg>
+  ),
+  trophy: (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
+      <path d="M7 4h10v5a5 5 0 0 1-10 0Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M7 5.5H4v1.5A3 3 0 0 0 7 10M17 5.5h3v1.5A3 3 0 0 1 17 10M10 17.5h4M12 14v3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M8.5 20.5h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
   )
 };
 
@@ -94,6 +113,14 @@ const sections = [
       { href: "/transfer", label: "Transfer Saldo", icon: "transfer" },
       { href: "/mutasi", label: "Mutasi Saldo", icon: "mutasi" },
       { href: "/riwayat", label: "Riwayat Transaksi", icon: "history" }
+    ]
+  },
+  {
+    title: "Loyalitas",
+    items: [
+      { href: "/loyalitas", label: "Poin & Level", icon: "star" },
+      { href: "/referral", label: "Undang Teman", icon: "gift" },
+      { href: "/leaderboard", label: "Leaderboard", icon: "trophy" }
     ]
   },
   {

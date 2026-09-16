@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
 import { checkOrderStatus } from "@/lib/rumahotp";
 import { sendTelegramNotif, otpReceivedNotif, otpAutoRefundNotif } from "@/lib/telegram";
+import { awardTransactionPoints } from "@/lib/loyalty";
 
 export const dynamic = "force-dynamic";
 
@@ -106,6 +107,21 @@ export async function GET(req) {
       }
     }
 
+    // Poin loyalitas diberikan sekali seumur pesanan, tepat saat statusnya PERTAMA
+    // KALI jadi "done" — diklaim atomik lewat flag "pointsAwarded" supaya polling
+    // status yang berkali-kali tidak dobel ngasih poin.
+    let pointsEarned = 0;
+    if (resolvedStatus === "done" && order.status !== "done") {
+      const claimed = await orders.findOneAndUpdate(
+        { orderId, token, pointsAwarded: { $ne: true } },
+        { $set: { pointsAwarded: true } }
+      );
+      if (claimed) {
+        const award = await awardTransactionPoints(token, order.price);
+        pointsEarned = award.points;
+      }
+    }
+
     if (otpJustArrived) {
       sendTelegramNotif(
         otpReceivedNotif({
@@ -129,7 +145,8 @@ export async function GET(req) {
       price: order.price,
       createdAt: order.createdAt,
       refunded: autoRefundBalance !== null ? true : order.refunded || false,
-      balance: autoRefundBalance !== null ? autoRefundBalance : undefined
+      balance: autoRefundBalance !== null ? autoRefundBalance : undefined,
+      pointsEarned
     });
   } catch (err) {
     console.error(err?.response?.data || err);

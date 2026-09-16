@@ -49,6 +49,9 @@ export async function POST(req) {
       referralCount: 0,
       referralEarnings: 0,
       referralBonusGiven: false,
+      points: 0,
+      totalSpent: 0,
+      cashbackTotal: 0,
       createdAt
     });
 

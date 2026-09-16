@@ -3,6 +3,7 @@ import { depositsCol, usersCol } from "@/lib/db";
 import { checkTransaction } from "@/lib/pakasir";
 import { checkDeposit } from "@/lib/rumahotp";
 import { sendTelegramNotif, depositSuccessNotif } from "@/lib/telegram";
+import { awardDepositCashback } from "@/lib/loyalty";
 
 export const dynamic = "force-dynamic";
 
@@ -73,8 +74,18 @@ export async function GET(req) {
       );
       await deposits.updateOne({ orderId }, { $set: { credited: true } });
       deposit.credited = true;
+
+      const cashback = await awardDepositCashback(token, deposit.amount);
+
+      const finalUser = cashback > 0 ? await users.findOne({ token }) : updatedUser;
       sendTelegramNotif(
-        depositSuccessNotif({ orderId, amount: deposit.amount, token, balance: updatedUser?.balance ?? 0 })
+        depositSuccessNotif({
+          orderId,
+          amount: deposit.amount,
+          token,
+          balance: finalUser?.balance ?? 0,
+          cashback
+        })
       );
     }
 
