@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useUser } from "@/app/providers";
 import OtpMascot from "@/components/OtpMascot";
 import TiltCard from "@/components/TiltCard";
+import TransactionTicker from "@/components/TransactionTicker";
 
 const quickActions = [
   {
@@ -200,6 +201,8 @@ export default function HomePage() {
           </TiltCard>
         ))}
       </div>
+
+      <TransactionTicker />
 
       {/* Status / value props grid */}
       <div className="fade-up delay-3 mt-12">

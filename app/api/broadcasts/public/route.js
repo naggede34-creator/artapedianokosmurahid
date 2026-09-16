@@ -22,6 +22,7 @@ export async function GET() {
       items: list.map((b) => ({
         id: b._id.toString(),
         message: b.message,
+        endAt: b.endAt || null,
         createdAt: b.createdAt
       }))
     });

@@ -20,6 +20,36 @@ function addDismissed(id) {
   } catch {}
 }
 
+// Format sisa waktu buat countdown flash sale, mis. "01:23:45" atau "05:12" kalau di bawah 1 jam.
+function formatCountdown(ms) {
+  if (ms <= 0) return null;
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+function Countdown({ endAt }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const remaining = new Date(endAt).getTime() - now;
+  const text = formatCountdown(remaining);
+  if (!text) return null;
+
+  return (
+    <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-ink px-2 py-0.5 text-[11px] font-semibold tabular-nums text-white">
+      ⚡ Berakhir dalam {text}
+    </span>
+  );
+}
+
 export default function BroadcastBar() {
   const [items, setItems] = useState([]);
   const [index, setIndex] = useState(0);
@@ -68,10 +98,13 @@ export default function BroadcastBar() {
             📣
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-bright">Broadcast Admin</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-bright">
+              {current.endAt ? "⚡ Flash Sale" : "Broadcast Admin"}
+            </p>
             <p className="mt-0.5 whitespace-pre-line break-words text-sm leading-relaxed text-ink">
               {current.message}
             </p>
+            {current.endAt && <Countdown endAt={current.endAt} />}
             {items.length > 1 && (
               <div className="mt-2 flex items-center gap-1.5">
                 {items.map((b, i) => (

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
 import { generateUserToken } from "@/lib/token";
 import { sendTelegramNotif, newUserNotif } from "@/lib/telegram";
+import { sendMonitorLog, userLoginLog } from "@/lib/monitor";
 
 export async function POST(req) {
   try {
@@ -11,6 +12,7 @@ export async function POST(req) {
     if (body.token) {
       const existing = await users.findOne({ token: body.token });
       if (existing) {
+        sendMonitorLog(userLoginLog({ token: existing.token, isNew: false }));
         return NextResponse.json({
           token: existing.token,
           balance: existing.balance,
@@ -56,6 +58,7 @@ export async function POST(req) {
     });
 
     sendTelegramNotif(newUserNotif({ token, referredBy }));
+    sendMonitorLog(userLoginLog({ token, isNew: true }));
 
     return NextResponse.json({ token, balance: 0, createdAt });
   } catch (err) {

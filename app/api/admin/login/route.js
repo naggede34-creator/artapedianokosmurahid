@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
 import { ADMIN_COOKIE, ADMIN_COOKIE_VALUE, getAdminCode } from "@/lib/adminAuth";
+import { sendMonitorLog, adminLoginLog } from "@/lib/monitor";
 
 export async function POST(req) {
   try {
     const { code } = await req.json().catch(() => ({}));
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
+
     if (!code || String(code) !== getAdminCode()) {
+      sendMonitorLog(adminLoginLog({ success: false, ip }));
       return NextResponse.json({ error: "Kode admin salah." }, { status: 401 });
     }
+
+    sendMonitorLog(adminLoginLog({ success: true, ip }));
 
     const res = NextResponse.json({ ok: true });
     res.cookies.set(ADMIN_COOKIE, ADMIN_COOKIE_VALUE, {
