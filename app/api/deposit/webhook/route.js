@@ -61,37 +61,51 @@ export async function POST(req) {
 
     if (verifiedStatus === "completed" && !deposit.credited) {
       const users = await usersCol();
-      const updatedUser = await users.findOneAndUpdate(
-        { token: deposit.token },
-        { $inc: { balance: deposit.amount } },
+      // KLAIM ATOMIK — lihat catatan sama di app/api/deposit/status/route.js.
+      // Ini yang tadinya bikin double-credit: cek `!deposit.credited` dan set
+      // `credited: true` dilakukan terpisah, jadi webhook yang nembak dobel
+      // (retry dari Pakasir) atau bareng dengan polling status bisa sama-sama
+      // lolos dan saldo ke-tambah berkali-kali dari satu pembayaran.
+      const claimed = await deposits.findOneAndUpdate(
+        { orderId: deposit.orderId, credited: false },
+        { $set: { credited: true } },
         { returnDocument: "after" }
       );
-      await deposits.updateOne({ orderId: deposit.orderId }, { $set: { credited: true } });
 
-      const cashback = await awardDepositCashback(deposit.token, deposit.amount);
-
-      // Program undang teman: begitu user yang diundang deposit pertama kali,
-      // pengundang dapat bonus persentase dari nominal deposit itu (sekali saja per user).
-      if (updatedUser?.referredBy && !updatedUser.referralBonusGiven) {
-        const percent = Number(process.env.REFERRAL_BONUS_PERCENT || 0);
-        const bonus = percent > 0 ? Math.floor((deposit.amount * percent) / 100) : 0;
-        await users.updateOne(
-          { token: updatedUser.referredBy },
-          { $inc: { balance: bonus, referralEarnings: bonus, referralCount: 1 } }
+      if (claimed) {
+        const updatedUser = await users.findOneAndUpdate(
+          { token: deposit.token },
+          { $inc: { balance: deposit.amount } },
+          { returnDocument: "after" }
         );
-        await users.updateOne({ token: updatedUser.token }, { $set: { referralBonusGiven: true } });
-      }
 
-      const finalUser = cashback > 0 ? await users.findOne({ token: deposit.token }) : updatedUser;
-      sendTelegramNotif(
-        depositSuccessNotif({
-          orderId: deposit.orderId,
-          amount: deposit.amount,
-          token: deposit.token,
-          balance: finalUser?.balance ?? 0,
-          cashback
-        })
-      );
+        const cashback = await awardDepositCashback(deposit.token, deposit.amount);
+
+        // Program undang teman: begitu user yang diundang deposit pertama kali,
+        // pengundang dapat bonus persentase dari nominal deposit itu (sekali saja per user).
+        if (updatedUser?.referredBy && !updatedUser.referralBonusGiven) {
+          const percent = Number(process.env.REFERRAL_BONUS_PERCENT || 0);
+          const bonus = percent > 0 ? Math.floor((deposit.amount * percent) / 100) : 0;
+          await users.updateOne(
+            { token: updatedUser.referredBy },
+            { $inc: { balance: bonus, referralEarnings: bonus, referralCount: 1 } }
+          );
+          await users.updateOne({ token: updatedUser.token }, { $set: { referralBonusGiven: true } });
+        }
+
+        const finalUser = cashback > 0 ? await users.findOne({ token: deposit.token }) : updatedUser;
+        sendTelegramNotif(
+          depositSuccessNotif({
+            orderId: deposit.orderId,
+            amount: deposit.amount,
+            token: deposit.token,
+            balance: finalUser?.balance ?? 0,
+            cashback
+          })
+        );
+      }
+      // Kalau `claimed` null, berarti request lain (polling status / retry webhook
+      // sebelumnya) sudah lebih dulu berhasil ngredit — diamkan saja, jangan dobel.
     }
 
     return NextResponse.json({ ok: true });

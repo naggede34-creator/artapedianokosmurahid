@@ -67,26 +67,42 @@ export async function GET(req) {
 
     if (deposit.status === "completed" && !deposit.credited) {
       const users = await usersCol();
-      const updatedUser = await users.findOneAndUpdate(
-        { token },
-        { $inc: { balance: deposit.amount } },
+      // KLAIM ATOMIK: hanya request yang berhasil mengubah credited false->true
+      // yang boleh nambah saldo. Ini mencegah double-credit kalau ada request
+      // barengan (mis. polling dobel dari browser + webhook Pakasir nembak di
+      // waktu yang hampir sama) — sebelumnya cek & update terpisah sehingga bisa
+      // sama-sama lolos dan saldo ke-kredit berkali-kali dari satu pembayaran.
+      const claimed = await deposits.findOneAndUpdate(
+        { orderId, credited: false },
+        { $set: { credited: true } },
         { returnDocument: "after" }
       );
-      await deposits.updateOne({ orderId }, { $set: { credited: true } });
-      deposit.credited = true;
 
-      const cashback = await awardDepositCashback(token, deposit.amount);
+      if (claimed) {
+        const updatedUser = await users.findOneAndUpdate(
+          { token },
+          { $inc: { balance: deposit.amount } },
+          { returnDocument: "after" }
+        );
+        deposit.credited = true;
 
-      const finalUser = cashback > 0 ? await users.findOne({ token }) : updatedUser;
-      sendTelegramNotif(
-        depositSuccessNotif({
-          orderId,
-          amount: deposit.amount,
-          token,
-          balance: finalUser?.balance ?? 0,
-          cashback
-        })
-      );
+        const cashback = await awardDepositCashback(token, deposit.amount);
+
+        const finalUser = cashback > 0 ? await users.findOne({ token }) : updatedUser;
+        sendTelegramNotif(
+          depositSuccessNotif({
+            orderId,
+            amount: deposit.amount,
+            token,
+            balance: finalUser?.balance ?? 0,
+            cashback
+          })
+        );
+      } else {
+        // Kalah klaim (request lain barengan sudah lebih dulu berhasil) — tidak
+        // usah ngapa-ngapain lagi, biar tidak dobel kredit/notif.
+        deposit.credited = true;
+      }
     }
 
     const user = await (await usersCol()).findOne({ token });
