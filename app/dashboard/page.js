@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@/app/providers";
 import SimCard from "@/components/SimCard";
 import AccountInfoModal from "@/components/AccountInfoModal";
@@ -40,12 +40,283 @@ const shortcuts = [
   { href: "/referral", label: "Undang teman", icon: Icon.gift }
 ];
 
+function WarrantyModal({ open, onClose, token }) {
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [description, setDescription] = useState("");
+  const [screenshotData, setScreenshotData] = useState(null);
+  const [screenshotName, setScreenshotName] = useState("");
+  const [purchasePrice, setPurchasePrice] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [msg, setMsg] = useState({ text: "", ok: false });
+  const [claims, setClaims] = useState([]);
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !token) return;
+    setOrdersLoading(true);
+    setSelectedOrder(null);
+    setDescription("");
+    setScreenshotData(null);
+    setScreenshotName("");
+    setPurchasePrice("");
+    setMsg({ text: "", ok: false });
+
+    const t = encodeURIComponent(token);
+    Promise.all([
+      fetch(`/api/otp/history?token=${t}`).then((r) => r.json()),
+      fetch(`/api/warranty/claim?token=${t}`).then((r) => r.json())
+    ])
+      .then(([hist, claimsData]) => {
+        setOrders(Array.isArray(hist.items) ? hist.items : []);
+        setClaims(Array.isArray(claimsData.items) ? claimsData.items : []);
+      })
+      .catch(() => setOrders([]))
+      .finally(() => setOrdersLoading(false));
+  }, [open, token]);
+
+  if (!open) return null;
+
+  const claimedIds = new Set(claims.map((c) => c.orderId));
+
+  function handleFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1_500_000) {
+      setMsg({ text: "Ukuran gambar maks 1.5 MB.", ok: false });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setScreenshotData(ev.target.result);
+      setScreenshotName(file.name);
+      setMsg({ text: "", ok: false });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!selectedOrder) { setMsg({ text: "Pilih nokos terlebih dahulu.", ok: false }); return; }
+    if (!description.trim()) { setMsg({ text: "Isi deskripsi masalah.", ok: false }); return; }
+    if (!purchasePrice || Number(purchasePrice) <= 0) { setMsg({ text: "Isi harga beli yang valid.", ok: false }); return; }
+
+    setSubmitting(true);
+    setMsg({ text: "", ok: false });
+    try {
+      const res = await fetch("/api/warranty/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          orderId: selectedOrder.orderId,
+          description: description.trim(),
+          screenshotData,
+          purchasePrice: Number(purchasePrice)
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) { setMsg({ text: data.error || "Gagal mengirim klaim.", ok: false }); return; }
+      setMsg({ text: "Klaim garansi berhasil dikirim! Admin akan memproses dalam 1x24 jam.", ok: true });
+      setClaims((prev) => [
+        { orderId: selectedOrder.orderId, status: "pending", createdAt: new Date() },
+        ...prev
+      ]);
+      setSelectedOrder(null);
+      setDescription("");
+      setScreenshotData(null);
+      setScreenshotName("");
+      setPurchasePrice("");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const statusBadge = (s) => {
+    if (s === "approved") return <span className="rounded-full bg-teal-soft px-2 py-0.5 text-[10px] font-semibold text-teal-bright">Disetujui</span>;
+    if (s === "rejected") return <span className="rounded-full bg-rose-soft px-2 py-0.5 text-[10px] font-semibold text-rose">Ditolak</span>;
+    return <span className="rounded-full bg-amber-soft px-2 py-0.5 text-[10px] font-semibold text-amber-bright">Menunggu</span>;
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center px-0 sm:px-5">
+      <button
+        aria-label="Tutup"
+        onClick={onClose}
+        className="animate-fade-in absolute inset-0"
+        style={{ background: "rgb(var(--c-ink) / 0.45)" }}
+      />
+      <div className="animate-scale-in relative w-full max-w-lg overflow-hidden rounded-t-2xl sm:rounded-2xl border border-line bg-surface shadow-lift flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between bg-rose px-5 py-4 text-white shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-base">🛡️</span>
+            <p className="text-sm font-semibold">Klaim Garansi Nokos</p>
+          </div>
+          <button onClick={onClose} className="press flex h-7 w-7 items-center justify-center rounded-lg hover:bg-white/15" aria-label="Tutup">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 p-5 space-y-5">
+          {/* Info */}
+          <div className="rounded-xl border border-amber/30 bg-amber-soft p-3.5 text-xs text-amber-bright">
+            Garansi hanya bisa diklaim <strong>1x per nokos</strong>. Klaim akan diproses admin dalam 1×24 jam. Jika disetujui, saldo dikembalikan sesuai harga beli.
+          </div>
+
+          {/* Riwayat klaim */}
+          {claims.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-muted mb-2">Riwayat klaim kamu</p>
+              <div className="space-y-1.5">
+                {claims.map((c) => (
+                  <div key={c.orderId} className="flex items-center justify-between rounded-xl border border-line bg-surface2 px-3 py-2.5 text-xs">
+                    <span className="font-mono text-ink truncate max-w-[160px]">#{c.orderId}</span>
+                    {statusBadge(c.status)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={submit} className="space-y-4">
+            {/* Pilih nokos */}
+            <div>
+              <p className="text-xs font-semibold text-ink mb-2">1. Pilih nokos yang bermasalah</p>
+              {ordersLoading ? (
+                <div className="skeleton h-20 rounded-xl" />
+              ) : orders.length === 0 ? (
+                <p className="text-sm text-muted">Belum ada riwayat nokos.</p>
+              ) : (
+                <div className="max-h-44 overflow-y-auto space-y-1.5 rounded-xl border border-line p-2">
+                  {orders.map((o) => {
+                    const alreadyClaimed = claimedIds.has(o.orderId);
+                    const isSelected = selectedOrder?.orderId === o.orderId;
+                    return (
+                      <button
+                        key={o.orderId}
+                        type="button"
+                        disabled={alreadyClaimed}
+                        onClick={() => {
+                          setSelectedOrder(o);
+                          setPurchasePrice(String(o.price || ""));
+                        }}
+                        className={`w-full text-left rounded-lg px-3 py-2.5 text-xs transition-colors ${
+                          alreadyClaimed
+                            ? "opacity-40 cursor-not-allowed bg-surface2"
+                            : isSelected
+                            ? "border border-rose/50 bg-rose-soft text-rose"
+                            : "border border-transparent hover:border-line bg-surface hover:bg-surface2 text-ink"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold truncate">{o.serviceName} — {o.countryName}</span>
+                          <span className="shrink-0 font-mono text-[10px] text-muted">#{o.orderId?.slice(-8)}</span>
+                        </div>
+                        <div className="mt-0.5 flex items-center gap-2 text-muted">
+                          <span>{o.phoneNumber || "-"}</span>
+                          <span>·</span>
+                          <span>{rupiah(o.price)}</span>
+                          {alreadyClaimed && <span className="text-rose ml-auto">Sudah diklaim</span>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Deskripsi */}
+            <div>
+              <label className="text-xs font-semibold text-ink">2. Deskripsi masalah</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Jelaskan masalahnya, misal: nomor tidak menerima SMS / kode OTP tidak masuk..."
+                rows={3}
+                maxLength={1000}
+                required
+                className="mt-1.5 w-full rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-sm text-ink outline-none focus:border-rose"
+              />
+            </div>
+
+            {/* Screenshot */}
+            <div>
+              <label className="text-xs font-semibold text-ink">3. Screenshot bukti masalah (opsional, maks 1.5 MB)</label>
+              <div className="mt-1.5 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="btn-ghost px-3 py-2 text-xs"
+                >
+                  {screenshotName ? `✓ ${screenshotName}` : "Pilih gambar"}
+                </button>
+                {screenshotData && (
+                  <button
+                    type="button"
+                    onClick={() => { setScreenshotData(null); setScreenshotName(""); }}
+                    className="text-xs text-rose hover:underline"
+                  >
+                    Hapus
+                  </button>
+                )}
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+              {screenshotData && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={screenshotData} alt="Preview" className="mt-2 max-h-32 rounded-lg object-contain border border-line" />
+              )}
+            </div>
+
+            {/* Harga beli */}
+            <div>
+              <label className="text-xs font-semibold text-ink">4. Harga beli nokos (Rp)</label>
+              <input
+                type="number"
+                min="1"
+                value={purchasePrice}
+                onChange={(e) => setPurchasePrice(e.target.value)}
+                placeholder="Contoh: 3000"
+                required
+                className="mt-1.5 w-full rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-sm text-ink outline-none focus:border-rose"
+              />
+            </div>
+
+            {msg.text && (
+              <p className={`text-xs font-medium ${msg.ok ? "text-teal-bright" : "text-rose"}`}>{msg.text}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting || !selectedOrder}
+              className="w-full rounded-xl bg-rose hover:opacity-90 px-5 py-3 text-sm font-bold text-white shadow-3d disabled:opacity-50 transition-opacity"
+            >
+              {submitting ? "Mengirim..." : "Kirim Klaim Garansi"}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { token, name, balance, joinedAt, ready } = useUser();
   const [stats, setStats] = useState(null);
   const [loyalty, setLoyalty] = useState(null);
   const [board, setBoard] = useState(null);
   const [modal, setModal] = useState(false);
+  const [warrantyModal, setWarrantyModal] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -83,9 +354,17 @@ export default function DashboardPage() {
             {ready ? name || "Pelanggan Artapedia" : "…"}
           </h1>
         </div>
-        <button onClick={() => setModal(true)} className="btn-ghost px-4 py-2.5">
-          {name ? "Info akun" : "Atur nama & kode akun"}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setWarrantyModal(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-rose/40 bg-rose-soft px-4 py-2.5 text-sm font-semibold text-rose transition-colors hover:bg-rose/10"
+          >
+            🛡️ Claim Garansi
+          </button>
+          <button onClick={() => setModal(true)} className="btn-ghost px-4 py-2.5">
+            {name ? "Info akun" : "Atur nama & kode akun"}
+          </button>
+        </div>
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[440px_1fr]">
@@ -214,6 +493,7 @@ export default function DashboardPage() {
       </div>
 
       <AccountInfoModal open={modal} onClose={() => setModal(false)} token={token} balance={balance} joinedAt={joinedAt} />
+      <WarrantyModal open={warrantyModal} onClose={() => setWarrantyModal(false)} token={token} />
     </div>
   );
 }
