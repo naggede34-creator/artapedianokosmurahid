@@ -60,6 +60,23 @@ export default function AdminDashboardPage() {
   const [smmMarkupInput, setSmmMarkupInput] = useState("");
   const [savingSmm, setSavingSmm] = useState(false);
 
+  const [warrantyClaims, setWarrantyClaims] = useState([]);
+  const [warrantyLoading, setWarrantyLoading] = useState(true);
+  const [warrantyMsg, setWarrantyMsg] = useState("");
+  const [selectedScreenshot, setSelectedScreenshot] = useState(null);
+
+  const loadWarrantyClaims = useCallback(async () => {
+    setWarrantyLoading(true);
+    try {
+      const res = await fetch("/api/admin/warranty");
+      if (res.status === 401) return router.push("/admin/login");
+      const data = await res.json();
+      setWarrantyClaims(Array.isArray(data.items) ? data.items : []);
+    } finally {
+      setWarrantyLoading(false);
+    }
+  }, [router]);
+
   const loadSimuru = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/simuru");
@@ -173,8 +190,29 @@ export default function AdminDashboardPage() {
     loadVouchers();
     loadBroadcasts();
     loadAnnouncements();
+    loadWarrantyClaims();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function handleWarrantyAction(id, action) {
+    const adminNote = action === "reject" ? (prompt("Alasan penolakan (opsional):") ?? "") : "";
+    setWarrantyMsg("");
+    try {
+      const res = await fetch("/api/admin/warranty", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action, adminNote })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memproses.");
+      setWarrantyMsg(action === "approve" ? "Klaim disetujui & saldo dikembalikan." : "Klaim ditolak.");
+      loadWarrantyClaims();
+    } catch (err) {
+      setWarrantyMsg(err.message);
+    } finally {
+      setTimeout(() => setWarrantyMsg(""), 3000);
+    }
+  }
 
   async function submitBroadcast(e) {
     e.preventDefault();
@@ -547,6 +585,119 @@ export default function AdminDashboardPage() {
         ) : (
           <p className="mt-4 text-sm text-muted">Gagal memuat statistik.</p>
         )}
+      </div>
+
+      {/* Klaim Garansi */}
+      <div className="glass mt-8 rounded-2xl p-5 shadow-soft sm:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display text-base font-semibold text-ink">Klaim Garansi Nokos</h2>
+            <p className="mt-1 text-xs text-muted">User yang mengajukan refund untuk nokos bermasalah. Approve = saldo dikembalikan sesuai harga beli.</p>
+          </div>
+          <span className="rounded-full bg-rose-soft px-3 py-1 text-xs font-semibold text-rose">
+            {warrantyClaims.filter((c) => c.status === "pending").length} menunggu
+          </span>
+        </div>
+        {warrantyMsg && <p className="mt-2 text-xs font-medium text-teal-bright">{warrantyMsg}</p>}
+
+        {/* Screenshot lightbox */}
+        {selectedScreenshot && (
+          <div
+            className="fixed inset-0 z-[80] flex items-center justify-center"
+            style={{ background: "rgb(0 0 0 / 0.8)" }}
+            onClick={() => setSelectedScreenshot(null)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={selectedScreenshot} alt="Screenshot" className="max-h-[80vh] max-w-[90vw] rounded-xl object-contain" />
+          </div>
+        )}
+
+        <div className="glass mt-4 overflow-x-auto rounded-xl shadow-soft">
+          <table className="w-full min-w-[700px] text-sm">
+            <thead>
+              <tr className="border-b border-line text-left text-xs text-muted">
+                <th className="px-4 py-2.5 font-medium">User</th>
+                <th className="px-4 py-2.5 font-medium">Nokos</th>
+                <th className="px-4 py-2.5 font-medium">Harga</th>
+                <th className="px-4 py-2.5 font-medium">Deskripsi</th>
+                <th className="px-4 py-2.5 font-medium">SS</th>
+                <th className="px-4 py-2.5 font-medium">Status</th>
+                <th className="px-4 py-2.5 font-medium text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {warrantyLoading ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-5 text-center text-muted">Memuat...</td>
+                </tr>
+              ) : warrantyClaims.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-5 text-center text-muted">Belum ada klaim garansi.</td>
+                </tr>
+              ) : (
+                warrantyClaims.map((c) => (
+                  <tr key={c.id} className="border-b border-line last:border-0">
+                    <td className="px-4 py-2.5 font-mono text-[11px] text-ink max-w-[100px] truncate">{c.token}</td>
+                    <td className="px-4 py-2.5 text-xs text-ink">
+                      <div className="font-semibold">{c.serviceName}</div>
+                      <div className="text-muted">{c.phoneNumber}</div>
+                      <div className="font-mono text-[10px] text-muted">#{c.orderId?.slice(-10)}</div>
+                    </td>
+                    <td className="px-4 py-2.5 text-xs font-semibold text-ink">Rp{Number(c.purchasePrice).toLocaleString("id-ID")}</td>
+                    <td className="px-4 py-2.5 max-w-[180px]">
+                      <p className="line-clamp-2 text-xs text-ink">{c.description}</p>
+                      {c.adminNote && <p className="mt-0.5 text-[10px] text-muted italic">Catatan: {c.adminNote}</p>}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {c.screenshotData ? (
+                        <button
+                          onClick={() => setSelectedScreenshot(c.screenshotData)}
+                          className="rounded-md border border-line px-2 py-1 text-[10px] font-medium text-teal-bright hover:border-teal/40"
+                        >
+                          Lihat
+                        </button>
+                      ) : (
+                        <span className="text-xs text-muted">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span className={`rounded-full border px-2 py-0.5 text-xs ${
+                        c.status === "approved"
+                          ? "border-teal/40 text-teal-bright"
+                          : c.status === "rejected"
+                          ? "border-rose/30 text-rose"
+                          : "border-amber/40 text-amber-bright"
+                      }`}>
+                        {c.status === "approved" ? "Disetujui" : c.status === "rejected" ? "Ditolak" : "Menunggu"}
+                      </span>
+                      <p className="mt-0.5 text-[10px] text-muted">{fmtDate(c.createdAt)}</p>
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      {c.status === "pending" ? (
+                        <div className="flex justify-end gap-1.5">
+                          <button
+                            onClick={() => handleWarrantyAction(c.id, "approve")}
+                            className="btn-3d rounded-md border border-teal/40 px-2 py-1 text-xs font-medium text-teal-bright hover:bg-teal-soft"
+                          >
+                            Setujui
+                          </button>
+                          <button
+                            onClick={() => handleWarrantyAction(c.id, "reject")}
+                            className="btn-3d rounded-md border border-rose/40 px-2 py-1 text-xs font-medium text-rose hover:bg-rose-soft"
+                          >
+                            Tolak
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Voucher saldo */}
