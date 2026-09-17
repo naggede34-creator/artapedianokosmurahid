@@ -59,7 +59,7 @@ export default function WelcomeIntro() {
 
       <div className="glow-ring animate-scale-in relative w-full max-w-sm rounded-3xl">
         <div className="glass relative overflow-hidden rounded-3xl px-7 py-8 text-center shadow-card-3d">
-          <span className="float-slow mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber to-amber-bright text-3xl shadow-3d">
+          <span className="float-slow mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber text-3xl shadow-3d">
             🎉
           </span>
           <h1 className="mt-5 font-display text-xl font-semibold text-ink sm:text-2xl">
@@ -75,7 +75,7 @@ export default function WelcomeIntro() {
             <Link
               href="/cara-pakai"
               onClick={close}
-              className="btn-3d rounded-lg bg-gradient-to-r from-amber to-amber-bright px-4 py-2.5 text-sm font-medium text-white shadow-3d"
+              className="btn-3d rounded-lg bg-amber hover:bg-amber-bright px-4 py-2.5 text-sm font-medium text-white shadow-3d"
             >
               📖 Buka Menu Panduan
             </Link>

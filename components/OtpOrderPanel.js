@@ -81,6 +81,7 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
   const cooldownRemaining = CANCEL_COOLDOWN_MS - (now - createdAtMs);
   const canCancel = !isFinal && !status.otpCode && cooldownRemaining <= 0;
   const canReplace = status.status === "expired" && !status.otpCode && !refunded;
+  const expiresMs = activeOrder.expiredAt ? new Date(activeOrder.expiredAt).getTime() - now : null;
 
   function copy(value, label) {
     if (!value) return;
@@ -104,9 +105,15 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
         setStatus({ status: "canceled", otpCode: null });
         setRefunded(true);
         onChanged?.();
+      } else if (res.status === 409 && data.otpCode) {
+        clearInterval(pollRef.current);
+        setStatus({ status: "done", otpCode: data.otpCode, otpMsg: null });
+        onChanged?.();
       } else {
         setError(data.error || "Gagal membatalkan pesanan.");
       }
+    } catch (e) {
+      setError("Koneksi terputus. Coba lagi.");
     } finally {
       setCancelling(false);
     }
@@ -151,13 +158,14 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
   }
 
   return (
-    <div className="scale-in glass rounded-2xl p-5 shadow-card-3d sm:p-6">
+    <div className="scale-in card p-5 sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-ink">
-            {activeOrder.serviceName} <span className="font-normal text-muted">· {activeOrder.countryName}</span>
+          <p className="text-[15px] font-bold text-ink">{activeOrder.serviceName}</p>
+          <p className="mt-0.5 text-xs text-muted">
+            {activeOrder.countryName} · Order #{activeOrder.orderId}
+            {activeOrder.price ? ` · Rp${Number(activeOrder.price).toLocaleString("id-ID")}` : ""}
           </p>
-          <p className="mt-0.5 text-xs text-muted">Order #{activeOrder.orderId}</p>
         </div>
         <div className="flex items-center gap-2">
           <StatusPill status={status.status} />
@@ -178,7 +186,7 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
             {copied === "nomor" ? "Tersalin" : "Salin"}
           </button>
         </div>
-        <p className="mt-1 font-mono text-xl text-ink sm:text-2xl">{activeOrder.phoneNumber}</p>
+        <p className="mt-1 font-mono text-xl font-semibold tracking-wide text-ink sm:text-2xl">{activeOrder.phoneNumber}</p>
       </div>
 
       <div className="mt-3 rounded-xl border border-line bg-bg p-4">
@@ -190,7 +198,7 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
                 {copied === "kode" ? "Tersalin" : "Salin"}
               </button>
             </div>
-            <p className="mt-1 font-mono text-3xl tracking-[0.3em] text-ink">{status.otpCode}</p>
+            <p className="mt-1 font-mono text-4xl font-semibold tracking-[0.25em] text-ink">{status.otpCode}</p>
             {status.otpMsg && <p className="mt-2 text-xs text-muted">{status.otpMsg}</p>}
           </div>
         ) : status.status === "canceled" ? (
@@ -201,8 +209,11 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
           </p>
         ) : (
           <div className="flex items-center gap-2 text-sm font-medium text-teal-bright">
-            <span className="signal-pulse h-1.5 w-1.5 rounded-full bg-teal" />
-            Menunggu kode OTP masuk...
+            <span className="signal-pulse h-2 w-2 rounded-full bg-amber" />
+            <span className="text-ink">Menunggu kode OTP masuk…</span>
+            {expiresMs !== null && expiresMs > 0 && (
+              <span className="ml-auto font-mono text-xs text-muted">sisa {fmtCountdown(expiresMs)}</span>
+            )}
           </div>
         )}
       </div>

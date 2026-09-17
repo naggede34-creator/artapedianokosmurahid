@@ -1,30 +1,41 @@
 import { NextResponse } from "next/server";
-import { getSettings } from "@/lib/settings";
+import { getSettings, depositLimits } from "@/lib/settings";
+import { simuruConfigured } from "@/lib/simuru";
 
 export const dynamic = "force-dynamic";
 
+const CHANNELS = () => ({
+  channelInfo: process.env.TELEGRAM_CHANNEL_1 || "https://t.me/kkaelnokosmurah",
+  channelGroup: process.env.TELEGRAM_CHANNEL_2 || "https://t.me/diskusiduniotp"
+});
+
 export async function GET() {
+  const limits = depositLimits();
   try {
-    const { maintenance, maintenanceMsg, depositProviders, depositFeePercent } = await getSettings();
+    const { maintenance, maintenanceMsg, depositProviders, depositFeePercent, smm } = await getSettings();
+    const providers = { ...depositProviders };
+    if (!simuruConfigured()) providers.simuru = false;
     return NextResponse.json({
       maintenance: !!maintenance,
       maintenanceMsg,
-      depositProviders: depositProviders || { pakasir: true, rumahotp: false },
-      depositFeePercent: depositFeePercent || { pakasir: 0, rumahotp: 0.7 },
-      // Link channel info & grup diskusi Telegram, dipakai tombol CS di semua halaman.
-      // Bisa diubah tanpa deploy ulang lewat environment variable di Vercel.
-      channelInfo: process.env.TELEGRAM_CHANNEL_1 || "https://t.me/kkaelnokosmurah",
-      channelGroup: process.env.TELEGRAM_CHANNEL_2 || "https://t.me/diskusiduniotp"
+      depositProviders: providers,
+      depositFeePercent,
+      depositMin: limits.min,
+      depositMax: limits.max,
+      smmEnabled: Boolean(smm?.enabled) && simuruConfigured(),
+      ...CHANNELS()
     });
   } catch (err) {
     console.error(err);
-    // Kalau DB lagi bermasalah, jangan sampai malah mengunci seluruh web.
+    // Kalau DB bermasalah, jangan sampai malah mengunci seluruh web.
     return NextResponse.json({
       maintenance: false,
-      depositProviders: { pakasir: true, rumahotp: false },
-      depositFeePercent: { pakasir: 0, rumahotp: 0.7 },
-      channelInfo: process.env.TELEGRAM_CHANNEL_1 || "https://t.me/kkaelnokosmurah",
-      channelGroup: process.env.TELEGRAM_CHANNEL_2 || "https://t.me/diskusiduniotp"
+      depositProviders: { simuru: simuruConfigured(), pakasir: true, rumahotp: false },
+      depositFeePercent: { simuru: 0, pakasir: 0, rumahotp: 0.7 },
+      depositMin: limits.min,
+      depositMax: limits.max,
+      smmEnabled: false,
+      ...CHANNELS()
     });
   }
 }

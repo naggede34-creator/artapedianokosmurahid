@@ -9,7 +9,7 @@ export async function POST(req) {
   if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const { id } = await req.json().catch(() => ({}));
-    if (!id) return NextResponse.json({ error: "ID pengumuman wajib diisi." }, { status: 400 });
+    if (!id || !ObjectId.isValid(String(id))) return NextResponse.json({ error: "ID pengumuman wajib diisi." }, { status: 400 });
 
     const col = await announcementsCol();
     await col.deleteOne({ _id: new ObjectId(id) });

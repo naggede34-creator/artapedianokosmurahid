@@ -94,11 +94,11 @@ export default function BroadcastBar() {
     <div className="pointer-events-none fixed inset-x-0 top-3 z-[70] flex justify-center px-4">
       <div className="glow-ring pointer-events-auto animate-scale-in w-full max-w-xl rounded-2xl">
         <div className="glass flex items-start gap-3 rounded-2xl border border-line px-4 py-3 shadow-lift">
-          <span className="float-slow flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber to-amber-bright text-base text-white shadow-3d">
+          <span className="float-slow flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-amber text-base text-white shadow-3d">
             📣
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-bright">
+            <p className="text-[10px] font-semibold text-amber-bright">
               {current.endAt ? "⚡ Flash Sale" : "Broadcast Admin"}
             </p>
             <p className="mt-0.5 whitespace-pre-line break-words text-sm leading-relaxed text-ink">

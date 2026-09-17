@@ -24,9 +24,9 @@ export default function InformasiPage() {
   }, [category, items]);
 
   return (
-    <div className="mx-auto max-w-content px-5 py-8">
-      <p className="fade-up text-sm font-semibold uppercase tracking-wide text-amber-bright">📣 Update Terkini</p>
-      <h1 className="fade-up delay-1 mt-2 font-display text-display-sm font-semibold text-ink sm:text-display-md">
+    <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
+      <p className="fade-up text-sm font-semibold text-amber-bright">📣 Update Terkini</p>
+      <h1 className="fade-up delay-1 mt-2 text-[26px] font-extrabold tracking-tight text-ink sm:text-[32px]">
         Pusat Informasi
       </h1>
       <p className="fade-up delay-2 mt-3 max-w-xl text-sm leading-relaxed text-muted">

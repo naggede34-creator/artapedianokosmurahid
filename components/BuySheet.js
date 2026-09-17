@@ -10,7 +10,7 @@ function pick(obj, keys, fallback) {
   return fallback;
 }
 
-export default function BuySheet({ open, onClose, services, servicesLoading, token, balance, onOrderCreated }) {
+export default function BuySheet({ open, onClose, services, servicesLoading, token, balance, onOrderCreated, initialQuery = "" }) {
   const [screen, setScreen] = useState("apps"); // apps | countries | operators
   const [appSearch, setAppSearch] = useState("");
   const [countrySearch, setCountrySearch] = useState("");
@@ -24,6 +24,10 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   const [operatorTarget, setOperatorTarget] = useState(null); // { country, provider, operators }
   const [buyingKey, setBuyingKey] = useState(null);
   const [buyError, setBuyError] = useState("");
+
+  useEffect(() => {
+    if (open && initialQuery) setAppSearch(initialQuery);
+  }, [open, initialQuery]);
 
   // Reset total tiap kali sheet ditutup, biar buka lagi selalu mulai dari awal.
   useEffect(() => {
@@ -52,10 +56,13 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   const filteredCountries = useMemo(() => {
     const q = countrySearch.trim().toLowerCase();
     const base = q ? countries.filter((c) => (c.name || "").toLowerCase().includes(q)) : countries;
+    const minPrice = (c) => Math.min(Infinity, ...(c.pricelist || []).map((p) => Number(p.sell_price ?? p.price ?? Infinity)));
+    const maxRate = (c) =>
+      Math.max(-1, ...(c.pricelist || []).map((p) => Number(pick(p, ["success_rate", "rate", "completion_rate", "percent"], -1))));
     return [...base].sort((a, b) => {
-      const minA = Math.min(...(a.pricelist || []).map((p) => Number(p.sell_price ?? p.price ?? Infinity)));
-      const minB = Math.min(...(b.pricelist || []).map((p) => Number(p.sell_price ?? p.price ?? Infinity)));
-      return sortMode === "harga" ? minA - minB : minA - minB;
+      if (sortMode === "harga") return minPrice(a) - minPrice(b);
+      const r = maxRate(b) - maxRate(a);
+      return r !== 0 ? r : minPrice(a) - minPrice(b);
     });
   }, [countries, countrySearch, sortMode]);
 
@@ -91,14 +98,14 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
         setBuyingKey(null);
         return;
       }
-      await submitOrder(country, provider, ops[0]?.id || null);
+      await submitOrder(country, provider, ops[0]?.id || null, ops[0]?.name || null);
     } catch (e) {
       setBuyError("Gagal memuat operator. Coba lagi.");
       setBuyingKey(null);
     }
   }
 
-  async function submitOrder(country, provider, operatorId) {
+  async function submitOrder(country, provider, operatorId, operatorName) {
     setBuyError("");
     setBuyingKey(provider.provider_id);
     try {
@@ -107,10 +114,11 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token,
+          serviceId: selectedService.service_code,
           numberId: country.number_id,
           providerId: provider.provider_id,
           operatorId: operatorId || null,
-          basePrice: provider.price,
+          operatorName: operatorName || null,
           serviceName: selectedService.service_name,
           countryName: country.name
         })
@@ -126,7 +134,8 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
         countryName: country.name,
         status: "pending",
         otpCode: null,
-        otpMsg: null
+        otpMsg: null,
+        expiredAt: data.expiredAt || null
       });
     } catch (err) {
       setBuyError(err.message);
@@ -140,14 +149,24 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
 
   return (
     <div className="fixed inset-0 z-[70]">
-      <div className="animate-fade-in absolute inset-0 bg-ink/45 backdrop-blur-sm" onClick={onClose} />
+      <div className="animate-fade-in absolute inset-0" style={{ background: "rgb(var(--c-navy-bright) / 0.5)" }} onClick={onClose} />
 
-      <div className="animate-sheet-up glass absolute inset-x-0 bottom-0 flex max-h-[86vh] flex-col rounded-t-3xl shadow-card-3d">
+      <div className="animate-sheet-up absolute inset-x-0 bottom-0 mx-auto flex max-h-[88vh] max-w-2xl flex-col rounded-t-[28px] border border-line bg-surface shadow-lift">
         <div className="mx-auto mt-2.5 h-1.5 w-12 shrink-0 rounded-full bg-line" />
 
         <div className="shrink-0 px-5 pb-3 pt-2">
-          <h3 className="font-display text-lg font-semibold text-ink">Beli Nomor Virtual</h3>
-          <p className="text-xs text-muted">Pilih sebuah aplikasi dan negaranya</p>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-extrabold tracking-tight text-ink">Beli nomor virtual</h3>
+              <p className="text-xs text-muted">
+                {screen === "apps" ? "Langkah 1 dari 2 · pilih aplikasi" : "Langkah 2 dari 2 · pilih negara & server"}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[11px] text-muted">Saldo</p>
+              <p className="text-sm font-bold tabular-nums text-ink">Rp{Number(balance || 0).toLocaleString("id-ID")}</p>
+            </div>
+          </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
@@ -157,7 +176,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                 value={appSearch}
                 onChange={(e) => setAppSearch(e.target.value)}
                 placeholder="Cari nama aplikasi..."
-                className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none transition-colors focus:border-amber"
+                className="field"
               />
 
               {servicesLoading ? (
@@ -181,7 +200,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                       <button
                         key={s.service_code}
                         onClick={() => chooseService(s)}
-                        className="btn-3d glass flex flex-col items-center gap-2 rounded-2xl px-3 py-4 shadow-soft"
+                        className="btn-3d flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface2/50 px-3 py-4 hover:border-amber/40"
                       >
                         {s.service_img ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -211,7 +230,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
             <div className="fade-up">
               <button
                 onClick={() => setScreen("apps")}
-                className="glass flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left shadow-soft"
+                className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface2/60 px-4 py-3 text-left"
               >
                 {selectedService.service_img ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -234,13 +253,13 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                 value={countrySearch}
                 onChange={(e) => setCountrySearch(e.target.value)}
                 placeholder="Cari nama negara..."
-                className="mt-3 w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none transition-colors focus:border-amber"
+                className="field mt-3"
               />
 
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {[
-                  { id: "rate", label: "Rate", icon: "↗" },
-                  { id: "harga", label: "Harga", icon: "↘" }
+                  { id: "rate", label: "Paling sukses", icon: "" },
+                  { id: "harga", label: "Termurah", icon: "" }
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -254,7 +273,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                 ))}
               </div>
 
-              {buyError && <p className="mt-3 text-sm text-rose">{buyError}</p>}
+              {buyError && <p className="mt-3 rounded-xl bg-rose-soft px-3 py-2 text-sm text-rose">{buyError}</p>}
 
               {countriesLoading ? (
                 <div className="mt-4 space-y-3">
@@ -273,7 +292,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                     const dial = pick(c, ["dial_code", "phone_code", "calling_code", "code"], null);
                     const iso = pick(c, ["iso", "iso_code", "short_code", "country_code"], null);
                     return (
-                      <div key={c.number_id} className="glass overflow-hidden rounded-2xl shadow-soft">
+                      <div key={c.number_id} className="overflow-hidden rounded-2xl border border-line bg-surface">
                         <button
                           onClick={() => setExpandedCountry(isOpen ? null : c.number_id)}
                           className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
@@ -319,8 +338,8 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                                       <span className="text-xs font-medium text-ink">{providerLabel}</span>
                                       <span className="rounded-full bg-surface2 px-1.5 py-0.5 text-[10px] text-muted">ID: {providerNum}</span>
                                       {rate != null && (
-                                        <span className="rounded-full bg-rose-soft px-1.5 py-0.5 text-[10px] font-medium text-rose">
-                                          {Number(rate).toFixed(2)}%
+                                        <span className="rounded-full bg-success-soft px-1.5 py-0.5 text-[10px] font-semibold text-success">
+                                          {Number(rate).toFixed(0)}% sukses
                                         </span>
                                       )}
                                     </div>
@@ -360,14 +379,14 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
               <p className="mt-1 text-xs text-muted">
                 {operatorTarget.country.name} · Rp{Number(operatorTarget.provider.sell_price ?? operatorTarget.provider.price).toLocaleString("id-ID")}
               </p>
-              {buyError && <p className="mt-3 text-sm text-rose">{buyError}</p>}
+              {buyError && <p className="mt-3 rounded-xl bg-rose-soft px-3 py-2 text-sm text-rose">{buyError}</p>}
               <div className="mt-4 grid grid-cols-2 gap-2">
                 {operatorTarget.operators.map((op) => (
                   <button
                     key={op.id}
-                    onClick={() => submitOrder(operatorTarget.country, operatorTarget.provider, op.id)}
+                    onClick={() => submitOrder(operatorTarget.country, operatorTarget.provider, op.id, op.name)}
                     disabled={buyingKey === operatorTarget.provider.provider_id}
-                    className="btn-3d glass rounded-xl px-4 py-3 text-sm font-medium text-ink shadow-soft disabled:opacity-50"
+                    className="btn-ghost"
                   >
                     {buyingKey === operatorTarget.provider.provider_id ? "Memproses..." : op.name}
                   </button>

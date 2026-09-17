@@ -1,52 +1,52 @@
-import { Space_Grotesk, Inter } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { UserProvider, ThemeProvider } from "./providers";
 import SiteChrome from "@/components/SiteChrome";
 
-// Dijalankan sebelum React hydrate supaya tidak ada kedipan (flash) warna:
-// baca preferensi tersimpan, tapi kalau belum pernah memilih, defaultnya
-// tetap mode terang.
+// Dijalankan sebelum React hydrate supaya tidak ada kedipan warna saat mode gelap.
 const themeInitScript = `
 (function () {
   try {
     var saved = localStorage.getItem("artapedia_theme");
-    if (saved === "dark") {
-      document.documentElement.classList.add("dark");
-    }
+    if (saved === "dark") document.documentElement.classList.add("dark");
   } catch (e) {}
 })();
 `;
 
-const display = Space_Grotesk({ subsets: ["latin"], variable: "--font-display", weight: ["500", "600", "700"] });
-const body = Inter({ subsets: ["latin"], variable: "--font-body", weight: ["400", "500", "600"] });
+// Plus Jakarta Sans: huruf yang dirancang untuk identitas kota Jakarta — pas untuk
+// produk lokal. JetBrains Mono khusus untuk data yang harus dibaca persis
+// (kode OTP, kode akun, ID transaksi).
+const sans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-body",
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap"
+});
+const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", weight: ["500", "600"], display: "swap" });
 
 export const metadata = {
-  title: "Artapedia — Deposit & Beli Nomor OTP Otomatis",
+  title: "Artapedia — Nokos, Suntik Sosmed & Deposit QRIS Otomatis",
   description:
-    "Deposit saldo otomatis via QRIS dan beli nomor OTP untuk berbagai layanan (WhatsApp, Telegram, Google, dan lainnya), diproses otomatis 24 jam."
+    "Beli nomor OTP (nokos) untuk WhatsApp, Telegram, Google dan ratusan layanan lain, suntik followers/likes/views, dan isi saldo otomatis via QRIS. Diproses 24 jam."
 };
 
 export const viewport = {
-  themeColor: "#F0F4FA"
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F4F7FC" },
+    { media: "(prefers-color-scheme: dark)", color: "#070C1A" }
+  ]
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id" className={`${display.variable} ${body.variable} scroll-smooth`}>
+    <html lang="id" className={`${sans.variable} ${mono.variable}`} style={{ "--font-display": "var(--font-body)" }} suppressHydrationWarning>
       <head>
-        {/* Cadangan buat browser dalam-app Telegram yang kadang tetap nyimpen cache
-            halaman lama walau header Cache-Control dari server sudah bilang jangan. */}
         <meta httpEquiv="Cache-Control" content="no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="min-h-screen bg-bg font-body text-ink antialiased selection:bg-amber/20 selection:text-amber-bright">
-        <div className="aurora-bg" aria-hidden="true">
-          <span className="aurora-blob left-[-10%] top-[-10%] h-[420px] w-[420px] bg-amber" />
-          <span className="aurora-blob right-[-12%] top-[15%] h-[380px] w-[380px] bg-teal [animation-delay:-5s]" />
-          <span className="aurora-blob bottom-[-15%] left-[20%] h-[360px] w-[360px] bg-ochre [animation-delay:-9s]" />
-        </div>
+      <body className="min-h-screen bg-bg font-body text-ink antialiased selection:bg-amber/20">
         <ThemeProvider>
           <UserProvider>
             <SiteChrome>{children}</SiteChrome>

@@ -54,16 +54,16 @@ export default function TransactionTicker() {
   const current = items[Math.min(index, items.length - 1)];
 
   return (
-    <div className="fade-up delay-2 glass mt-4 flex items-center gap-2.5 overflow-hidden rounded-full px-4 py-2.5 shadow-soft">
+    <div className="mt-5 flex items-center gap-2.5 overflow-hidden rounded-full border border-line bg-surface px-4 py-2.5" aria-live="polite">
       <span className="relative flex h-2 w-2 shrink-0">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-bright opacity-75" />
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-teal-bright" />
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
       </span>
       <p key={`${current.token}-${current.createdAt}`} className="animate-fade-in min-w-0 flex-1 truncate text-xs text-ink sm:text-sm">
-        🔥 User <code className="font-mono text-amber-bright">{current.token}</code> baru saja beli nomor{" "}
-        <span className="font-medium">{current.serviceName}</span>
-        {current.countryName ? ` ${current.countryName}` : ""} ·{" "}
-        <span className="text-muted">{timeAgo(current.createdAt)}</span>
+        <code className="font-mono font-semibold text-amber-bright">{current.token}</code>{" "}
+        {current.kind === "smm" ? "memesan suntik" : "berhasil dapat kode"}{" "}
+        <span className="font-semibold">{current.serviceName}</span>
+        {current.countryName ? ` · ${current.countryName}` : ""} <span className="text-muted">· {timeAgo(current.createdAt)}</span>
       </p>
     </div>
   );

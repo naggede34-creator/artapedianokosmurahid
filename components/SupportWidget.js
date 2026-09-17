@@ -15,7 +15,7 @@ function ChatBubble({ msg }) {
       <div
         className={`max-w-[85%] whitespace-pre-line rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
           isUser
-            ? "rounded-br-sm bg-gradient-to-br from-amber to-amber-bright text-white"
+            ? "rounded-br-sm bg-amber text-white"
             : "rounded-bl-sm border border-line bg-surface2 text-ink"
         }`}
       >
@@ -90,7 +90,7 @@ export default function SupportWidget({
       {/* Chat panel */}
       {chatOpen && (
         <div className="animate-scale-in flex h-[70vh] max-h-[520px] w-[92vw] max-w-[360px] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-lift">
-          <div className="flex items-center justify-between bg-gradient-to-r from-amber-bright via-amber to-teal px-4 py-3 text-white">
+          <div className="flex items-center justify-between bg-teal-bright px-4 py-3 text-white">
             <div className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-base">🤖</span>
               <div>
@@ -115,7 +115,7 @@ export default function SupportWidget({
             ))}
             {loading && <TypingDots />}
             {error && (
-              <p className="rounded-xl bg-rose-soft px-3 py-2 text-xs font-medium text-rose-bright">{error}</p>
+              <p className="rounded-xl bg-rose-soft px-3 py-2 text-xs font-medium text-rose">{error}</p>
             )}
           </div>
 
@@ -134,7 +134,7 @@ export default function SupportWidget({
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="btn-3d press flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber to-amber-bright text-white shadow-3d disabled:opacity-50"
+                className="btn-3d press flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-amber text-white shadow-3d disabled:opacity-50"
                 aria-label="Kirim"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -184,7 +184,7 @@ export default function SupportWidget({
       {!chatOpen && (
         <button
           onClick={() => setMenuOpen((v) => !v)}
-          className="btn-3d press flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-bright via-amber to-teal text-white shadow-glow"
+          className="btn-3d press flex h-14 w-14 items-center justify-center rounded-full bg-teal-bright text-white shadow-glow"
           aria-label="Bantuan"
         >
           <svg

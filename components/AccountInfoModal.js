@@ -67,7 +67,7 @@ export default function AccountInfoModal({ open, onClose, token, balance, joined
         style={{ background: "rgb(var(--c-ink) / 0.45)" }}
       />
       <div className="animate-scale-in relative w-full max-w-sm overflow-hidden rounded-2xl border border-line bg-surface shadow-lift">
-        <div className="flex items-center justify-between bg-gradient-to-r from-amber-bright via-amber to-teal px-5 py-4 text-white">
+        <div className="flex items-center justify-between bg-teal-bright px-5 py-4 text-white">
           <div className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-base">👤</span>
             <p className="text-sm font-semibold">Info Akun</p>
@@ -97,7 +97,7 @@ export default function AccountInfoModal({ open, onClose, token, balance, joined
               <button
                 type="submit"
                 disabled={savingName}
-                className="btn-3d flex-shrink-0 rounded-xl bg-gradient-to-r from-amber to-amber-bright px-3.5 py-2.5 text-xs font-medium text-white shadow-3d disabled:opacity-60"
+                className="btn-3d flex-shrink-0 rounded-xl bg-amber hover:bg-amber-bright px-3.5 py-2.5 text-xs font-medium text-white shadow-3d disabled:opacity-60"
               >
                 {savingName ? "..." : "Simpan"}
               </button>

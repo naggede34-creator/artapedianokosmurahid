@@ -2,88 +2,53 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Icon } from "@/components/ui";
 
 const tabs = [
-  {
-    href: "/dashboard",
-    label: "Dashboard",
-    icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"
-          stroke="currentColor"
-          strokeWidth={active ? 2 : 1.6}
-          strokeLinejoin="round"
-        />
-      </svg>
-    )
-  },
-  {
-    href: "/deposit",
-    label: "Deposit",
-    icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <rect x="3.5" y="6" width="17" height="12" rx="2" stroke="currentColor" strokeWidth={active ? 2 : 1.6} />
-        <path d="M3.5 10h17" stroke="currentColor" strokeWidth={active ? 2 : 1.6} />
-        <circle cx="16.5" cy="14" r="1.2" fill="currentColor" />
-      </svg>
-    )
-  },
-  {
-    href: "/riwayat",
-    label: "Aktivitas",
-    icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M4 12a8 8 0 1 0 2.34-5.66"
-          stroke="currentColor"
-          strokeWidth={active ? 2 : 1.6}
-          strokeLinecap="round"
-        />
-        <path d="M4 4v4h4" stroke="currentColor" strokeWidth={active ? 2 : 1.6} strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M12 8v4l3 2" stroke="currentColor" strokeWidth={active ? 2 : 1.6} strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    )
-  },
-  {
-    href: "/cara-pakai",
-    label: "Panduan",
-    icon: (active) => (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="8" r="3.2" stroke="currentColor" strokeWidth={active ? 2 : 1.6} />
-        <path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" stroke="currentColor" strokeWidth={active ? 2 : 1.6} strokeLinecap="round" />
-      </svg>
-    )
-  }
+  { href: "/dashboard", label: "Beranda", icon: Icon.home, match: ["/dashboard", "/"] },
+  { href: "/otp", label: "Nokos", icon: Icon.phone },
+  { href: "/deposit", label: "Deposit", icon: Icon.qris, primary: true },
+  { href: "/suntik", label: "Suntik", icon: Icon.rocket },
+  { href: "/riwayat", label: "Riwayat", icon: Icon.history }
 ];
 
 export default function BottomNav() {
-  const pathname = usePathname();
+  const pathname = usePathname() || "/";
 
   return (
-    <nav className="glass fixed inset-x-0 bottom-0 z-50 shadow-[0_-8px_24px_-16px_rgba(13,17,23,0.25)] md:hidden">
-      <div className="mx-auto flex max-w-content items-stretch justify-between px-2">
+    <nav className="glass fixed inset-x-0 bottom-0 z-50 border-x-0 border-b-0 md:hidden" aria-label="Navigasi bawah">
+      <div className="mx-auto flex max-w-content items-end justify-between px-2 pt-1.5">
         {tabs.map((t) => {
-          const active = pathname?.startsWith(t.href);
+          const active = t.match ? t.match.includes(pathname) : pathname.startsWith(t.href);
+          const I = t.icon;
+          if (t.primary) {
+            return (
+              <Link key={t.href} href={t.href} className="tap-scale flex flex-1 flex-col items-center gap-1 pb-2">
+                <span
+                  className={`-mt-5 flex h-12 w-12 items-center justify-center rounded-2xl text-white ring-4 ring-bg ${
+                    active ? "bg-amber-bright" : "bg-amber"
+                  }`}
+                  style={{ boxShadow: "0 10px 20px -10px rgb(var(--c-blue) / 0.8)" }}
+                >
+                  <I width={22} height={22} />
+                </span>
+                <span className={`text-[11px] font-semibold ${active ? "text-amber-bright" : "text-muted"}`}>{t.label}</span>
+              </Link>
+            );
+          }
           return (
             <Link
               key={t.href}
               href={t.href}
-              className={`tap-scale relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] transition-colors duration-200 ${
+              aria-current={active ? "page" : undefined}
+              className={`tap-scale flex flex-1 flex-col items-center gap-1 pb-2 pt-1 text-[11px] font-semibold transition-colors ${
                 active ? "text-amber-bright" : "text-muted"
               }`}
             >
-              {active && (
-                <span className="absolute top-1 h-1.5 w-1.5 rounded-full bg-amber shadow-glow animate-scale-in" />
-              )}
-              <span
-                className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 ${
-                  active ? "-translate-y-0.5 bg-amber-soft shadow-3d" : ""
-                }`}
-              >
-                {t.icon(active)}
+              <span className={`flex h-8 w-12 items-center justify-center rounded-full transition-colors ${active ? "bg-amber-soft" : ""}`}>
+                <I width={21} height={21} />
               </span>
-              <span className={active ? "font-medium" : ""}>{t.label}</span>
+              {t.label}
             </Link>
           );
         })}

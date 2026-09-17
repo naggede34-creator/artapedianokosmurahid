@@ -62,7 +62,7 @@ function MaintenanceScreen({ message }) {
       <div className="glow-ring rounded-3xl">
         <div className="glass max-w-sm rounded-3xl px-8 py-10 shadow-card-3d">
           <span className="mascot-platform mx-auto -mb-2 block h-6 w-28 rounded-full opacity-70" aria-hidden="true" />
-          <span className="float-slow relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber to-amber-bright text-3xl shadow-3d">
+          <span className="float-slow relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber text-3xl shadow-3d">
             🛠️
           </span>
           <h1 className="mt-5 font-display text-xl font-semibold text-ink">Sedang Maintenance</h1>

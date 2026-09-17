@@ -12,7 +12,8 @@ export async function GET(req) {
     const limit = Math.min(Number(searchParams.get("limit") || 50), 200);
 
     const users = await usersCol();
-    const filter = q ? { token: { $regex: q, $options: "i" } } : {};
+    const safe = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const filter = q ? { $or: [{ token: { $regex: safe, $options: "i" } }, { name: { $regex: safe, $options: "i" } }] } : {};
     const [items, total, agg] = await Promise.all([
       users.find(filter).sort({ createdAt: -1 }).limit(limit).toArray(),
       users.countDocuments({}),
@@ -24,7 +25,9 @@ export async function GET(req) {
     return NextResponse.json({
       items: items.map((u) => ({
         token: u.token,
+        name: u.name || null,
         balance: u.balance || 0,
+        depositTotal: u.depositTotal || 0,
         referralCount: u.referralCount || 0,
         referralEarnings: u.referralEarnings || 0,
         createdAt: u.createdAt

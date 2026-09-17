@@ -27,6 +27,18 @@ const ORDER_STEPS = [
 
 const FAQ_ITEMS = [
   {
+    q: "Apa itu suntik sosmed dan apakah aman?",
+    a: "Suntik sosmed adalah layanan menambah followers, likes, views, atau komentar di Instagram, TikTok, YouTube, Telegram, dan platform lain. Kami tidak pernah meminta password — cukup link atau username yang publik. Pilih layanan berlabel Rekomendasi atau Garansi refill untuk hasil paling stabil."
+  },
+  {
+    q: "Pesanan suntik batal atau cuma masuk sebagian, saldonya bagaimana?",
+    a: "Kalau pesanan dibatalkan provider, saldo dikembalikan penuh. Kalau selesai sebagian, saldo untuk jumlah yang tidak masuk dikembalikan otomatis. Semua tercatat di Mutasi Saldo."
+  },
+  {
+    q: "Saya sudah bayar QRIS tapi saldo belum masuk?",
+    a: "Tekan tombol \"Saya sudah bayar\" di halaman deposit. Sistem juga mengecek ulang otomatis setiap beberapa menit selama 3 jam, termasuk kalau QRIS terlanjur kamu batalkan setelah membayar. Kalau tetap belum masuk, hubungi CS dengan ID deposit dari halaman Riwayat."
+  },
+  {
     q: "Berapa lama saldo deposit masuk?",
     a: "Deposit via QRIS biasanya terverifikasi otomatis dalam hitungan detik. Jika lebih dari beberapa menit belum masuk, hubungi CS dengan menyertakan bukti pembayaran."
   },
@@ -77,9 +89,9 @@ export default function FaqPage() {
   const showFaq = topic === "semua" || topic === "faq";
 
   return (
-    <div className="mx-auto max-w-content px-5 py-8">
-      <p className="fade-up text-sm font-semibold uppercase tracking-wide text-amber-bright">📖 Pusat Kebijakan</p>
-      <h1 className="fade-up delay-1 mt-2 font-display text-display-sm font-semibold text-ink sm:text-display-md">
+    <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
+      <p className="fade-up text-sm font-semibold text-amber-bright">📖 Pusat Kebijakan</p>
+      <h1 className="fade-up delay-1 mt-2 text-[26px] font-extrabold tracking-tight text-ink sm:text-[32px]">
         Bantuan (FAQ)
       </h1>
       <p className="fade-up delay-2 mt-3 max-w-xl text-sm leading-relaxed text-muted">
@@ -112,7 +124,7 @@ export default function FaqPage() {
       {showOrder && (
         <section id="server-1" className="mt-8">
           <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber to-amber-bright text-white">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber text-white">
               🛒
             </span>
             <h2 className="font-display text-base font-semibold text-ink">Cara Order OTP (Server 1 &amp; 2)</h2>

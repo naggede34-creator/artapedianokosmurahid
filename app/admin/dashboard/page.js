@@ -56,12 +56,48 @@ export default function AdminDashboardPage() {
   const [announcementSubmitting, setAnnouncementSubmitting] = useState(false);
   const [announcementMsg, setAnnouncementMsg] = useState("");
 
+  const [simuru, setSimuru] = useState(null);
+  const [smmMarkupInput, setSmmMarkupInput] = useState("");
+  const [savingSmm, setSavingSmm] = useState(false);
+
+  const loadSimuru = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/simuru");
+      if (res.ok) setSimuru(await res.json());
+    } catch {
+      setSimuru({ configured: false, balance: null, error: "Gagal memuat." });
+    }
+  }, []);
+
+  async function saveSmm(patch) {
+    setSavingSmm(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ smm: patch })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSettings(data);
+        setSmmMarkupInput(String(data.smm?.markupPercent ?? 0));
+        setSettingsMsg("Pengaturan suntik sosmed tersimpan.");
+      } else {
+        setSettingsMsg(data.error || "Gagal menyimpan.");
+      }
+    } finally {
+      setSavingSmm(false);
+      setTimeout(() => setSettingsMsg(""), 2500);
+    }
+  }
+
   const loadSettings = useCallback(async () => {
     const res = await fetch("/api/admin/settings");
     if (res.status === 401) return router.push("/admin/login");
     const data = await res.json();
     setSettings(data);
     setMarkupInput(String(data.markupPercent ?? 0));
+    setSmmMarkupInput(String(data.smm?.markupPercent ?? 0));
   }, [router]);
 
   const loadUsers = useCallback(
@@ -131,6 +167,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     loadSettings();
+    loadSimuru();
     loadUsers("");
     loadStats();
     loadVouchers();
@@ -399,10 +436,10 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-content px-5 py-8">
+    <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-teal-bright">Admin Panel</p>
+          <p className="text-xs font-semibold text-teal-bright">Admin Panel</p>
           <h1 className="mt-1 font-display text-xl font-semibold text-ink sm:text-2xl">Dashboard Artapedia</h1>
         </div>
         <button
@@ -414,8 +451,21 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+      <div className="mt-6 grid gap-3 sm:grid-cols-4">
         <StatCard label="Total user" value={total.toLocaleString("id-ID")} />
+        <StatCard
+          label="Saldo akun Simuru"
+          value={
+            !simuru
+              ? "..."
+              : !simuru.configured
+              ? "API key belum diisi"
+              : simuru.balance === null
+              ? simuru.error || "Gagal cek"
+              : `Rp${Number(simuru.balance).toLocaleString("id-ID")}`
+          }
+          accent={simuru?.balance !== null && simuru?.balance < 20000 ? "text-rose" : "text-teal-bright"}
+        />
         <StatCard label="Total saldo beredar" value={`Rp${totalBalance.toLocaleString("id-ID")}`} />
         <StatCard
           label="Status website"
@@ -434,6 +484,17 @@ export default function AdminDashboardPage() {
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <StatCard label="Order OTP (7 hari)" value={`${stats.totals.orderCount}`} />
               <StatCard label="Omzet OTP (7 hari)" value={`Rp${stats.totals.orderRevenue.toLocaleString("id-ID")}`} accent="text-teal-bright" />
+              <StatCard label="Order suntik (7 hari)" value={`${stats.totals.smmCount ?? 0}`} />
+              <StatCard label="Omzet suntik (7 hari)" value={`Rp${Number(stats.totals.smmRevenue || 0).toLocaleString("id-ID")}`} accent="text-teal-bright" />
+              <StatCard label="Deposit masuk (7 hari)" value={`Rp${Number(stats.totals.depositAmount || 0).toLocaleString("id-ID")}`} accent="text-success" />
+              <StatCard
+                label="Deposit per QRIS"
+                value={
+                  Object.entries(stats.depositByProvider || {})
+                    .map(([k, v]) => `${k}: ${v.count}x`)
+                    .join(" · ") || "-"
+                }
+              />
             </div>
 
             <p className="mt-6 text-xs font-medium text-muted">Omzet order OTP per hari</p>
@@ -588,7 +649,7 @@ export default function AdminDashboardPage() {
           <button
             type="submit"
             disabled={broadcastSubmitting}
-            className="btn-3d shrink-0 rounded-lg bg-gradient-to-r from-amber to-amber-bright px-4 py-2.5 text-sm font-medium text-white shadow-3d disabled:opacity-60"
+            className="btn-3d shrink-0 rounded-lg bg-amber hover:bg-amber-bright px-4 py-2.5 text-sm font-medium text-white shadow-3d disabled:opacity-60"
           >
             {broadcastSubmitting ? "Mengirim..." : "Kirim Broadcast"}
           </button>
@@ -772,7 +833,7 @@ export default function AdminDashboardPage() {
               <button
                 onClick={saveMarkup}
                 disabled={savingMarkup}
-                className="btn-3d shrink-0 rounded-lg bg-gradient-to-r from-amber to-amber-bright px-4 py-2.5 text-sm font-medium text-white shadow-3d disabled:opacity-60"
+                className="btn-3d shrink-0 rounded-lg bg-amber hover:bg-amber-bright px-4 py-2.5 text-sm font-medium text-white shadow-3d disabled:opacity-60"
               >
                 {savingMarkup ? "..." : "Simpan"}
               </button>
@@ -808,8 +869,9 @@ export default function AdminDashboardPage() {
             <label className="text-xs font-medium text-muted">Metode deposit QRIS aktif</label>
             <div className="mt-1.5 space-y-2">
               {[
-                { key: "pakasir", label: "QRIS - Pakasir" },
-                { key: "rumahotp", label: "QRIS - RumahOTP (otomatis)" }
+                { key: "simuru", label: "QRIS Simuru (SIMURU_APIKEY)" },
+                { key: "pakasir", label: "QRIS Pakasir" },
+                { key: "rumahotp", label: "QRIS RumahOTP" }
               ].map((p) => (
                 <div key={p.key} className="rounded-lg border border-line bg-surface px-3.5 py-2.5">
                   <div className="flex items-center justify-between">
@@ -852,6 +914,54 @@ export default function AdminDashboardPage() {
               Persen biaya admin cuma dipakai untuk estimasi yang ditampilkan ke user sebelum bayar — nominal pasti yang dipotong tetap
               mengikuti respons resmi dari provider saat transaksi dibuat.
             </p>
+          </div>
+        </div>
+        {settingsMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{settingsMsg}</p>}
+      </div>
+
+      {/* Suntik sosmed */}
+      <div className="glass mt-8 rounded-2xl p-5 shadow-soft sm:p-6">
+        <h2 className="font-display text-base font-semibold text-ink">Suntik Sosmed (Simuru)</h2>
+        <p className="mt-1 text-xs text-muted">
+          Pesanan dikirim ke Simuru memakai saldo akun Simuru kamu. Pastikan saldo Simuru cukup; kalau kurang, pesanan user otomatis
+          dibatalkan & saldonya dikembalikan.
+        </p>
+        <div className="mt-4 grid gap-5 sm:grid-cols-2">
+          <div className="flex items-center justify-between rounded-lg border border-line bg-surface px-3.5 py-2.5">
+            <span className="text-sm text-ink">{settings?.smm?.enabled ? "Aktif — user bisa order" : "Nonaktif"}</span>
+            <button
+              onClick={() => saveSmm({ enabled: !settings?.smm?.enabled })}
+              disabled={!settings || savingSmm}
+              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${settings?.smm?.enabled ? "bg-teal" : "bg-line"}`}
+              aria-label="Toggle suntik sosmed"
+            >
+              <span
+                className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                  settings?.smm?.enabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={smmMarkupInput}
+                onChange={(e) => setSmmMarkupInput(e.target.value)}
+                className="w-24 rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink outline-none focus:border-amber"
+              />
+              <span className="text-sm text-muted">% markup</span>
+              <button
+                onClick={() => saveSmm({ markupPercent: Number(smmMarkupInput) || 0 })}
+                disabled={savingSmm}
+                className="rounded-lg bg-amber px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Simpan
+              </button>
+            </div>
+            <p className="mt-1.5 text-[11px] text-muted">Harga jual per 1.000 = harga Simuru × (1 + markup%).</p>
           </div>
         </div>
         {settingsMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{settingsMsg}</p>}
@@ -1037,7 +1147,7 @@ export default function AdminDashboardPage() {
               ) : (
                 users.map((u) => (
                   <tr key={u.token} className="border-b border-line last:border-0">
-                    <td className="px-4 py-3 font-mono text-xs text-ink">{u.token}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-ink">{u.token}{u.name ? ` · ${u.name}` : ""}</td>
                     <td className="px-4 py-3 font-medium text-ink">Rp{u.balance.toLocaleString("id-ID")}</td>
                     <td className="px-4 py-3 text-xs text-muted">{u.referralCount} orang</td>
                     <td className="px-4 py-3 text-xs text-muted">{fmtDate(u.createdAt)}</td>

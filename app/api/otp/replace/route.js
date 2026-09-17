@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
-import { createOrder } from "@/lib/rumahotp";
+import { createOrder, toEpochMs } from "@/lib/rumahotp";
 import { sendTelegramNotif, otpPurchaseNotif, otpAutoRefundNotif } from "@/lib/telegram";
+import { logBalance } from "@/lib/ledger";
 
 // Dipakai saat nomor yang dibeli kedaluwarsa tanpa kode OTP masuk. User bisa minta
 // nomor pengganti tanpa membayar lagi (memakai saldo yang sudah terpotong di order lama).
@@ -58,6 +59,14 @@ export async function POST(req) {
         { $inc: { balance: oldOrder.price } },
         { returnDocument: "after" }
       );
+      await logBalance({
+        token,
+        type: "otp_refund",
+        amount: oldOrder.price,
+        balanceAfter: refunded?.balance,
+        title: `Refund OTP ${oldOrder.serviceName || ""}`.trim(),
+        ref: oldOrder.orderId
+      });
       sendTelegramNotif(
         otpAutoRefundNotif({
           orderId: oldOrder.orderId,
@@ -78,6 +87,7 @@ export async function POST(req) {
     await orders.insertOne({
       orderId: String(data.order_id),
       token,
+      serviceId: oldOrder.serviceId || null,
       serviceName: oldOrder.serviceName,
       countryName: oldOrder.countryName,
       phoneNumber: data.phone_number || "-",
@@ -92,7 +102,7 @@ export async function POST(req) {
       operatorId: oldOrder.operatorId,
       basePrice: oldOrder.basePrice,
       createdAt: new Date(),
-      expiredAt: data.expired_at ? new Date(data.expired_at) : null
+      expiredAt: toEpochMs(data.expired_at) ? new Date(toEpochMs(data.expired_at)) : null
     });
 
     sendTelegramNotif(

@@ -12,6 +12,7 @@ import { NextResponse } from "next/server";
 import { getServices } from "@/lib/rumahotp";
 import { usersCol } from "@/lib/db";
 import { runCleanup } from "@/lib/cleanup";
+import { getSimuruBalance, simuruConfigured } from "@/lib/simuru";
 import { sendMonitorLog, cronReportLog } from "@/lib/monitor";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +39,22 @@ async function checkRumahOtp() {
   }
 }
 
+async function checkSimuru() {
+  const start = Date.now();
+  if (!simuruConfigured()) return { name: "Simuru API", ok: false, error: "SIMURU_APIKEY belum diset" };
+  try {
+    const balance = await getSimuruBalance();
+    return {
+      name: `Simuru API (saldo Rp${balance.toLocaleString("id-ID")})`,
+      ok: true,
+      ms: Date.now() - start,
+      ...(balance < 20000 ? { error: "saldo menipis" } : {})
+    };
+  } catch (err) {
+    return { name: "Simuru API", ok: false, ms: Date.now() - start, error: err?.message || "gagal terhubung" };
+  }
+}
+
 async function checkMongo() {
   const start = Date.now();
   try {
@@ -54,10 +71,17 @@ export async function GET(req) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  const health = await Promise.all([checkMongo(), checkRumahOtp()]);
+  const health = await Promise.all([checkMongo(), checkRumahOtp(), checkSimuru()]);
   const cleanup = await runCleanup();
 
-  sendMonitorLog(cronReportLog({ health, cleanup }));
+  // Laporan hanya dikirim kalau ada yang perlu diketahui, supaya thread monitoring
+  // tidak dibanjiri pesan identik setiap 5 menit.
+  const noteworthy =
+    health.some((h) => !h.ok || h.error) ||
+    cleanup.errors.length > 0 ||
+    cleanup.otpRefunded + cleanup.depositsCredited + cleanup.smmSettled + cleanup.depositsDeleted + cleanup.broadcastsDeleted > 0 ||
+    new URL(req.url).searchParams.get("report") === "1";
+  if (noteworthy) sendMonitorLog(cronReportLog({ health, cleanup }));
 
   return NextResponse.json({ ok: true, health, cleanup });
 }

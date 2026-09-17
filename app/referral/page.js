@@ -35,9 +35,9 @@ export default function ReferralPage() {
   };
 
   return (
-    <div className="mx-auto max-w-content px-5 py-14">
-      <p className="fade-up text-sm font-semibold uppercase tracking-wide text-teal-bright">Undang Teman</p>
-      <h1 className="fade-up delay-1 mt-2 font-display text-display-sm font-semibold text-ink sm:text-display-md">
+    <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
+      <p className="fade-up text-sm font-semibold text-teal-bright">Undang Teman</p>
+      <h1 className="fade-up delay-1 mt-2 text-[26px] font-extrabold tracking-tight text-ink sm:text-[32px]">
         Ajak teman, dapat bonus saldo
       </h1>
       <p className="fade-up delay-2 mt-3 max-w-xl text-sm leading-relaxed text-muted">
@@ -50,7 +50,7 @@ export default function ReferralPage() {
         <div className="pointer-events-none absolute -right-14 -top-20 h-64 w-64 rounded-full bg-amber/25 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 left-6 h-52 w-52 rounded-full bg-teal/25 blur-3xl" />
         <div className="relative">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-soft/90">Link undanganmu</p>
+          <p className="text-xs font-semibold text-teal-soft/90">Link undanganmu</p>
           <p className="mt-3 break-all rounded-xl bg-white/10 px-4 py-3 font-mono text-sm text-white">
             {link || "Memuat..."}
           </p>

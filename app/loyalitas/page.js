@@ -65,9 +65,9 @@ export default function LoyaltyPage() {
   }
 
   return (
-    <div className="mx-auto max-w-content px-5 py-14">
-      <p className="fade-up text-sm font-semibold uppercase tracking-wide text-amber-bright">Poin & Level</p>
-      <h1 className="fade-up delay-1 mt-2 font-display text-display-sm font-semibold text-ink sm:text-display-md">
+    <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
+      <p className="fade-up text-sm font-semibold text-amber-bright">Poin & Level</p>
+      <h1 className="fade-up delay-1 mt-2 text-[26px] font-extrabold tracking-tight text-ink sm:text-[32px]">
         Makin sering beli, makin banyak untungnya
       </h1>
       <p className="fade-up delay-2 mt-3 max-w-xl text-sm leading-relaxed text-muted">
@@ -88,7 +88,7 @@ export default function LoyaltyPage() {
             {loading ? "…" : badge?.icon || "🥉"}
           </span>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/70">Level kamu</p>
+            <p className="text-xs font-semibold text-white/70">Level kamu</p>
             <p className="mt-1 font-display text-2xl font-semibold text-white">
               {loading ? "Memuat..." : badge?.name || "Bronze"}
             </p>
@@ -103,7 +103,7 @@ export default function LoyaltyPage() {
             </div>
             <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/15">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-amber to-amber-bright transition-all duration-500"
+                className="h-full rounded-full bg-amber hover:bg-amber-bright transition-all duration-500"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
@@ -156,7 +156,7 @@ export default function LoyaltyPage() {
           <button
             type="submit"
             disabled={redeeming || !redeemInput}
-            className="btn-3d shrink-0 rounded-lg bg-gradient-to-r from-amber to-amber-bright px-5 py-2.5 text-sm font-semibold text-white shadow-3d disabled:opacity-60"
+            className="btn-3d shrink-0 rounded-lg bg-amber hover:bg-amber-bright px-5 py-2.5 text-sm font-semibold text-white shadow-3d disabled:opacity-60"
           >
             {redeeming ? "Menukar..." : "Tukar Sekarang"}
           </button>

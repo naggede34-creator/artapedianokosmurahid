@@ -10,7 +10,7 @@ export async function GET(req) {
 
   const deposits = await depositsCol();
   const list = await deposits
-    .find({ token })
+    .find({ token }, { projection: { qrImage: 0 } })
     .sort({ createdAt: -1 })
     .limit(50)
     .toArray();
@@ -18,9 +18,16 @@ export async function GET(req) {
   return NextResponse.json({
     items: list.map((d) => ({
       orderId: d.orderId,
+      providerRef: d.providerRef && d.providerRef !== d.orderId ? d.providerRef : null,
       amount: d.amount,
+      adminFee: d.adminFee ?? null,
+      totalAmount: d.totalAmount ?? null,
+      provider: d.provider || "pakasir",
       status: d.status,
-      createdAt: d.createdAt
+      credited: Boolean(d.credited),
+      createdAt: d.createdAt,
+      expiredAt: d.expiredAt || null,
+      paidAt: d.paidAt || d.creditedAt || null
     }))
   });
 }

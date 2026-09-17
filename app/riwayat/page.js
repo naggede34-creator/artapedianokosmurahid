@@ -1,40 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useUser } from "@/app/providers";
 import OtpOrderPanel from "@/components/OtpOrderPanel";
+import SmmOrderCard from "@/components/SmmOrderCard";
+import { platformIcon } from "@/components/PlatformIcon";
+import { PageHeader, Icon, Badge, EmptyState, Segmented, statusTone, rupiah, fmtWIB, Row, CopyButton } from "@/components/ui";
+import { DEPOSIT_STATUS_LABEL, SMM_STATUS_LABEL, providerName } from "@/lib/paymentProviders";
 
-const OTP_STATUS_OPTIONS = [
-  { value: "", label: "Semua status" },
-  { value: "pending", label: "Menunggu kode" },
-  { value: "done", label: "Kode diterima" },
-  { value: "canceled", label: "Dibatalkan" },
-  { value: "expired", label: "Kedaluwarsa" }
-];
-
-const DEPOSIT_STATUS_OPTIONS = [
-  { value: "", label: "Semua status" },
-  { value: "pending", label: "Menunggu bayar" },
-  { value: "completed", label: "Berhasil" },
-  { value: "expired", label: "Kedaluwarsa" }
-];
-
-const STATUS_LABEL_ID = {
-  pending: "Menunggu",
-  completed: "Berhasil",
+const OTP_LABEL = {
+  pending: "Menunggu kode",
   done: "Kode diterima",
-  received: "Kode diterima",
   canceled: "Dibatalkan",
-  expired: "Kedaluwarsa"
+  cancelled: "Dibatalkan",
+  expired: "Kedaluwarsa",
+  refunded: "Direfund"
 };
 
 function toCsv(rows, headers) {
-  const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const lines = [headers.map((h) => escape(h.label)).join(",")];
-  for (const row of rows) {
-    lines.push(headers.map((h) => escape(row[h.key])).join(","));
-  }
-  return lines.join("\n");
+  const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  return [headers.map((h) => esc(h.label)).join(","), ...rows.map((r) => headers.map((h) => esc(r[h.key])).join(","))].join("\n");
 }
 
 function downloadCsv(filename, csv) {
@@ -50,240 +37,317 @@ function downloadCsv(filename, csv) {
 }
 
 export default function RiwayatPage() {
-  const { token } = useUser();
-  const [tab, setTab] = useState("deposit");
-  const [deposits, setDeposits] = useState([]);
-  const [otpOrders, setOtpOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [openOrder, setOpenOrder] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("");
-  const [search, setSearch] = useState("");
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-content px-5 py-10 text-sm text-muted">Memuat…</div>}>
+      <RiwayatInner />
+    </Suspense>
+  );
+}
 
-  function loadHistory() {
+function RiwayatInner() {
+  const { token, refreshBalance } = useUser();
+  const params = useSearchParams();
+  const initialTab = ["otp", "suntik", "deposit"].includes(params.get("tab")) ? params.get("tab") : "otp";
+  const [tab, setTab] = useState(initialTab);
+  const [otp, setOtp] = useState([]);
+  const [smm, setSmm] = useState([]);
+  const [deposits, setDeposits] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [openOrder, setOpenOrder] = useState(null);
+  const [openDeposit, setOpenDeposit] = useState(null);
+
+  const load = useCallback(() => {
     if (!token) return;
     setLoading(true);
-    return Promise.all([
-      fetch(`/api/deposit/history?token=${token}`).then((r) => r.json()),
-      fetch(`/api/otp/history?token=${token}`).then((r) => r.json())
+    const t = encodeURIComponent(token);
+    Promise.all([
+      fetch(`/api/otp/history?token=${t}`).then((r) => r.json()).catch(() => ({})),
+      fetch(`/api/smm/orders?token=${t}`).then((r) => r.json()).catch(() => ({})),
+      fetch(`/api/deposit/history?token=${t}`).then((r) => r.json()).catch(() => ({}))
     ])
-      .then(([d, o]) => {
+      .then(([o, s, d]) => {
+        setOtp(o.items || []);
+        setSmm(s.items || []);
         setDeposits(d.items || []);
-        setOtpOrders(o.items || []);
       })
       .finally(() => setLoading(false));
-  }
-
-  useEffect(() => {
-    loadHistory();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // Reset filter saat pindah tab, biar tidak kebawa filter dari tab sebelumnya.
-  useEffect(() => {
-    setStatusFilter("");
-    setSearch("");
-  }, [tab]);
+  useEffect(() => load(), [load]);
+  useEffect(() => setSearch(""), [tab]);
 
-  const filteredDeposits = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return deposits.filter((d) => {
-      if (statusFilter && d.status !== statusFilter) return false;
-      if (q && !d.orderId.toLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [deposits, statusFilter, search]);
-
-  const filteredOtp = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return otpOrders.filter((o) => {
-      if (statusFilter && o.status !== statusFilter) return false;
-      if (
-        q &&
-        !`${o.serviceName} ${o.countryName} ${o.phoneNumber} ${o.orderId}`.toLowerCase().includes(q)
-      )
-        return false;
-      return true;
-    });
-  }, [otpOrders, statusFilter, search]);
+  const q = search.trim().toLowerCase();
+  const fOtp = useMemo(
+    () => otp.filter((o) => !q || `${o.serviceName} ${o.countryName} ${o.phoneNumber} ${o.orderId}`.toLowerCase().includes(q)),
+    [otp, q]
+  );
+  const fSmm = useMemo(
+    () => smm.filter((o) => !q || `${o.serviceTitle} ${o.platform} ${o.target} ${o.id}`.toLowerCase().includes(q)),
+    [smm, q]
+  );
+  const fDep = useMemo(
+    () => deposits.filter((d) => !q || `${d.orderId} ${d.providerRef || ""} ${providerName(d.provider)}`.toLowerCase().includes(q)),
+    [deposits, q]
+  );
 
   function exportCsv() {
-    if (tab === "deposit") {
-      const csv = toCsv(filteredDeposits, [
-        { key: "orderId", label: "Kode Order" },
-        { key: "amount", label: "Nominal" },
-        { key: "status", label: "Status" },
-        { key: "createdAt", label: "Tanggal" }
-      ]);
-      downloadCsv(`riwayat-deposit-${Date.now()}.csv`, csv);
+    if (tab === "otp") {
+      downloadCsv(
+        `riwayat-nokos-${Date.now()}.csv`,
+        toCsv(fOtp, [
+          { key: "orderId", label: "Order" },
+          { key: "serviceName", label: "Layanan" },
+          { key: "countryName", label: "Negara" },
+          { key: "phoneNumber", label: "Nomor" },
+          { key: "otpCode", label: "Kode OTP" },
+          { key: "price", label: "Harga" },
+          { key: "status", label: "Status" },
+          { key: "createdAt", label: "Tanggal" }
+        ])
+      );
+    } else if (tab === "suntik") {
+      downloadCsv(
+        `riwayat-suntik-${Date.now()}.csv`,
+        toCsv(fSmm, [
+          { key: "id", label: "Order" },
+          { key: "platform", label: "Platform" },
+          { key: "serviceTitle", label: "Layanan" },
+          { key: "target", label: "Target" },
+          { key: "quantity", label: "Jumlah" },
+          { key: "charge", label: "Biaya" },
+          { key: "refundedAmount", label: "Refund" },
+          { key: "status", label: "Status" },
+          { key: "createdAt", label: "Tanggal" }
+        ])
+      );
     } else {
-      const csv = toCsv(filteredOtp, [
-        { key: "orderId", label: "Kode Order" },
-        { key: "serviceName", label: "Layanan" },
-        { key: "countryName", label: "Negara" },
-        { key: "phoneNumber", label: "Nomor" },
-        { key: "price", label: "Harga" },
-        { key: "status", label: "Status" },
-        { key: "createdAt", label: "Tanggal" }
-      ]);
-      downloadCsv(`riwayat-otp-${Date.now()}.csv`, csv);
+      downloadCsv(
+        `riwayat-deposit-${Date.now()}.csv`,
+        toCsv(
+          fDep.map((d) => ({ ...d, provider: providerName(d.provider) })),
+          [
+            { key: "orderId", label: "ID Deposit" },
+            { key: "provider", label: "Metode" },
+            { key: "amount", label: "Nominal" },
+            { key: "totalAmount", label: "Total Bayar" },
+            { key: "status", label: "Status" },
+            { key: "createdAt", label: "Tanggal" }
+          ]
+        )
+      );
     }
   }
 
-  const statusOptions = tab === "deposit" ? DEPOSIT_STATUS_OPTIONS : OTP_STATUS_OPTIONS;
-
   return (
-    <div className="mx-auto max-w-content px-5 py-14">
-      <p className="fade-up text-sm font-semibold uppercase tracking-wide text-amber-bright">Riwayat</p>
-      <h1 className="fade-up delay-1 mt-2 font-display text-display-sm font-semibold text-ink sm:text-display-md">Riwayat transaksi kamu</h1>
-      <p className="fade-up delay-2 mt-3 text-sm leading-relaxed text-muted">Terhubung lewat kode akun kamu, jadi pastikan kode itu tersimpan aman.</p>
+    <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
+      <PageHeader
+        icon={<Icon.history />}
+        title="Riwayat"
+        desc="Semua pembelian nokos, suntik sosmed, dan deposit kamu."
+        action={
+          <Link href="/mutasi" className="btn-ghost px-4 py-2.5">
+            Lihat mutasi saldo
+          </Link>
+        }
+      />
 
-      <div className="fade-up delay-3 mt-8 flex gap-2">
-        <button
-          onClick={() => setTab("deposit")}
-          className={`press rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
-            tab === "deposit" ? "border-amber bg-amber-soft text-amber-bright shadow-soft" : "border-line text-muted hover:text-ink"
-          }`}
-        >
-          Deposit
-        </button>
-        <button
-          onClick={() => setTab("otp")}
-          className={`press rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
-            tab === "otp" ? "border-teal bg-teal-soft text-teal-bright shadow-soft" : "border-line text-muted hover:text-ink"
-          }`}
-        >
-          Beli OTP
-        </button>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-amber"
-        >
-          {statusOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={tab === "deposit" ? "Cari kode order..." : "Cari layanan/negara/nomor/kode order..."}
-          className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm text-ink outline-none focus:border-amber sm:max-w-xs"
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        <Segmented
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: "otp", label: "Nokos", count: otp.length },
+            { value: "suntik", label: "Suntik", count: smm.length },
+            { value: "deposit", label: "Deposit", count: deposits.length }
+          ]}
         />
-        <button
-          onClick={exportCsv}
-          className="btn-3d ml-auto rounded-lg border border-line px-3.5 py-2 text-sm font-medium text-ink transition-colors hover:border-teal hover:text-teal-bright"
-        >
+        <div className="relative min-w-[180px] flex-1">
+          <Icon.search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari…" className="field py-2.5 pl-10" aria-label="Cari riwayat" />
+        </div>
+        <button onClick={load} className="btn-ghost px-3 py-2.5" aria-label="Muat ulang">
+          <Icon.refresh />
+        </button>
+        <button onClick={exportCsv} className="btn-ghost px-3.5 py-2.5">
           Ekspor CSV
         </button>
       </div>
 
-      <div className="scale-in mt-6 overflow-hidden rounded-2xl border border-line shadow-soft">
+      <div className="mt-4">
         {loading ? (
-          <div className="space-y-2 p-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="skeleton h-10 rounded-lg" />
+          <div className="card space-y-2 p-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="skeleton h-14 rounded-xl" />
             ))}
           </div>
-        ) : tab === "deposit" ? (
-          filteredDeposits.length === 0 ? (
-            <p className="p-6 text-sm text-muted">
-              {deposits.length === 0 ? "Belum ada riwayat deposit." : "Tidak ada transaksi yang cocok dengan filter."}
-            </p>
+        ) : tab === "otp" ? (
+          <div className="card divide-y divide-line overflow-hidden">
+            {fOtp.length === 0 ? (
+              <EmptyState
+                icon="📱"
+                title={otp.length ? "Tidak ada yang cocok" : "Belum pernah beli nokos"}
+                action={!otp.length && <Link href="/otp" className="btn-primary">Beli nokos</Link>}
+              />
+            ) : (
+              fOtp.map((o) => (
+                <button key={o.orderId} onClick={() => setOpenOrder(o)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-surface2/60">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-soft text-amber-bright">
+                    <Icon.phone />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold text-ink">
+                      {o.serviceName} <span className="font-medium text-muted">· {o.countryName}</span>
+                    </span>
+                    <span className="block truncate font-mono text-xs text-muted">
+                      {o.phoneNumber}
+                      {o.otpCode ? ` · kode ${o.otpCode}` : ""}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-right">
+                    <span className="block text-sm font-bold tabular-nums text-ink">{rupiah(o.price)}</span>
+                    <Badge tone={o.refunded ? "gray" : statusTone(o.status)} className="mt-1">
+                      {o.refunded && o.status !== "done" ? "Direfund" : OTP_LABEL[o.status] || o.status}
+                    </Badge>
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        ) : tab === "suntik" ? (
+          fSmm.length === 0 ? (
+            <div className="card">
+              <EmptyState
+                icon="🚀"
+                title={smm.length ? "Tidak ada yang cocok" : "Belum pernah suntik sosmed"}
+                action={!smm.length && <Link href="/suntik" className="btn-primary">Mulai suntik</Link>}
+              />
+            </div>
           ) : (
-            <table className="w-full text-left text-sm">
-              <thead className="bg-surface text-xs uppercase text-muted">
-                <tr>
-                  <th className="px-4 py-3">Kode order</th>
-                  <th className="px-4 py-3">Nominal</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Tanggal</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {filteredDeposits.map((d) => (
-                  <tr key={d.orderId} className="transition-colors hover:bg-surface2/60">
-                    <td className="px-4 py-3 font-mono text-xs text-ink">{d.orderId}</td>
-                    <td className="px-4 py-3 text-ink">Rp{Number(d.amount).toLocaleString("id-ID")}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={d.status} />
-                    </td>
-                    <td className="px-4 py-3 text-muted">{new Date(d.createdAt).toLocaleString("id-ID")}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="grid gap-3 md:grid-cols-2">
+              {fSmm.map((o) =>
+                !o.settled && o.status !== "failed" ? (
+                  <SmmOrderCard key={o.id} order={o} token={token} onSettled={refreshBalance} />
+                ) : (
+                  <div key={o.id} className="card flex items-center gap-3 p-4">
+                    {platformIcon(o.platform, 36)}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-ink">{o.serviceTitle}</p>
+                      <p className="truncate text-xs text-muted">
+                        {Number(o.quantity).toLocaleString("id-ID")} · {o.target}
+                      </p>
+                      <p className="text-[11px] text-muted">{fmtWIB(o.createdAt)}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-bold tabular-nums text-ink">{rupiah(o.charge)}</p>
+                      {o.refundedAmount > 0 && <p className="text-[11px] font-semibold text-success">+{rupiah(o.refundedAmount)} refund</p>}
+                      <Badge tone={statusTone(o.status)} className="mt-1">
+                        {SMM_STATUS_LABEL[o.status] || o.status}
+                      </Badge>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
           )
-        ) : filteredOtp.length === 0 ? (
-          <p className="p-6 text-sm text-muted">
-            {otpOrders.length === 0 ? "Belum ada riwayat pembelian nomor OTP." : "Tidak ada transaksi yang cocok dengan filter."}
-          </p>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="bg-surface text-xs uppercase text-muted">
-              <tr>
-                <th className="px-4 py-3">Layanan</th>
-                <th className="px-4 py-3">Nomor</th>
-                <th className="px-4 py-3">Harga</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Tanggal</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {filteredOtp.map((o) => (
-                <tr key={o.orderId} className="transition-colors hover:bg-surface2/60">
-                  <td className="px-4 py-3 text-ink">
-                    {o.serviceName}
-                    <span className="block text-xs text-muted">{o.countryName}</span>
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-ink">{o.phoneNumber}</td>
-                  <td className="px-4 py-3 text-ink">Rp{Number(o.price).toLocaleString("id-ID")}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={o.status} />
-                  </td>
-                  <td className="px-4 py-3 text-muted">{new Date(o.createdAt).toLocaleString("id-ID")}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button onClick={() => setOpenOrder(o)} className="underline-grow text-xs font-medium text-teal-bright">
-                      {["pending"].includes(o.status) && !o.otpCode ? "Buka" : "Lihat"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="card divide-y divide-line overflow-hidden">
+            {fDep.length === 0 ? (
+              <EmptyState
+                icon="💳"
+                title={deposits.length ? "Tidak ada yang cocok" : "Belum pernah deposit"}
+                action={!deposits.length && <Link href="/deposit" className="btn-primary">Isi saldo</Link>}
+              />
+            ) : (
+              fDep.map((d) => (
+                <button key={d.orderId} onClick={() => setOpenDeposit(d)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-surface2/60">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success-soft text-success">
+                    <Icon.qris />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold text-ink">{providerName(d.provider)}</span>
+                    <span className="block text-xs text-muted">{fmtWIB(d.createdAt)}</span>
+                  </span>
+                  <span className="shrink-0 text-right">
+                    <span className="block text-sm font-bold tabular-nums text-ink">{rupiah(d.amount)}</span>
+                    <Badge tone={statusTone(d.status)} className="mt-1" pulse={d.status === "pending"}>
+                      {DEPOSIT_STATUS_LABEL[d.status] || d.status}
+                    </Badge>
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
         )}
       </div>
 
       {openOrder && (
-        <div className="fixed inset-0 z-[60] flex animate-fade-up items-end justify-center bg-ink/40 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-          <div className="expand-down max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl sm:rounded-2xl">
-            <OtpOrderPanel
-              order={openOrder}
-              token={token}
-              onClose={() => setOpenOrder(null)}
-              onChanged={() => loadHistory()}
-            />
+        <Modal onClose={() => setOpenOrder(null)}>
+          <OtpOrderPanel order={openOrder} token={token} onClose={() => setOpenOrder(null)} onChanged={() => (load(), refreshBalance())} />
+        </Modal>
+      )}
+
+      {openDeposit && (
+        <Modal onClose={() => setOpenDeposit(null)}>
+          <div className="card p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-base font-extrabold text-ink">Detail deposit</p>
+                <p className="text-xs text-muted">{providerName(openDeposit.provider)}</p>
+              </div>
+              <button onClick={() => setOpenDeposit(null)} className="rounded-lg p-1 text-muted hover:text-ink" aria-label="Tutup">
+                <Icon.x />
+              </button>
+            </div>
+            <div className="mt-3 divide-y divide-line">
+              <Row label="Status">
+                <Badge tone={statusTone(openDeposit.status)}>{DEPOSIT_STATUS_LABEL[openDeposit.status] || openDeposit.status}</Badge>
+              </Row>
+              <Row label="ID deposit">
+                <span className="inline-flex items-center font-mono text-xs">
+                  {openDeposit.orderId}
+                  <CopyButton value={openDeposit.orderId} label="" />
+                </span>
+              </Row>
+              {openDeposit.providerRef && (
+                <Row label="Ref provider">
+                  <span className="font-mono text-xs">{openDeposit.providerRef}</span>
+                </Row>
+              )}
+              <Row label="Saldo masuk">{rupiah(openDeposit.amount)}</Row>
+              {openDeposit.adminFee ? <Row label="Biaya admin">{rupiah(openDeposit.adminFee)}</Row> : null}
+              <Row label="Total bayar" strong>
+                {rupiah(openDeposit.totalAmount || openDeposit.amount)}
+              </Row>
+              <Row label="Dibuat">{fmtWIB(openDeposit.createdAt)}</Row>
+              {openDeposit.paidAt && <Row label="Dibayar">{fmtWIB(openDeposit.paidAt)}</Row>}
+            </div>
+            {openDeposit.status === "pending" && (
+              <Link href={`/deposit?order=${encodeURIComponent(openDeposit.orderId)}`} className="btn-primary mt-4 w-full">
+                Buka QRIS
+              </Link>
+            )}
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
 }
 
-function StatusBadge({ status }) {
-  const map = {
-    completed: "text-teal border-teal/40",
-    received: "text-teal border-teal/40",
-    done: "text-teal border-teal/40",
-    pending: "text-amber border-amber/40",
-    canceled: "text-rose border-rose/40",
-    expired: "text-rose border-rose/40"
-  };
-  const cls = map[status] || "text-muted border-line";
-  return <span className={`rounded-full border px-2.5 py-1 text-xs ${cls}`}>{STATUS_LABEL_ID[status] || status || "-"}</span>;
+function Modal({ children, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center sm:p-4" role="dialog" aria-modal="true">
+      <button aria-label="Tutup" onClick={onClose} className="animate-fade-in absolute inset-0" style={{ background: "rgb(var(--c-navy-bright) / 0.5)" }} />
+      <div className="animate-sheet-up relative max-h-[90vh] w-full max-w-md overflow-y-auto sm:animate-scale-in">{children}</div>
+    </div>
+  );
 }

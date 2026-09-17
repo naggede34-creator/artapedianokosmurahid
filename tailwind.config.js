@@ -42,6 +42,10 @@ module.exports = {
           DEFAULT: "rgb(var(--c-silver) / <alpha-value>)",
           soft: "rgb(var(--c-silver-soft) / <alpha-value>)"
         },
+        warn: {
+          DEFAULT: "rgb(var(--c-warn) / <alpha-value>)",
+          soft: "rgb(var(--c-warn-soft) / <alpha-value>)"
+        },
         // Hijau — status sukses (dipakai terpisah dari palet utama).
         success: {
           DEFAULT: "rgb(var(--c-success) / <alpha-value>)",
@@ -49,8 +53,9 @@ module.exports = {
         }
       },
       fontFamily: {
-        display: ["var(--font-display)", "sans-serif"],
-        body: ["var(--font-body)", "sans-serif"]
+        display: ["var(--font-display)", "system-ui", "sans-serif"],
+        body: ["var(--font-body)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"]
       },
       fontSize: {
         "display-lg": ["3.25rem", { lineHeight: "1.04", letterSpacing: "-0.03em" }],
@@ -61,13 +66,13 @@ module.exports = {
         content: "1160px"
       },
       boxShadow: {
-        soft: "0 1px 2px rgba(2,8,23,0.05), 0 10px 28px -14px rgba(2,8,23,0.16)",
-        lift: "0 18px 38px -16px rgba(2,8,23,0.28)",
-        glow: "0 0 0 1px rgba(37,99,235,0.14), 0 12px 30px -12px rgba(37,99,235,0.45)",
-        "glow-pink": "0 0 0 1px rgba(15,23,42,0.14), 0 12px 30px -12px rgba(15,23,42,0.45)",
-        "3d": "0 1px 0 rgba(255,255,255,0.7) inset, 0 -3px 0 rgba(2,8,23,0.12) inset, 0 20px 40px -16px rgba(37,99,235,0.35)",
-        "3d-pressed": "0 1px 0 rgba(255,255,255,0.5) inset, 0 -1px 0 rgba(2,8,23,0.1) inset, 0 6px 14px -8px rgba(37,99,235,0.35)",
-        "card-3d": "0 2px 4px rgba(2,8,23,0.04), 0 24px 48px -24px rgba(37,99,235,0.28), 0 12px 24px -16px rgba(15,23,42,0.14)"
+        soft: "0 1px 2px rgba(10,22,51,0.05), 0 6px 16px -10px rgba(10,22,51,0.16)",
+        lift: "0 20px 44px -22px rgba(10,22,51,0.35)",
+        glow: "0 10px 24px -14px rgba(29,91,255,0.55)",
+        "glow-pink": "0 10px 24px -14px rgba(15,37,87,0.45)",
+        "3d": "0 6px 16px -10px rgba(29,91,255,0.45)",
+        "3d-pressed": "0 2px 6px -4px rgba(29,91,255,0.4)",
+        "card-3d": "0 1px 0 rgba(10,22,51,0.03), 0 18px 40px -26px rgba(10,22,51,0.35)"
       },
       backgroundImage: {
         grain:

@@ -1,124 +1,103 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "@/app/providers";
 import ThemeToggle from "@/components/ThemeToggle";
 import Sidebar from "@/components/Sidebar";
 import InfoBell from "@/components/InfoBell";
-import InviteButton from "@/components/InviteButton";
 
 const links = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/otp", label: "Beli OTP" },
+  { href: "/dashboard", label: "Beranda" },
+  { href: "/otp", label: "Nokos" },
+  { href: "/suntik", label: "Suntik Sosmed" },
   { href: "/deposit", label: "Deposit" },
   { href: "/riwayat", label: "Riwayat" },
-  { href: "/loyalitas", label: "Poin & Level" },
-  { href: "/harga", label: "Daftar Harga" },
-  { href: "/informasi", label: "Informasi" },
-  { href: "/faq", label: "Bantuan" }
+  { href: "/harga", label: "Harga" }
 ];
 
+export function Logo({ size = 34 }) {
+  return (
+    <span
+      className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-teal-bright text-white"
+      style={{ width: size, height: size, clipPath: "polygon(0 0, 72% 0, 100% 28%, 100% 100%, 0 100%)" }}
+      aria-hidden="true"
+    >
+      <span className="text-[15px] font-extrabold tracking-tight">A</span>
+      <span className="absolute bottom-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-amber" />
+    </span>
+  );
+}
+
 export default function Navbar() {
-  const { token, name, balance, ready } = useUser();
-  const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { balance, ready } = useUser();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 6);
+    const onScroll = () => setScrolled(window.scrollY > 4);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  function copyToken() {
-    if (!token) return;
-    navigator.clipboard?.writeText(token);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
+  useEffect(() => setSidebarOpen(false), [pathname]);
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-shadow duration-300 ${
-        scrolled ? "glass shadow-lift" : "bg-transparent"
+      className={`sticky top-0 z-50 border-b transition-colors duration-200 ${
+        scrolled ? "glass border-line" : "border-transparent bg-bg/0"
       }`}
     >
-      <div className="mx-auto flex max-w-content items-center justify-between gap-3 px-5 py-3.5">
-        <div className="flex items-center gap-1.5">
+      <div className="mx-auto flex max-w-content items-center justify-between gap-3 px-4 py-3 sm:px-5">
+        <div className="flex items-center gap-1">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="press flex h-9 w-9 items-center justify-center rounded-lg text-ink transition-colors hover:bg-surface2"
+            className="press flex h-10 w-10 items-center justify-center rounded-xl text-ink transition-colors hover:bg-surface2"
             aria-label="Buka menu"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path d="M4 7h16M4 12h10M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
-          <Link href="/dashboard" className="group flex items-center gap-2.5">
-            <span className="btn-3d flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber to-amber-bright text-sm font-bold text-white shadow-3d transition-transform duration-300 group-hover:-rotate-6">
-              A
-            </span>
-            <span className="hidden font-display text-lg font-semibold tracking-tight text-ink sm:inline">
-              Artapedia
-            </span>
+          <Link href="/dashboard" className="flex items-center gap-2.5 pl-1">
+            <Logo />
+            <span className="text-[17px] font-extrabold tracking-tight text-ink">Artapedia</span>
           </Link>
         </div>
 
-        <nav className="hidden items-center gap-6 lg:flex">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="underline-grow text-sm text-muted transition-colors duration-200 hover:text-ink"
-            >
-              {l.label}
-            </Link>
-          ))}
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Navigasi utama">
+          {links.map((l) => {
+            const active = pathname === l.href || (l.href !== "/" && pathname?.startsWith(l.href));
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                  active ? "bg-amber-soft text-amber-bright" : "text-muted hover:text-ink"
+                }`}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setOpen((v) => !v)}
-            className="press hidden items-center gap-2 rounded-full border border-line bg-surface2 px-3 py-1.5 text-sm text-ink transition-colors duration-200 hover:border-amber/40 sm:flex"
+        <div className="flex items-center gap-1.5">
+          <Link
+            href="/deposit"
+            className="hidden items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-sm font-bold tabular-nums text-ink transition-colors hover:border-amber/50 sm:flex"
+            title="Isi saldo"
           >
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="signal-pulse absolute inline-flex h-full w-full rounded-full bg-amber" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber" />
-            </span>
-            {ready ? `Rp${balance.toLocaleString("id-ID")}` : "Memuat..."}
-          </button>
-          <InviteButton />
+            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-amber text-[11px] font-extrabold text-white">+</span>
+            {ready ? `Rp${Number(balance || 0).toLocaleString("id-ID")}` : "…"}
+          </Link>
           <InfoBell />
           <ThemeToggle className="hidden sm:inline-flex" />
         </div>
       </div>
-
-      {open && (
-        <div className="expand-down border-t border-line bg-surface2 px-5 py-4">
-          <div className="mx-auto max-w-content">
-            {name && <p className="mb-1 text-sm font-semibold text-ink">Halo, {name} 👋</p>}
-            <p className="text-xs text-muted">Kode akun kamu (simpan baik-baik, ini kunci ke saldo & riwayat):</p>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <code className="rounded border border-line bg-surface px-3 py-1.5 font-mono text-sm text-amber-bright">
-                {token || "..."}
-              </code>
-              <button
-                onClick={copyToken}
-                className="press rounded border border-line px-3 py-1.5 text-xs text-ink transition-colors duration-200 hover:border-amber hover:text-amber-bright"
-              >
-                {copied ? "Tersalin!" : "Salin kode"}
-              </button>
-              <div className="ml-auto flex items-center gap-2 sm:hidden">
-                <span className="text-xs text-muted">Mode</span>
-                <ThemeToggle />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
     </header>

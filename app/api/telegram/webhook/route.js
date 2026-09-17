@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
 import { sendMessage, isOwner, rupiah, HELP_TEXT } from "@/lib/telegramBot";
+import { logBalance } from "@/lib/ledger";
+import { esc } from "@/lib/telegram";
+import { getSimuruBalance, simuruConfigured } from "@/lib/simuru";
 
 // Set URL ini sebagai webhook bot di BotFather / API Telegram:
 // https://domainkamu.vercel.app/api/telegram/webhook
@@ -51,6 +54,17 @@ export async function POST(req) {
       await handleListUser(chatId, args, users);
     } else if (cmd === "/statistik") {
       await handleStatistik(chatId, users);
+    } else if (cmd === "/saldosimuru") {
+      if (!simuruConfigured()) {
+        await sendMessage(chatId, "SIMURU_APIKEY belum diisi di environment.");
+      } else {
+        try {
+          const bal = await getSimuruBalance();
+          await sendMessage(chatId, `💼 Saldo akun Simuru: <b>${rupiah(bal)}</b>`);
+        } catch (e) {
+          await sendMessage(chatId, `Gagal cek saldo Simuru: ${esc(e.message)}`);
+        }
+      }
     } else {
       await sendMessage(chatId, "Perintah tidak dikenali. Ketik /help untuk lihat menu.");
     }
@@ -64,8 +78,9 @@ export async function POST(req) {
 }
 
 async function handleUbahSaldo(chatId, args, users, sign) {
-  const [token, nominalRaw] = args;
-  const nominal = Number(nominalRaw);
+  const [tokenRaw, nominalRaw] = args;
+  const token = String(tokenRaw || "").trim().toUpperCase();
+  const nominal = Math.floor(Number(nominalRaw));
   const contoh =
     sign > 0
       ? "Contoh: <code>/addsaldo AP-1234-ABCD-5678 10000</code>"
@@ -78,7 +93,7 @@ async function handleUbahSaldo(chatId, args, users, sign) {
 
   const existing = await users.findOne({ token });
   if (!existing) {
-    await sendMessage(chatId, `Kode akun <code>${token}</code> tidak ditemukan.`);
+    await sendMessage(chatId, `Kode akun <code>${esc(token)}</code> tidak ditemukan.`);
     return;
   }
 
@@ -91,10 +106,21 @@ async function handleUbahSaldo(chatId, args, users, sign) {
   }
 
   const updated = await users.findOneAndUpdate(
-    { token },
+    sign < 0 ? { token, balance: { $gte: nominal } } : { token },
     { $inc: { balance: sign * nominal } },
     { returnDocument: "after" }
   );
+  if (!updated) {
+    await sendMessage(chatId, "Saldo user berubah saat diproses, coba lagi.");
+    return;
+  }
+  await logBalance({
+    token,
+    type: sign > 0 ? "admin_add" : "admin_sub",
+    amount: sign * nominal,
+    balanceAfter: updated.balance,
+    title: sign > 0 ? "Penambahan oleh owner (bot)" : "Pengurangan oleh owner (bot)"
+  });
 
   await sendMessage(
     chatId,
@@ -106,14 +132,14 @@ async function handleUbahSaldo(chatId, args, users, sign) {
 }
 
 async function handleCekUser(chatId, args, users) {
-  const [token] = args;
+  const token = String(args[0] || "").trim().toUpperCase();
   if (!token) {
     await sendMessage(chatId, "Format salah. Contoh: <code>/cekuser AP-1234-ABCD-5678</code>");
     return;
   }
   const user = await users.findOne({ token });
   if (!user) {
-    await sendMessage(chatId, `Kode akun <code>${token}</code> tidak ditemukan.`);
+    await sendMessage(chatId, `Kode akun <code>${esc(token)}</code> tidak ditemukan.`);
     return;
   }
   const joined = user.createdAt ? new Date(user.createdAt).toLocaleString("id-ID") : "-";
@@ -121,7 +147,9 @@ async function handleCekUser(chatId, args, users) {
     chatId,
     `<b>Detail User</b>\n` +
       `Token: <code>${user.token}</code>\n` +
+      (user.name ? `Nama: ${esc(user.name)}\n` : "") +
       `Saldo: ${rupiah(user.balance)}\n` +
+      `Total deposit: ${rupiah(user.depositTotal || 0)} (${user.depositCount || 0}x)\n` +
       `Diundang oleh: ${user.referredBy ? `<code>${user.referredBy}</code>` : "-"}\n` +
       `Teman berhasil diundang: ${user.referralCount || 0}\n` +
       `Bonus referral didapat: ${rupiah(user.referralEarnings || 0)}\n` +

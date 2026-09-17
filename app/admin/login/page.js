@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
 
       <div className="glow-ring w-full max-w-sm rounded-3xl">
         <form onSubmit={submit} className="glass-dark relative rounded-3xl px-7 py-9 shadow-card-3d">
-          <span className="btn-3d mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber to-amber-bright text-xl shadow-3d">
+          <span className="btn-3d mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber text-xl shadow-3d">
             🔒
           </span>
           <h1 className="mt-4 text-center font-display text-lg font-semibold text-white">Admin Artapedia</h1>
@@ -56,7 +56,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading || !code}
-            className="btn-3d mt-5 w-full rounded-xl bg-gradient-to-r from-amber to-amber-bright px-5 py-3 text-sm font-medium text-white shadow-3d disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-3d mt-5 w-full rounded-xl bg-amber hover:bg-amber-bright px-5 py-3 text-sm font-medium text-white shadow-3d disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Memeriksa..." : "Masuk"}
           </button>

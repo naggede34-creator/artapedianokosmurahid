@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { sendTelegramNotif, pointsRedeemedNotif } from "@/lib/telegram";
+import { logBalance } from "@/lib/ledger";
 
 export async function POST(req) {
   try {
@@ -36,6 +37,14 @@ export async function POST(req) {
       if (!current) return NextResponse.json({ error: "Kode akun tidak ditemukan." }, { status: 404 });
       return NextResponse.json({ error: "Poin kamu tidak cukup." }, { status: 400 });
     }
+
+    await logBalance({
+      token,
+      type: "points",
+      amount: rupiahValue,
+      balanceAfter: updated.balance,
+      title: `Tukar ${pts.toLocaleString("id-ID")} poin`
+    });
 
     sendTelegramNotif(
       pointsRedeemedNotif({

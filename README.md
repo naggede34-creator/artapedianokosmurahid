@@ -1,10 +1,57 @@
 # Artapedia Web
 
-Website deposit saldo otomatis (QRIS via Pakasir) dan pembelian nomor OTP untuk
-semua layanan (via RumahOTP), dibangun dengan Next.js dan siap deploy ke Vercel.
-Tidak memakai bot Telegram — website ini berdiri sendiri.
+Website nokos (nomor OTP via RumahOTP), **suntik sosmed (SMM via Simuru)**, dan deposit saldo
+otomatis via **QRIS Simuru / Pakasir / RumahOTP**. Dibangun dengan Next.js, siap deploy ke Vercel.
 
-## Redesain tampilan (terbaru)
+## Pembaruan terbaru
+
+### Fitur baru
+- **Deposit QRIS Simuru** (`lib/simuru.js`, `app/api/deposit/*`). Admin bisa menyalakan/mematikan
+  Simuru, Pakasir, dan RumahOTP satu per satu dari Dashboard Admin. Simuru tidak punya webhook deposit,
+  jadi statusnya dicek lewat polling halaman deposit + cron.
+- **Suntik Sosmed** di halaman `/suntik` (`lib/smmService.js`, `app/api/smm/*`): pilih platform →
+  kategori → layanan, isi link target & jumlah (atau daftar komentar untuk layanan custom comments).
+  Harga jual = harga Simuru × (1 + markup%). Refund otomatis untuk pesanan batal (penuh) dan
+  selesai sebagian (proporsional). Tombol refill untuk layanan bergaransi.
+- **Mutasi saldo lengkap** lewat koleksi `balance_logs` (`lib/ledger.js`): deposit, cashback, bonus
+  referral, voucher, tukar poin, transfer, beli OTP, refund, suntik, dan koreksi admin.
+- **Notifikasi Telegram lebih detail**: deposit menampilkan QRIS yang dipakai (Simuru/Pakasir/RumahOTP),
+  ID & ref provider, biaya admin, total bayar, saldo sebelum/sesudah, deposit ke-berapa, dan lama
+  pembayaran. Notif baru: order & status suntik sosmed, transfer, deposit batal/kedaluwarsa,
+  peringatan provider (mis. saldo Simuru kurang).
+- Bot owner: perintah baru `/saldosimuru`.
+
+### Perbaikan bug
+- **Celah harga OTP**: dulu harga dasar dikirim dari browser (bisa diubah jadi 0). Sekarang harga
+  selalu diambil ulang dari RumahOTP di server, dan saldo dipotong sebelum pesan ke provider.
+- **Celah batal OTP**: sebelum refund, status dicek dulu ke provider sehingga tidak bisa dapat kode
+  sekaligus refund. Kode OTP yang telat masuk pada pesanan yang sudah direfund tidak ditampilkan.
+- Bonus referral sekarang cair dari jalur mana pun (polling, webhook, cron), bukan hanya webhook.
+- Deposit yang dibayar setelah dibatalkan / kedaluwarsa tetap dikreditkan oleh cron (3 jam).
+- Logika kredit deposit disatukan di `lib/depositService.js` (tidak ada lagi duplikasi yang beda perilaku).
+- Teks dinamis di notif Telegram di-escape (dulu karakter `<` bikin notif gagal terkirim).
+- Pencarian user admin aman dari regex error; ID pengumuman/broadcast divalidasi.
+- Urutan "Rate" di pilih negara OTP sebelumnya tidak berfungsi.
+- Animasi CSS yang keyframes-nya hilang, zona waktu WIB di statistik harian, transfer desimal,
+  pembuatan dokumen settings ganda saat request bersamaan.
+- Laporan cron hanya dikirim kalau ada hal penting (tambahkan `&report=1` untuk memaksa).
+
+### Tampilan
+Desain ulang: font Plus Jakarta Sans + JetBrains Mono (untuk kode OTP/akun), kartu saldo bergaya
+kartu SIM, navigasi bawah 5 tab (Beranda, Nokos, Deposit, Suntik, Riwayat), halaman Beranda,
+Dashboard, Deposit, Suntik, Riwayat (tab Nokos/Suntik/Deposit), dan Mutasi yang baru.
+
+## Setup Simuru
+
+1. Login ke https://simuru.com, ambil API key di halaman API.
+2. Isi `SIMURU_APIKEY` di Vercel → Project Settings → Environment Variables (untuk lokal sudah ada
+   di `.env.local`). **Jangan** menulis API key di kode atau meng-commit-nya.
+3. Isi saldo akun Simuru kamu — deposit user masuk ke saldo Simuru ini, dan pesanan suntik memakai
+   saldo yang sama. Pantau saldonya di Dashboard Admin atau lewat `/saldosimuru` di bot owner.
+4. Simuru membatasi 5 QRIS pending per API key. Kalau sedang ramai, user diminta mencoba lagi
+   atau memilih metode lain.
+
+## Catatan redesain sebelumnya
 
 - **Palet warna baru**: biru, biru tua (navy), putih, silver, hitam — menggantikan
   aksen pink/teal versi sebelumnya. Semua warna kini dibaca dari CSS variable di

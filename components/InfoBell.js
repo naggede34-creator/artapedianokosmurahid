@@ -68,7 +68,7 @@ export default function InfoBell() {
       {open && (
         <div className="expand-down absolute right-0 top-11 z-[65] w-[300px] overflow-hidden rounded-2xl border border-line bg-surface shadow-lift">
           <div className="flex items-center justify-between border-b border-line bg-surface2 px-4 py-2.5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Info Terbaru</p>
+            <p className="text-xs font-semibold text-muted">Info Terbaru</p>
             <Link href="/informasi" onClick={() => setOpen(false)} className="text-[11px] font-medium text-amber-bright">
               Lihat semua
             </Link>

@@ -2,12 +2,12 @@ const steps = [
   {
     title: "Simpan kode akun kamu",
     desc:
-      "Begitu membuka web ini pertama kali, sistem otomatis membuatkan kode akun unik (format AP-XXXX-XXXX-XXXX). Kode ini tampil di menu saldo pada bagian atas halaman. Kode ini adalah satu-satunya cara mengakses saldo dan riwayat kamu, jadi salin dan simpan di tempat aman — misalnya catatan HP atau chat pribadi ke diri sendiri."
+      "Begitu membuka web ini pertama kali, sistem otomatis membuatkan kode akun unik (format AP-XXXX-XXXX-XXXX). Kode ini tampil di kartu saldo pada halaman Beranda (ketuk untuk menyalin). Kode ini adalah satu-satunya cara mengakses saldo dan riwayat kamu, jadi salin dan simpan di tempat aman — misalnya catatan HP atau chat pribadi ke diri sendiri."
   },
   {
     title: "Deposit saldo lewat QRIS",
     desc:
-      "Buka halaman Deposit, pilih nominal (minimal Rp2.000, maksimal Rp1.000.000), lalu scan kode QRIS yang muncul pakai e-wallet atau m-banking apa saja. Saldo bertambah otomatis begitu pembayaran terkonfirmasi, biasanya dalam hitungan detik."
+      "Buka halaman Deposit, masukkan nominal, pilih QRIS yang mau dipakai (Simuru, Pakasir, atau RumahOTP — tergantung yang aktif), lalu scan kode QRIS yang muncul pakai e-wallet atau m-banking apa saja. Bayar persis sesuai total yang tertera. Saldo bertambah otomatis begitu pembayaran terkonfirmasi, biasanya dalam hitungan detik."
   },
   {
     title: "Cari layanan yang kamu butuhkan",
@@ -30,19 +30,24 @@ const steps = [
       "Gunakan nomor yang diberikan untuk verifikasi di aplikasi/layanan tujuan. Kode OTP yang masuk akan otomatis muncul di halaman ini — tidak perlu refresh manual. Kalau nomor bermasalah dan kode tidak kunjung masuk, kamu bisa menekan tombol Batalkan & Refund selama pesanan belum berhasil menerima kode."
   },
   {
+    title: "Suntik sosmed (opsional)",
+    desc:
+      "Buka halaman Suntik, pilih platform (Instagram, TikTok, YouTube, dll), kategori (followers, likes, views…), lalu layanan yang cocok. Isi link atau username target — pastikan akun/postingan dalam mode publik — dan jumlahnya. Progres tampil di halaman Riwayat. Kalau pesanan dibatalkan atau hanya masuk sebagian, sisa saldo dikembalikan otomatis."
+  },
+  {
     title: "Cek riwayat kapan saja",
     desc:
-      "Semua transaksi deposit dan pembelian nomor tercatat di halaman Riwayat, bisa dibuka lagi kapan saja selama kamu masih menyimpan kode akun yang sama."
+      "Semua deposit, pembelian nomor, dan pesanan suntik tercatat di halaman Riwayat; setiap perubahan saldo tercatat di Mutasi Saldo, bisa dibuka lagi kapan saja selama kamu masih menyimpan kode akun yang sama."
   }
 ];
 
 export default function CaraPakaiPage() {
   return (
-    <div className="mx-auto max-w-content px-5 py-14">
-      <p className="fade-up text-sm font-semibold uppercase tracking-wide text-teal-bright">Panduan</p>
-      <h1 className="fade-up delay-1 mt-2 font-display text-display-sm font-semibold text-ink sm:text-display-md">Cara menggunakan Artapedia</h1>
+    <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
+      <p className="fade-up text-sm font-semibold text-teal-bright">Panduan</p>
+      <h1 className="fade-up delay-1 mt-2 text-[26px] font-extrabold tracking-tight text-ink sm:text-[32px]">Cara menggunakan Artapedia</h1>
       <p className="fade-up delay-2 mt-3 max-w-xl text-sm leading-relaxed text-muted">
-        Tujuh langkah ini mencakup seluruh alur, dari menyimpan kode akun sampai menerima kode OTP.
+        Langkah-langkah ini mencakup seluruh alur, dari menyimpan kode akun sampai menerima kode OTP dan memesan suntik sosmed.
       </p>
 
       <ol className="mt-10 space-y-8">

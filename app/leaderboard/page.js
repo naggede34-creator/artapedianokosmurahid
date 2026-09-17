@@ -25,9 +25,9 @@ export default function LeaderboardPage() {
   const medal = (rank) => (rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : null);
 
   return (
-    <div className="mx-auto max-w-content px-5 py-14">
-      <p className="fade-up text-sm font-semibold uppercase tracking-wide text-teal-bright">Leaderboard</p>
-      <h1 className="fade-up delay-1 mt-2 font-display text-display-sm font-semibold text-ink sm:text-display-md">
+    <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
+      <p className="fade-up text-sm font-semibold text-teal-bright">Leaderboard</p>
+      <h1 className="fade-up delay-1 mt-2 text-[26px] font-extrabold tracking-tight text-ink sm:text-[32px]">
         Top pengundang teman{month ? ` — ${MONTH_NAMES[month.getMonth()]} ${month.getFullYear()}` : ""}
       </h1>
       <p className="fade-up delay-2 mt-3 max-w-xl text-sm leading-relaxed text-muted">

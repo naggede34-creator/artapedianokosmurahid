@@ -19,7 +19,9 @@ export async function GET(req) {
       phoneNumber: o.phoneNumber,
       price: o.price,
       status: o.status,
-      otpCode: o.otpCode,
+      otpCode: o.refunded ? null : o.otpCode,
+      operatorName: o.operatorName || null,
+      expiredAt: o.expiredAt || null,
       refunded: o.refunded || false,
       createdAt: o.createdAt
     }))

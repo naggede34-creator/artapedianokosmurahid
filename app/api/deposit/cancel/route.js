@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
-import { depositsCol } from "@/lib/db";
+import { depositsCol, usersCol } from "@/lib/db";
 import { cancelTransaction } from "@/lib/pakasir";
 import { cancelDeposit } from "@/lib/rumahotp";
+import { fetchProviderStatus, creditDeposit } from "@/lib/depositService";
+import { sendTelegramNotif, depositCanceledNotif } from "@/lib/telegram";
 
 export async function POST(req) {
   try {
-    const { token, orderId } = await req.json();
+    const { token, orderId } = await req.json().catch(() => ({}));
     if (!token || !orderId) return NextResponse.json({ error: "Parameter kurang." }, { status: 400 });
 
     const deposits = await depositsCol();
@@ -14,37 +16,42 @@ export async function POST(req) {
     if (deposit.status === "completed") {
       return NextResponse.json({ error: "Transaksi ini sudah berhasil, tidak bisa dibatalkan." }, { status: 400 });
     }
-    if (deposit.status === "canceled") {
-      return NextResponse.json({ ok: true, message: "Transaksi ini sudah dibatalkan sebelumnya." });
+    if (deposit.status !== "pending") {
+      return NextResponse.json({ ok: true, status: deposit.status, message: "Transaksi ini sudah tidak aktif." });
     }
 
-    // Tandai batal di sistem kita dulu — ini yang sebenarnya menentukan tombol "Buat
-    // transaksi baru" muncul di UI, tidak tergantung provider berhasil dihubungi atau
-    // tidak (tidak ada saldo yang perlu dikembalikan di sini karena saldo belum pernah
-    // dipotong untuk deposit yang masih pending).
-    await deposits.updateOne({ orderId, token }, { $set: { status: "canceled" } });
+    // Cek dulu ke provider: kalau ternyata sudah dibayar, jangan dibatalkan — kreditkan.
+    const remote = await fetchProviderStatus(deposit);
+    if (remote === "completed") {
+      await creditDeposit(deposit);
+      return NextResponse.json(
+        { error: "Pembayaran sudah diterima, saldo sudah masuk. Transaksi tidak dibatalkan.", status: "completed" },
+        { status: 409 }
+      );
+    }
 
+    const claimed = await deposits.findOneAndUpdate(
+      { orderId, token, status: "pending" },
+      { $set: { status: "canceled", canceledAt: new Date() } }
+    );
+    if (!claimed) return NextResponse.json({ ok: true, message: "Transaksi ini sudah tidak aktif." });
+
+    // Simuru tidak menyediakan endpoint batal — QRIS-nya kedaluwarsa sendiri.
+    // Kalau user tetap membayar setelah membatalkan, cron tetap mengkreditkan saldonya.
     if (deposit.provider === "pakasir") {
-      try {
-        await cancelTransaction(process.env.PAKASIR_PROJECT, process.env.PAKASIR_APIKEY, orderId, deposit.amount);
-      } catch (e) {
-        // Tidak fatal — status lokal sudah "canceled", QRIS yang belum dibayar toh
-        // otomatis kedaluwarsa sendiri di sisi Pakasir.
-      }
+      cancelTransaction(process.env.PAKASIR_PROJECT, process.env.PAKASIR_APIKEY, orderId, deposit.amount).catch(() => {});
     } else if (deposit.provider === "rumahotp") {
-      try {
-        // deposit/cancel butuh "deposit_id" = ID dari RumahOTP (providerRef),
-        // bukan order_id kita.
-        await cancelDeposit(process.env.RUMAHOTP_APIKEY, deposit.providerRef || orderId);
-      } catch (e) {
-        // Tidak fatal — status lokal sudah "canceled" dan QRIS yang belum dibayar
-        // otomatis kedaluwarsa sendiri di sisi RumahOTP.
-      }
+      cancelDeposit(process.env.RUMAHOTP_APIKEY, deposit.providerRef || orderId).catch(() => {});
     }
 
-    return NextResponse.json({ ok: true });
+    const u = await (await usersCol()).findOne({ token }, { projection: { name: 1 } });
+    sendTelegramNotif(
+      depositCanceledNotif({ orderId, provider: deposit.provider, amount: deposit.amount, token, name: u?.name, reason: "canceled" })
+    );
+
+    return NextResponse.json({ ok: true, status: "canceled" });
   } catch (err) {
-    console.error(err?.response?.data || err);
+    console.error("[deposit/cancel]", err?.response?.data || err?.message || err);
     return NextResponse.json({ error: "Gagal membatalkan transaksi." }, { status: 500 });
   }
 }

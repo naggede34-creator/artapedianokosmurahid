@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { vouchersCol, usersCol } from "@/lib/db";
 import { sendTelegramNotif, voucherRedeemedNotif } from "@/lib/telegram";
+import { logBalance } from "@/lib/ledger";
 
 export async function POST(req) {
   try {
@@ -40,6 +41,15 @@ export async function POST(req) {
       { returnDocument: "after" }
     );
 
+    await logBalance({
+      token,
+      type: "voucher",
+      amount: voucher.amount,
+      balanceAfter: updatedUser?.balance,
+      title: `Voucher ${code}`,
+      ref: code
+    });
+
     sendTelegramNotif(
       voucherRedeemedNotif({
         code,
@@ -49,7 +59,7 @@ export async function POST(req) {
       })
     );
 
-    return NextResponse.json({ ok: true, amount: voucher.amount, balance: updatedUser.balance });
+    return NextResponse.json({ ok: true, amount: voucher.amount, balance: updatedUser?.balance });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Gagal mengklaim voucher." }, { status: 500 });
