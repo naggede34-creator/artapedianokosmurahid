@@ -6,6 +6,7 @@ import { useUser } from "@/app/providers";
 import SimCard from "@/components/SimCard";
 import AccountInfoModal from "@/components/AccountInfoModal";
 import SpinWheelGame from "@/components/SpinWheelGame";
+import OTPPriceWidget from "@/components/OTPPriceWidget";
 import { Icon, rupiah, EmptyState } from "@/components/ui";
 
 function greeting() {
@@ -324,6 +325,8 @@ export default function DashboardPage() {
   const [balanceTarget, setBalanceTarget] = useState(0);
   const [editingTarget, setEditingTarget] = useState(false);
   const [targetInput, setTargetInput] = useState("");
+  const [achievements, setAchievements] = useState(null);
+  const [recentOrders, setRecentOrders] = useState(null);
 
   useEffect(() => {
     if (!token) return;
@@ -341,6 +344,14 @@ export default function DashboardPage() {
       .then((d) => setCheckin(d.error ? null : d))
       .catch(() => {})
       .finally(() => setCheckinLoading(false));
+    fetch(`/api/achievements?token=${t}`)
+      .then((r) => r.json())
+      .then((d) => setAchievements(d.error ? null : d))
+      .catch(() => {});
+    fetch(`/api/otp/history?token=${t}&limit=5`)
+      .then((r) => r.json())
+      .then((d) => setRecentOrders(Array.isArray(d.items) ? d.items.slice(0, 5) : []))
+      .catch(() => setRecentOrders([]));
   }, [token]);
 
   useEffect(() => {
@@ -411,6 +422,22 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Low Balance Alert */}
+      {ready && balance !== undefined && balance < 2000 && (
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-amber/30 bg-amber-soft px-4 py-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber text-white text-base">⚠️</span>
+            <div>
+              <p className="text-sm font-bold text-amber-bright">Saldo hampir habis!</p>
+              <p className="text-xs text-muted">Saldo kamu kurang dari Rp2.000 — isi sekarang agar bisa terus bertransaksi.</p>
+            </div>
+          </div>
+          <Link href="/deposit" className="shrink-0 rounded-xl bg-amber px-4 py-2 text-xs font-bold text-white">
+            Isi Saldo
+          </Link>
+        </div>
+      )}
+
       <div className="mt-5 grid gap-5 lg:grid-cols-[440px_1fr]">
         <SimCard />
 
@@ -442,6 +469,40 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* Achievement Badges */}
+      {achievements && achievements.items?.length > 0 && (
+        <div className="mt-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-ink">🏅 Badge Kamu ({achievements.unlockedCount}/{achievements.total})</h2>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {achievements.items.map((a) => (
+              <div
+                key={a.id}
+                title={a.desc}
+                className={`flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition-all w-[84px] ${
+                  a.unlocked
+                    ? a.tier === "diamond"
+                      ? "border-teal/40 bg-teal-soft"
+                      : a.tier === "gold"
+                      ? "border-amber/40 bg-amber-soft"
+                      : a.tier === "silver"
+                      ? "border-line bg-surface2"
+                      : "border-line bg-surface"
+                    : "border-dashed border-line bg-surface opacity-40 grayscale"
+                }`}
+              >
+                <span className="text-2xl">{a.icon}</span>
+                <p className="text-[10px] font-bold text-ink leading-tight">{a.name}</p>
+                {a.unlocked && (
+                  <span className="text-[9px] rounded-full bg-teal-soft px-1.5 py-0.5 font-semibold text-teal-bright">✓ Dapat</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Daily Check-in + Spin Wheel + Balance Target */}
       <div className="mt-5 grid gap-5 lg:grid-cols-3">
@@ -553,6 +614,40 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Recent Transactions */}
+      {recentOrders !== null && (
+        <div className="mt-5 card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-ink">🧾 Transaksi Terakhir</h2>
+            <Link href="/riwayat" className="text-xs font-semibold text-amber-bright hover:underline">Lihat semua →</Link>
+          </div>
+          {recentOrders.length === 0 ? (
+            <p className="text-sm text-muted py-3 text-center">Belum ada transaksi OTP.</p>
+          ) : (
+            <div className="space-y-2">
+              {recentOrders.map((o) => (
+                <div key={o.orderId} className="flex items-center gap-3 rounded-xl border border-line bg-surface2 px-3.5 py-2.5">
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                    o.status === "success" ? "bg-teal-soft text-teal-bright" : o.status === "cancelled" ? "bg-rose-soft text-rose" : "bg-amber-soft text-amber-bright"
+                  }`}>
+                    {o.status === "success" ? "✓" : o.status === "cancelled" ? "✗" : "⏳"}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-ink truncate">{o.serviceName} — {o.countryName}</p>
+                    <p className="text-xs text-muted">{o.phoneNumber || "—"} · #{o.orderId?.slice(-8)}</p>
+                  </div>
+                  <span className="shrink-0 text-sm font-bold tabular-nums text-teal-bright">{rupiah(o.price)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mt-5">
+        <OTPPriceWidget />
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import SimCard from "@/components/SimCard";
 import TransactionTicker from "@/components/TransactionTicker";
+import LiveTicker from "@/components/LiveTicker";
 import { Icon, rupiah } from "@/components/ui";
 import { platformIcon } from "@/components/PlatformIcon";
 
@@ -205,24 +206,39 @@ export default function HomePage() {
       {/* Flash Sale Banner */}
       <FlashSaleBanner />
 
-      <section className="mt-6 grid gap-6 lg:grid-cols-[1fr_440px] lg:items-center lg:gap-12">
+      <section className="relative mt-6 grid gap-6 lg:grid-cols-[1fr_440px] lg:items-center lg:gap-12">
+        {/* background blobs */}
+        <div className="pointer-events-none absolute -left-32 -top-32 h-80 w-80 rounded-full bg-amber/10 blur-3xl" />
+        <div className="pointer-events-none absolute -right-20 top-10 h-60 w-60 rounded-full bg-teal/10 blur-3xl" />
+
         <div className="order-2 lg:order-1">
-          <h1 className="text-[30px] font-extrabold leading-[1.08] tracking-tight text-ink sm:text-[44px]">
-            Nokos, suntik sosmed,
+          <div className="inline-flex items-center gap-2 rounded-full border border-teal/30 bg-teal-soft px-3 py-1.5 text-xs font-semibold text-teal-bright mb-4">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-pulse-ring absolute inline-flex h-full w-full rounded-full bg-teal-bright opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-teal-bright" />
+            </span>
+            Aktif 24 jam · Proses Instan
+          </div>
+          <h1 className="text-[32px] font-extrabold leading-[1.06] tracking-tight text-ink sm:text-[46px]">
+            Nomor OTP, suntik sosmed,
             <br />
-            dan isi saldo QRIS
-            <span className="text-muted"> — tanpa daftar.</span>
+            <span className="bg-gradient-to-r from-amber to-amber-bright bg-clip-text text-transparent">semua di satu tempat.</span>
           </h1>
           <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-muted">
-            Kode akun kamu sudah dibuat otomatis. Isi saldo, pilih layanan, dan semuanya diproses sistem 24 jam.
+            Tanpa daftar, tanpa email. Kode akun dibuat otomatis — isi saldo dan semua layanan siap dipakai kapan saja.
           </p>
           <div className="mt-6 flex flex-wrap gap-2.5">
-            <Link href="/otp" className="btn-primary px-5">
-              Beli nomor OTP
+            <Link href="/otp" className="btn-primary px-6 py-3">
+              🚀 Beli Nomor OTP
             </Link>
-            <Link href="/suntik" className="btn-ghost px-5">
-              Suntik sosmed
+            <Link href="/deposit" className="btn-ghost px-5 py-3">
+              💳 Isi Saldo
             </Link>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-3 text-xs text-muted">
+            {["⚡ OTP instan", "🔒 Tanpa data pribadi", "💰 Mulai Rp2.000", "🛡️ Garansi refund"].map((b) => (
+              <span key={b} className="flex items-center gap-1">{b}</span>
+            ))}
           </div>
         </div>
         <div className="order-1 lg:order-2">
@@ -230,11 +246,23 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Live Purchase Ticker */}
+      <section className="mt-8">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-pulse-ring absolute inline-flex h-full w-full rounded-full bg-teal-bright opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-teal-bright" />
+          </span>
+          <p className="text-xs font-semibold text-muted">Pembelian terbaru</p>
+        </div>
+        <LiveTicker />
+      </section>
+
       {/* Trust Badges */}
       <section className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {TRUST_BADGES.map((b) => (
-          <div key={b.label} className="flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface p-3.5 text-center transition-colors hover:border-amber/30 hover:bg-amber-soft/30">
-            <span className="text-2xl">{b.icon}</span>
+          <div key={b.label} className="group flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface p-3.5 text-center transition-all hover:border-amber/40 hover:bg-amber-soft/40 hover:-translate-y-0.5 hover:shadow-soft">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-soft text-xl transition-transform group-hover:scale-110">{b.icon}</span>
             <div>
               <p className="text-xs font-bold text-ink">{b.label}</p>
               <p className="text-[11px] text-muted mt-0.5">{b.desc}</p>
@@ -345,27 +373,31 @@ export default function HomePage() {
       {/* Testimonials */}
       <section className="mt-12">
         <div className="text-center">
-          <h2 className="text-xl font-extrabold tracking-tight text-ink">Apa kata mereka?</h2>
-          <p className="mt-2 text-sm text-muted">Ribuan pengguna sudah merasakan kemudahannya</p>
+          <span className="inline-block rounded-full bg-amber-soft px-3 py-1 text-xs font-semibold text-amber-bright mb-3">⭐ Ulasan Pengguna</span>
+          <h2 className="text-2xl font-extrabold tracking-tight text-ink">Dipercaya ribuan pengguna</h2>
+          <p className="mt-2 text-sm text-muted">Lihat apa kata mereka setelah pakai Artapedia</p>
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {TESTIMONIALS.map((t) => (
-            <div key={t.name} className="card flex flex-col gap-3 p-5">
-              <div className="flex items-center gap-0.5">
-                {Array.from({ length: t.rating }).map((_, i) => (
-                  <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
-                ))}
+            <div key={t.name} className="card flex flex-col gap-3 p-5 hover:-translate-y-1 transition-transform hover:shadow-lift">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-0.5">
+                  {Array.from({ length: t.rating }).map((_, i) => (
+                    <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                  ))}
+                </div>
+                <span className="text-[11px] text-muted">{t.loc}</span>
               </div>
               <p className="text-sm leading-relaxed text-muted">&ldquo;{t.text}&rdquo;</p>
               <div className="mt-auto flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-soft text-xs font-extrabold text-amber-bright">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber to-amber-bright text-xs font-extrabold text-white shadow-soft">
                   {t.avatar}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-ink">{t.name}</p>
-                  <p className="text-xs text-muted">{t.loc}</p>
+                  <p className="text-sm font-bold text-ink">{t.name}</p>
+                  <p className="text-[11px] text-muted">Pengguna Artapedia</p>
                 </div>
               </div>
             </div>

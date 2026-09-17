@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@/app/providers";
 
+const AVATARS = ["😊", "😎", "🦁", "🐯", "🦊", "🐺", "🦝", "🦄", "🐲", "👾", "🤖", "👑", "🔥", "⚡", "🌟", "💎", "🎯", "🏆", "🌈", "🎮"];
+
 function formatJoinDate(value) {
   if (!value) return "-";
   const d = new Date(value);
@@ -16,6 +18,22 @@ export default function AccountInfoModal({ open, onClose, token, balance, joined
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [nameMsg, setNameMsg] = useState("");
+  const [avatar, setAvatar] = useState("😊");
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    try {
+      const saved = localStorage.getItem(`avatar-${token}`);
+      if (saved) setAvatar(saved);
+    } catch {}
+  }, [token]);
+
+  function pickAvatar(emoji) {
+    setAvatar(emoji);
+    setShowAvatarPicker(false);
+    try { localStorage.setItem(`avatar-${token}`, emoji); } catch {}
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -29,6 +47,7 @@ export default function AccountInfoModal({ open, onClose, token, balance, joined
     if (!open) {
       setCopied(false);
       setNameMsg("");
+      setShowAvatarPicker(false);
     } else {
       setNameInput(name || "");
     }
@@ -69,8 +88,17 @@ export default function AccountInfoModal({ open, onClose, token, balance, joined
       <div className="animate-scale-in relative w-full max-w-sm overflow-hidden rounded-2xl border border-line bg-surface shadow-lift">
         <div className="flex items-center justify-between bg-teal-bright px-5 py-4 text-white">
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-base">👤</span>
-            <p className="text-sm font-semibold">Info Akun</p>
+            <button
+              onClick={() => setShowAvatarPicker((v) => !v)}
+              title="Ganti avatar"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-xl hover:bg-white/30 transition-colors"
+            >
+              {avatar}
+            </button>
+            <div>
+              <p className="text-sm font-semibold">Info Akun</p>
+              <p className="text-[10px] text-white/70">Ketuk avatar untuk ganti</p>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -82,6 +110,25 @@ export default function AccountInfoModal({ open, onClose, token, balance, joined
             </svg>
           </button>
         </div>
+
+        {showAvatarPicker && (
+          <div className="border-b border-line bg-surface2 p-4">
+            <p className="mb-2.5 text-xs font-semibold text-muted">Pilih Avatar</p>
+            <div className="grid grid-cols-10 gap-1.5">
+              {AVATARS.map((e) => (
+                <button
+                  key={e}
+                  onClick={() => pickAvatar(e)}
+                  className={`flex h-8 w-8 items-center justify-center rounded-lg text-lg transition-all hover:scale-110 hover:bg-amber-soft ${
+                    avatar === e ? "bg-amber-soft ring-2 ring-amber/60" : "bg-surface"
+                  }`}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col gap-4 p-5">
           <form onSubmit={saveName}>

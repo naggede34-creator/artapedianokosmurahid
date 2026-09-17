@@ -131,6 +131,18 @@ module.exports = {
         slideInLeft: {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(0)" }
+        },
+        ticker: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" }
+        },
+        pulseRing: {
+          "0%": { transform: "scale(1)", opacity: "0.7" },
+          "100%": { transform: "scale(1.8)", opacity: "0" }
+        },
+        countUp: {
+          "0%": { transform: "translateY(100%)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" }
         }
       },
       animation: {
@@ -144,7 +156,10 @@ module.exports = {
         "platform-spin": "platformSpin 6s ease-in-out infinite",
         "sheet-up": "sheetUp 0.32s cubic-bezier(0.22,1,0.36,1) both",
         "fade-in": "fadeIn 0.22s ease-out both",
-        "slide-in-left": "slideInLeft 0.28s cubic-bezier(0.22,1,0.36,1) both"
+        "slide-in-left": "slideInLeft 0.28s cubic-bezier(0.22,1,0.36,1) both",
+        "ticker": "ticker 30s linear infinite",
+        "pulse-ring": "pulseRing 1.4s ease-out infinite",
+        "count-up": "countUp 0.4s ease-out both"
       }
     }
   },

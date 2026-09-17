@@ -65,6 +65,8 @@ export default function AdminDashboardPage() {
   const [warrantyMsg, setWarrantyMsg] = useState("");
   const [selectedScreenshot, setSelectedScreenshot] = useState(null);
 
+  const [suspendMsg, setSuspendMsg] = useState("");
+
   const loadWarrantyClaims = useCallback(async () => {
     setWarrantyLoading(true);
     try {
@@ -466,6 +468,47 @@ export default function AdminDashboardPage() {
     setBalanceAction(action);
     setBalanceForm((f) => ({ ...f, token }));
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  async function suspendUser(token, suspended) {
+    setSuspendMsg("");
+    try {
+      const res = await fetch("/api/admin/users/suspend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, suspended })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memproses.");
+      setSuspendMsg(suspended ? "Akun disuspensi." : "Akun diaktifkan kembali.");
+      loadUsers();
+    } catch (err) {
+      setSuspendMsg(err.message);
+    } finally {
+      setTimeout(() => setSuspendMsg(""), 3000);
+    }
+  }
+
+  function exportCSV() {
+    const headers = ["Kode Akun", "Nama", "Saldo", "Referral", "Tanggal Daftar", "Status"];
+    const rows = users.map((u) => [
+      u.token,
+      u.name || "",
+      u.balance,
+      u.referralCount,
+      fmtDate(u.createdAt),
+      u.suspended ? "Suspended" : "Aktif"
+    ]);
+    const csv = [headers, ...rows]
+      .map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `artapedia-users-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   async function logout() {
@@ -1265,43 +1308,64 @@ export default function AdminDashboardPage() {
       {/* Daftar User */}
       <div className="mt-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-display text-base font-semibold text-ink">Daftar User</h2>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && loadUsers()}
-            placeholder="Cari kode akun..."
-            className="w-56 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm text-ink outline-none focus:border-amber"
-          />
+          <div>
+            <h2 className="font-display text-base font-semibold text-ink">Daftar User</h2>
+            <p className="text-xs text-muted">{total} pengguna terdaftar · saldo beredar Rp{totalBalance.toLocaleString("id-ID")}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && loadUsers()}
+              placeholder="Cari kode akun..."
+              className="w-44 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm text-ink outline-none focus:border-amber"
+            />
+            <button
+              onClick={exportCSV}
+              disabled={users.length === 0}
+              className="btn-3d rounded-lg border border-teal/40 px-3 py-2 text-xs font-medium text-teal-bright hover:bg-teal-soft disabled:opacity-40"
+            >
+              ⬇ CSV
+            </button>
+          </div>
         </div>
+        {suspendMsg && <p className="mt-2 text-xs font-medium text-teal-bright">{suspendMsg}</p>}
 
         <div className="glass mt-3 overflow-x-auto rounded-2xl shadow-soft">
-          <table className="w-full min-w-[560px] text-sm">
+          <table className="w-full min-w-[680px] text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs text-muted">
                 <th className="px-4 py-3 font-medium">Kode akun</th>
                 <th className="px-4 py-3 font-medium">Saldo</th>
                 <th className="px-4 py-3 font-medium">Referral</th>
                 <th className="px-4 py-3 font-medium">Daftar</th>
+                <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium text-right">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {usersLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-muted">Memuat...</td>
+                  <td colSpan={6} className="px-4 py-6 text-center text-muted">Memuat...</td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-muted">Tidak ada user.</td>
+                  <td colSpan={6} className="px-4 py-6 text-center text-muted">Tidak ada user.</td>
                 </tr>
               ) : (
                 users.map((u) => (
-                  <tr key={u.token} className="border-b border-line last:border-0">
+                  <tr key={u.token} className={`border-b border-line last:border-0 ${u.suspended ? "bg-rose-soft/30" : ""}`}>
                     <td className="px-4 py-3 font-mono text-xs text-ink">{u.token}{u.name ? ` · ${u.name}` : ""}</td>
                     <td className="px-4 py-3 font-medium text-ink">Rp{u.balance.toLocaleString("id-ID")}</td>
                     <td className="px-4 py-3 text-xs text-muted">{u.referralCount} orang</td>
                     <td className="px-4 py-3 text-xs text-muted">{fmtDate(u.createdAt)}</td>
+                    <td className="px-4 py-3">
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                        u.suspended ? "border-rose/40 text-rose" : "border-teal/40 text-teal-bright"
+                      }`}>
+                        {u.suspended ? "Suspended" : "Aktif"}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-1.5">
                         <button
@@ -1315,6 +1379,16 @@ export default function AdminDashboardPage() {
                           className="btn-3d rounded-md border border-rose/40 px-2 py-1 text-xs font-medium text-rose hover:bg-rose-soft"
                         >
                           − Saldo
+                        </button>
+                        <button
+                          onClick={() => suspendUser(u.token, !u.suspended)}
+                          className={`btn-3d rounded-md border px-2 py-1 text-xs font-medium ${
+                            u.suspended
+                              ? "border-teal/40 text-teal-bright hover:bg-teal-soft"
+                              : "border-ochre/60 text-muted hover:bg-surface2"
+                          }`}
+                        >
+                          {u.suspended ? "Aktifkan" : "Suspend"}
                         </button>
                       </div>
                     </td>
