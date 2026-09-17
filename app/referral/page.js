@@ -34,6 +34,26 @@ export default function ReferralPage() {
     setTimeout(() => setCopied(false), 1800);
   };
 
+  const shareWhatsApp = () => {
+    if (!link) return;
+    const text = encodeURIComponent(`Daftar di Artapedia dan beli nomor OTP murah! Pakai link saya: ${link}`);
+    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+  };
+
+  const shareTelegram = () => {
+    if (!link) return;
+    const text = encodeURIComponent(`Beli nomor OTP murah di Artapedia! Daftar via link saya:`);
+    const url = encodeURIComponent(link);
+    window.open(`https://t.me/share/url?url=${url}&text=${text}`, "_blank", "noopener,noreferrer");
+  };
+
+  const shareTwitter = () => {
+    if (!link) return;
+    const text = encodeURIComponent(`Beli nomor OTP murah & cepat di Artapedia! Daftar via link undanganku dan kita sama-sama dapat bonus 🎁`);
+    const url = encodeURIComponent(link);
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
       <p className="fade-up text-sm font-semibold text-teal-bright">Undang Teman</p>
@@ -54,13 +74,36 @@ export default function ReferralPage() {
           <p className="mt-3 break-all rounded-xl bg-white/10 px-4 py-3 font-mono text-sm text-white">
             {link || "Memuat..."}
           </p>
-          <button
-            onClick={copyLink}
-            disabled={!link}
-            className="press mt-4 rounded-full bg-amber px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-          >
-            {copied ? "Tersalin!" : "Salin link"}
-          </button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={copyLink}
+              disabled={!link}
+              className="press rounded-full bg-amber px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {copied ? "✓ Tersalin!" : "📋 Salin link"}
+            </button>
+            <button
+              onClick={shareWhatsApp}
+              disabled={!link}
+              className="press rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              💬 WhatsApp
+            </button>
+            <button
+              onClick={shareTelegram}
+              disabled={!link}
+              className="press rounded-full bg-[#0088cc] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              ✈️ Telegram
+            </button>
+            <button
+              onClick={shareTwitter}
+              disabled={!link}
+              className="press rounded-full bg-[#1DA1F2] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              🐦 Twitter/X
+            </button>
+          </div>
         </div>
       </div>
 

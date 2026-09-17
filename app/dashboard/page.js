@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@/app/providers";
 import SimCard from "@/components/SimCard";
 import AccountInfoModal from "@/components/AccountInfoModal";
+import SpinWheelGame from "@/components/SpinWheelGame";
 import { Icon, rupiah, EmptyState } from "@/components/ui";
 
 function greeting() {
@@ -317,6 +318,12 @@ export default function DashboardPage() {
   const [board, setBoard] = useState(null);
   const [modal, setModal] = useState(false);
   const [warrantyModal, setWarrantyModal] = useState(false);
+  const [checkin, setCheckin] = useState(null);
+  const [checkinLoading, setCheckinLoading] = useState(true);
+  const [checkinBusy, setCheckinBusy] = useState(false);
+  const [balanceTarget, setBalanceTarget] = useState(0);
+  const [editingTarget, setEditingTarget] = useState(false);
+  const [targetInput, setTargetInput] = useState("");
 
   useEffect(() => {
     if (!token) return;
@@ -329,7 +336,44 @@ export default function DashboardPage() {
       .then((r) => r.json())
       .then((d) => setLoyalty(d.error ? null : d))
       .catch(() => {});
+    fetch(`/api/checkin?token=${t}`)
+      .then((r) => r.json())
+      .then((d) => setCheckin(d.error ? null : d))
+      .catch(() => {})
+      .finally(() => setCheckinLoading(false));
   }, [token]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("artapedia_balance_target");
+      if (saved) setBalanceTarget(Number(saved));
+    } catch {}
+  }, []);
+
+  async function doCheckin() {
+    if (!token || checkinBusy) return;
+    setCheckinBusy(true);
+    try {
+      const res = await fetch("/api/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      });
+      const data = await res.json();
+      setCheckin(data);
+    } catch {
+    } finally {
+      setCheckinBusy(false);
+    }
+  }
+
+  function saveTarget() {
+    const val = Number(targetInput);
+    if (!val || val <= 0) return;
+    setBalanceTarget(val);
+    try { localStorage.setItem("artapedia_balance_target", String(val)); } catch {}
+    setEditingTarget(false);
+  }
 
   useEffect(() => {
     fetch("/api/leaderboard/orders")
@@ -397,6 +441,118 @@ export default function DashboardPage() {
             <p className="mt-0.5 text-xs text-muted">{label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Daily Check-in + Spin Wheel + Balance Target */}
+      <div className="mt-5 grid gap-5 lg:grid-cols-3">
+        {/* Check-in Card */}
+        <div className="card p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xl">🗓️</span>
+            <h2 className="text-base font-bold text-ink">Check-in Harian</h2>
+          </div>
+          {checkinLoading ? (
+            <div className="skeleton h-16 rounded-xl" />
+          ) : checkin?.alreadyDone ? (
+            <div className="text-center">
+              <p className="text-3xl font-extrabold text-amber-bright">🔥 {checkin.streak}</p>
+              <p className="text-xs text-muted mt-1">hari berturut-turut</p>
+              <div className="mt-3 rounded-xl bg-amber-soft px-4 py-2">
+                <p className="text-xs font-semibold text-amber-bright">Sudah check-in hari ini ✓</p>
+                <p className="text-xs text-muted mt-0.5">Total {checkin.points} poin terkumpul</p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center">
+              <p className="text-sm text-muted mb-1">Streak saat ini: <strong className="text-ink">{checkin?.streak || 0} hari</strong></p>
+              <p className="text-xs text-muted mb-3">Check-in tiap hari = bonus poin berlipat!</p>
+              <button
+                onClick={doCheckin}
+                disabled={checkinBusy}
+                className="w-full rounded-xl bg-gradient-to-r from-amber to-amber-bright py-2.5 text-sm font-bold text-white shadow-3d disabled:opacity-50"
+              >
+                {checkinBusy ? "Memproses..." : "✅ Check-in Sekarang"}
+              </button>
+            </div>
+          )}
+          {checkin?.alreadyDone === false && checkin?.streak > 0 && (
+            <p className="mt-2 text-center text-[11px] text-muted">Kembali besok untuk menjaga streak!</p>
+          )}
+        </div>
+
+        {/* Spin Wheel */}
+        <div className="card p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xl">🎡</span>
+            <h2 className="text-base font-bold text-ink">Putar Roda Keberuntungan</h2>
+          </div>
+          <SpinWheelGame />
+        </div>
+
+        {/* Balance Target */}
+        <div className="card p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xl">🎯</span>
+            <h2 className="text-base font-bold text-ink">Target Saldo</h2>
+          </div>
+          {balanceTarget > 0 ? (
+            <div>
+              <div className="flex items-baseline justify-between mb-1">
+                <span className="text-xs text-muted">Saldo sekarang</span>
+                <span className="text-xs font-semibold text-ink">{rupiah(balance || 0)}</span>
+              </div>
+              <div className="h-3 rounded-full bg-surface2 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-teal to-teal-bright transition-all"
+                  style={{ width: `${Math.min(100, Math.round(((balance || 0) / balanceTarget) * 100))}%` }}
+                />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-[11px] text-muted">Rp0</span>
+                <span className="text-[11px] font-semibold text-teal-bright">{rupiah(balanceTarget)}</span>
+              </div>
+              <p className="mt-2 text-xs text-center text-muted">
+                {(balance || 0) >= balanceTarget
+                  ? "🎉 Target tercapai!"
+                  : `Kurang ${rupiah(balanceTarget - (balance || 0))} lagi`}
+              </p>
+              <button
+                onClick={() => { setTargetInput(String(balanceTarget)); setEditingTarget(true); }}
+                className="mt-3 w-full text-xs text-muted hover:text-ink"
+              >
+                Ubah target
+              </button>
+            </div>
+          ) : editingTarget ? (
+            <div>
+              <p className="text-xs text-muted mb-2">Masukkan target saldo kamu:</p>
+              <input
+                type="number"
+                min="1000"
+                value={targetInput}
+                onChange={(e) => setTargetInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && saveTarget()}
+                placeholder="Contoh: 50000"
+                autoFocus
+                className="w-full rounded-xl border border-line bg-surface2 px-3 py-2 text-sm outline-none focus:border-teal"
+              />
+              <div className="flex gap-2 mt-2">
+                <button onClick={saveTarget} className="flex-1 rounded-xl bg-teal-bright py-2 text-xs font-bold text-white">Simpan</button>
+                <button onClick={() => setEditingTarget(false)} className="flex-1 rounded-xl border border-line py-2 text-xs text-muted">Batal</button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center">
+              <p className="text-sm text-muted mb-3">Tetapkan target saldo untuk memantau progres tabunganmu.</p>
+              <button
+                onClick={() => { setTargetInput(""); setEditingTarget(true); }}
+                className="rounded-xl border border-teal/30 bg-teal-soft px-5 py-2 text-sm font-semibold text-teal-bright hover:bg-teal/20"
+              >
+                + Set Target
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">

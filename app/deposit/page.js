@@ -536,6 +536,36 @@ export default function DepositPage() {
             )}
           </div>
 
+          <div className="card p-5">
+            <h2 className="text-base font-bold text-ink">🎁 Bonus Deposit</h2>
+            <p className="mt-1 text-xs text-muted">Semakin besar deposit, semakin besar bonusnya!</p>
+            <div className="mt-3 space-y-2">
+              {[
+                { min: 10000, max: 49999, bonus: "2%", color: "bg-surface2 text-muted" },
+                { min: 50000, max: 99999, bonus: "3%", color: "bg-teal-soft text-teal-bright" },
+                { min: 100000, max: 199999, bonus: "5%", color: "bg-amber-soft text-amber-bright" },
+                { min: 200000, max: null, bonus: "7%", color: "bg-rose-soft text-rose" }
+              ].map((tier) => {
+                const active = amt >= tier.min && (tier.max === null || amt <= tier.max);
+                return (
+                  <div
+                    key={tier.min}
+                    className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
+                      active ? `${tier.color} ring-2 ring-offset-1 ring-amber/50 scale-[1.02]` : "bg-surface2 text-muted opacity-70"
+                    }`}
+                  >
+                    <span>
+                      {rupiah(tier.min)}{tier.max ? ` – ${rupiah(tier.max)}` : "+"}
+                    </span>
+                    <span className={`font-extrabold ${active ? "" : "text-muted"}`}>+{tier.bonus} bonus</span>
+                    {active && <span className="text-[10px] bg-amber text-white px-1.5 py-0.5 rounded-full">✓ Aktif</span>}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-[11px] text-muted">*Bonus berupa cashback poin yang langsung masuk ke akunmu.</p>
+          </div>
+
           <div className="card-flat p-5">
             <h2 className="text-base font-bold text-ink">Perlu diketahui</h2>
             <ul className="mt-3 list-disc space-y-2 pl-4 text-sm leading-relaxed text-muted">
