@@ -17,35 +17,36 @@ export async function GET() {
     const endMinutes = cfg.endHour * 60;
     if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
       const minutesLeft = endMinutes - currentMinutes;
+      const totalMinutes = endMinutes - startMinutes;
       return NextResponse.json({
         active: true,
         discountPercent: cfg.discountPercent,
         label: cfg.label || `Lucky Hour ${cfg.startHour}:00–${cfg.endHour}:00`,
         minutesLeft,
+        totalMinutes,
         endMinutes,
       });
     }
   }
 
   // Find next lucky hour
-  let nextStart = null;
-  let nextLabel = null;
+  let nextCfg = null;
   let minDiff = Infinity;
   for (const cfg of configs) {
     const startMinutes = cfg.startHour * 60;
     let diff = startMinutes - currentMinutes;
     if (diff < 0) diff += 24 * 60;
-    if (diff < minDiff) {
-      minDiff = diff;
-      nextStart = cfg.startHour;
-      nextLabel = cfg.label || `Lucky Hour ${cfg.startHour}:00`;
-    }
+    if (diff < minDiff) { minDiff = diff; nextCfg = cfg; }
   }
 
   return NextResponse.json({
     active: false,
-    nextStart,
-    nextLabel,
-    minutesUntilNext: minDiff < Infinity ? minDiff : null,
+    next: nextCfg ? {
+      label: nextCfg.label || `Lucky Hour ${nextCfg.startHour}:00–${nextCfg.endHour}:00`,
+      startHour: nextCfg.startHour,
+      endHour: nextCfg.endHour,
+      discountPercent: nextCfg.discountPercent,
+      minutesUntil: minDiff,
+    } : null,
   });
 }
