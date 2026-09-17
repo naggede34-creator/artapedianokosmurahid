@@ -67,6 +67,18 @@ export default function AdminDashboardPage() {
 
   const [suspendMsg, setSuspendMsg] = useState("");
 
+  // Flash sale state
+  const [flashSales, setFlashSales] = useState([]);
+  const [flashSaleForm, setFlashSaleForm] = useState({ title: "", discountPercent: "", durationHours: "2", serviceFilter: "" });
+  const [flashSaleMsg, setFlashSaleMsg] = useState("");
+  const [flashSaleLoading, setFlashSaleLoading] = useState(false);
+
+  // Lucky hours state
+  const [luckyHours, setLuckyHours] = useState([]);
+  const [luckyHourForm, setLuckyHourForm] = useState({ startHour: "", endHour: "", discountPercent: "", label: "" });
+  const [luckyHourMsg, setLuckyHourMsg] = useState("");
+  const [luckyHourLoading, setLuckyHourLoading] = useState(false);
+
   const loadWarrantyClaims = useCallback(async () => {
     setWarrantyLoading(true);
     try {
@@ -184,6 +196,76 @@ export default function AdminDashboardPage() {
     }
   }, [router]);
 
+  async function loadFlashSales() {
+    setFlashSaleLoading(true);
+    try {
+      const res = await fetch("/api/admin/flashsale");
+      if (res.ok) { const d = await res.json(); setFlashSales(Array.isArray(d.items) ? d.items : []); }
+    } finally { setFlashSaleLoading(false); }
+  }
+
+  async function loadLuckyHours() {
+    setLuckyHourLoading(true);
+    try {
+      const res = await fetch("/api/admin/lucky-hours");
+      if (res.ok) { const d = await res.json(); setLuckyHours(Array.isArray(d.items) ? d.items : []); }
+    } finally { setLuckyHourLoading(false); }
+  }
+
+  async function createFlashSale(e) {
+    e.preventDefault();
+    setFlashSaleMsg("");
+    const { title, discountPercent, durationHours, serviceFilter } = flashSaleForm;
+    if (!title || !discountPercent) { setFlashSaleMsg("Judul dan diskon wajib diisi."); return; }
+    const startAt = new Date();
+    const endAt = new Date(startAt.getTime() + Number(durationHours) * 3600000);
+    const res = await fetch("/api/admin/flashsale", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, discountPercent: Number(discountPercent), startAt, endAt, serviceFilter }),
+    });
+    const d = await res.json();
+    if (d.ok) { setFlashSaleMsg("Flash sale dibuat!"); setFlashSaleForm({ title: "", discountPercent: "", durationHours: "2", serviceFilter: "" }); loadFlashSales(); }
+    else setFlashSaleMsg(d.error || "Gagal.");
+    setTimeout(() => setFlashSaleMsg(""), 3000);
+  }
+
+  async function toggleFlashSale(id) {
+    await fetch("/api/admin/flashsale", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
+    loadFlashSales();
+  }
+
+  async function deleteFlashSale(id) {
+    await fetch("/api/admin/flashsale", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
+    loadFlashSales();
+  }
+
+  async function createLuckyHour(e) {
+    e.preventDefault();
+    setLuckyHourMsg("");
+    const { startHour, endHour, discountPercent, label } = luckyHourForm;
+    if (startHour === "" || endHour === "" || !discountPercent) { setLuckyHourMsg("Semua field wajib diisi."); return; }
+    const res = await fetch("/api/admin/lucky-hours", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ startHour: Number(startHour), endHour: Number(endHour), discountPercent: Number(discountPercent), label }),
+    });
+    const d = await res.json();
+    if (d.ok) { setLuckyHourMsg("Lucky hour dibuat!"); setLuckyHourForm({ startHour: "", endHour: "", discountPercent: "", label: "" }); loadLuckyHours(); }
+    else setLuckyHourMsg(d.error || "Gagal.");
+    setTimeout(() => setLuckyHourMsg(""), 3000);
+  }
+
+  async function toggleLuckyHour(id) {
+    await fetch("/api/admin/lucky-hours", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
+    loadLuckyHours();
+  }
+
+  async function deleteLuckyHour(id) {
+    await fetch("/api/admin/lucky-hours", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
+    loadLuckyHours();
+  }
+
   useEffect(() => {
     loadSettings();
     loadSimuru();
@@ -193,6 +275,8 @@ export default function AdminDashboardPage() {
     loadBroadcasts();
     loadAnnouncements();
     loadWarrantyClaims();
+    loadFlashSales();
+    loadLuckyHours();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1398,6 +1482,66 @@ export default function AdminDashboardPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Flash Sale Management */}
+      <div className="mt-8 glass rounded-2xl p-5 shadow-soft">
+        <h2 className="text-base font-bold text-ink mb-4">⚡ Manajemen Flash Sale</h2>
+        <form onSubmit={createFlashSale} className="grid gap-3 sm:grid-cols-2 mb-4">
+          <input value={flashSaleForm.title} onChange={(e) => setFlashSaleForm((f) => ({...f, title: e.target.value}))} placeholder="Judul flash sale" className="input text-sm" />
+          <input value={flashSaleForm.discountPercent} onChange={(e) => setFlashSaleForm((f) => ({...f, discountPercent: e.target.value}))} type="number" min="1" max="90" placeholder="Diskon (%)" className="input text-sm" />
+          <input value={flashSaleForm.durationHours} onChange={(e) => setFlashSaleForm((f) => ({...f, durationHours: e.target.value}))} type="number" min="1" placeholder="Durasi (jam)" className="input text-sm" />
+          <input value={flashSaleForm.serviceFilter} onChange={(e) => setFlashSaleForm((f) => ({...f, serviceFilter: e.target.value}))} placeholder="Filter layanan (opsional, cth: WhatsApp)" className="input text-sm" />
+          <button type="submit" className="sm:col-span-2 rounded-xl bg-rose py-2 text-sm font-bold text-white press">Buat Flash Sale</button>
+        </form>
+        {flashSaleMsg && <p className="text-xs text-teal-bright mb-3">{flashSaleMsg}</p>}
+        {flashSaleLoading ? <div className="skeleton h-16 rounded-xl" /> : flashSales.length === 0 ? (
+          <p className="text-sm text-muted">Belum ada flash sale.</p>
+        ) : (
+          <div className="space-y-2">
+            {flashSales.map((s) => (
+              <div key={s.id} className="flex items-center gap-3 rounded-xl border border-line p-3">
+                <span className={`h-2 w-2 rounded-full shrink-0 ${s.active ? "bg-teal-bright" : "bg-rose"}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-ink">{s.title}</p>
+                  <p className="text-xs text-muted">{s.discountPercent}% OFF · {s.serviceFilter || "Semua"} · Berakhir {new Date(s.endAt).toLocaleString("id-ID")}</p>
+                </div>
+                <button onClick={() => toggleFlashSale(s.id)} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">{s.active ? "Nonaktif" : "Aktif"}</button>
+                <button onClick={() => deleteFlashSale(s.id)} className="text-xs text-rose border border-rose/40 rounded-lg px-2 py-1 press">Hapus</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Lucky Hours Management */}
+      <div className="mt-5 glass rounded-2xl p-5 shadow-soft">
+        <h2 className="text-base font-bold text-ink mb-4">⏰ Manajemen Lucky Hours</h2>
+        <form onSubmit={createLuckyHour} className="grid gap-3 sm:grid-cols-2 mb-4">
+          <input value={luckyHourForm.startHour} onChange={(e) => setLuckyHourForm((f) => ({...f, startHour: e.target.value}))} type="number" min="0" max="23" placeholder="Jam mulai (0-23)" className="input text-sm" />
+          <input value={luckyHourForm.endHour} onChange={(e) => setLuckyHourForm((f) => ({...f, endHour: e.target.value}))} type="number" min="0" max="23" placeholder="Jam selesai (0-23)" className="input text-sm" />
+          <input value={luckyHourForm.discountPercent} onChange={(e) => setLuckyHourForm((f) => ({...f, discountPercent: e.target.value}))} type="number" min="1" max="90" placeholder="Diskon (%)" className="input text-sm" />
+          <input value={luckyHourForm.label} onChange={(e) => setLuckyHourForm((f) => ({...f, label: e.target.value}))} placeholder="Label (opsional)" className="input text-sm" />
+          <button type="submit" className="sm:col-span-2 rounded-xl bg-amber py-2 text-sm font-bold text-white press">Tambah Lucky Hour</button>
+        </form>
+        {luckyHourMsg && <p className="text-xs text-teal-bright mb-3">{luckyHourMsg}</p>}
+        {luckyHourLoading ? <div className="skeleton h-16 rounded-xl" /> : luckyHours.length === 0 ? (
+          <p className="text-sm text-muted">Belum ada lucky hour.</p>
+        ) : (
+          <div className="space-y-2">
+            {luckyHours.map((h) => (
+              <div key={h.id} className="flex items-center gap-3 rounded-xl border border-line p-3">
+                <span className={`h-2 w-2 rounded-full shrink-0 ${h.active ? "bg-amber" : "bg-muted/40"}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-ink">{h.label}</p>
+                  <p className="text-xs text-muted">{h.startHour}:00 – {h.endHour}:00 · {h.discountPercent}% OFF</p>
+                </div>
+                <button onClick={() => toggleLuckyHour(h.id)} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">{h.active ? "Nonaktif" : "Aktif"}</button>
+                <button onClick={() => deleteLuckyHour(h.id)} className="text-xs text-rose border border-rose/40 rounded-lg px-2 py-1 press">Hapus</button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

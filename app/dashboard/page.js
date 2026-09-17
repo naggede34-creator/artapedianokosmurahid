@@ -7,6 +7,10 @@ import SimCard from "@/components/SimCard";
 import AccountInfoModal from "@/components/AccountInfoModal";
 import SpinWheelGame from "@/components/SpinWheelGame";
 import OTPPriceWidget from "@/components/OTPPriceWidget";
+import MissionsPanel from "@/components/MissionsPanel";
+import WeeklyChallenge from "@/components/WeeklyChallenge";
+import FlashSaleTimer from "@/components/FlashSaleTimer";
+import LuckyHourBanner from "@/components/LuckyHourBanner";
 import { Icon, rupiah, EmptyState } from "@/components/ui";
 
 function greeting() {
@@ -645,6 +649,16 @@ export default function DashboardPage() {
           )}
         </div>
       )}
+
+      <div className="mt-5 space-y-3">
+        <FlashSaleTimer />
+        <LuckyHourBanner />
+      </div>
+
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <MissionsPanel token={token} />
+        <WeeklyChallenge token={token} />
+      </div>
 
       <div className="mt-5">
         <OTPPriceWidget />

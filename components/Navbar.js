@@ -7,6 +7,7 @@ import { useUser } from "@/app/providers";
 import ThemeToggle from "@/components/ThemeToggle";
 import Sidebar from "@/components/Sidebar";
 import InfoBell from "@/components/InfoBell";
+import NotificationBell from "@/components/NotificationBell";
 
 const links = [
   { href: "/dashboard", label: "Beranda" },
@@ -31,7 +32,7 @@ export function Logo({ size = 34 }) {
 }
 
 export default function Navbar() {
-  const { balance, ready } = useUser();
+  const { balance, ready, token } = useUser();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -94,6 +95,7 @@ export default function Navbar() {
             <span className="flex h-5 w-5 items-center justify-center rounded-md bg-amber text-[11px] font-extrabold text-white">+</span>
             {ready ? `Rp${Number(balance || 0).toLocaleString("id-ID")}` : "…"}
           </Link>
+          <NotificationBell token={token} />
           <InfoBell />
           <ThemeToggle className="hidden sm:inline-flex" />
         </div>
