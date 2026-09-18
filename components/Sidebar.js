@@ -49,7 +49,6 @@ const sections = [
     title: "Belanja",
     items: [
       { href: "/otp", label: "Beli Nokos (OTP)", icon: <Icon.phone width={19} height={19} /> },
-      { href: "/suntik", label: "Suntik Sosmed", icon: <Icon.rocket width={19} height={19} />, badge: "Baru" },
       { href: "/harga", label: "Daftar Harga Nokos", icon: I.tag }
     ]
   },
