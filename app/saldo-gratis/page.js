@@ -35,7 +35,7 @@ function JobCard({ job, mySubmissions, onSubmit }) {
       </div>
 
       {job.description && (
-        <p className="text-xs text-muted mb-3 leading-relaxed pl-7">{job.description}</p>
+        <p className="text-xs text-muted mb-3 leading-relaxed pl-7 whitespace-pre-line line-clamp-4">{job.description}</p>
       )}
 
       {pct !== null && (
@@ -102,8 +102,8 @@ function SubmitModal({ job, onClose, onSuccess }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-3xl bg-bg border-2 border-line overflow-hidden"
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-3xl bg-bg border-2 border-line overflow-hidden max-h-[88vh] flex flex-col"
         style={{ boxShadow: "6px 6px 0 0 rgba(0,0,0,0.15)" }}>
         <div className="bg-gradient-to-r from-teal to-teal-bright p-5 text-white">
           <p className="text-xs font-bold opacity-80 mb-0.5">Pengajuan Job</p>
@@ -113,7 +113,7 @@ function SubmitModal({ job, onClose, onSuccess }) {
           </div>
         </div>
 
-        <div className="p-5">
+        <div className="p-5 overflow-y-auto">
           {done ? (
             <div className="text-center py-4">
               <div className="text-5xl mb-3">⏳</div>
@@ -125,7 +125,12 @@ function SubmitModal({ job, onClose, onSuccess }) {
             </div>
           ) : (
             <>
-              <p className="text-sm text-muted mb-3 leading-relaxed">{job.description}</p>
+              {job.description && (
+                <div className="mb-4 rounded-2xl bg-surface2 border border-line p-3">
+                  <p className="text-xs font-black text-ink mb-1.5">📋 Instruksi Job</p>
+                  <p className="text-sm text-muted leading-relaxed whitespace-pre-line">{job.description}</p>
+                </div>
+              )}
               {job.proofRequired !== false && (
                 <div className="mb-4">
                   <label className="block text-xs font-black text-ink mb-1.5">
