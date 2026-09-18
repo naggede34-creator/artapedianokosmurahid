@@ -12,6 +12,8 @@ import WeeklyChallenge from "@/components/WeeklyChallenge";
 import FlashSaleTimer from "@/components/FlashSaleTimer";
 import LuckyHourBanner from "@/components/LuckyHourBanner";
 import LevelUpModal from "@/components/LevelUpModal";
+import OnboardingTour, { useShouldShowTour } from "@/components/OnboardingTour";
+import NamePromptModal from "@/components/NamePromptModal";
 import { Icon, rupiah, EmptyState } from "@/components/ui";
 
 function greeting() {
@@ -319,6 +321,8 @@ function WarrantyModal({ open, onClose, token }) {
 
 export default function DashboardPage() {
   const { token, name, balance, joinedAt, ready } = useUser();
+  const [showTour, hideTour] = useShouldShowTour();
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [stats, setStats] = useState(null);
   const [loyalty, setLoyalty] = useState(null);
   const [board, setBoard] = useState(null);
@@ -366,6 +370,18 @@ export default function DashboardPage() {
     } catch {}
   }, []);
 
+  // Prompt pengisian nama jika belum ada & tour sudah selesai/tidak tampil
+  useEffect(() => {
+    if (!ready || showTour) return;
+    if (name) return;
+    try {
+      const dismissed = localStorage.getItem("artapedia_name_dismissed");
+      if (dismissed && Date.now() - Number(dismissed) < 3 * 24 * 60 * 60 * 1000) return;
+    } catch {}
+    const t = setTimeout(() => setShowNamePrompt(true), 1500);
+    return () => clearTimeout(t);
+  }, [ready, name, showTour]);
+
   async function doCheckin() {
     if (!token || checkinBusy) return;
     setCheckinBusy(true);
@@ -408,6 +424,10 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
       <LevelUpModal token={token} onClose={() => {}} />
+      {showTour && <OnboardingTour onDone={hideTour} />}
+      {showNamePrompt && !showTour && (
+        <NamePromptModal onClose={() => setShowNamePrompt(false)} />
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-muted">{greeting()},</p>

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
 import { logBalance } from "@/lib/ledger";
-import { sendTelegramNotif, transferNotif } from "@/lib/telegram";
+import { sendTelegramNotif, sendTelegramPhoto, transferNotif } from "@/lib/telegram";
+import { generateReceiptPng, transferParams } from "@/lib/receiptImage";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +65,17 @@ export async function POST(req) {
       ref
     });
 
-    sendTelegramNotif(transferNotif({ fromToken, toToken, amount, fromBalance: debited.balance }));
+    const transferText = transferNotif({ fromToken, toToken, amount, fromBalance: debited.balance });
+    sendTelegramNotif(transferText);
+    generateReceiptPng(transferParams({
+      ref,
+      fromToken,
+      fromName: debited?.name,
+      toToken,
+      toName: credited?.name,
+      amount,
+      fromBalance: debited.balance
+    })).then((png) => sendTelegramPhoto(png, transferText.slice(0, 800))).catch(() => {});
 
     return NextResponse.json({ balance: debited.balance, transferredTo: toToken, amount, ref });
   } catch (err) {

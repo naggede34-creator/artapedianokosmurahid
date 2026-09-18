@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: { ignoreDuringBuilds: true },
+  // Exclude native/WASM packages from Next.js bundling so Node.js resolves them
+  // directly at runtime (required for @resvg/resvg-js and satori's HarfBuzz WASM).
+  experimental: {
+    serverComponentsExternalPackages: ["@resvg/resvg-js", "satori", "harfbuzzjs"],
+  },
   // Browser bawaan Telegram (dibuka lewat tombol link biasa, bukan web_app) suka
   // nyimpen cache halaman HTML lebih agresif daripada Chrome/Safari biasa, jadi
   // setelah redeploy user masih lihat tampilan lama sampai mereka clear cache
