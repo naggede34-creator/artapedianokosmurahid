@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { jobsCol } from "@/lib/db";
 import { isAdminRequest } from "@/lib/adminAuth";
+import { sendTelegramNotif, jobCreatedNotif } from "@/lib/telegram";
 import { ObjectId } from "mongodb";
 
 export const dynamic = "force-dynamic";
@@ -26,11 +27,13 @@ export async function POST(req) {
     if (action === "create") {
       const { title, description, reward, maxCompletions, proofType, proofRequired, category, imageUrl } = body;
       if (!title || !reward) return NextResponse.json({ error: "Judul dan reward wajib diisi." }, { status: 400 });
+      const maxComp = Number(maxCompletions ?? 0);
+      const descTrimmed = String(description || "").trim();
       await col.insertOne({
         title: String(title).trim(),
-        description: String(description || "").trim(),
+        description: descTrimmed,
         reward: Number(reward),
-        maxCompletions: Number(maxCompletions ?? 0),
+        maxCompletions: maxComp,
         completedCount: 0,
         proofRequired: proofRequired !== false,
         proofType: String(proofType || "text"),
@@ -39,6 +42,14 @@ export async function POST(req) {
         active: true,
         createdAt: new Date()
       });
+      sendTelegramNotif(jobCreatedNotif({
+        title: String(title).trim(),
+        reward: Number(reward),
+        category: String(category || "Umum").trim(),
+        maxCompletions: maxComp,
+        proofType: String(proofType || "text"),
+        description: descTrimmed
+      }));
       return NextResponse.json({ ok: true });
     }
 
