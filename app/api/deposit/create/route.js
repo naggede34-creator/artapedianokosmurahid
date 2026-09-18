@@ -6,8 +6,7 @@ import { createDeposit as createRumahOtpDeposit, toEpochMs } from "@/lib/rumahot
 import { createSimuruDeposit, simuruConfigured } from "@/lib/simuru";
 import { getSettings, depositLimits } from "@/lib/settings";
 import { PROVIDER_KEYS } from "@/lib/paymentProviders";
-import { sendTelegramNotif, sendTelegramPhoto, depositPendingNotif, providerAlertNotif } from "@/lib/telegram";
-import { generateReceiptPng, depositPendingParams } from "@/lib/receiptImage";
+import { sendTelegramNotif, depositPendingNotif, providerAlertNotif } from "@/lib/telegram";
 import { rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
@@ -31,9 +30,17 @@ function toNumberOrNull(v) {
 function asImageSrc(value) {
   if (!value || typeof value !== "string") return null;
   if (value.startsWith("data:") || value.startsWith("http")) return value;
-  // base64 polos tanpa prefix
   if (/^[A-Za-z0-9+/=\s]{200,}$/.test(value)) return `data:image/png;base64,${value.replace(/\s/g, "")}`;
   return null;
+}
+
+// RumahOTP kadang mengembalikan message sebagai object nested, bukan string.
+// Fungsi ini normalisasi ke string agar tidak muncul "[object Object]" di frontend.
+function toErrStr(v, fallback = "Terjadi kesalahan, coba lagi.") {
+  if (!v) return fallback;
+  if (typeof v === "string") return v;
+  if (typeof v === "object") return v.message || v.error || v.description || JSON.stringify(v);
+  return String(v);
 }
 
 export async function POST(req) {
@@ -145,7 +152,7 @@ export async function POST(req) {
           sendTelegramNotif(providerAlertNotif({ provider: "RumahOTP", action: "Buat deposit QRIS", message: err.message }));
         }
         return NextResponse.json(
-          { error: errData?.message || err?.message || "Gagal membuat pembayaran RumahOTP, coba metode lain." },
+          { error: toErrStr(errData?.message || errData || err?.message, "Gagal membuat pembayaran RumahOTP, coba metode lain.") },
           { status: 400 }
         );
       }
@@ -158,7 +165,7 @@ export async function POST(req) {
       if (isSoftError) {
         console.error("[deposit/create] rumahotp soft error:", JSON.stringify(result));
         return NextResponse.json(
-          { error: result?.message || result?.error || "Gagal membuat pembayaran RumahOTP, coba metode lain." },
+          { error: toErrStr(result?.message || result?.error, "Gagal membuat pembayaran RumahOTP, coba metode lain.") },
           { status: 400 }
         );
       }
@@ -182,7 +189,7 @@ export async function POST(req) {
       if (!qrisString && !qrImage && !paymentUrl) {
         console.error("[deposit/create] rumahotp missing qris fields, full response:", JSON.stringify(result));
         return NextResponse.json(
-          { error: data?.message || result?.message || "Gagal membuat pembayaran RumahOTP, coba metode lain." },
+          { error: toErrStr(data?.message || result?.message, "Gagal membuat pembayaran RumahOTP, coba metode lain.") },
           { status: 400 }
         );
       }
@@ -217,11 +224,6 @@ export async function POST(req) {
       fee: adminFee, total: totalAmount, expiredAt, token, name: user.name
     });
     sendTelegramNotif(pendingText);
-    // Kirim struk PNG secara async, tidak blocking
-    generateReceiptPng(depositPendingParams({
-      orderId, token, name: user.name, provider: chosen,
-      amount: amt, fee: adminFee, total: totalAmount, expiredAt
-    })).then((png) => sendTelegramPhoto(png, pendingText.slice(0, 800))).catch((err) => console.error("[receipt/deposit-pending]", err?.message || err));
 
     return NextResponse.json({
       orderId,

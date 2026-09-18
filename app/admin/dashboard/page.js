@@ -16,9 +16,11 @@ const TABS = [
   { id: "ringkasan", label: "Ringkasan", icon: "📊" },
   { id: "pengguna", label: "Pengguna", icon: "👥" },
   { id: "konten", label: "Konten", icon: "📝" },
+  { id: "banner", label: "Banner", icon: "🖼️" },
   { id: "transaksi", label: "Transaksi", icon: "💳" },
   { id: "produk", label: "Produk", icon: "🛍️" },
   { id: "job", label: "Job/Saldo", icon: "💰" },
+  { id: "tiket", label: "Tiket", icon: "🎫" },
   { id: "pengaturan", label: "Pengaturan", icon: "⚙️" },
   { id: "tools", label: "Tools", icon: "🛠️" },
 ];
@@ -79,7 +81,6 @@ export default function AdminDashboardPage() {
   const [warrantyClaims, setWarrantyClaims] = useState([]);
   const [warrantyLoading, setWarrantyLoading] = useState(true);
   const [warrantyMsg, setWarrantyMsg] = useState("");
-  const [selectedScreenshot, setSelectedScreenshot] = useState(null);
 
   const [suspendMsg, setSuspendMsg] = useState("");
 
@@ -127,6 +128,28 @@ export default function AdminDashboardPage() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [stockAddForm, setStockAddForm] = useState({ id: "", amount: "" });
 
+  // Banner state
+  const [banners, setBanners] = useState([]);
+  const [bannersLoading, setBannersLoading] = useState(false);
+  const [bannerForm, setBannerForm] = useState({ title: "", imageUrl: "", linkUrl: "", placement: "homepage", sortOrder: "0" });
+  const [editingBanner, setEditingBanner] = useState(null);
+  const [bannerMsg, setBannerMsg] = useState("");
+  const [bannerSubmitting, setBannerSubmitting] = useState(false);
+
+  // Tiket support state
+  const [tickets, setTickets] = useState([]);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [ticketMsg, setTicketMsg] = useState("");
+  const [expandedTicket, setExpandedTicket] = useState(null);
+  const [ticketReply, setTicketReply] = useState("");
+  const [ticketReplyLoading, setTicketReplyLoading] = useState(false);
+
+  // Settings extended fields
+  const [siteSettingsForm, setSiteSettingsForm] = useState({ siteName: "", siteUrl: "", telegramBotToken: "", telegramChatId: "", depositMin: "", depositMax: "" });
+  const [savingSiteSettings, setSavingSiteSettings] = useState(false);
+  const [siteSettingsMsg, setSiteSettingsMsg] = useState("");
+  const [siteSettingsSubmitting, setSiteSettingsSubmitting] = useState(false);
+
   // Jobs state
   const [adminJobs, setAdminJobs] = useState([]);
   const [adminJobsLoading, setAdminJobsLoading] = useState(false);
@@ -138,6 +161,99 @@ export default function AdminDashboardPage() {
   const [jobSubmissionsLoading, setJobSubmissionsLoading] = useState(false);
   const [jobSubFilter, setJobSubFilter] = useState("pending");
   const [jobSubMsg, setJobSubMsg] = useState("");
+
+  const loadBanners = useCallback(async () => {
+    setBannersLoading(true);
+    try {
+      const res = await fetch("/api/admin/banners");
+      if (res.status === 401) return router.push("/admin/login");
+      const d = await res.json();
+      setBanners(Array.isArray(d.items) ? d.items : []);
+    } finally { setBannersLoading(false); }
+  }, [router]);
+
+  const loadTickets = useCallback(async () => {
+    setTicketsLoading(true);
+    try {
+      const res = await fetch("/api/admin/support/tickets");
+      if (res.status === 401) return router.push("/admin/login");
+      const d = await res.json();
+      setTickets(Array.isArray(d.items) ? d.items : []);
+    } finally { setTicketsLoading(false); }
+  }, [router]);
+
+  async function submitBanner(e) {
+    e.preventDefault(); setBannerMsg(""); setBannerSubmitting(true);
+    try {
+      const action = editingBanner ? "update" : "create";
+      const body = { action, ...bannerForm, sortOrder: Number(bannerForm.sortOrder) || 0 };
+      if (editingBanner) body.id = editingBanner;
+      const res = await fetch("/api/admin/banners", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Gagal.");
+      setBannerMsg(editingBanner ? "Banner diperbarui!" : "Banner dibuat!");
+      setBannerForm({ title: "", imageUrl: "", linkUrl: "", placement: "homepage", sortOrder: "0" });
+      setEditingBanner(null);
+      loadBanners();
+    } catch (err) { setBannerMsg(err.message); }
+    finally { setBannerSubmitting(false); setTimeout(() => setBannerMsg(""), 3000); }
+  }
+
+  async function toggleBanner(id) {
+    await fetch("/api/admin/banners", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
+    loadBanners();
+  }
+
+  async function deleteBanner(id) {
+    if (!confirm("Hapus banner ini?")) return;
+    await fetch("/api/admin/banners", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
+    loadBanners();
+  }
+
+  async function sendTicketReply(ticketId) {
+    if (!ticketReply.trim()) return;
+    setTicketReplyLoading(true); setTicketMsg("");
+    try {
+      const res = await fetch("/api/admin/support/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticketId, action: "reply", message: ticketReply.trim() }) });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Gagal.");
+      setTicketReply(""); loadTickets();
+      setExpandedTicket((prev) => {
+        if (!prev) return prev;
+        return { ...prev, messages: [...(prev.messages || []), { from: "admin", text: ticketReply.trim(), createdAt: new Date() }], status: "answered" };
+      });
+    } catch (err) { setTicketMsg(err.message); }
+    finally { setTicketReplyLoading(false); setTimeout(() => setTicketMsg(""), 3000); }
+  }
+
+  async function closeTicket(ticketId) {
+    setTicketMsg("");
+    const res = await fetch("/api/admin/support/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticketId, action: "close" }) });
+    const d = await res.json();
+    if (d.ok) { setTicketMsg("Tiket ditutup."); loadTickets(); setExpandedTicket(null); }
+    else setTicketMsg(d.error || "Gagal.");
+    setTimeout(() => setTicketMsg(""), 3000);
+  }
+
+  async function saveSiteSettings(e) {
+    e.preventDefault(); setSavingSiteSettings(true); setSiteSettingsMsg("");
+    try {
+      const patch = {};
+      if (siteSettingsForm.siteName !== "") patch.siteName = siteSettingsForm.siteName;
+      if (siteSettingsForm.siteUrl !== "") patch.siteUrl = siteSettingsForm.siteUrl;
+      if (siteSettingsForm.telegramBotToken !== "") patch.telegramBotToken = siteSettingsForm.telegramBotToken;
+      if (siteSettingsForm.telegramChatId !== "") patch.telegramChatId = siteSettingsForm.telegramChatId;
+      if (siteSettingsForm.depositMin !== "") patch.depositMin = Number(siteSettingsForm.depositMin);
+      if (siteSettingsForm.depositMax !== "") patch.depositMax = Number(siteSettingsForm.depositMax);
+      const res = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Gagal.");
+      setSettings(d);
+      setSiteSettingsForm({ siteName: d.siteName || "", siteUrl: d.siteUrl || "", telegramBotToken: d.telegramBotToken || "", telegramChatId: d.telegramChatId || "", depositMin: String(d.depositMin || ""), depositMax: String(d.depositMax || "") });
+      setSiteSettingsMsg("Pengaturan tersimpan.");
+    } catch (err) { setSiteSettingsMsg(err.message); }
+    finally { setSavingSiteSettings(false); setTimeout(() => setSiteSettingsMsg(""), 3000); }
+  }
 
   const loadAdminProducts = useCallback(async () => {
     setAdminProductsLoading(true);
@@ -297,6 +413,14 @@ export default function AdminDashboardPage() {
     setSettings(data);
     setMarkupInput(String(data.markupPercent ?? 0));
     setSmmMarkupInput(String(data.smm?.markupPercent ?? 0));
+    setSiteSettingsForm({
+      siteName: data.siteName || "",
+      siteUrl: data.siteUrl || "",
+      telegramBotToken: data.telegramBotToken || "",
+      telegramChatId: data.telegramChatId || "",
+      depositMin: String(data.depositMin || ""),
+      depositMax: String(data.depositMax || ""),
+    });
   }, [router]);
 
   const loadUsers = useCallback(
@@ -528,6 +652,8 @@ export default function AdminDashboardPage() {
     loadLuckyHours();
     loadGamStats();
     loadPlatformMarkups();
+    loadBanners();
+    loadTickets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1392,6 +1518,105 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
+      {/* TAB: BANNER                                                   */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === "banner" && (
+        <div className="mt-5 space-y-5">
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink mb-4">
+              {editingBanner ? "✏️ Edit Banner" : "➕ Buat Banner Baru"}
+            </h2>
+            {bannerMsg && <p className="mb-3 text-xs font-medium text-teal-bright">{bannerMsg}</p>}
+            <form onSubmit={submitBanner} className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-medium text-muted">Judul *</label>
+                <input value={bannerForm.title} onChange={(e) => setBannerForm((f) => ({...f, title: e.target.value}))} placeholder="Judul banner" required className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">URL Gambar *</label>
+                <input value={bannerForm.imageUrl} onChange={(e) => setBannerForm((f) => ({...f, imageUrl: e.target.value}))} placeholder="https://..." required className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">URL Link (klik banner)</label>
+                <input value={bannerForm.linkUrl} onChange={(e) => setBannerForm((f) => ({...f, linkUrl: e.target.value}))} placeholder="/otp atau https://..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Penempatan *</label>
+                <select value={bannerForm.placement} onChange={(e) => setBannerForm((f) => ({...f, placement: e.target.value}))} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber">
+                  <option value="homepage">Homepage</option>
+                  <option value="order">Halaman Order</option>
+                  <option value="dashboard">Dashboard User</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Urutan (sortOrder)</label>
+                <input type="number" value={bannerForm.sortOrder} onChange={(e) => setBannerForm((f) => ({...f, sortOrder: e.target.value}))} placeholder="0" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div className="sm:col-span-2 flex gap-2.5 mt-1">
+                {editingBanner && (
+                  <button type="button" onClick={() => { setEditingBanner(null); setBannerForm({ title: "", imageUrl: "", linkUrl: "", placement: "homepage", sortOrder: "0" }); }} className="flex-1 rounded-xl border-2 border-line py-2.5 text-sm font-bold text-ink">Batal</button>
+                )}
+                <button type="submit" disabled={bannerSubmitting} className="flex-1 rounded-xl bg-amber py-2.5 text-sm font-black text-white disabled:opacity-50">
+                  {bannerSubmitting ? "Menyimpan..." : editingBanner ? "Simpan" : "Buat Banner"}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="glass rounded-2xl p-5 shadow-soft">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-ink">🖼️ Daftar Banner</h2>
+              <button onClick={loadBanners} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-3 py-1">Refresh</button>
+            </div>
+            {bannersLoading ? (
+              <div className="space-y-2">{[1,2,3].map((i) => <div key={i} className="skeleton h-16 rounded-xl" />)}</div>
+            ) : banners.length === 0 ? (
+              <p className="text-sm text-muted text-center py-6">Belum ada banner.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-line">
+                <table className="w-full min-w-[600px] text-sm">
+                  <thead>
+                    <tr className="border-b border-line text-left text-xs text-muted bg-surface2">
+                      <th className="px-4 py-2.5 font-medium">Gambar</th>
+                      <th className="px-4 py-2.5 font-medium">Judul</th>
+                      <th className="px-4 py-2.5 font-medium">Penempatan</th>
+                      <th className="px-4 py-2.5 font-medium">Status</th>
+                      <th className="px-4 py-2.5 font-medium text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {banners.map((b) => (
+                      <tr key={b.id} className="border-b border-line last:border-0">
+                        <td className="px-4 py-2.5">
+                          {b.imageUrl && <img src={b.imageUrl} alt={b.title} className="h-10 w-20 rounded-lg object-cover border border-line" />}
+                        </td>
+                        <td className="px-4 py-2.5 text-ink font-medium max-w-[180px] truncate">{b.title}</td>
+                        <td className="px-4 py-2.5">
+                          <span className="rounded-full border border-line px-2 py-0.5 text-[10px] text-muted capitalize">{b.placement}</span>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span className={`rounded-full border px-2 py-0.5 text-[10px] ${b.active ? "border-teal/40 text-teal-bright" : "border-rose/30 text-rose"}`}>
+                            {b.active ? "Aktif" : "Nonaktif"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 text-right">
+                          <div className="flex justify-end gap-1.5">
+                            <button onClick={() => { setEditingBanner(b.id); setBannerForm({ title: b.title, imageUrl: b.imageUrl, linkUrl: b.linkUrl || "", placement: b.placement, sortOrder: String(b.sortOrder || 0) }); }} className="btn-3d rounded-md border border-amber/40 px-2 py-1 text-xs font-medium text-amber-bright hover:bg-amber-soft">Edit</button>
+                            <button onClick={() => toggleBanner(b.id)} className="btn-3d rounded-md border border-line px-2 py-1 text-xs font-medium text-ink hover:border-amber">{b.active ? "Nonaktif" : "Aktif"}</button>
+                            <button onClick={() => deleteBanner(b.id)} className="btn-3d rounded-md border border-rose/40 px-2 py-1 text-xs font-medium text-rose hover:bg-rose-soft">Hapus</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
       {/* TAB: TRANSAKSI                                                */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === "transaksi" && (
@@ -1410,31 +1635,23 @@ export default function AdminDashboardPage() {
             </div>
             {warrantyMsg && <p className="mt-2 text-xs font-medium text-teal-bright">{warrantyMsg}</p>}
 
-            {selectedScreenshot && (
-              <div className="fixed inset-0 z-[80] flex items-center justify-center" style={{ background: "rgb(0 0 0 / 0.8)" }} onClick={() => setSelectedScreenshot(null)}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={selectedScreenshot} alt="Screenshot" className="max-h-[80vh] max-w-[90vw] rounded-xl object-contain" />
-              </div>
-            )}
-
             <div className="glass mt-4 overflow-x-auto rounded-xl shadow-soft">
-              <table className="w-full min-w-[700px] text-sm">
+              <table className="w-full min-w-[600px] text-sm">
                 <thead>
                   <tr className="border-b border-line text-left text-xs text-muted">
                     <th className="px-4 py-2.5 font-medium">User</th>
                     <th className="px-4 py-2.5 font-medium">Nokos</th>
                     <th className="px-4 py-2.5 font-medium">Harga</th>
-                    <th className="px-4 py-2.5 font-medium">Deskripsi</th>
-                    <th className="px-4 py-2.5 font-medium">SS</th>
+                    <th className="px-4 py-2.5 font-medium">Detail Masalah</th>
                     <th className="px-4 py-2.5 font-medium">Status</th>
                     <th className="px-4 py-2.5 font-medium text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {warrantyLoading ? (
-                    <tr><td colSpan={7} className="px-4 py-5 text-center text-muted">Memuat...</td></tr>
+                    <tr><td colSpan={6} className="px-4 py-5 text-center text-muted">Memuat...</td></tr>
                   ) : warrantyClaims.length === 0 ? (
-                    <tr><td colSpan={7} className="px-4 py-5 text-center text-muted">Belum ada klaim garansi.</td></tr>
+                    <tr><td colSpan={6} className="px-4 py-5 text-center text-muted">Belum ada klaim garansi.</td></tr>
                   ) : (
                     warrantyClaims.map((c) => (
                       <tr key={c.id} className="border-b border-line last:border-0">
@@ -1445,14 +1662,9 @@ export default function AdminDashboardPage() {
                           <div className="font-mono text-[10px] text-muted">#{c.orderId?.slice(-10)}</div>
                         </td>
                         <td className="px-4 py-2.5 text-xs font-semibold text-ink">{fmtRp(c.purchasePrice)}</td>
-                        <td className="px-4 py-2.5 max-w-[180px]">
-                          <p className="line-clamp-2 text-xs text-ink">{c.description}</p>
+                        <td className="px-4 py-2.5 max-w-[220px]">
+                          <p className="line-clamp-3 text-xs text-ink whitespace-pre-line">{c.description}</p>
                           {c.adminNote && <p className="mt-0.5 text-[10px] text-muted italic">Catatan: {c.adminNote}</p>}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          {c.screenshotData ? (
-                            <button onClick={() => setSelectedScreenshot(c.screenshotData)} className="rounded-md border border-line px-2 py-1 text-[10px] font-medium text-teal-bright hover:border-teal/40">Lihat</button>
-                          ) : <span className="text-xs text-muted">—</span>}
                         </td>
                         <td className="px-4 py-2.5">
                           <span className={`rounded-full border px-2 py-0.5 text-xs ${c.status === "approved" ? "border-teal/40 text-teal-bright" : c.status === "rejected" ? "border-rose/30 text-rose" : "border-amber/40 text-amber-bright"}`}>
@@ -1811,6 +2023,90 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
+      {/* TAB: TIKET SUPPORT                                            */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === "tiket" && (
+        <div className="mt-5 space-y-5">
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-display text-base font-semibold text-ink">Tiket Dukungan</h2>
+                <p className="mt-0.5 text-xs text-muted">{tickets.filter((t) => t.status === "open").length} tiket terbuka</p>
+              </div>
+              <button onClick={loadTickets} disabled={ticketsLoading} className="btn-3d rounded-lg border border-amber/40 px-3 py-2 text-xs font-bold text-amber-bright hover:bg-amber-soft disabled:opacity-50">
+                {ticketsLoading ? "Memuat…" : "Refresh"}
+              </button>
+            </div>
+            {ticketMsg && <p className="mb-3 text-xs font-medium text-teal-bright">{ticketMsg}</p>}
+
+            {ticketsLoading ? (
+              <div className="space-y-2">{[1,2,3].map((i) => <div key={i} className="skeleton h-14 rounded-xl" />)}</div>
+            ) : tickets.length === 0 ? (
+              <p className="text-sm text-muted text-center py-8">Belum ada tiket.</p>
+            ) : (
+              <div className="space-y-3">
+                {tickets.map((t) => (
+                  <div key={t.ticketId} className="rounded-2xl border border-line bg-surface overflow-hidden">
+                    <button
+                      onClick={() => setExpandedTicket(expandedTicket?.ticketId === t.ticketId ? null : t)}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-surface2 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${t.status === "open" ? "border-amber/40 text-amber-bright" : t.status === "answered" ? "border-teal/40 text-teal-bright" : "border-line text-muted"}`}>
+                            {t.status === "open" ? "Terbuka" : t.status === "answered" ? "Dijawab" : "Ditutup"}
+                          </span>
+                          <p className="text-sm font-semibold text-ink truncate">{t.subject}</p>
+                        </div>
+                        <p className="text-xs text-muted mt-0.5 font-mono">{t.token} · {t.messageCount} pesan · {fmtDate(t.updatedAt)}</p>
+                      </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className={`shrink-0 transition-transform ${expandedTicket?.ticketId === t.ticketId ? "rotate-180" : ""}`}>
+                        <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </button>
+
+                    {expandedTicket?.ticketId === t.ticketId && (
+                      <div className="border-t border-line px-4 py-4">
+                        <div className="space-y-3 max-h-72 overflow-y-auto mb-4">
+                          {t.messages?.map((m, i) => (
+                            <div key={i} className={`flex gap-2 ${m.from === "admin" ? "flex-row-reverse" : ""}`}>
+                              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${m.from === "admin" ? "bg-teal-soft text-teal-bright" : "bg-amber-soft text-amber-bright"}`}>
+                                {m.from === "admin" ? "A" : "U"}
+                              </span>
+                              <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${m.from === "admin" ? "bg-teal-soft text-teal-bright rounded-tr-sm" : "bg-surface2 text-ink rounded-tl-sm"}`}>
+                                <p>{m.text}</p>
+                                <p className="mt-1 text-[10px] opacity-60">{m.createdAt ? fmtDate(m.createdAt) : ""}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {t.status !== "closed" && (
+                          <div className="flex gap-2 mt-3">
+                            <input
+                              value={expandedTicket?.ticketId === t.ticketId ? ticketReply : ""}
+                              onChange={(e) => setTicketReply(e.target.value)}
+                              placeholder="Tulis balasan..."
+                              className="flex-1 rounded-xl border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-teal"
+                            />
+                            <button onClick={() => sendTicketReply(t.ticketId)} disabled={ticketReplyLoading || !ticketReply.trim()} className="btn-3d rounded-xl bg-teal px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">
+                              Kirim
+                            </button>
+                            <button onClick={() => closeTicket(t.ticketId)} className="btn-3d rounded-xl border border-rose/40 px-3 py-2.5 text-xs font-bold text-rose hover:bg-rose-soft">
+                              Tutup
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
       {/* TAB: PENGATURAN                                              */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === "pengaturan" && (
@@ -1920,6 +2216,44 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Pengaturan Situs */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">🌐 Pengaturan Situs &amp; Env</h2>
+            <p className="mt-1 text-xs text-muted">Override variabel environment langsung dari dashboard — tidak perlu redeploy. Kosongkan untuk kembali ke nilai env Vercel.</p>
+            <form onSubmit={async (e) => { e.preventDefault(); setSiteSettingsMsg(""); setSiteSettingsSubmitting(true); try { const patch = {}; if (siteSettingsForm.siteName !== "") patch.siteName = siteSettingsForm.siteName; if (siteSettingsForm.siteUrl !== "") patch.siteUrl = siteSettingsForm.siteUrl; if (siteSettingsForm.telegramBotToken !== "") patch.telegramBotToken = siteSettingsForm.telegramBotToken; if (siteSettingsForm.telegramChatId !== "") patch.telegramChatId = siteSettingsForm.telegramChatId; if (siteSettingsForm.depositMin !== "") patch.depositMin = Number(siteSettingsForm.depositMin); if (siteSettingsForm.depositMax !== "") patch.depositMax = Number(siteSettingsForm.depositMax); const res = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update", patch }) }); const d = await res.json(); if (!res.ok) { setSiteSettingsMsg(d.error || "Gagal."); return; } setSiteSettingsMsg("Pengaturan disimpan!"); } catch { setSiteSettingsMsg("Gagal menyimpan."); } finally { setSiteSettingsSubmitting(false); } }}>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-medium text-muted">Nama Situs</label>
+                  <input value={siteSettingsForm.siteName} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, siteName: e.target.value }))} placeholder="Nokos Murah (dari env)" className="mt-1.5 input w-full text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted">URL Situs</label>
+                  <input value={siteSettingsForm.siteUrl} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, siteUrl: e.target.value }))} placeholder="https://... (dari env)" className="mt-1.5 input w-full text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted">Telegram Bot Token</label>
+                  <input type="password" value={siteSettingsForm.telegramBotToken} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, telegramBotToken: e.target.value }))} placeholder="••• (dari env)" className="mt-1.5 input w-full text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted">Telegram Chat ID</label>
+                  <input value={siteSettingsForm.telegramChatId} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, telegramChatId: e.target.value }))} placeholder="-100... (dari env)" className="mt-1.5 input w-full text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted">Min Deposit (Rp)</label>
+                  <input type="number" min="1" value={siteSettingsForm.depositMin} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, depositMin: e.target.value }))} placeholder="2000 (dari env)" className="mt-1.5 input w-full text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted">Max Deposit (Rp)</label>
+                  <input type="number" min="1" value={siteSettingsForm.depositMax} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, depositMax: e.target.value }))} placeholder="1000000 (dari env)" className="mt-1.5 input w-full text-sm" />
+                </div>
+              </div>
+              {siteSettingsMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{siteSettingsMsg}</p>}
+              <button type="submit" disabled={siteSettingsSubmitting} className="mt-4 rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-bg press disabled:opacity-60">
+                {siteSettingsSubmitting ? "Menyimpan…" : "Simpan Pengaturan Situs"}
+              </button>
+            </form>
           </div>
 
           {/* Platform Markup */}
