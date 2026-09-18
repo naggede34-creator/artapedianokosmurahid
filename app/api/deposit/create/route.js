@@ -8,6 +8,7 @@ import { getSettings, depositLimits } from "@/lib/settings";
 import { PROVIDER_KEYS } from "@/lib/paymentProviders";
 import { sendTelegramNotif, sendTelegramPhoto, depositPendingNotif, providerAlertNotif } from "@/lib/telegram";
 import { generateReceiptPng, depositPendingParams } from "@/lib/receiptImage";
+import { rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,10 @@ function asImageSrc(value) {
 
 export async function POST(req) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!rateLimit(`${ip}:deposit`, 5, 60_000)) {
+      return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi dalam 1 menit." }, { status: 429 });
+    }
     const { token, amount, provider } = await req.json().catch(() => ({}));
     if (!token) return NextResponse.json({ error: "Kode akun tidak valid." }, { status: 400 });
 

@@ -3,6 +3,7 @@ import { usersCol } from "@/lib/db";
 import { logBalance } from "@/lib/ledger";
 import { sendTelegramNotif, sendTelegramPhoto, transferNotif } from "@/lib/telegram";
 import { generateReceiptPng, transferParams } from "@/lib/receiptImage";
+import { rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,10 @@ const MIN_TRANSFER = 1000;
 
 export async function POST(req) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!rateLimit(`${ip}:transfer`, 5, 60_000)) {
+      return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi dalam 1 menit." }, { status: 429 });
+    }
     const body = await req.json().catch(() => ({}));
     const fromToken = String(body.token || "").trim();
     const toToken = String(body.targetToken || "").trim().toUpperCase();
