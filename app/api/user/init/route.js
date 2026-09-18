@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
 import { generateUserToken } from "@/lib/token";
-import { sendTelegramNotif, newUserNotif } from "@/lib/telegram";
+import { sendTelegramNotif, sendTelegramChannelNotif, newUserNotif } from "@/lib/telegram";
 import { sendMonitorLog, userLoginLog } from "@/lib/monitor";
 
 export async function POST(req) {
@@ -59,7 +59,10 @@ export async function POST(req) {
       createdAt
     });
 
-    sendTelegramNotif(newUserNotif({ token, referredBy }));
+    const userCount = await users.countDocuments();
+    const notifText = newUserNotif({ token, referredBy, userCount });
+    sendTelegramNotif(notifText);
+    sendTelegramChannelNotif(notifText);
     sendMonitorLog(userLoginLog({ token, isNew: true }));
 
     return NextResponse.json({ token, balance: 0, createdAt, tourDone: false });

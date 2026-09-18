@@ -145,7 +145,7 @@ export default function AdminDashboardPage() {
   const [ticketReplyLoading, setTicketReplyLoading] = useState(false);
 
   // Settings extended fields
-  const [siteSettingsForm, setSiteSettingsForm] = useState({ siteName: "", siteUrl: "", telegramBotToken: "", telegramChatId: "", depositMin: "", depositMax: "" });
+  const [siteSettingsForm, setSiteSettingsForm] = useState({ siteName: "", siteUrl: "", telegramBotToken: "", telegramChatId: "", telegramChannelId: "", depositMin: "", depositMax: "" });
   const [savingSiteSettings, setSavingSiteSettings] = useState(false);
   const [siteSettingsMsg, setSiteSettingsMsg] = useState("");
   const [siteSettingsSubmitting, setSiteSettingsSubmitting] = useState(false);
@@ -243,13 +243,14 @@ export default function AdminDashboardPage() {
       if (siteSettingsForm.siteUrl !== "") patch.siteUrl = siteSettingsForm.siteUrl;
       if (siteSettingsForm.telegramBotToken !== "") patch.telegramBotToken = siteSettingsForm.telegramBotToken;
       if (siteSettingsForm.telegramChatId !== "") patch.telegramChatId = siteSettingsForm.telegramChatId;
+      if (siteSettingsForm.telegramChannelId !== "") patch.telegramChannelId = siteSettingsForm.telegramChannelId;
       if (siteSettingsForm.depositMin !== "") patch.depositMin = Number(siteSettingsForm.depositMin);
       if (siteSettingsForm.depositMax !== "") patch.depositMax = Number(siteSettingsForm.depositMax);
       const res = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Gagal.");
       setSettings(d);
-      setSiteSettingsForm({ siteName: d.siteName || "", siteUrl: d.siteUrl || "", telegramBotToken: d.telegramBotToken || "", telegramChatId: d.telegramChatId || "", depositMin: String(d.depositMin || ""), depositMax: String(d.depositMax || "") });
+      setSiteSettingsForm({ siteName: d.siteName || "", siteUrl: d.siteUrl || "", telegramBotToken: d.telegramBotToken || "", telegramChatId: d.telegramChatId || "", telegramChannelId: d.telegramChannelId || "", depositMin: String(d.depositMin || ""), depositMax: String(d.depositMax || "") });
       setSiteSettingsMsg("Pengaturan tersimpan.");
     } catch (err) { setSiteSettingsMsg(err.message); }
     finally { setSavingSiteSettings(false); setTimeout(() => setSiteSettingsMsg(""), 3000); }
@@ -418,6 +419,7 @@ export default function AdminDashboardPage() {
       siteUrl: data.siteUrl || "",
       telegramBotToken: data.telegramBotToken || "",
       telegramChatId: data.telegramChatId || "",
+      telegramChannelId: data.telegramChannelId || "",
       depositMin: String(data.depositMin || ""),
       depositMax: String(data.depositMax || ""),
     });
@@ -2237,8 +2239,12 @@ export default function AdminDashboardPage() {
                   <input type="password" value={siteSettingsForm.telegramBotToken} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, telegramBotToken: e.target.value }))} placeholder="••• (dari env)" className="mt-1.5 input w-full text-sm" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-muted">Telegram Chat ID</label>
+                  <label className="text-xs font-medium text-muted">Telegram Chat ID <span className="text-rose text-xs">(admin notif)</span></label>
                   <input value={siteSettingsForm.telegramChatId} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, telegramChatId: e.target.value }))} placeholder="-100... (dari env)" className="mt-1.5 input w-full text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted">Telegram Channel ID <span className="text-amber text-xs">(notif user baru)</span></label>
+                  <input value={siteSettingsForm.telegramChannelId} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, telegramChannelId: e.target.value }))} placeholder="-100... channel ID (env TELEGRAM_CHANNEL_ID)" className="mt-1.5 input w-full text-sm" />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted">Min Deposit (Rp)</label>

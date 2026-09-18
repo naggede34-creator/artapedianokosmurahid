@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { productsCol, productOrdersCol, usersCol } from "@/lib/db";
 import { logBalance } from "@/lib/ledger";
 import { rateLimit } from "@/lib/rateLimit";
+import { sendTelegramNotif, productBoughtNotif } from "@/lib/telegram";
 import { ObjectId } from "mongodb";
 
 export const dynamic = "force-dynamic";
@@ -68,6 +69,17 @@ export async function POST(req) {
       title: `Beli: ${product.name}`,
       ref
     });
+
+    sendTelegramNotif(productBoughtNotif({
+      productName: product.name,
+      price: product.price,
+      category: product.category,
+      deliveryType: product.deliveryType,
+      token,
+      name: user.name || null,
+      balance: debited.balance,
+      ref
+    }));
 
     return NextResponse.json({
       ok: true,

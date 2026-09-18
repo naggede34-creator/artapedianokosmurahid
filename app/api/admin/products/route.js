@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { productsCol } from "@/lib/db";
 import { isAdminRequest } from "@/lib/adminAuth";
+import { sendTelegramNotif, productCreatedNotif } from "@/lib/telegram";
 import { ObjectId } from "mongodb";
 
 export const dynamic = "force-dynamic";
@@ -28,12 +29,13 @@ export async function POST(req) {
       if (!name || !price || !deliveryType || !deliveryContent) {
         return NextResponse.json({ error: "Nama, harga, tipe pengiriman, dan konten wajib diisi." }, { status: 400 });
       }
+      const stockNum = Number(stock ?? -1);
       const result = await col.insertOne({
         name: String(name).trim(),
         description: String(description || "").trim(),
         price: Number(price),
         category: String(category || "Umum").trim(),
-        stock: Number(stock ?? -1),
+        stock: stockNum,
         imageUrl: String(imageUrl || "").trim(),
         deliveryType: String(deliveryType),
         deliveryContent: String(deliveryContent).trim(),
@@ -41,6 +43,14 @@ export async function POST(req) {
         soldCount: 0,
         createdAt: new Date()
       });
+      sendTelegramNotif(productCreatedNotif({
+        name: String(name).trim(),
+        price: Number(price),
+        category: String(category || "Umum").trim(),
+        stock: stockNum,
+        deliveryType: String(deliveryType),
+        description: String(description || "").trim()
+      }));
       return NextResponse.json({ ok: true, id: result.insertedId.toString() });
     }
 

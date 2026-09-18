@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req) {
   try {
-    const { token, orderId, description, purchasePrice } = await req.json();
+    const { token, orderId, description, screenshotData, purchasePrice } = await req.json();
 
     if (!token || !orderId || !description?.trim() || !purchasePrice) {
       return NextResponse.json({ error: "Data tidak lengkap." }, { status: 400 });
@@ -26,6 +26,11 @@ export async function POST(req) {
       return NextResponse.json({ error: "Garansi untuk pesanan ini sudah pernah diklaim." }, { status: 400 });
     }
 
+    // Validate screenshot size (base64 max ~1.5MB)
+    if (screenshotData && screenshotData.length > 2_000_000) {
+      return NextResponse.json({ error: "Ukuran screenshot terlalu besar (maks 1.5 MB)." }, { status: 400 });
+    }
+
     await claims.insertOne({
       token,
       orderId,
@@ -33,6 +38,7 @@ export async function POST(req) {
       countryName: order.countryName || "-",
       phoneNumber: order.phoneNumber || "-",
       description: description.trim(),
+      screenshotData: screenshotData || null,
       purchasePrice: Number(purchasePrice),
       status: "pending",
       adminNote: "",

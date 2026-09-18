@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { jobSubmissionsCol, usersCol, jobsCol } from "@/lib/db";
 import { logBalance } from "@/lib/ledger";
 import { isAdminRequest } from "@/lib/adminAuth";
+import { sendTelegramNotif, jobApprovedNotif } from "@/lib/telegram";
 import { ObjectId } from "mongodb";
 
 export const dynamic = "force-dynamic";
@@ -59,7 +60,11 @@ export async function POST(req) {
     );
 
     const jobs = await jobsCol();
-    await jobs.updateOne({ _id: sub.jobId }, { $inc: { completedCount: 1 } });
+    const updatedJob = await jobs.findOneAndUpdate(
+      { _id: sub.jobId },
+      { $inc: { completedCount: 1 } },
+      { returnDocument: "after" }
+    );
 
     await logBalance({
       token: sub.token,
@@ -69,6 +74,18 @@ export async function POST(req) {
       title: `Job selesai: ${sub.jobTitle}`,
       ref: id
     });
+
+    const userInfo = await users.findOne({ token: sub.token }, { projection: { name: 1 } });
+    sendTelegramNotif(jobApprovedNotif({
+      jobTitle: sub.jobTitle,
+      reward: sub.reward,
+      token: sub.token,
+      name: userInfo?.name || null,
+      balance: updatedUser.balance,
+      completedCount: updatedJob?.completedCount ?? 1,
+      maxCompletions: updatedJob?.maxCompletions ?? 0,
+      submittedAt: sub.submittedAt
+    }));
 
     return NextResponse.json({ ok: true, balance: updatedUser.balance });
   } catch (err) {
