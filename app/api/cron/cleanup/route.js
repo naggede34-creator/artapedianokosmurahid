@@ -10,9 +10,8 @@
 // menerima dua-duanya.
 import { NextResponse } from "next/server";
 import { getServices } from "@/lib/rumahotp";
-import { usersCol } from "@/lib/db";
+import { usersCol, depositsCol } from "@/lib/db";
 import { runCleanup } from "@/lib/cleanup";
-import { getSimuruBalance, simuruConfigured } from "@/lib/simuru";
 import { sendMonitorLog, cronReportLog } from "@/lib/monitor";
 
 export const dynamic = "force-dynamic";
@@ -39,19 +38,33 @@ async function checkRumahOtp() {
   }
 }
 
-async function checkSimuru() {
+async function checkPakasir() {
   const start = Date.now();
-  if (!simuruConfigured()) return { name: "Simuru API", ok: false, error: "SIMURU_APIKEY belum diset" };
   try {
-    const balance = await getSimuruBalance();
+    if (!process.env.PAKASIR_MERCHANT_ID) return { name: "Pakasir QRIS", ok: false, error: "PAKASIR_MERCHANT_ID belum diset" };
+    const res = await fetch(`https://api.pakasir.com/merchant/check/${process.env.PAKASIR_MERCHANT_ID}`, {
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return { name: "Pakasir QRIS", ok: true, ms: Date.now() - start };
+  } catch (err) {
+    return { name: "Pakasir QRIS", ok: false, ms: Date.now() - start, error: err?.message || "gagal terhubung" };
+  }
+}
+
+async function checkPendingDeposits() {
+  const start = Date.now();
+  try {
+    const deps = await depositsCol();
+    const count = await deps.countDocuments({ status: "pending" });
     return {
-      name: `Simuru API (saldo Rp${balance.toLocaleString("id-ID")})`,
+      name: `Deposit pending (${count} antrian)`,
       ok: true,
       ms: Date.now() - start,
-      ...(balance < 20000 ? { error: "saldo menipis" } : {})
+      ...(count > 50 ? { error: "antrian menumpuk" } : {})
     };
   } catch (err) {
-    return { name: "Simuru API", ok: false, ms: Date.now() - start, error: err?.message || "gagal terhubung" };
+    return { name: "Deposit queue", ok: false, ms: Date.now() - start, error: err?.message || "gagal cek" };
   }
 }
 
@@ -71,7 +84,7 @@ export async function GET(req) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  const health = await Promise.all([checkMongo(), checkRumahOtp(), checkSimuru()]);
+  const health = await Promise.all([checkMongo(), checkRumahOtp(), checkPakasir(), checkPendingDeposits()]);
   const cleanup = await runCleanup();
 
   // Laporan hanya dikirim kalau ada yang perlu diketahui, supaya thread monitoring
