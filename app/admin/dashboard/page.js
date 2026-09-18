@@ -1692,6 +1692,12 @@ export default function AdminDashboardPage() {
         )}
       </div>
 
+      {/* Security & Auto-Ban */}
+      <SecuritySection />
+
+      {/* Export Data */}
+      <ExportSection />
+
       {/* Custom Markup per Platform */}
       <div className="mt-5 glass rounded-2xl p-5 shadow-soft">
         <h2 className="text-base font-bold text-ink mb-1">⚙️ Markup Kustom per Platform</h2>
@@ -1720,6 +1726,130 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function SecuritySection() {
+  const [scanning, setScanning] = useState(false);
+  const [result, setResult] = useState(null);
+  const [msg, setMsg] = useState("");
+
+  async function runScan() {
+    setScanning(true);
+    setMsg("");
+    setResult(null);
+    try {
+      const res = await fetch("/api/cron/security-scan");
+      const data = await res.json();
+      if (res.ok) {
+        setResult(data);
+        setMsg(data.flagged === 0 ? "✅ Tidak ada aktivitas mencurigakan." : `⚠️ ${data.flagged} flag, ${data.autoSuspended} auto-suspend.`);
+      } else {
+        setMsg(data.error || "Scan gagal.");
+      }
+    } catch {
+      setMsg("Scan gagal — cek koneksi.");
+    } finally {
+      setScanning(false);
+      setTimeout(() => setMsg(""), 6000);
+    }
+  }
+
+  return (
+    <div className="mt-5 glass rounded-2xl p-5 shadow-soft">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h2 className="text-base font-bold text-ink">🛡️ Security — Auto-Ban</h2>
+          <p className="text-xs text-muted mt-0.5">Deteksi spam order, deposit massal, saldo anomali, dan auto-suspend.</p>
+        </div>
+        <button
+          onClick={runScan}
+          disabled={scanning}
+          className="rounded-xl bg-rose px-4 py-2 text-sm font-bold text-white press disabled:opacity-50 border border-rose/60"
+        >
+          {scanning ? "Scanning…" : "Jalankan Scan"}
+        </button>
+      </div>
+      {msg && (
+        <p className={`text-sm font-semibold mb-3 ${msg.startsWith("✅") ? "text-success-bright" : "text-rose"}`}>{msg}</p>
+      )}
+      {result && result.flags?.length > 0 && (
+        <div className="space-y-1.5 mt-2">
+          {result.flags.map((f, i) => (
+            <div key={i} className="flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2">
+              <span className={`text-lg ${f.severity === "critical" ? "text-rose" : f.severity === "high" ? "text-warn" : "text-amber"}`}>
+                {f.severity === "critical" ? "🚨" : f.severity === "high" ? "🔴" : "🟡"}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-mono text-ink">{f.token}</p>
+                <p className="text-xs text-muted">{f.reason}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {result && result.flagged === 0 && (
+        <div className="rounded-xl border border-success-soft bg-success-soft px-4 py-3">
+          <p className="text-sm font-semibold text-success-bright">Semua bersih — tidak ada aktivitas mencurigakan.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExportSection() {
+  const [type, setType] = useState("transactions");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function doExport() {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ type });
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      const res = await fetch(`/api/admin/export?${params}`);
+      if (!res.ok) { alert("Gagal export."); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `artapedia-${type}-${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="mt-5 glass rounded-2xl p-5 shadow-soft">
+      <h2 className="text-base font-bold text-ink mb-1">📥 Export Data (CSV)</h2>
+      <p className="text-xs text-muted mb-4">Unduh data transaksi, deposit, atau user dalam format CSV.</p>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {[{ v: "transactions", l: "Transaksi OTP" }, { v: "deposits", l: "Deposit" }, { v: "users", l: "User" }].map((opt) => (
+          <button key={opt.v} type="button" onClick={() => setType(opt.v)}
+            className={`rounded-xl border px-4 py-2 text-xs font-bold press transition-colors ${type === opt.v ? "bg-amber text-white border-amber-bright" : "bg-surface border-line text-muted hover:border-amber/50"}`}>
+            {opt.l}
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-2 mb-3 flex-wrap">
+        <div className="flex-1 min-w-[130px]">
+          <label className="block text-xs font-semibold text-muted mb-1">Dari Tanggal</label>
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input text-sm w-full" />
+        </div>
+        <div className="flex-1 min-w-[130px]">
+          <label className="block text-xs font-semibold text-muted mb-1">Sampai Tanggal</label>
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input text-sm w-full" />
+        </div>
+      </div>
+      <button onClick={doExport} disabled={loading}
+        className="w-full rounded-xl bg-teal-bright text-white py-2.5 text-sm font-bold press disabled:opacity-50 border border-teal">
+        {loading ? "Menyiapkan…" : "⬇️ Download CSV"}
+      </button>
     </div>
   );
 }

@@ -40,6 +40,12 @@ export async function POST(req) {
 
     const user = await users.findOne({ token });
     if (!user) return NextResponse.json({ error: "Kode akun tidak ditemukan." }, { status: 404 });
+    if (user.suspended) {
+      return NextResponse.json(
+        { error: `Akun ditangguhkan: ${user.suspendReason || "Hubungi admin untuk info lebih lanjut."}` },
+        { status: 403 }
+      );
+    }
 
     const resolved = await resolveBasePrice(serviceId, numberId, providerId);
     if (!resolved) return NextResponse.json({ error: "Server/negara ini sudah tidak tersedia. Pilih yang lain." }, { status: 400 });

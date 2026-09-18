@@ -3,83 +3,87 @@
 @tailwind utilities;
 
 /*
-  Artapedia — design tokens
-  Palet: biru sinyal, navy SIM-card, putih kertas, silver, hitam kebiruan.
+  Artapedia — Comic 3D Design System
+  Palet: biru sinyal, putih kertas, hitam tinta komik, biru muda, biru tua.
   Nilai "R G B" supaya Tailwind bisa menambah opacity: rgb(var(--x) / <alpha>).
 */
 :root {
   color-scheme: light;
 
-  --c-bg: 255 248 220;         /* kuning krim — kertas komik */
-  --c-surface: 255 255 240;    /* putih gading */
-  --c-surface2: 255 243 190;
-  --c-surface3: 255 234 150;
-  --c-line: 20 10 5;           /* border hitam tebal komik */
-  --c-ink: 10 5 0;             /* hitam tinta */
-  --c-muted: 80 70 60;
+  --c-bg: 240 246 255;           /* biru kertas — latar komik biru muda */
+  --c-surface: 255 255 255;      /* putih bersih */
+  --c-surface2: 224 237 255;     /* biru sangat muda */
+  --c-surface3: 196 219 255;     /* biru muda medium */
+  --c-line: 6 14 30;             /* hitam tinta — border komik */
+  --c-ink: 6 14 30;              /* hitam tinta */
+  --c-muted: 74 103 153;
 
-  --c-blue: 255 200 0;         /* kuning sinyal — aksi utama */
-  --c-blue-soft: 255 245 170;
-  --c-blue-bright: 220 160 0;
+  --c-blue: 29 91 255;           /* biru sinyal — aksi utama */
+  --c-blue-soft: 224 237 255;
+  --c-blue-bright: 14 58 210;
 
-  --c-navy: 20 10 60;          /* ungu tua komik */
-  --c-navy-soft: 230 220 255;
-  --c-navy-bright: 10 5 40;
+  --c-navy: 10 30 80;            /* biru tua navy */
+  --c-navy-soft: 220 232 255;
+  --c-navy-bright: 6 18 55;
 
-  --c-danger: 220 30 30;
-  --c-danger-soft: 255 220 220;
-  --c-danger-bright: 160 10 10;
+  --c-danger: 214 40 60;
+  --c-danger-soft: 255 224 228;
+  --c-danger-bright: 160 20 40;
 
-  --c-silver: 140 130 120;
-  --c-silver-soft: 245 240 230;
+  --c-silver: 140 160 200;
+  --c-silver-soft: 230 238 255;
 
-  --c-success: 20 160 60;
-  --c-success-soft: 210 255 225;
+  --c-success: 10 155 100;
+  --c-success-soft: 210 255 238;
 
-  --c-warn: 240 100 0;
-  --c-warn-soft: 255 230 200;
+  --c-warn: 210 110 0;
+  --c-warn-soft: 255 238 200;
 
-  /* komik: offset shadow hitam */
+  /* komik 3D: hard offset shadow hitam navy */
   --comic-shadow: 4px 4px 0 rgb(var(--c-ink));
   --comic-shadow-sm: 2px 2px 0 rgb(var(--c-ink));
+  --comic-shadow-lg: 6px 6px 0 rgb(var(--c-ink));
   --comic-border: 2px solid rgb(var(--c-ink));
+  --comic-border-blue: 2px solid rgb(var(--c-blue));
 }
 
 .dark {
   color-scheme: dark;
 
-  --c-bg: 18 10 40;            /* ungu gelap komik malam */
-  --c-surface: 28 18 55;
-  --c-surface2: 38 25 70;
-  --c-surface3: 50 35 85;
-  --c-line: 220 200 255;       /* border ungu muda di dark */
-  --c-ink: 255 250 230;        /* putih gading */
-  --c-muted: 180 165 210;
+  --c-bg: 4 10 28;               /* biru gelap malam */
+  --c-surface: 8 18 45;
+  --c-surface2: 12 25 58;
+  --c-surface3: 18 35 75;
+  --c-line: 100 160 255;         /* biru terang — border di dark */
+  --c-ink: 230 240 255;          /* putih kebiruan */
+  --c-muted: 130 165 220;
 
-  --c-blue: 255 220 50;        /* kuning neon di dark */
-  --c-blue-soft: 60 50 20;
-  --c-blue-bright: 255 240 120;
+  --c-blue: 80 140 255;          /* biru neon */
+  --c-blue-soft: 18 35 75;
+  --c-blue-bright: 160 195 255;
 
-  --c-navy: 210 195 255;
-  --c-navy-soft: 35 25 70;
-  --c-navy-bright: 240 230 255;
+  --c-navy: 170 200 255;
+  --c-navy-soft: 14 28 65;
+  --c-navy-bright: 215 230 255;
 
-  --c-danger: 255 80 80;
-  --c-danger-soft: 70 15 15;
-  --c-danger-bright: 255 160 160;
+  --c-danger: 255 80 100;
+  --c-danger-soft: 65 12 22;
+  --c-danger-bright: 255 170 180;
 
-  --c-silver: 140 125 170;
-  --c-silver-soft: 35 28 55;
+  --c-silver: 100 130 185;
+  --c-silver-soft: 16 28 60;
 
-  --c-success: 80 220 120;
-  --c-success-soft: 15 50 30;
+  --c-success: 60 210 140;
+  --c-success-soft: 8 45 30;
 
-  --c-warn: 255 150 30;
-  --c-warn-soft: 60 30 10;
+  --c-warn: 255 165 40;
+  --c-warn-soft: 55 32 8;
 
-  --comic-shadow: 4px 4px 0 rgb(var(--c-line));
-  --comic-shadow-sm: 2px 2px 0 rgb(var(--c-line));
-  --comic-border: 2px solid rgb(var(--c-line));
+  --comic-shadow: 4px 4px 0 rgb(var(--c-line) / 0.5);
+  --comic-shadow-sm: 2px 2px 0 rgb(var(--c-line) / 0.5);
+  --comic-shadow-lg: 6px 6px 0 rgb(var(--c-line) / 0.5);
+  --comic-border: 2px solid rgb(var(--c-line) / 0.7);
+  --comic-border-blue: 2px solid rgb(var(--c-blue));
 }
 
 html,
@@ -92,15 +96,17 @@ body {
   font-family: var(--font-body), system-ui, sans-serif;
   font-feature-settings: "ss01", "cv11";
   transition: background-color 0.25s ease, color 0.25s ease;
-  /* halftone dot pattern — ciri khas komik */
-  background-image: radial-gradient(circle, rgb(var(--c-ink) / 0.07) 1px, transparent 1px);
-  background-size: 18px 18px;
+  /* halftone dots — ciri khas komik, sangat halus */
+  background-image: radial-gradient(circle, rgb(var(--c-blue) / 0.08) 1px, transparent 1px);
+  background-size: 22px 22px;
 }
 
 h1, h2, h3, h4 {
   font-family: var(--font-display), system-ui, sans-serif;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  /* text shadow biru 3D */
+  text-shadow: 2px 2px 0 rgb(var(--c-blue) / 0.25);
 }
 
 code, kbd, .font-mono {
@@ -112,11 +118,11 @@ code, kbd, .font-mono {
 }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgb(var(--c-surface3)); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-silver)); }
+::-webkit-scrollbar-thumb { background: rgb(var(--c-surface3)); border-radius: 999px; border: 2px solid rgb(var(--c-ink) / 0.15); }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-blue) / 0.4); }
 
 :focus-visible {
-  outline: 2px solid rgb(var(--c-blue));
+  outline: 2.5px solid rgb(var(--c-blue));
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -130,12 +136,25 @@ input[type="number"] { -moz-appearance: textfield; }
 @layer components {
   .card {
     @apply rounded-2xl bg-surface;
-    border: 2px solid rgb(var(--c-ink));
+    border: 2.5px solid rgb(var(--c-ink));
     box-shadow: var(--comic-shadow);
+    position: relative;
+  }
+  /* strip biru di atas card — efek 3D layered */
+  .card::before {
+    content: "";
+    position: absolute;
+    top: -2.5px; left: 6px; right: -6px;
+    height: 6px;
+    background: rgb(var(--c-blue));
+    border: 2px solid rgb(var(--c-ink));
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    z-index: -1;
   }
   .card-flat {
     @apply rounded-2xl bg-surface2;
-    border: 2px solid rgb(var(--c-ink) / 0.5);
+    border: 2px solid rgb(var(--c-ink) / 0.4);
     box-shadow: var(--comic-shadow-sm);
   }
   .field {
@@ -145,28 +164,35 @@ input[type="number"] { -moz-appearance: textfield; }
   }
   .field:focus {
     border-color: rgb(var(--c-blue));
-    box-shadow: var(--comic-shadow-sm), 0 0 0 3px rgb(var(--c-blue) / 0.25);
+    box-shadow: 2px 2px 0 rgb(var(--c-blue)), 0 0 0 3px rgb(var(--c-blue) / 0.15);
   }
   .label {
     @apply mb-1.5 block text-[13px] font-bold text-ink uppercase tracking-wide;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold uppercase tracking-wide transition-[transform,box-shadow] duration-100 disabled:cursor-not-allowed disabled:opacity-50;
-    border: 2px solid rgb(var(--c-ink));
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black uppercase tracking-wider transition-[transform,box-shadow] duration-100 disabled:cursor-not-allowed disabled:opacity-50;
+    border: 2.5px solid rgb(var(--c-ink));
     box-shadow: var(--comic-shadow);
   }
   .btn:active:not(:disabled) {
-    transform: translate(3px, 3px);
-    box-shadow: 1px 1px 0 rgb(var(--c-ink));
+    transform: translate(4px, 4px);
+    box-shadow: none;
   }
   .btn-primary {
     @apply btn bg-amber text-ink;
+    background: linear-gradient(135deg, rgb(var(--c-blue)) 0%, rgb(var(--c-blue-bright)) 100%);
+    color: #fff;
   }
   .btn-primary:hover:not(:disabled) {
-    @apply bg-amber-bright;
+    background: linear-gradient(135deg, rgb(var(--c-blue-bright)) 0%, rgb(var(--c-navy)) 100%);
   }
   .btn-dark {
-    @apply btn bg-teal-bright text-white;
+    @apply btn;
+    background: rgb(var(--c-navy));
+    color: #fff;
+  }
+  .btn-dark:hover:not(:disabled) {
+    background: rgb(var(--c-navy-bright));
   }
   .dark .btn-dark {
     @apply bg-surface3 text-ink;
@@ -175,39 +201,51 @@ input[type="number"] { -moz-appearance: textfield; }
     @apply btn bg-surface text-ink;
   }
   .btn-ghost:hover:not(:disabled) {
-    @apply bg-surface2;
+    background: rgb(var(--c-surface2));
+    border-color: rgb(var(--c-blue));
+    color: rgb(var(--c-blue-bright));
   }
   .btn-danger {
-    @apply btn bg-rose-soft text-rose;
+    @apply btn bg-surface text-rose;
     border-color: rgb(var(--c-danger));
+    box-shadow: 3px 3px 0 rgb(var(--c-danger));
+  }
+  .btn-danger:active:not(:disabled) {
+    transform: translate(3px, 3px);
+    box-shadow: none;
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide;
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wide;
     border: 1.5px solid rgb(var(--c-ink));
-    box-shadow: 1px 1px 0 rgb(var(--c-ink));
+    box-shadow: 1.5px 1.5px 0 rgb(var(--c-ink));
   }
   .tab {
     @apply rounded-lg px-3.5 py-2 text-sm font-bold uppercase text-muted transition-colors hover:text-ink;
     border: 2px solid transparent;
   }
+  .tab:hover {
+    border-color: rgb(var(--c-ink) / 0.3);
+  }
   .tab-active {
     @apply bg-surface text-ink;
     border: 2px solid rgb(var(--c-ink));
     box-shadow: var(--comic-shadow-sm);
+    color: rgb(var(--c-blue-bright));
   }
 }
 
-/* ------------------------------------------------------------ SIM card (elemen khas) */
+/* ------------------------------------------------------------ SIM card */
 
 .sim-card {
   position: relative;
   color: #fff;
   background:
-    radial-gradient(120% 90% at 100% 0%, rgb(46 104 255 / 0.55), transparent 55%),
-    linear-gradient(155deg, #13306f 0%, #0b1d48 55%, #081536 100%);
-  /* sudut kanan-atas terpotong seperti kartu SIM */
+    radial-gradient(120% 90% at 100% 0%, rgb(80 160 255 / 0.55), transparent 55%),
+    linear-gradient(155deg, #0f2a70 0%, #081a50 55%, #050f35 100%);
   clip-path: polygon(0 0, calc(100% - 44px) 0, 100% 44px, 100% 100%, 0 100%);
   border-radius: 22px;
+  border: 2.5px solid #0a1830;
+  box-shadow: var(--comic-shadow-lg);
 }
 .sim-card::after {
   content: "";
@@ -215,7 +253,7 @@ input[type="number"] { -moz-appearance: textfield; }
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background-image: repeating-linear-gradient(115deg, rgb(255 255 255 / 0.035) 0 2px, transparent 2px 9px);
+  background-image: repeating-linear-gradient(115deg, rgb(255 255 255 / 0.04) 0 2px, transparent 2px 10px);
 }
 .sim-chip {
   background: linear-gradient(135deg, #e8edf6 0%, #b9c4d8 45%, #f4f6fb 60%, #a7b3ca 100%);
@@ -229,18 +267,18 @@ input[type="number"] { -moz-appearance: textfield; }
   to { opacity: 1; transform: translateY(0) rotate(0); }
 }
 
-/* ------------------------------------------------------------ gerak (dipakai seperlunya) */
+/* ------------------------------------------------------------ animasi */
 
 .fade-up { animation: fadeUpIn 0.35s ease-out both; }
 @keyframes fadeUpIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .delay-1, .delay-2, .delay-3, .delay-4, .delay-5, .delay-6 { animation-delay: 0s; }
 
 .scale-in { animation: scaleIn 0.25s ease-out both; }
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.97); }
+  from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
 
@@ -280,31 +318,56 @@ input[type="number"] { -moz-appearance: textfield; }
 .float-slow { animation: floatSlow 5s ease-in-out infinite; }
 @keyframes floatSlow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
-/* ------------------------------------------------------------ kelas lama (dipertahankan, versi tenang) */
+/* animasi komik pop-in */
+.comic-pop { animation: comicPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes comicPop {
+  from { opacity: 0; transform: scale(0.7) rotate(-3deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* ------------------------------------------------------------ kelas utility */
 
 .card-shadow {
-  box-shadow: 0 1px 0 rgb(var(--c-ink) / 0.03), 0 8px 24px -18px rgb(var(--c-navy-bright) / 0.25);
+  box-shadow: var(--comic-shadow);
 }
-.hover-lift { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
-.hover-lift:hover { border-color: rgb(var(--c-blue) / 0.35); }
+.hover-lift { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.hover-lift:hover { transform: translate(-1px, -1px); box-shadow: var(--comic-shadow-lg); }
 .press, .tap-scale { transition: transform 0.1s ease, box-shadow 0.1s ease; }
-.press:active, .tap-scale:active { transform: translate(3px, 3px); box-shadow: none !important; }
+.press:active, .tap-scale:active { transform: translate(4px, 4px); box-shadow: none !important; }
 .btn-3d { transition: transform 0.1s ease, box-shadow 0.1s ease; }
-.btn-3d:active { transform: translate(3px, 3px); box-shadow: none; }
+.btn-3d:active { transform: translate(4px, 4px); box-shadow: none; }
 
+/* glass — navbar bawah & sidebar */
 .glass {
-  background: rgb(var(--c-surface) / 0.92);
-  backdrop-filter: blur(10px) saturate(130%);
-  -webkit-backdrop-filter: blur(10px) saturate(130%);
-  border: 2px solid rgb(var(--c-ink) / 0.7);
-  box-shadow: 0 -2px 0 rgb(var(--c-ink) / 0.1) inset;
+  background: rgb(var(--c-surface) / 0.94);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  border: 2.5px solid rgb(var(--c-ink) / 0.65);
+  box-shadow: 0 -3px 0 rgb(var(--c-blue) / 0.15) inset;
 }
 .glass-dark {
   background: rgb(var(--c-navy-bright) / 0.9);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 2px solid rgb(var(--c-line) / 0.4);
+  border: 2px solid rgb(var(--c-line) / 0.35);
 }
+
+/* badge "baru" / chip di sidebar */
+.comic-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgb(var(--c-blue));
+  color: #fff;
+  border: 1.5px solid rgb(var(--c-ink));
+  box-shadow: 1.5px 1.5px 0 rgb(var(--c-ink));
+}
+
 .glow-ring { position: relative; }
 
 .underline-grow { position: relative; }
@@ -341,26 +404,31 @@ input[type="number"] { -moz-appearance: textfield; }
   100% { opacity: 0; transform: rotate(var(--r, 0deg)) translateX(46px) scale(0.4); }
 }
 
-/* Sakelar terang/gelap */
+/* ------------------------------------------------------------ theme toggle */
+
 .theme-switch {
   position: relative;
   display: inline-flex;
   align-items: center;
-  width: 44px;
-  height: 24px;
+  width: 44px; height: 24px;
   border-radius: 999px;
   background: rgb(var(--c-surface3));
-  border: 1px solid rgb(var(--c-line));
+  border: 2px solid rgb(var(--c-ink));
+  box-shadow: 1.5px 1.5px 0 rgb(var(--c-ink));
   transition: background-color 0.2s ease;
   cursor: pointer;
   flex-shrink: 0;
 }
-.theme-switch[data-on="true"] { background: rgb(var(--c-blue)); border-color: rgb(var(--c-blue)); }
+.theme-switch[data-on="true"] {
+  background: rgb(var(--c-blue));
+  border-color: rgb(var(--c-navy-bright));
+  box-shadow: 1.5px 1.5px 0 rgb(var(--c-navy-bright));
+}
 .theme-switch .knob {
   position: absolute; top: 2px; left: 2px;
-  width: 18px; height: 18px; border-radius: 999px;
+  width: 16px; height: 16px; border-radius: 999px;
   background: rgb(var(--c-surface));
-  box-shadow: 0 1px 3px rgba(2, 8, 23, 0.3);
+  border: 1.5px solid rgb(var(--c-ink));
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
