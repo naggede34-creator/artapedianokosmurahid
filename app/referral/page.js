@@ -4,6 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useUser } from "@/app/providers";
 
+const REFERRAL_TIERS = [
+  { name: "Starter", min: 0, max: 4, icon: "🌱", color: "border-ochre/40 bg-surface text-ink", badge: "text-muted", benefit: "Bonus standar per referral" },
+  { name: "Silver", min: 5, max: 14, icon: "🥈", color: "border-ochre/60 bg-ochre-soft text-ink", badge: "text-ink", benefit: "+0.5% bonus ekstra per referral" },
+  { name: "Gold", min: 15, max: 29, icon: "🥇", color: "border-amber/50 bg-amber-soft text-amber-bright", badge: "text-amber-bright", benefit: "+1% bonus ekstra per referral" },
+  { name: "Diamond", min: 30, max: Infinity, icon: "💎", color: "border-teal/50 bg-teal-soft text-teal-bright", badge: "text-teal-bright", benefit: "+2% bonus ekstra + prioritas layanan" },
+];
+
 export default function ReferralPage() {
   const { token, ready } = useUser();
   const [stats, setStats] = useState(null);
@@ -34,6 +41,26 @@ export default function ReferralPage() {
     setTimeout(() => setCopied(false), 1800);
   };
 
+  const shareWhatsApp = () => {
+    if (!link) return;
+    const text = encodeURIComponent(`Daftar di Artapedia dan beli nomor OTP murah! Pakai link saya: ${link}`);
+    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+  };
+
+  const shareTelegram = () => {
+    if (!link) return;
+    const text = encodeURIComponent(`Beli nomor OTP murah di Artapedia! Daftar via link saya:`);
+    const url = encodeURIComponent(link);
+    window.open(`https://t.me/share/url?url=${url}&text=${text}`, "_blank", "noopener,noreferrer");
+  };
+
+  const shareTwitter = () => {
+    if (!link) return;
+    const text = encodeURIComponent(`Beli nomor OTP murah & cepat di Artapedia! Daftar via link undanganku dan kita sama-sama dapat bonus 🎁`);
+    const url = encodeURIComponent(link);
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
       <p className="fade-up text-sm font-semibold text-teal-bright">Undang Teman</p>
@@ -54,13 +81,36 @@ export default function ReferralPage() {
           <p className="mt-3 break-all rounded-xl bg-white/10 px-4 py-3 font-mono text-sm text-white">
             {link || "Memuat..."}
           </p>
-          <button
-            onClick={copyLink}
-            disabled={!link}
-            className="press mt-4 rounded-full bg-amber px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-          >
-            {copied ? "Tersalin!" : "Salin link"}
-          </button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={copyLink}
+              disabled={!link}
+              className="press rounded-full bg-amber px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {copied ? "✓ Tersalin!" : "📋 Salin link"}
+            </button>
+            <button
+              onClick={shareWhatsApp}
+              disabled={!link}
+              className="press rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              💬 WhatsApp
+            </button>
+            <button
+              onClick={shareTelegram}
+              disabled={!link}
+              className="press rounded-full bg-[#0088cc] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              ✈️ Telegram
+            </button>
+            <button
+              onClick={shareTwitter}
+              disabled={!link}
+              className="press rounded-full bg-[#1DA1F2] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              🐦 Twitter/X
+            </button>
+          </div>
         </div>
       </div>
 
@@ -88,6 +138,57 @@ export default function ReferralPage() {
           <li>Teman membuka link tersebut, kode akun barunya otomatis tertaut ke kamu sebagai pengundang.</li>
           <li>Saat teman itu deposit pertama kali dan berhasil, bonus langsung masuk ke saldo kamu.</li>
         </ol>
+      </div>
+
+      {/* Referral Tiers */}
+      <div className="mt-8">
+        <h2 className="text-base font-bold text-ink">🎯 Level Pengundang</h2>
+        <p className="mt-1 text-sm text-muted">Undang lebih banyak teman untuk naik level dan dapat bonus lebih besar.</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {REFERRAL_TIERS.map((tier) => {
+            const count = stats?.referralCount ?? 0;
+            const isCurrent = count >= tier.min && (tier.max === Infinity || count <= tier.max);
+            const isAchieved = count >= tier.min;
+            return (
+              <div
+                key={tier.name}
+                className={`relative rounded-2xl border p-4 transition-all ${tier.color} ${
+                  isCurrent ? "ring-2 ring-amber/60 shadow-glow" : isAchieved ? "opacity-80" : "opacity-50"
+                }`}
+              >
+                {isCurrent && (
+                  <span className="absolute -top-2.5 right-3 rounded-full bg-amber px-2 py-0.5 text-[10px] font-bold text-white shadow">
+                    Level Kamu
+                  </span>
+                )}
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{tier.icon}</span>
+                  <div>
+                    <p className="font-bold text-sm">{tier.name}</p>
+                    <p className="text-[11px] text-muted">
+                      {tier.max === Infinity ? `${tier.min}+ referral` : `${tier.min}–${tier.max} referral`}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-2.5 text-xs text-muted">{tier.benefit}</p>
+                {isCurrent && tier.max !== Infinity && (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-[10px] text-muted mb-1">
+                      <span>{stats?.referralCount ?? 0} / {tier.max + 1}</span>
+                      <span>{tier.max + 1 - (stats?.referralCount ?? 0)} lagi ke {REFERRAL_TIERS[REFERRAL_TIERS.indexOf(tier) + 1]?.name}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-line overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-amber transition-all"
+                        style={{ width: `${Math.min(100, (((stats?.referralCount ?? 0) - tier.min) / (tier.max - tier.min + 1)) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <Link

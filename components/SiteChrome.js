@@ -8,6 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import SupportWidget from "@/components/SupportWidget";
 import BroadcastBar from "@/components/BroadcastBar";
 import WelcomeIntro from "@/components/WelcomeIntro";
+import WelcomeBonusPopup from "@/components/WelcomeBonusPopup";
 
 export default function SiteChrome({ children }) {
   const pathname = usePathname();
@@ -46,6 +47,7 @@ export default function SiteChrome({ children }) {
   return (
     <>
       <WelcomeIntro />
+      <WelcomeBonusPopup />
       <BroadcastBar />
       <Navbar />
       <main className="pb-24 md:pb-0">{children}</main>

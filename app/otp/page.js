@@ -5,6 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { useUser } from "@/app/providers";
 import OtpOrderPanel from "@/components/OtpOrderPanel";
 import BuySheet from "@/components/BuySheet";
+import MysteryBoxModal from "@/components/MysteryBoxModal";
+import LuckyHourBanner from "@/components/LuckyHourBanner";
+import FlashSaleTimer from "@/components/FlashSaleTimer";
 import { PageHeader, Icon } from "@/components/ui";
 
 // WhatsApp selalu tampil paling atas, sisanya tetap mengikuti urutan asli dari RumahOTP.
@@ -35,6 +38,8 @@ export default function OtpPage() {
 }
 
 const ACTIVE_ORDER_KEY = "artapedia_active_otp_order";
+const RECENT_SERVICES_KEY = "artapedia_recent_otp_services";
+const FAVORITE_SERVICES_KEY = "artapedia_favorite_otp_services";
 
 function OtpPageInner() {
   const { token, balance, refreshBalance } = useUser();
@@ -45,6 +50,10 @@ function OtpPageInner() {
   const [order, setOrder] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [refreshSignal, setRefreshSignal] = useState(0);
+  const [favorites, setFavorites] = useState([]);
+  const [recentServices, setRecentServices] = useState([]);
+  const [mysteryOrderId, setMysteryOrderId] = useState(null);
+  const [mysteryOpen, setMysteryOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/otp/services")
@@ -58,6 +67,16 @@ function OtpPageInner() {
   useEffect(() => {
     if (searchParams.get("q")) setSheetOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Load favorites and recent services from localStorage
+  useEffect(() => {
+    try {
+      const fav = localStorage.getItem(FAVORITE_SERVICES_KEY);
+      if (fav) setFavorites(JSON.parse(fav));
+      const rec = localStorage.getItem(RECENT_SERVICES_KEY);
+      if (rec) setRecentServices(JSON.parse(rec));
+    } catch {}
   }, []);
 
   // Pulihkan order aktif kalau halaman ini di-refresh, biar OTP-nya nggak "hilang".
@@ -75,13 +94,35 @@ function OtpPageInner() {
     }
   }, [token]);
 
+  function toggleFavorite(svc) {
+    setFavorites((prev) => {
+      const exists = prev.some((f) => f.name === svc.name);
+      const next = exists ? prev.filter((f) => f.name !== svc.name) : [svc, ...prev].slice(0, 8);
+      try { localStorage.setItem(FAVORITE_SERVICES_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
+
 
   function handleOrderCreated(newOrder) {
     setOrder(newOrder);
     setSheetOpen(false);
     refreshBalance();
+    if (newOrder?.orderId) {
+      setMysteryOrderId(newOrder.orderId);
+      setMysteryOpen(true);
+    }
     try {
       localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify({ token, order: newOrder }));
+      // Track recently used service
+      if (newOrder.serviceName) {
+        const svc = { name: newOrder.serviceName, country: newOrder.countryName || "" };
+        setRecentServices((prev) => {
+          const next = [svc, ...prev.filter((s) => s.name !== svc.name)].slice(0, 6);
+          try { localStorage.setItem(RECENT_SERVICES_KEY, JSON.stringify(next)); } catch {}
+          return next;
+        });
+      }
     } catch (e) {
       /* localStorage penuh/diblokir, tidak fatal */
     }
@@ -97,6 +138,10 @@ function OtpPageInner() {
 
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
+      <div className="mb-4 space-y-2">
+        <FlashSaleTimer />
+        <LuckyHourBanner />
+      </div>
       <PageHeader
         icon={<Icon.phone />}
         title="Beli nokos"
@@ -155,6 +200,63 @@ function OtpPageInner() {
         </div>
       </div>
 
+      {/* Favorit & Layanan Terbaru */}
+      {(favorites.length > 0 || recentServices.length > 0) && (
+        <div className="mt-8">
+          {favorites.length > 0 && (
+            <div className="mb-4">
+              <h2 className="text-sm font-bold text-ink mb-2">⭐ Layanan Favorit</h2>
+              <div className="flex flex-wrap gap-2">
+                {favorites.map((svc) => (
+                  <div key={svc.name} className="flex items-center gap-1 rounded-xl border border-amber/30 bg-amber-soft px-3 py-1.5">
+                    <button
+                      onClick={() => { setSheetOpen(true); }}
+                      className="text-xs font-semibold text-amber-bright hover:underline"
+                    >
+                      {svc.name}
+                      {svc.country ? <span className="font-normal text-muted"> · {svc.country}</span> : null}
+                    </button>
+                    <button
+                      onClick={() => toggleFavorite(svc)}
+                      className="ml-1 text-amber-bright hover:text-rose text-xs"
+                      title="Hapus dari favorit"
+                    >
+                      ★
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {recentServices.length > 0 && (
+            <div>
+              <h2 className="text-sm font-bold text-ink mb-2">🕐 Pernah Dipesan</h2>
+              <div className="flex flex-wrap gap-2">
+                {recentServices.map((svc) => (
+                  <div key={svc.name} className="flex items-center gap-1 rounded-xl border border-line bg-surface2 px-3 py-1.5">
+                    <button
+                      onClick={() => setSheetOpen(true)}
+                      className="text-xs font-semibold text-ink hover:text-amber-bright"
+                    >
+                      {svc.name}
+                      {svc.country ? <span className="font-normal text-muted"> · {svc.country}</span> : null}
+                    </button>
+                    <button
+                      onClick={() => toggleFavorite(svc)}
+                      className={`ml-1 text-xs ${favorites.some((f) => f.name === svc.name) ? "text-amber-bright" : "text-muted hover:text-amber-bright"}`}
+                      title={favorites.some((f) => f.name === svc.name) ? "Hapus dari favorit" : "Tambah ke favorit"}
+                    >
+                      {favorites.some((f) => f.name === svc.name) ? "★" : "☆"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Aturan singkat */}
       <div className="card-flat mt-8 grid gap-4 p-5 sm:grid-cols-3">
         {[
@@ -178,6 +280,12 @@ function OtpPageInner() {
         balance={balance}
         onOrderCreated={handleOrderCreated}
         initialQuery={searchParams.get("q") || ""}
+      />
+      <MysteryBoxModal
+        open={mysteryOpen}
+        onClose={() => { setMysteryOpen(false); setMysteryOrderId(null); }}
+        token={token}
+        orderId={mysteryOrderId}
       />
     </div>
   );

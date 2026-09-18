@@ -191,26 +191,35 @@ function RiwayatInner() {
               />
             ) : (
               fOtp.map((o) => (
-                <button key={o.orderId} onClick={() => setOpenOrder(o)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-surface2/60">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-soft text-amber-bright">
-                    <Icon.phone />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-bold text-ink">
-                      {o.serviceName} <span className="font-medium text-muted">· {o.countryName}</span>
+                <div key={o.orderId} className="flex w-full items-center gap-3 px-4 py-3.5 hover:bg-surface2/60 transition-colors">
+                  <button onClick={() => setOpenOrder(o)} className="flex flex-1 items-center gap-3 text-left min-w-0">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-soft text-amber-bright">
+                      <Icon.phone />
                     </span>
-                    <span className="block truncate font-mono text-xs text-muted">
-                      {o.phoneNumber}
-                      {o.otpCode ? ` · kode ${o.otpCode}` : ""}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-bold text-ink">
+                        {o.serviceName} <span className="font-medium text-muted">· {o.countryName}</span>
+                      </span>
+                      <span className="block truncate font-mono text-xs text-muted">
+                        {o.phoneNumber}
+                        {o.otpCode ? ` · kode ${o.otpCode}` : ""}
+                      </span>
                     </span>
-                  </span>
-                  <span className="shrink-0 text-right">
-                    <span className="block text-sm font-bold tabular-nums text-ink">{rupiah(o.price)}</span>
-                    <Badge tone={o.refunded ? "gray" : statusTone(o.status)} className="mt-1">
-                      {o.refunded && o.status !== "done" ? "Direfund" : OTP_LABEL[o.status] || o.status}
-                    </Badge>
-                  </span>
-                </button>
+                    <span className="shrink-0 text-right">
+                      <span className="block text-sm font-bold tabular-nums text-ink">{rupiah(o.price)}</span>
+                      <Badge tone={o.refunded ? "gray" : statusTone(o.status)} className="mt-1">
+                        {o.refunded && o.status !== "done" ? "Direfund" : OTP_LABEL[o.status] || o.status}
+                      </Badge>
+                    </span>
+                  </button>
+                  <Link
+                    href={`/otp?q=${encodeURIComponent(o.serviceName || "")}`}
+                    className="shrink-0 ml-1 rounded-lg border border-amber/30 bg-amber-soft px-2.5 py-1.5 text-[11px] font-semibold text-amber-bright hover:bg-amber/20 transition-colors"
+                    title="Beli lagi layanan ini"
+                  >
+                    🔄 Beli lagi
+                  </Link>
+                </div>
               ))
             )}
           </div>
