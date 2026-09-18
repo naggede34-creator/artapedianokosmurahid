@@ -11,7 +11,7 @@ function formatToken(token) {
 
 // Kartu saldo berbentuk kartu SIM — elemen visual khas Artapedia.
 export default function SimCard({ compact = false }) {
-  const { token, balance, name, ready } = useUser();
+  const { token, balance, depositBalance, name, ready } = useUser();
   const [hidden, setHidden] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -22,10 +22,14 @@ export default function SimCard({ compact = false }) {
     setTimeout(() => setCopied(false), 1400);
   }
 
+  // depositBalance: hanya dari deposit (bisa ditransfer). null = akun lama, tampilkan total.
+  const showDeposit = depositBalance !== null && depositBalance !== undefined;
+  const bonusBalance = showDeposit ? Math.max(0, (balance || 0) - (depositBalance || 0)) : 0;
+
   return (
     <div className="sim-card sim-enter overflow-hidden p-5 sm:p-6">
       <div className="relative z-[1] flex items-start justify-between gap-3">
-        <div>
+        <div className="flex-1 min-w-0">
           <p className="text-[13px] font-medium text-white/65">{name ? `Saldo ${name}` : "Saldo kamu"}</p>
           <div className="mt-1 flex items-center gap-2">
             <p className="text-[30px] font-extrabold leading-none tracking-tight tabular-nums sm:text-[36px]">
@@ -49,6 +53,26 @@ export default function SimCard({ compact = false }) {
               )}
             </button>
           </div>
+
+          {/* 2 balance breakdown: deposit vs bonus */}
+          {ready && showDeposit && (
+            <div className="mt-3 flex gap-3">
+              <div className="flex-1 rounded-xl bg-white/10 px-3 py-2">
+                <p className="text-[10px] font-medium text-white/55 mb-0.5">💳 Dari Deposit</p>
+                <p className="text-[13px] font-extrabold tabular-nums text-white">
+                  {hidden ? "Rp•••" : `Rp${Number(depositBalance || 0).toLocaleString("id-ID")}`}
+                </p>
+                <p className="text-[9px] text-white/40 mt-0.5">Bisa ditransfer</p>
+              </div>
+              <div className="flex-1 rounded-xl bg-white/10 px-3 py-2">
+                <p className="text-[10px] font-medium text-white/55 mb-0.5">🎁 Bonus</p>
+                <p className="text-[13px] font-extrabold tabular-nums text-white">
+                  {hidden ? "Rp•••" : `Rp${bonusBalance.toLocaleString("id-ID")}`}
+                </p>
+                <p className="text-[9px] text-white/40 mt-0.5">Voucher / poin / hadiah</p>
+              </div>
+            </div>
+          )}
         </div>
         <span className="sim-chip mt-1 grid h-9 w-12 shrink-0 grid-cols-3 gap-px overflow-hidden rounded-md p-[3px]" aria-hidden="true">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -57,7 +81,7 @@ export default function SimCard({ compact = false }) {
         </span>
       </div>
 
-      <div className="relative z-[1] mt-6 flex flex-wrap items-end justify-between gap-3">
+      <div className="relative z-[1] mt-4 flex flex-wrap items-end justify-between gap-3">
         <button type="button" onClick={copy} className="group text-left" title="Salin kode akun">
           <p className="text-[11px] font-medium text-white/55">Kode akun · ketuk untuk salin</p>
           <p className="mt-0.5 font-mono text-[15px] font-semibold tracking-wider text-white/95 group-hover:text-white">

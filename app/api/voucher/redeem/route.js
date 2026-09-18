@@ -2,12 +2,18 @@ import { NextResponse } from "next/server";
 import { vouchersCol, usersCol } from "@/lib/db";
 import { sendTelegramNotif, voucherRedeemedNotif } from "@/lib/telegram";
 import { logBalance } from "@/lib/ledger";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(req) {
   try {
     const { token, code: rawCode } = await req.json();
     const code = (rawCode || "").trim().toUpperCase();
     if (!token || !code) return NextResponse.json({ error: "Kode voucher wajib diisi." }, { status: 400 });
+
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!rateLimit(`${token}:voucher`, 5, 60_000) || !rateLimit(`${ip}:voucher`, 10, 60_000)) {
+      return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi dalam 1 menit." }, { status: 429 });
+    }
 
     const users = await usersCol();
     const user = await users.findOne({ token });

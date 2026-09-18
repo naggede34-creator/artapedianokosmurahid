@@ -12,6 +12,8 @@ import WeeklyChallenge from "@/components/WeeklyChallenge";
 import FlashSaleTimer from "@/components/FlashSaleTimer";
 import LuckyHourBanner from "@/components/LuckyHourBanner";
 import LevelUpModal from "@/components/LevelUpModal";
+import OnboardingTour, { useShouldShowTour } from "@/components/OnboardingTour";
+import NamePromptModal from "@/components/NamePromptModal";
 import { Icon, rupiah, EmptyState } from "@/components/ui";
 
 function greeting() {
@@ -44,7 +46,9 @@ const shortcuts = [
   { href: "/transfer", label: "Transfer", icon: Icon.transfer },
   { href: "/mutasi", label: "Mutasi", icon: Icon.ledger },
   { href: "/misi", label: "Misi & Poin", icon: Icon.star },
-  { href: "/referral", label: "Undang teman", icon: Icon.gift }
+  { href: "/referral", label: "Undang teman", icon: Icon.gift },
+  { href: "/produk", label: "Toko Produk", icon: Icon.shop, badge: "Baru" },
+  { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin, badge: "Baru" }
 ];
 
 function WarrantyModal({ open, onClose, token }) {
@@ -319,6 +323,8 @@ function WarrantyModal({ open, onClose, token }) {
 
 export default function DashboardPage() {
   const { token, name, balance, joinedAt, ready } = useUser();
+  const [showTour, hideTour] = useShouldShowTour();
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [stats, setStats] = useState(null);
   const [loyalty, setLoyalty] = useState(null);
   const [board, setBoard] = useState(null);
@@ -366,6 +372,18 @@ export default function DashboardPage() {
     } catch {}
   }, []);
 
+  // Prompt pengisian nama jika belum ada & tour sudah selesai/tidak tampil
+  useEffect(() => {
+    if (!ready || showTour) return;
+    if (name) return;
+    try {
+      const dismissed = localStorage.getItem("artapedia_name_dismissed");
+      if (dismissed && Date.now() - Number(dismissed) < 3 * 24 * 60 * 60 * 1000) return;
+    } catch {}
+    const t = setTimeout(() => setShowNamePrompt(true), 1500);
+    return () => clearTimeout(t);
+  }, [ready, name, showTour]);
+
   async function doCheckin() {
     if (!token || checkinBusy) return;
     setCheckinBusy(true);
@@ -408,6 +426,10 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
       <LevelUpModal token={token} onClose={() => {}} />
+      {showTour && <OnboardingTour onDone={hideTour} />}
+      {showNamePrompt && !showTour && (
+        <NamePromptModal onClose={() => setShowNamePrompt(false)} />
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-muted">{greeting()},</p>
@@ -447,12 +469,17 @@ export default function DashboardPage() {
       <div className="mt-5 grid gap-5 lg:grid-cols-[440px_1fr]">
         <SimCard />
 
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-3">
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-8 lg:grid-cols-4">
           {shortcuts.map((s) => {
             const I = s.icon;
             return (
-              <Link key={s.href} href={s.href} className="card hover-lift flex flex-col items-center justify-center gap-2 px-2 py-4 text-center">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-soft text-amber-bright">
+              <Link key={s.href} href={s.href} className="card hover-lift relative flex flex-col items-center justify-center gap-2 px-2 py-4 text-center">
+                {s.badge && (
+                  <span className="absolute -top-1.5 -right-1 rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black text-white leading-none shadow-sm">
+                    {s.badge}
+                  </span>
+                )}
+                <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${s.badge ? "bg-gradient-to-br from-amber to-amber-bright text-white" : "bg-amber-soft text-amber-bright"}`}>
                   <I />
                 </span>
                 <span className="text-xs font-semibold text-ink">{s.label}</span>

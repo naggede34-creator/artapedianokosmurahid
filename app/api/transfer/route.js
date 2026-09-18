@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
 import { logBalance } from "@/lib/ledger";
-import { sendTelegramNotif, transferNotif } from "@/lib/telegram";
+import { sendTelegramNotif, sendTelegramPhoto, transferNotif } from "@/lib/telegram";
+import { generateReceiptPng, transferParams } from "@/lib/receiptImage";
+import { rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +11,10 @@ const MIN_TRANSFER = 1000;
 
 export async function POST(req) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!rateLimit(`${ip}:transfer`, 5, 60_000)) {
+      return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi dalam 1 menit." }, { status: 429 });
+    }
     const body = await req.json().catch(() => ({}));
     const fromToken = String(body.token || "").trim();
     const toToken = String(body.targetToken || "").trim().toUpperCase();
@@ -25,10 +31,35 @@ export async function POST(req) {
     const target = await users.findOne({ token: toToken });
     if (!target) return NextResponse.json({ error: "Kode akun tujuan tidak ditemukan." }, { status: 404 });
 
+    // Cek apakah pengirim punya saldo deposit yang cukup.
+    // depositBalance: hanya bertambah dari deposit tunai — saldo dari voucher, spin wheel,
+    // poin, cashback, dll. TIDAK bisa ditransfer. Akun lama (tanpa field depositBalance)
+    // dianggap seluruh saldo berasal dari deposit (backwards-compatible).
+    const fromUser = await users.findOne({ token: fromToken }, { projection: { balance: 1, depositBalance: 1, name: 1 } });
+    if (!fromUser) return NextResponse.json({ error: "Kode akun tidak ditemukan." }, { status: 404 });
+
+    const hasDepositField = fromUser.depositBalance !== undefined && fromUser.depositBalance !== null;
+    const transferable = hasDepositField ? fromUser.depositBalance : fromUser.balance;
+
+    if (fromUser.balance < amount) {
+      return NextResponse.json({ error: "Saldo tidak cukup." }, { status: 400 });
+    }
+    if (transferable < amount) {
+      return NextResponse.json({
+        error: `Transfer hanya bisa menggunakan saldo dari deposit. Saldo deposit kamu Rp${transferable.toLocaleString("id-ID")} — tidak cukup untuk transfer Rp${amount.toLocaleString("id-ID")}. Saldo dari voucher, spin wheel, atau poin tidak bisa ditransfer.`
+      }, { status: 400 });
+    }
+
     // Potong saldo pengirim hanya kalau cukup (atomik, tidak bisa minus).
+    const debitCond = { token: fromToken, balance: { $gte: amount } };
+    const debitInc = { balance: -amount };
+    if (hasDepositField) {
+      debitCond.depositBalance = { $gte: amount };
+      debitInc.depositBalance = -amount;
+    }
     const debited = await users.findOneAndUpdate(
-      { token: fromToken, balance: { $gte: amount } },
-      { $inc: { balance: -amount } },
+      debitCond,
+      { $inc: debitInc },
       { returnDocument: "after" }
     );
     if (!debited) {
@@ -42,7 +73,9 @@ export async function POST(req) {
     );
     if (!credited) {
       // Akun tujuan hilang di tengah proses: kembalikan saldo pengirim.
-      await users.updateOne({ token: fromToken }, { $inc: { balance: amount } });
+      const restoreInc = { balance: amount };
+      if (hasDepositField) restoreInc.depositBalance = amount;
+      await users.updateOne({ token: fromToken }, { $inc: restoreInc });
       return NextResponse.json({ error: "Transfer gagal, saldo dikembalikan." }, { status: 500 });
     }
 
@@ -64,7 +97,17 @@ export async function POST(req) {
       ref
     });
 
-    sendTelegramNotif(transferNotif({ fromToken, toToken, amount, fromBalance: debited.balance }));
+    const transferText = transferNotif({ fromToken, toToken, amount, fromBalance: debited.balance });
+    sendTelegramNotif(transferText);
+    generateReceiptPng(transferParams({
+      ref,
+      fromToken,
+      fromName: debited?.name,
+      toToken,
+      toName: credited?.name,
+      amount,
+      fromBalance: debited.balance
+    })).then((png) => sendTelegramPhoto(png, transferText.slice(0, 800))).catch((err) => console.error("[receipt/transfer]", err?.message || err));
 
     return NextResponse.json({ balance: debited.balance, transferredTo: toToken, amount, ref });
   } catch (err) {
