@@ -6,8 +6,7 @@ import { createDeposit as createRumahOtpDeposit, toEpochMs } from "@/lib/rumahot
 import { createSimuruDeposit, simuruConfigured } from "@/lib/simuru";
 import { getSettings, depositLimits } from "@/lib/settings";
 import { PROVIDER_KEYS } from "@/lib/paymentProviders";
-import { sendTelegramNotif, sendTelegramPhoto, depositPendingNotif, providerAlertNotif } from "@/lib/telegram";
-import { generateReceiptPng, depositPendingParams } from "@/lib/receiptImage";
+import { sendTelegramNotif, depositPendingNotif, providerAlertNotif } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 
@@ -175,16 +174,19 @@ export async function POST(req) {
       expiredAt: new Date(expiredAt)
     });
 
-    const pendingText = depositPendingNotif({
-      orderId, providerRef, provider: chosen, amount: amt,
-      fee: adminFee, total: totalAmount, expiredAt, token, name: user.name
-    });
-    sendTelegramNotif(pendingText);
-    // Kirim struk PNG secara async, tidak blocking
-    generateReceiptPng(depositPendingParams({
-      orderId, token, name: user.name, provider: chosen,
-      amount: amt, fee: adminFee, total: totalAmount, expiredAt
-    })).then((png) => sendTelegramPhoto(png, pendingText.slice(0, 800))).catch(() => {});
+    sendTelegramNotif(
+      depositPendingNotif({
+        orderId,
+        providerRef,
+        provider: chosen,
+        amount: amt,
+        fee: adminFee,
+        total: totalAmount,
+        expiredAt,
+        token,
+        name: user.name
+      })
+    );
 
     return NextResponse.json({
       orderId,
