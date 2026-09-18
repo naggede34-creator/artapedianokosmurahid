@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSettings, depositLimits } from "@/lib/settings";
 import { simuruConfigured } from "@/lib/simuru";
+import { rumahOtpConfigured } from "@/lib/rumahotp";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,8 @@ export async function GET() {
     const { maintenance, maintenanceMsg, depositProviders, depositFeePercent, smm } = await getSettings();
     const providers = { ...depositProviders };
     if (!simuruConfigured()) providers.simuru = false;
+    // Aktifkan rumahotp otomatis jika API key tersedia dan admin belum set eksplisit
+    if (providers.rumahotp === undefined && rumahOtpConfigured()) providers.rumahotp = true;
     return NextResponse.json({
       maintenance: !!maintenance,
       maintenanceMsg,
@@ -27,10 +30,13 @@ export async function GET() {
     });
   } catch (err) {
     console.error(err);
-    // Kalau DB bermasalah, jangan sampai malah mengunci seluruh web.
     return NextResponse.json({
       maintenance: false,
-      depositProviders: { simuru: simuruConfigured(), pakasir: true, rumahotp: false },
+      depositProviders: {
+        simuru: simuruConfigured(),
+        pakasir: true,
+        rumahotp: rumahOtpConfigured()
+      },
       depositFeePercent: { simuru: 0, pakasir: 0, rumahotp: 0.7 },
       depositMin: limits.min,
       depositMax: limits.max,

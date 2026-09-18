@@ -723,6 +723,149 @@ input[type="number"] { -moz-appearance: textfield; }
   );
 }
 
+/* ---- Manga Waifu character — dark mode invert trick ---- */
+@media (prefers-color-scheme: dark) {
+  .char-img-dark {
+    mix-blend-mode: screen;
+    filter: invert(1) contrast(1.1) saturate(1.2);
+  }
+  .char-base-dark { background: rgb(var(--c-ink)); }
+}
+
+/* ---- Manga bubble tail dark fix ---- */
+.bubble-tail-border { border-left-color: rgb(var(--c-ink)); }
+.bubble-tail-inner  { border-left-color: rgb(var(--c-surface)); }
+:root[data-theme="dark"] .bubble-tail-border { border-left-color: rgba(255,255,255,0.8); }
+:root[data-theme="dark"] .bubble-tail-inner  { border-left-color: rgb(var(--c-surface)); }
+
+/* ---- Typewriter cursor blink ---- */
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.cursor-blink { animation: blink .6s step-end infinite; }
+
+/* ---- Manga panel enter ---- */
+@keyframes manga-enter {
+  0%  { opacity:0; transform: translateY(12px) scale(.97); }
+  100%{ opacity:1; transform: translateY(0) scale(1); }
+}
+.manga-enter { animation: manga-enter .35s cubic-bezier(.22,1,.36,1) both; }
+
+/* ---- Anime / Comic panel ---- */
+.anime-panel {
+  position: relative;
+}
+.anime-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgb(var(--c-amber)/.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* ---- Comic speech bubble tail (left) ---- */
+.bubble-left::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 16px;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 10px solid currentColor;
+}
+
+/* ---- Shimmer loading ---- */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, rgb(var(--c-surface2)) 25%, rgb(var(--c-surface3)) 50%, rgb(var(--c-surface2)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ---- OTP code reveal explosion ---- */
+@keyframes code-pop {
+  0%   { transform: scale(0.6) rotate(-3deg); opacity: 0; }
+  60%  { transform: scale(1.1) rotate(1deg);  opacity: 1; }
+  100% { transform: scale(1)   rotate(0);     opacity: 1; }
+}
+.code-reveal { animation: code-pop 0.45s cubic-bezier(.34,1.56,.64,1) both; }
+
+/* ---- Manga speed lines (for cards) ---- */
+.manga-lines {
+  position: relative;
+  overflow: hidden;
+}
+.manga-lines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    87deg,
+    transparent 0px, transparent 22px,
+    rgb(var(--c-blue)/.03) 22px, rgb(var(--c-blue)/.03) 23px
+  );
+}
+
+/* ---- Neon glow button variant ---- */
+.btn-neon {
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow .2s, transform .1s;
+}
+.btn-neon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+.btn-neon:hover {
+  box-shadow: 0 0 20px rgb(var(--c-amber)/.5), 0 4px 0 rgb(var(--c-amber-bright)/.6);
+  transform: translateY(-1px);
+}
+.btn-neon:active { transform: translateY(2px); box-shadow: none; }
+
+/* ---- 3D card tilt (enhanced) ---- */
+.card-3d {
+  transition: transform .2s cubic-bezier(.17,.67,.83,.67), box-shadow .2s;
+  transform-style: preserve-3d;
+}
+.card-3d:hover {
+  transform: perspective(600px) rotateX(-3deg) rotateY(3deg) translateY(-2px);
+  box-shadow: 6px 12px 30px rgb(var(--c-blue)/.15), 3px 6px 0 rgb(var(--c-line)/.08);
+}
+
+/* ---- Spin (for loading ring) ---- */
+@keyframes spin { to { transform: rotate(360deg); } }
+.animate-spin { animation: spin 1s linear infinite; }
+
+/* ---- Bounce in ---- */
+@keyframes bounce-in {
+  0%   { transform: scale(0); opacity: 0; }
+  55%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.bounce-in { animation: bounce-in .4s cubic-bezier(.34,1.56,.64,1) both; }
+
+/* ---- Character float (for AnimeHero) ---- */
+@keyframes char-float {
+  0%,100% { transform: translateY(0) rotate(-1deg); }
+  50%      { transform: translateY(-8px) rotate(1deg); }
+}
+.char-float { animation: char-float 3s ease-in-out infinite; }
+
+/* ---- Gradient text ---- */
+.text-gradient {
+  background: linear-gradient(135deg, rgb(var(--c-amber-bright)), rgb(var(--c-blue)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;

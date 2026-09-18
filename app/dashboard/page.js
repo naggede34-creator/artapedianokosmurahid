@@ -14,6 +14,9 @@ import LuckyHourBanner from "@/components/LuckyHourBanner";
 import LevelUpModal from "@/components/LevelUpModal";
 import OnboardingTour, { useShouldShowTour } from "@/components/OnboardingTour";
 import NamePromptModal from "@/components/NamePromptModal";
+import WinbackBanner from "@/components/WinbackBanner";
+import AnimeHero from "@/components/AnimeHero";
+import MangaWaifu from "@/components/MangaWaifu";
 import { Icon, rupiah, EmptyState } from "@/components/ui";
 
 function greeting() {
@@ -526,6 +529,12 @@ export default function DashboardPage() {
       {showNamePrompt && !showTour && (
         <NamePromptModal onClose={() => setShowNamePrompt(false)} />
       )}
+
+      {/* Anime Hero Banner */}
+      <div className="mb-5">
+        <AnimeHero />
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-muted">{greeting()},</p>
@@ -546,6 +555,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Win-back banner */}
+      {ready && token && (
+        <div className="mt-4">
+          <WinbackBanner />
+        </div>
+      )}
+
       {/* Low Balance Alert */}
       {ready && balance !== undefined && balance < 2000 && (
         <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-amber/30 bg-amber-soft px-4 py-3">
@@ -562,20 +578,32 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[440px_1fr]">
+      {/* ── Manga Waifu AI chat — di atas SimCard/balance ── */}
+      {ready && (
+        <div className="mt-5">
+          <MangaWaifu
+            balance={balance}
+            hasRecentOrder={Array.isArray(recentOrders) && recentOrders.some(
+              (o) => Date.now() - new Date(o.createdAt).getTime() < 24 * 60 * 60 * 1000
+            )}
+          />
+        </div>
+      )}
+
+      <div className="mt-3 grid gap-5 lg:grid-cols-[440px_1fr]">
         <SimCard />
 
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-8 lg:grid-cols-4">
           {shortcuts.map((s) => {
             const I = s.icon;
             return (
-              <Link key={s.href} href={s.href} className="card hover-lift relative flex flex-col items-center justify-center gap-2 px-2 py-4 text-center">
+              <Link key={s.href} href={s.href} className="card card-3d hover-lift manga-lines relative flex flex-col items-center justify-center gap-2 px-2 py-4 text-center">
                 {s.badge && (
-                  <span className="absolute -top-1.5 -right-1 rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black text-white leading-none shadow-sm">
+                  <span className="absolute -top-1.5 -right-1 rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black text-white leading-none shadow-sm animate-pulse">
                     {s.badge}
                   </span>
                 )}
-                <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${s.badge ? "bg-gradient-to-br from-amber to-amber-bright text-white" : "bg-amber-soft text-amber-bright"}`}>
+                <span className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110 ${s.badge ? "bg-gradient-to-br from-amber to-amber-bright text-white shadow-md" : "bg-amber-soft text-amber-bright"}`}>
                   <I />
                 </span>
                 <span className="text-xs font-semibold text-ink">{s.label}</span>
