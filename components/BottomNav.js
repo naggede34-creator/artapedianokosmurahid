@@ -8,8 +8,8 @@ const tabs = [
   { href: "/dashboard", label: "Beranda", icon: Icon.home, match: ["/dashboard", "/"] },
   { href: "/otp", label: "Nokos", icon: Icon.phone },
   { href: "/deposit", label: "Deposit", icon: Icon.qris, primary: true },
-  { href: "/misi", label: "Misi", icon: Icon.star },
-  { href: "/riwayat", label: "Riwayat", icon: Icon.history }
+  { href: "/produk", label: "Produk", icon: Icon.shop },
+  { href: "/saldo-gratis", label: "Gratis", icon: Icon.coin }
 ];
 
 export default function BottomNav() {

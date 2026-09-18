@@ -266,5 +266,19 @@ export const Icon = {
       <path d="M9.6 9.3a2.4 2.4 0 1 1 3.6 2.1c-.8.5-1.2.9-1.2 1.9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
       <circle cx="12" cy="17" r="1" fill="currentColor" />
     </svg>
+  ),
+  shop: (p) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" {...p}>
+      <path d="M4 5h16l-1.5 8H5.5L4 5Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M8 13v2a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="8" cy="20" r="1.2" fill="currentColor" />
+      <circle cx="16" cy="20" r="1.2" fill="currentColor" />
+    </svg>
+  ),
+  coin: (p) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" {...p}>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 7v10M9.5 9.5C9.5 8.4 10.6 8 12 8s2.5.4 2.5 1.5-1 1.5-2.5 1.5-2.5.4-2.5 1.5S10.6 14 12 14s2.5.4 2.5 1.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   )
 };

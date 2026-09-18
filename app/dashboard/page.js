@@ -46,7 +46,9 @@ const shortcuts = [
   { href: "/transfer", label: "Transfer", icon: Icon.transfer },
   { href: "/mutasi", label: "Mutasi", icon: Icon.ledger },
   { href: "/misi", label: "Misi & Poin", icon: Icon.star },
-  { href: "/referral", label: "Undang teman", icon: Icon.gift }
+  { href: "/referral", label: "Undang teman", icon: Icon.gift },
+  { href: "/produk", label: "Toko Produk", icon: Icon.shop, badge: "Baru" },
+  { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin, badge: "Baru" }
 ];
 
 function WarrantyModal({ open, onClose, token }) {
@@ -467,12 +469,17 @@ export default function DashboardPage() {
       <div className="mt-5 grid gap-5 lg:grid-cols-[440px_1fr]">
         <SimCard />
 
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-3">
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-8 lg:grid-cols-4">
           {shortcuts.map((s) => {
             const I = s.icon;
             return (
-              <Link key={s.href} href={s.href} className="card hover-lift flex flex-col items-center justify-center gap-2 px-2 py-4 text-center">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-soft text-amber-bright">
+              <Link key={s.href} href={s.href} className="card hover-lift relative flex flex-col items-center justify-center gap-2 px-2 py-4 text-center">
+                {s.badge && (
+                  <span className="absolute -top-1.5 -right-1 rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black text-white leading-none shadow-sm">
+                    {s.badge}
+                  </span>
+                )}
+                <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${s.badge ? "bg-gradient-to-br from-amber to-amber-bright text-white" : "bg-amber-soft text-amber-bright"}`}>
                   <I />
                 </span>
                 <span className="text-xs font-semibold text-ink">{s.label}</span>

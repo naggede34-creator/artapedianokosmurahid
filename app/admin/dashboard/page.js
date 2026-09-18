@@ -17,6 +17,8 @@ const TABS = [
   { id: "pengguna", label: "Pengguna", icon: "👥" },
   { id: "konten", label: "Konten", icon: "📝" },
   { id: "transaksi", label: "Transaksi", icon: "💳" },
+  { id: "produk", label: "Produk", icon: "🛍️" },
+  { id: "job", label: "Job/Saldo", icon: "💰" },
   { id: "pengaturan", label: "Pengaturan", icon: "⚙️" },
   { id: "tools", label: "Tools", icon: "🛠️" },
 ];
@@ -115,6 +117,135 @@ export default function AdminDashboardPage() {
   const [activityPage, setActivityPage] = useState(1);
   const [activityTotal, setActivityTotal] = useState(0);
   const [activityPages, setActivityPages] = useState(1);
+
+  // Products state
+  const [adminProducts, setAdminProducts] = useState([]);
+  const [adminProductsLoading, setAdminProductsLoading] = useState(false);
+  const [productForm, setProductForm] = useState({ name: "", description: "", price: "", category: "Umum", stock: "-1", imageUrl: "", deliveryType: "text", deliveryContent: "" });
+  const [productMsg, setProductMsg] = useState("");
+  const [productSubmitting, setProductSubmitting] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [stockAddForm, setStockAddForm] = useState({ id: "", amount: "" });
+
+  // Jobs state
+  const [adminJobs, setAdminJobs] = useState([]);
+  const [adminJobsLoading, setAdminJobsLoading] = useState(false);
+  const [jobForm, setJobForm] = useState({ title: "", description: "", reward: "", maxCompletions: "0", proofType: "text", proofRequired: true, category: "Umum", imageUrl: "" });
+  const [jobMsg, setJobMsg] = useState("");
+  const [jobSubmitting, setJobSubmitting] = useState(false);
+  const [editingJob, setEditingJob] = useState(null);
+  const [jobSubmissions, setJobSubmissions] = useState([]);
+  const [jobSubmissionsLoading, setJobSubmissionsLoading] = useState(false);
+  const [jobSubFilter, setJobSubFilter] = useState("pending");
+  const [jobSubMsg, setJobSubMsg] = useState("");
+
+  const loadAdminProducts = useCallback(async () => {
+    setAdminProductsLoading(true);
+    try {
+      const res = await fetch("/api/admin/products");
+      if (res.status === 401) return router.push("/admin/login");
+      const d = await res.json();
+      setAdminProducts(Array.isArray(d.items) ? d.items : []);
+    } finally { setAdminProductsLoading(false); }
+  }, [router]);
+
+  const loadAdminJobs = useCallback(async () => {
+    setAdminJobsLoading(true);
+    try {
+      const res = await fetch("/api/admin/jobs");
+      if (res.status === 401) return router.push("/admin/login");
+      const d = await res.json();
+      setAdminJobs(Array.isArray(d.items) ? d.items : []);
+    } finally { setAdminJobsLoading(false); }
+  }, [router]);
+
+  const loadJobSubmissions = useCallback(async (status = jobSubFilter) => {
+    setJobSubmissionsLoading(true);
+    try {
+      const res = await fetch(`/api/admin/jobs/submissions?status=${status}`);
+      if (res.ok) { const d = await res.json(); setJobSubmissions(Array.isArray(d.items) ? d.items : []); }
+    } finally { setJobSubmissionsLoading(false); }
+  }, [jobSubFilter]);
+
+  async function submitProduct(e) {
+    e.preventDefault(); setProductMsg(""); setProductSubmitting(true);
+    try {
+      const action = editingProduct ? "edit" : "create";
+      const body = { action, ...productForm, price: Number(productForm.price), stock: Number(productForm.stock) };
+      if (editingProduct) body.id = editingProduct;
+      const res = await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Gagal.");
+      setProductMsg(editingProduct ? "Produk diperbarui!" : "Produk ditambahkan!");
+      setProductForm({ name: "", description: "", price: "", category: "Umum", stock: "-1", imageUrl: "", deliveryType: "text", deliveryContent: "" });
+      setEditingProduct(null);
+      loadAdminProducts();
+    } catch (err) { setProductMsg(err.message); }
+    finally { setProductSubmitting(false); setTimeout(() => setProductMsg(""), 3000); }
+  }
+
+  async function addProductStock(e) {
+    e.preventDefault();
+    const res = await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add-stock", id: stockAddForm.id, amount: Number(stockAddForm.amount) }) });
+    const d = await res.json();
+    if (d.ok) { setProductMsg("Stok ditambahkan!"); setStockAddForm({ id: "", amount: "" }); loadAdminProducts(); }
+    else setProductMsg(d.error || "Gagal.");
+    setTimeout(() => setProductMsg(""), 3000);
+  }
+
+  async function toggleProduct(id) {
+    await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
+    loadAdminProducts();
+  }
+
+  async function deleteProduct(id) {
+    if (!confirm("Hapus produk ini?")) return;
+    await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
+    loadAdminProducts();
+  }
+
+  function editProductFill(p) {
+    setEditingProduct(p.id);
+    setProductForm({ name: p.name, description: p.description || "", price: String(p.price), category: p.category || "Umum", stock: String(p.stock ?? -1), imageUrl: p.imageUrl || "", deliveryType: p.deliveryType || "text", deliveryContent: p.deliveryContent || "" });
+    document.getElementById("product-form-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function submitJob(e) {
+    e.preventDefault(); setJobMsg(""); setJobSubmitting(true);
+    try {
+      const action = editingJob ? "edit" : "create";
+      const body = { action, ...jobForm, reward: Number(jobForm.reward), maxCompletions: Number(jobForm.maxCompletions) };
+      if (editingJob) body.id = editingJob;
+      const res = await fetch("/api/admin/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Gagal.");
+      setJobMsg(editingJob ? "Job diperbarui!" : "Job ditambahkan!");
+      setJobForm({ title: "", description: "", reward: "", maxCompletions: "0", proofType: "text", proofRequired: true, category: "Umum", imageUrl: "" });
+      setEditingJob(null);
+      loadAdminJobs();
+    } catch (err) { setJobMsg(err.message); }
+    finally { setJobSubmitting(false); setTimeout(() => setJobMsg(""), 3000); }
+  }
+
+  async function toggleJob(id) {
+    await fetch("/api/admin/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
+    loadAdminJobs();
+  }
+
+  async function deleteJob(id) {
+    if (!confirm("Hapus job ini?")) return;
+    await fetch("/api/admin/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
+    loadAdminJobs();
+  }
+
+  async function reviewJobSub(id, action, reason) {
+    setJobSubMsg("");
+    const res = await fetch("/api/admin/jobs/submissions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, action, rejectionReason: reason || "" }) });
+    const d = await res.json();
+    if (d.ok) { setJobSubMsg(action === "approve" ? "Disetujui & saldo dikreditkan." : "Ditolak."); loadJobSubmissions(jobSubFilter); }
+    else setJobSubMsg(d.error || "Gagal.");
+    setTimeout(() => setJobSubMsg(""), 3000);
+  }
 
   const loadWarrantyClaims = useCallback(async () => {
     setWarrantyLoading(true);
@@ -1399,6 +1530,278 @@ export default function AdminDashboardPage() {
                     </div>
                     <button onClick={() => toggleLuckyHour(h.id)} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">{h.active ? "Nonaktif" : "Aktif"}</button>
                     <button onClick={() => deleteLuckyHour(h.id)} className="text-xs text-rose border border-rose/40 rounded-lg px-2 py-1 press">Hapus</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* TAB: PRODUK                                                  */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === "produk" && (
+        <div className="mt-5 space-y-5">
+
+          {/* Form Tambah/Edit Produk */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink mb-4">
+              {editingProduct ? "✏️ Edit Produk" : "➕ Tambah Produk Baru"}
+            </h2>
+            {productMsg && <p className="mb-3 text-xs font-medium text-teal-bright">{productMsg}</p>}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-medium text-muted">Nama Produk *</label>
+                <input value={productForm.name} onChange={(e) => setProductForm((f) => ({...f, name: e.target.value}))} placeholder="Nama produk" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Harga (Rp) *</label>
+                <input type="number" value={productForm.price} onChange={(e) => setProductForm((f) => ({...f, price: e.target.value}))} placeholder="10000" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Kategori</label>
+                <input value={productForm.category} onChange={(e) => setProductForm((f) => ({...f, category: e.target.value}))} placeholder="digital, game, voucher..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Stok (-1 = unlimited)</label>
+                <input type="number" value={productForm.stock} onChange={(e) => setProductForm((f) => ({...f, stock: e.target.value}))} placeholder="-1" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-muted">Deskripsi</label>
+                <textarea value={productForm.description} onChange={(e) => setProductForm((f) => ({...f, description: e.target.value}))} placeholder="Deskripsi produk..." rows={2} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber resize-none" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">URL Gambar</label>
+                <input value={productForm.imageUrl} onChange={(e) => setProductForm((f) => ({...f, imageUrl: e.target.value}))} placeholder="https://..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Tipe Pengiriman</label>
+                <select value={productForm.deliveryType} onChange={(e) => setProductForm((f) => ({...f, deliveryType: e.target.value}))} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber">
+                  <option value="text">Teks</option>
+                  <option value="image">Gambar (URL)</option>
+                  <option value="file">File (URL)</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-muted">Konten Pengiriman *</label>
+                <textarea value={productForm.deliveryContent} onChange={(e) => setProductForm((f) => ({...f, deliveryContent: e.target.value}))} placeholder="Konten yang dikirim ke pembeli setelah berhasil beli..." rows={3} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber resize-none" />
+              </div>
+            </div>
+            <div className="mt-4 flex gap-2.5">
+              {editingProduct && (
+                <button onClick={() => { setEditingProduct(null); setProductForm({ name:"", description:"", price:"", category:"", stock:"-1", imageUrl:"", deliveryType:"text", deliveryContent:"" }); setProductMsg(""); }} className="flex-1 rounded-xl border-2 border-line py-2.5 text-sm font-bold text-ink press">Batal</button>
+              )}
+              <button onClick={submitProduct} disabled={productSubmitting} className="flex-1 rounded-xl bg-amber py-2.5 text-sm font-black text-white press hover:bg-amber-bright disabled:opacity-50" style={{ boxShadow: "0 4px 0 0 rgba(180,100,0,0.4)" }}>
+                {productSubmitting ? "Menyimpan..." : editingProduct ? "Simpan Perubahan" : "Tambah Produk"}
+              </button>
+            </div>
+          </div>
+
+          {/* Tambah Stok */}
+          <div className="glass rounded-2xl p-5 shadow-soft">
+            <h2 className="text-base font-bold text-ink mb-3">📦 Tambah Stok Produk</h2>
+            <div className="flex gap-2.5">
+              <select value={stockAddForm.id} onChange={(e) => setStockAddForm((f) => ({...f, id: e.target.value}))} className="flex-1 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber">
+                <option value="">— Pilih Produk —</option>
+                {adminProducts.map((p) => <option key={p.id} value={p.id}>{p.name} (stok: {p.stock === -1 ? "∞" : p.stock})</option>)}
+              </select>
+              <input type="number" value={stockAddForm.amount} onChange={(e) => setStockAddForm((f) => ({...f, amount: e.target.value}))} placeholder="Jumlah" className="w-24 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              <button onClick={addProductStock} className="rounded-xl bg-teal px-4 py-2.5 text-sm font-bold text-white press">Tambah</button>
+            </div>
+          </div>
+
+          {/* Daftar Produk */}
+          <div className="glass rounded-2xl p-5 shadow-soft">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-ink">🛍️ Daftar Produk</h2>
+              <button onClick={loadAdminProducts} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-3 py-1 press">Refresh</button>
+            </div>
+            {adminProductsLoading ? (
+              <div className="space-y-2">{[1,2,3].map((i) => <div key={i} className="skeleton h-14 rounded-xl" />)}</div>
+            ) : adminProducts.length === 0 ? (
+              <p className="text-sm text-muted text-center py-6">Belum ada produk.</p>
+            ) : (
+              <div className="space-y-3">
+                {adminProducts.map((p) => (
+                  <div key={p.id} className={`rounded-2xl border-2 p-4 transition-all ${p.active ? "border-line bg-surface" : "border-line bg-surface2 opacity-70"}`} style={{ boxShadow: "3px 3px 0 0 rgba(0,0,0,0.06)" }}>
+                    <div className="flex items-start gap-3">
+                      {p.imageUrl && <img src={p.imageUrl} alt={p.name} className="h-14 w-14 shrink-0 rounded-xl object-cover border border-line" />}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                          <div>
+                            <p className="text-sm font-black text-ink">{p.name}</p>
+                            <p className="text-xs text-muted mt-0.5">{p.category || "—"} · Stok: {p.stock === -1 ? "∞" : p.stock} · Terjual: {p.soldCount || 0}</p>
+                          </div>
+                          <p className="text-sm font-black text-amber-bright shrink-0">Rp{Number(p.price).toLocaleString("id-ID")}</p>
+                        </div>
+                        {p.description && <p className="text-xs text-muted mt-1 line-clamp-1">{p.description}</p>}
+                        <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+                          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${p.active ? "border-teal/40 text-teal-bright" : "border-line text-muted"}`}>{p.active ? "Aktif" : "Nonaktif"}</span>
+                          <span className="rounded-full border border-line px-2 py-0.5 text-[10px] text-muted">{p.deliveryType}</span>
+                          <div className="flex gap-1.5 ml-auto">
+                            <button onClick={() => editProductFill(p)} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">Edit</button>
+                            <button onClick={() => toggleProduct(p.id)} className="text-xs text-teal-bright border border-teal/40 rounded-lg px-2 py-1 press">{p.active ? "Nonaktif" : "Aktif"}</button>
+                            <button onClick={() => deleteProduct(p.id)} className="text-xs text-rose border border-rose/30 rounded-lg px-2 py-1 press">Hapus</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* TAB: JOB/SALDO GRATIS                                        */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === "job" && (
+        <div className="mt-5 space-y-5">
+
+          {/* Form Tambah/Edit Job */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink mb-4">
+              {editingJob ? "✏️ Edit Job" : "➕ Tambah Job Baru"}
+            </h2>
+            {jobMsg && <p className="mb-3 text-xs font-medium text-teal-bright">{jobMsg}</p>}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-medium text-muted">Judul Job *</label>
+                <input value={jobForm.title} onChange={(e) => setJobForm((f) => ({...f, title: e.target.value}))} placeholder="Judul job..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Reward (Rp) *</label>
+                <input type="number" value={jobForm.reward} onChange={(e) => setJobForm((f) => ({...f, reward: e.target.value}))} placeholder="5000" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Maks Penyelesaian (0 = unlimited)</label>
+                <input type="number" value={jobForm.maxCompletions} onChange={(e) => setJobForm((f) => ({...f, maxCompletions: e.target.value}))} placeholder="0" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Tipe Bukti</label>
+                <select value={jobForm.proofType} onChange={(e) => setJobForm((f) => ({...f, proofType: e.target.value}))} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber">
+                  <option value="text">Teks</option>
+                  <option value="image">Gambar (URL)</option>
+                  <option value="url">URL</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Kategori</label>
+                <input value={jobForm.category} onChange={(e) => setJobForm((f) => ({...f, category: e.target.value}))} placeholder="sosmed, review, tugas..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">URL Gambar</label>
+                <input value={jobForm.imageUrl} onChange={(e) => setJobForm((f) => ({...f, imageUrl: e.target.value}))} placeholder="https://..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-muted">Deskripsi / Instruksi</label>
+                <textarea value={jobForm.description} onChange={(e) => setJobForm((f) => ({...f, description: e.target.value}))} placeholder="Instruksi yang harus dilakukan pengguna..." rows={3} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber resize-none" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={jobForm.proofRequired} onChange={(e) => setJobForm((f) => ({...f, proofRequired: e.target.checked}))} className="h-4 w-4 rounded border-line accent-amber" />
+                  <span className="text-sm font-medium text-ink">Bukti wajib diisi</span>
+                </label>
+              </div>
+            </div>
+            <div className="mt-4 flex gap-2.5">
+              {editingJob && (
+                <button onClick={() => { setEditingJob(null); setJobForm({ title:"", description:"", reward:"", maxCompletions:"0", proofRequired:true, proofType:"text", category:"", imageUrl:"" }); setJobMsg(""); }} className="flex-1 rounded-xl border-2 border-line py-2.5 text-sm font-bold text-ink press">Batal</button>
+              )}
+              <button onClick={submitJob} disabled={jobSubmitting} className="flex-1 rounded-xl bg-teal py-2.5 text-sm font-black text-white press hover:bg-teal-bright disabled:opacity-50" style={{ boxShadow: "0 4px 0 0 rgba(0,100,80,0.4)" }}>
+                {jobSubmitting ? "Menyimpan..." : editingJob ? "Simpan Perubahan" : "Tambah Job"}
+              </button>
+            </div>
+          </div>
+
+          {/* Daftar Job */}
+          <div className="glass rounded-2xl p-5 shadow-soft">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-ink">💼 Daftar Job</h2>
+              <button onClick={loadAdminJobs} className="text-xs text-teal-bright border border-teal/40 rounded-lg px-3 py-1 press">Refresh</button>
+            </div>
+            {adminJobsLoading ? (
+              <div className="space-y-2">{[1,2].map((i) => <div key={i} className="skeleton h-16 rounded-xl" />)}</div>
+            ) : adminJobs.length === 0 ? (
+              <p className="text-sm text-muted text-center py-6">Belum ada job.</p>
+            ) : (
+              <div className="space-y-3">
+                {adminJobs.map((j) => (
+                  <div key={j.id} className={`rounded-2xl border-2 p-4 ${j.active ? "border-line bg-surface" : "border-line bg-surface2 opacity-70"}`} style={{ boxShadow: "3px 3px 0 0 rgba(0,0,0,0.06)" }}>
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black text-ink">{j.title}</p>
+                        <p className="text-xs text-muted mt-0.5">
+                          Reward: <span className="text-teal-bright font-bold">Rp{Number(j.reward).toLocaleString("id-ID")}</span>
+                          {j.maxCompletions > 0 && ` · Kuota: ${j.completedCount || 0}/${j.maxCompletions}`}
+                          {j.category && ` · ${j.category}`}
+                        </p>
+                        {j.description && <p className="text-xs text-muted mt-1 line-clamp-1">{j.description}</p>}
+                      </div>
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold shrink-0 ${j.active ? "border-teal/40 text-teal-bright" : "border-line text-muted"}`}>{j.active ? "Aktif" : "Nonaktif"}</span>
+                    </div>
+                    <div className="flex gap-1.5 mt-2.5">
+                      <button onClick={() => { setEditingJob(j); setJobForm({ title: j.title, description: j.description || "", reward: String(j.reward), maxCompletions: String(j.maxCompletions || 0), proofRequired: j.proofRequired !== false, proofType: j.proofType || "text", category: j.category || "", imageUrl: j.imageUrl || "" }); }} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">Edit</button>
+                      <button onClick={() => toggleJob(j.id)} className="text-xs text-teal-bright border border-teal/40 rounded-lg px-2 py-1 press">{j.active ? "Nonaktif" : "Aktif"}</button>
+                      <button onClick={() => deleteJob(j.id)} className="text-xs text-rose border border-rose/30 rounded-lg px-2 py-1 press">Hapus</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Review Pengajuan Job */}
+          <div className="glass rounded-2xl p-5 shadow-soft">
+            <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+              <h2 className="text-base font-bold text-ink">📋 Review Pengajuan</h2>
+              <div className="flex gap-2">
+                {[["pending", "⏳ Menunggu"], ["all", "📜 Semua"]].map(([v, l]) => (
+                  <button key={v} onClick={() => { setJobSubFilter(v); loadJobSubmissions(v); }} className={`rounded-xl border px-3 py-1.5 text-xs font-bold press ${jobSubFilter === v ? "bg-ink text-white border-ink" : "border-line text-ink hover:border-amber"}`}>{l}</button>
+                ))}
+              </div>
+            </div>
+            {jobSubMsg && <p className="mb-3 text-xs font-medium text-teal-bright">{jobSubMsg}</p>}
+            {jobSubmissionsLoading ? (
+              <div className="space-y-2">{[1,2,3].map((i) => <div key={i} className="skeleton h-20 rounded-xl" />)}</div>
+            ) : jobSubmissions.length === 0 ? (
+              <p className="text-sm text-muted text-center py-8">Tidak ada pengajuan.</p>
+            ) : (
+              <div className="space-y-3">
+                {jobSubmissions.map((s) => (
+                  <div key={s.id} className="rounded-2xl border-2 border-line bg-surface p-4" style={{ boxShadow: "3px 3px 0 0 rgba(0,0,0,0.06)" }}>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black text-ink">{s.jobTitle}</p>
+                        <p className="text-xs text-muted font-mono mt-0.5 truncate">Token: {s.token}</p>
+                        <p className="text-xs text-muted mt-0.5">
+                          Reward: <span className="text-teal-bright font-bold">Rp{Number(s.reward).toLocaleString("id-ID")}</span>
+                          {" · "}{new Date(s.submittedAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold shrink-0 ${s.status === "approved" ? "border-teal/40 text-teal-bright" : s.status === "rejected" ? "border-rose/30 text-rose" : "border-amber/40 text-amber-bright"}`}>
+                        {s.status === "approved" ? "Disetujui" : s.status === "rejected" ? "Ditolak" : "Menunggu"}
+                      </span>
+                    </div>
+                    {s.proof && (
+                      <div className="mb-2 rounded-xl bg-surface2 p-2.5">
+                        <p className="text-[10px] font-bold text-muted mb-1">Bukti:</p>
+                        <p className="text-xs text-ink font-mono break-all line-clamp-3">{s.proof}</p>
+                      </div>
+                    )}
+                    {s.status === "pending" && (
+                      <div className="flex gap-2">
+                        <button onClick={() => reviewJobSub(s.id, "approve")} className="flex-1 rounded-xl bg-teal py-2 text-xs font-black text-white press">✓ Setujui</button>
+                        <div className="flex flex-1 gap-1.5">
+                          <input placeholder="Alasan penolakan..." className="flex-1 min-w-0 rounded-xl border border-line bg-surface px-2.5 py-1.5 text-xs text-ink outline-none focus:border-rose" id={`reject-reason-${s.id}`} />
+                          <button onClick={() => { const el = document.getElementById(`reject-reason-${s.id}`); reviewJobSub(s.id, "reject", el?.value || ""); }} className="rounded-xl bg-rose px-3 py-2 text-xs font-black text-white press">✗ Tolak</button>
+                        </div>
+                      </div>
+                    )}
+                    {s.status === "rejected" && s.rejectionReason && <p className="text-xs text-rose mt-1">Alasan: {s.rejectionReason}</p>}
                   </div>
                 ))}
               </div>
