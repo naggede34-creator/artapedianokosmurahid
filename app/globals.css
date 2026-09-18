@@ -723,6 +723,32 @@ input[type="number"] { -moz-appearance: textfield; }
   );
 }
 
+/* ---- Manga Waifu character — dark mode invert trick ---- */
+@media (prefers-color-scheme: dark) {
+  .char-img-dark {
+    mix-blend-mode: screen;
+    filter: invert(1) contrast(1.1) saturate(1.2);
+  }
+  .char-base-dark { background: rgb(var(--c-ink)); }
+}
+
+/* ---- Manga bubble tail dark fix ---- */
+.bubble-tail-border { border-left-color: rgb(var(--c-ink)); }
+.bubble-tail-inner  { border-left-color: rgb(var(--c-surface)); }
+:root[data-theme="dark"] .bubble-tail-border { border-left-color: rgba(255,255,255,0.8); }
+:root[data-theme="dark"] .bubble-tail-inner  { border-left-color: rgb(var(--c-surface)); }
+
+/* ---- Typewriter cursor blink ---- */
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.cursor-blink { animation: blink .6s step-end infinite; }
+
+/* ---- Manga panel enter ---- */
+@keyframes manga-enter {
+  0%  { opacity:0; transform: translateY(12px) scale(.97); }
+  100%{ opacity:1; transform: translateY(0) scale(1); }
+}
+.manga-enter { animation: manga-enter .35s cubic-bezier(.22,1,.36,1) both; }
+
 /* ---- Anime / Comic panel ---- */
 .anime-panel {
   position: relative;

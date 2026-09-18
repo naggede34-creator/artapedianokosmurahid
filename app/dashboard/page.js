@@ -16,6 +16,7 @@ import OnboardingTour, { useShouldShowTour } from "@/components/OnboardingTour";
 import NamePromptModal from "@/components/NamePromptModal";
 import WinbackBanner from "@/components/WinbackBanner";
 import AnimeHero from "@/components/AnimeHero";
+import MangaWaifu from "@/components/MangaWaifu";
 import { Icon, rupiah, EmptyState } from "@/components/ui";
 
 function greeting() {
@@ -577,7 +578,19 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[440px_1fr]">
+      {/* ── Manga Waifu AI chat — di atas SimCard/balance ── */}
+      {ready && (
+        <div className="mt-5">
+          <MangaWaifu
+            balance={balance}
+            hasRecentOrder={Array.isArray(recentOrders) && recentOrders.some(
+              (o) => Date.now() - new Date(o.createdAt).getTime() < 24 * 60 * 60 * 1000
+            )}
+          />
+        </div>
+      )}
+
+      <div className="mt-3 grid gap-5 lg:grid-cols-[440px_1fr]">
         <SimCard />
 
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-8 lg:grid-cols-4">
