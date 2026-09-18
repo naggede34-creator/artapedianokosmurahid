@@ -46,6 +46,7 @@ const UserContext = createContext(null);
 export function UserProvider({ children }) {
   const [token, setToken] = useState(null);
   const [balance, setBalance] = useState(0);
+  const [depositBalance, setDepositBalance] = useState(null);
   const [name, setName] = useState(null);
   const [joinedAt, setJoinedAt] = useState(null);
   const [tourDone, setTourDone] = useState(false);
@@ -64,6 +65,7 @@ export function UserProvider({ children }) {
       localStorage.setItem("artapedia_token", data.token);
       setToken(data.token);
       setBalance(data.balance);
+      setDepositBalance(data.depositBalance ?? null);
       setName(data.name || null);
       setJoinedAt(data.createdAt || null);
       setTourDone(data.tourDone === true);
@@ -130,7 +132,7 @@ export function UserProvider({ children }) {
 
   return (
     <UserContext.Provider
-      value={{ token, balance, name, joinedAt, tourDone, ready, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
+      value={{ token, balance, depositBalance, name, joinedAt, tourDone, ready, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
     >
       {children}
     </UserContext.Provider>
