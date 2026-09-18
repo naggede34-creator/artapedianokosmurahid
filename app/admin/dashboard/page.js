@@ -79,6 +79,25 @@ export default function AdminDashboardPage() {
   const [luckyHourMsg, setLuckyHourMsg] = useState("");
   const [luckyHourLoading, setLuckyHourLoading] = useState(false);
 
+  // Blast notification state
+  const [notifTarget, setNotifTarget] = useState("all");
+  const [notifToken, setNotifToken] = useState("");
+  const [notifType, setNotifType] = useState("promo");
+  const [notifTitle, setNotifTitle] = useState("");
+  const [notifBody, setNotifBody] = useState("");
+  const [notifMsg, setNotifMsg] = useState("");
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  // Gamification stats state
+  const [gamStats, setGamStats] = useState(null);
+  const [gamStatsLoading, setGamStatsLoading] = useState(false);
+
+  // Platform markup state
+  const [platformMarkups, setPlatformMarkups] = useState([]);
+  const [platformMarkupLoading, setPlatformMarkupLoading] = useState(false);
+  const [platformMarkupForm, setPlatformMarkupForm] = useState({ platform: "", markupPercent: "" });
+  const [platformMarkupMsg, setPlatformMarkupMsg] = useState("");
+
   const loadWarrantyClaims = useCallback(async () => {
     setWarrantyLoading(true);
     try {
@@ -266,6 +285,69 @@ export default function AdminDashboardPage() {
     loadLuckyHours();
   }
 
+  async function sendBlastNotif(e) {
+    e.preventDefault();
+    setNotifMsg("");
+    if (!notifTitle || !notifBody) { setNotifMsg("Judul dan pesan wajib diisi."); return; }
+    if (notifTarget === "single" && !notifToken) { setNotifMsg("Token user wajib diisi."); return; }
+    setNotifLoading(true);
+    try {
+      const res = await fetch("/api/admin/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target: notifTarget, token: notifToken, type: notifType, title: notifTitle, body: notifBody }),
+      });
+      const d = await res.json();
+      if (d.ok) { setNotifMsg(`✓ Terkirim ke ${d.sent} pengguna.`); setNotifTitle(""); setNotifBody(""); setNotifToken(""); }
+      else setNotifMsg(d.error || "Gagal.");
+    } finally {
+      setNotifLoading(false);
+      setTimeout(() => setNotifMsg(""), 3500);
+    }
+  }
+
+  async function loadGamStats() {
+    setGamStatsLoading(true);
+    try {
+      const res = await fetch("/api/admin/gamification-stats");
+      if (res.ok) setGamStats(await res.json());
+    } finally { setGamStatsLoading(false); }
+  }
+
+  async function loadPlatformMarkups() {
+    setPlatformMarkupLoading(true);
+    try {
+      const res = await fetch("/api/admin/platform-markup");
+      if (res.ok) { const d = await res.json(); setPlatformMarkups(Array.isArray(d.items) ? d.items : []); }
+    } finally { setPlatformMarkupLoading(false); }
+  }
+
+  async function upsertPlatformMarkup(e) {
+    e.preventDefault();
+    setPlatformMarkupMsg("");
+    const { platform, markupPercent } = platformMarkupForm;
+    if (!platform || markupPercent === "") { setPlatformMarkupMsg("Platform dan markup wajib diisi."); return; }
+    const res = await fetch("/api/admin/platform-markup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "upsert", platform, markupPercent: Number(markupPercent) }),
+    });
+    const d = await res.json();
+    if (d.ok) { setPlatformMarkupMsg("Tersimpan!"); setPlatformMarkupForm({ platform: "", markupPercent: "" }); loadPlatformMarkups(); }
+    else setPlatformMarkupMsg(d.error || "Gagal.");
+    setTimeout(() => setPlatformMarkupMsg(""), 3000);
+  }
+
+  async function togglePlatformMarkup(id) {
+    await fetch("/api/admin/platform-markup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
+    loadPlatformMarkups();
+  }
+
+  async function deletePlatformMarkup(id) {
+    await fetch("/api/admin/platform-markup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
+    loadPlatformMarkups();
+  }
+
   useEffect(() => {
     loadSettings();
     loadSimuru();
@@ -277,6 +359,8 @@ export default function AdminDashboardPage() {
     loadWarrantyClaims();
     loadFlashSales();
     loadLuckyHours();
+    loadGamStats();
+    loadPlatformMarkups();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1538,6 +1622,99 @@ export default function AdminDashboardPage() {
                 </div>
                 <button onClick={() => toggleLuckyHour(h.id)} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">{h.active ? "Nonaktif" : "Aktif"}</button>
                 <button onClick={() => deleteLuckyHour(h.id)} className="text-xs text-rose border border-rose/40 rounded-lg px-2 py-1 press">Hapus</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Blast Notifikasi */}
+      <div className="mt-5 glass rounded-2xl p-5 shadow-soft">
+        <h2 className="text-base font-bold text-ink mb-1">📣 Blast Notifikasi</h2>
+        <p className="text-xs text-muted mb-4">Kirim notifikasi ke satu atau semua pengguna langsung ke inbox mereka.</p>
+        <form onSubmit={sendBlastNotif} className="space-y-3">
+          <div className="flex gap-2">
+            {[{ v: "all", l: "Semua User" }, { v: "single", l: "Satu User" }].map((opt) => (
+              <button key={opt.v} type="button" onClick={() => setNotifTarget(opt.v)}
+                className={`flex-1 rounded-xl py-2 text-xs font-bold border transition-colors press ${notifTarget === opt.v ? "bg-ink text-bg border-ink" : "border-line text-muted hover:border-ink/30"}`}>
+                {opt.l}
+              </button>
+            ))}
+          </div>
+          {notifTarget === "single" && (
+            <input value={notifToken} onChange={(e) => setNotifToken(e.target.value)} placeholder="Token user" className="input text-sm w-full" />
+          )}
+          <select value={notifType} onChange={(e) => setNotifType(e.target.value)} className="input text-sm w-full">
+            <option value="promo">Promo</option>
+            <option value="reward">Reward</option>
+            <option value="mission">Misi</option>
+            <option value="deposit">Deposit</option>
+          </select>
+          <input value={notifTitle} onChange={(e) => setNotifTitle(e.target.value)} placeholder="Judul notifikasi" className="input text-sm w-full" />
+          <textarea value={notifBody} onChange={(e) => setNotifBody(e.target.value)} placeholder="Isi pesan..." rows={3} className="input text-sm w-full resize-none" />
+          <button type="submit" disabled={notifLoading} className="w-full rounded-xl bg-teal py-2.5 text-sm font-bold text-white press disabled:opacity-50">
+            {notifLoading ? "Mengirim…" : "Kirim Notifikasi"}
+          </button>
+        </form>
+        {notifMsg && <p className="text-xs mt-2 text-teal-bright font-semibold">{notifMsg}</p>}
+      </div>
+
+      {/* Statistik Gamifikasi */}
+      <div className="mt-5 glass rounded-2xl p-5 shadow-soft">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-bold text-ink">📊 Statistik Gamifikasi</h2>
+          <button onClick={loadGamStats} disabled={gamStatsLoading} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-3 py-1.5 press disabled:opacity-50">
+            {gamStatsLoading ? "…" : "Refresh"}
+          </button>
+        </div>
+        {!gamStats ? (
+          <p className="text-sm text-muted">Tekan Refresh untuk memuat data.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+              {[
+                { label: "Misi Diklaim (7hr)", value: gamStats.weekly.missionsClaimed, icon: "🎯" },
+                { label: "Mystery Box (7hr)", value: gamStats.weekly.mysteryBoxOpened, icon: "🎁" },
+                { label: "Kartu Gores (7hr)", value: gamStats.weekly.scratchCardScratched, icon: "🎫" },
+                { label: "Hadiah Leaderboard", value: gamStats.weekly.weeklyPrizesClaimed, icon: "🏆" },
+                { label: "Challenge Selesai", value: gamStats.weekly.challengeCompleted, icon: "⚡" },
+                { label: "User Aktif (7hr)", value: gamStats.weekly.activeUsersWeek, icon: "👥" },
+              ].map((s) => (
+                <div key={s.label} className="rounded-xl border border-line bg-surface p-3">
+                  <p className="text-lg">{s.icon}</p>
+                  <p className="text-xl font-extrabold text-ink">{s.value}</p>
+                  <p className="text-[10px] text-muted leading-tight">{s.label}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted">Total user: {gamStats.totalUsers} · Data per {new Date(gamStats.asOf).toLocaleString("id-ID")}</p>
+          </>
+        )}
+      </div>
+
+      {/* Custom Markup per Platform */}
+      <div className="mt-5 glass rounded-2xl p-5 shadow-soft">
+        <h2 className="text-base font-bold text-ink mb-1">⚙️ Markup Kustom per Platform</h2>
+        <p className="text-xs text-muted mb-4">Override markup harga untuk platform OTP tertentu (misal: gojek, tokopedia, shopee).</p>
+        <form onSubmit={upsertPlatformMarkup} className="flex gap-2 mb-4 flex-wrap">
+          <input value={platformMarkupForm.platform} onChange={(e) => setPlatformMarkupForm((f) => ({...f, platform: e.target.value}))} placeholder="Nama platform (cth: gojek)" className="input text-sm flex-1 min-w-[120px]" />
+          <input value={platformMarkupForm.markupPercent} onChange={(e) => setPlatformMarkupForm((f) => ({...f, markupPercent: e.target.value}))} type="number" min="0" max="200" step="0.5" placeholder="Markup (%)" className="input text-sm w-28" />
+          <button type="submit" className="rounded-xl bg-amber px-4 py-2 text-sm font-bold text-white press">Simpan</button>
+        </form>
+        {platformMarkupMsg && <p className="text-xs text-teal-bright mb-3">{platformMarkupMsg}</p>}
+        {platformMarkupLoading ? <div className="skeleton h-16 rounded-xl" /> : platformMarkups.length === 0 ? (
+          <p className="text-sm text-muted">Belum ada markup kustom. Semua platform menggunakan markup global.</p>
+        ) : (
+          <div className="space-y-2">
+            {platformMarkups.map((m) => (
+              <div key={m.id} className="flex items-center gap-3 rounded-xl border border-line p-3">
+                <span className={`h-2 w-2 rounded-full shrink-0 ${m.active ? "bg-teal-bright" : "bg-muted/40"}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-ink capitalize">{m.platform}</p>
+                  <p className="text-xs text-muted">Markup: {m.markupPercent}%</p>
+                </div>
+                <button onClick={() => togglePlatformMarkup(m.id)} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">{m.active ? "Nonaktif" : "Aktif"}</button>
+                <button onClick={() => deletePlatformMarkup(m.id)} className="text-xs text-rose border border-rose/40 rounded-lg px-2 py-1 press">Hapus</button>
               </div>
             ))}
           </div>

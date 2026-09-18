@@ -11,6 +11,7 @@ import MissionsPanel from "@/components/MissionsPanel";
 import WeeklyChallenge from "@/components/WeeklyChallenge";
 import FlashSaleTimer from "@/components/FlashSaleTimer";
 import LuckyHourBanner from "@/components/LuckyHourBanner";
+import LevelUpModal from "@/components/LevelUpModal";
 import { Icon, rupiah, EmptyState } from "@/components/ui";
 
 function greeting() {
@@ -406,6 +407,7 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
+      <LevelUpModal token={token} onClose={() => {}} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-muted">{greeting()},</p>
