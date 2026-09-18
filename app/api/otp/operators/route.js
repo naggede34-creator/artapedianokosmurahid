@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOperators } from "@/lib/rumahotp";
+import { getApiKeys } from "@/lib/apiKeys";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,8 @@ export async function GET(req) {
     const providerId = searchParams.get("provider_id");
     if (!country || !providerId) return NextResponse.json({ error: "Parameter kurang." }, { status: 400 });
 
-    const data = await getOperators(process.env.RUMAHOTP_APIKEY, country, providerId);
+    const { rumahOtp } = await getApiKeys();
+    const data = await getOperators(rumahOtp, country, providerId);
     return NextResponse.json({ items: data.data || data || [] });
   } catch (err) {
     console.error(err?.response?.data || err);

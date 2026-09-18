@@ -13,25 +13,27 @@ import { getServices } from "@/lib/rumahotp";
 import { usersCol, depositsCol } from "@/lib/db";
 import { runCleanup } from "@/lib/cleanup";
 import { sendMonitorLog, cronReportLog } from "@/lib/monitor";
+import { getApiKeys } from "@/lib/apiKeys";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-function isAuthorized(req) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // belum diset = endpoint dibuka publik, cocok buat setup awal saja
+async function isAuthorized(req) {
+  const { cronSecret } = await getApiKeys();
+  if (!cronSecret) return true; // belum diset = endpoint dibuka publik
   const auth = req.headers.get("authorization") || "";
-  if (auth === `Bearer ${secret}`) return true;
+  if (auth === `Bearer ${cronSecret}`) return true;
   const { searchParams } = new URL(req.url);
-  if (searchParams.get("secret") === secret) return true;
+  if (searchParams.get("secret") === cronSecret) return true;
   return false;
 }
 
 async function checkRumahOtp() {
   const start = Date.now();
   try {
-    if (!process.env.RUMAHOTP_APIKEY) return { name: "RumahOTP API", ok: false, error: "API key belum diset" };
-    await getServices(process.env.RUMAHOTP_APIKEY);
+    const { rumahOtp } = await getApiKeys();
+    if (!rumahOtp) return { name: "RumahOTP API", ok: false, error: "API key belum diisi di Dashboard Admin" };
+    await getServices(rumahOtp);
     return { name: "RumahOTP API", ok: true, ms: Date.now() - start };
   } catch (err) {
     return { name: "RumahOTP API", ok: false, ms: Date.now() - start, error: err?.message || "gagal terhubung" };
@@ -80,7 +82,7 @@ async function checkMongo() {
 }
 
 export async function GET(req) {
-  if (!isAuthorized(req)) {
+  if (!await isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 

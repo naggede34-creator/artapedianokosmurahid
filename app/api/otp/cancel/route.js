@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
 import { setOrderStatus } from "@/lib/rumahotp";
+import { getApiKeys } from "@/lib/apiKeys";
 import { reconcileOtpOrder } from "@/lib/orderReconcile";
 import { logBalance } from "@/lib/ledger";
 
@@ -60,7 +61,8 @@ export async function POST(req) {
 
     let providerMessage;
     try {
-      const result = await setOrderStatus(process.env.RUMAHOTP_APIKEY, orderId, "cancel");
+      const { rumahOtp } = await getApiKeys();
+      const result = await setOrderStatus(rumahOtp, orderId, "cancel");
       const d = result?.data || result;
       providerMessage = d?.message;
       if (result?.success === false && /otp|sms|received|diterima/i.test(String(providerMessage || ""))) {

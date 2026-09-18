@@ -3,6 +3,7 @@ import { usersCol, otpOrdersCol } from "@/lib/db";
 import { createOrder, getCountries, toEpochMs } from "@/lib/rumahotp";
 import { sendTelegramNotif, otpPurchaseNotif } from "@/lib/telegram";
 import { getSettings } from "@/lib/settings";
+import { getApiKeys } from "@/lib/apiKeys";
 import { logBalance } from "@/lib/ledger";
 
 export const dynamic = "force-dynamic";
@@ -10,8 +11,8 @@ export const dynamic = "force-dynamic";
 // Harga SELALU diambil ulang dari RumahOTP di server. Dulu harga dasar dikirim dari
 // browser (basePrice), sehingga siapa pun bisa mengirim basePrice=0 dan mendapat
 // nomor gratis.
-async function resolveBasePrice(serviceId, numberId, providerId) {
-  const data = await getCountries(process.env.RUMAHOTP_APIKEY, serviceId);
+async function resolveBasePrice(serviceId, numberId, providerId, apiKey) {
+  const data = await getCountries(apiKey, serviceId);
   const list = data?.data || data || [];
   const country = (Array.isArray(list) ? list : []).find((c) => String(c.number_id) === String(numberId));
   if (!country) return null;
@@ -47,11 +48,11 @@ export async function POST(req) {
       );
     }
 
-    const resolved = await resolveBasePrice(serviceId, numberId, providerId);
+    const { markupPercent } = await getSettings();
+    const { rumahOtp } = await getApiKeys();
+    const resolved = await resolveBasePrice(serviceId, numberId, providerId, rumahOtp);
     if (!resolved) return NextResponse.json({ error: "Server/negara ini sudah tidak tersedia. Pilih yang lain." }, { status: 400 });
     if (resolved.outOfStock) return NextResponse.json({ error: "Stok server ini sedang habis. Pilih server lain." }, { status: 400 });
-
-    const { markupPercent } = await getSettings();
     sellPrice = Math.ceil(resolved.price * (1 + (Number(markupPercent) || 0) / 100));
 
     // Potong saldo DULU secara atomik, baru pesan ke provider. Kalau provider gagal,
@@ -72,7 +73,7 @@ export async function POST(req) {
 
     let data;
     try {
-      const result = await createOrder(process.env.RUMAHOTP_APIKEY, { numberId, providerId, operatorId });
+      const result = await createOrder(rumahOtp, { numberId, providerId, operatorId });
       data = result?.data || result;
     } catch (e) {
       data = null;

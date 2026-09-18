@@ -5,6 +5,7 @@ import { createTransaction } from "@/lib/pakasir";
 import { createDeposit as createRumahOtpDeposit, toEpochMs } from "@/lib/rumahotp";
 import { createSimuruDeposit, simuruConfigured } from "@/lib/simuru";
 import { getSettings, depositLimits } from "@/lib/settings";
+import { getApiKeys } from "@/lib/apiKeys";
 import { PROVIDER_KEYS } from "@/lib/paymentProviders";
 import { sendTelegramNotif, depositPendingNotif, providerAlertNotif } from "@/lib/telegram";
 import { rateLimit } from "@/lib/rateLimit";
@@ -66,7 +67,7 @@ export async function POST(req) {
     if (!chosen || !depositProviders?.[chosen]) {
       return NextResponse.json({ error: "Metode pembayaran ini sedang tidak tersedia." }, { status: 400 });
     }
-    if (chosen === "simuru" && !simuruConfigured()) {
+    if (chosen === "simuru" && !await simuruConfigured()) {
       return NextResponse.json({ error: "QRIS Simuru belum dikonfigurasi admin. Pilih metode lain." }, { status: 400 });
     }
 
@@ -130,7 +131,8 @@ export async function POST(req) {
         return NextResponse.json({ error: "QRIS Simuru tidak tersedia, coba lagi." }, { status: 502 });
       }
     } else if (chosen === "pakasir") {
-      const result = await createTransaction(process.env.PAKASIR_PROJECT, process.env.PAKASIR_APIKEY, orderId, amt, "qris");
+      const { pakasirProject, pakasirApiKey } = await getApiKeys();
+      const result = await createTransaction(pakasirProject, pakasirApiKey, orderId, amt, "qris");
       const payment = result?.payment || result;
       qrisString = payment?.payment_number || payment?.qr_string || null;
       expiredAt = toEpochMs(payment?.expired_at || null);
@@ -143,7 +145,8 @@ export async function POST(req) {
     } else {
       let result;
       try {
-        result = await createRumahOtpDeposit(process.env.RUMAHOTP_APIKEY, { amount: amt, paymentId: "qris" });
+        const { rumahOtp } = await getApiKeys();
+        result = await createRumahOtpDeposit(rumahOtp, { amount: amt, paymentId: "qris" });
       } catch (err) {
         const errData = err?.response?.data;
         console.error("[deposit/create] rumahotp request error:", err?.response?.status, errData || err?.message);

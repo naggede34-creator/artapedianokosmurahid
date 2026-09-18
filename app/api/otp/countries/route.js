@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCountries } from "@/lib/rumahotp";
 import { getSettings } from "@/lib/settings";
+import { getApiKeys } from "@/lib/apiKeys";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +11,8 @@ export async function GET(req) {
     const serviceId = searchParams.get("service_id");
     if (!serviceId) return NextResponse.json({ error: "service_id wajib diisi." }, { status: 400 });
 
-    const { markupPercent } = await getSettings();
-    const data = await getCountries(process.env.RUMAHOTP_APIKEY, serviceId);
+    const [{ markupPercent }, { rumahOtp }] = await Promise.all([getSettings(), getApiKeys()]);
+    const data = await getCountries(rumahOtp, serviceId);
     const items = (data.data || data || []).map((c) => ({
       ...c,
       pricelist: (c.pricelist || []).map((p) => ({

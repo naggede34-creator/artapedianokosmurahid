@@ -3,12 +3,13 @@ import { resolveApiKey } from "@/lib/apiKeyAuth";
 import { usersCol, otpOrdersCol } from "@/lib/db";
 import { createOrder, getCountries, toEpochMs } from "@/lib/rumahotp";
 import { getSettings } from "@/lib/settings";
+import { getApiKeys } from "@/lib/apiKeys";
 import { logBalance } from "@/lib/ledger";
 
 export const dynamic = "force-dynamic";
 
-async function resolveBasePrice(serviceId, numberId, providerId) {
-  const data = await getCountries(process.env.RUMAHOTP_APIKEY, serviceId);
+async function resolveBasePrice(serviceId, numberId, providerId, apiKey) {
+  const data = await getCountries(apiKey, serviceId);
   const list = data?.data || data || [];
   const country = (Array.isArray(list) ? list : []).find((c) => String(c.number_id) === String(numberId));
   if (!country) return null;
@@ -36,11 +37,10 @@ export async function POST(req) {
       return NextResponse.json({ error: "serviceId, numberId, and providerId are required." }, { status: 400 });
     }
 
-    const resolved = await resolveBasePrice(serviceId, numberId, providerId);
+    const [{ markupPercent }, { rumahOtp }] = await Promise.all([getSettings(), getApiKeys()]);
+    const resolved = await resolveBasePrice(serviceId, numberId, providerId, rumahOtp);
     if (!resolved) return NextResponse.json({ error: "Server/country not available." }, { status: 400 });
     if (resolved.outOfStock) return NextResponse.json({ error: "Server stock empty, try another." }, { status: 400 });
-
-    const { markupPercent } = await getSettings();
     sellPrice = Math.ceil(resolved.price * (1 + (Number(markupPercent) || 0) / 100));
 
     const afterDebit = await users.findOneAndUpdate(
@@ -55,7 +55,7 @@ export async function POST(req) {
 
     let data;
     try {
-      const result = await createOrder(process.env.RUMAHOTP_APIKEY, { numberId, providerId, operatorId });
+      const result = await createOrder(rumahOtp, { numberId, providerId, operatorId });
       data = result?.data || result;
     } catch (e) {
       data = null;

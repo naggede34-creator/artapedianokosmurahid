@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
 import { createOrder, toEpochMs } from "@/lib/rumahotp";
+import { getApiKeys } from "@/lib/apiKeys";
 import { sendTelegramNotif, otpPurchaseNotif, otpAutoRefundNotif } from "@/lib/telegram";
 import { logBalance } from "@/lib/ledger";
 
@@ -42,7 +43,8 @@ export async function POST(req) {
 
     let result;
     try {
-      result = await createOrder(process.env.RUMAHOTP_APIKEY, {
+      const { rumahOtp } = await getApiKeys();
+      result = await createOrder(rumahOtp, {
         numberId: oldOrder.numberId,
         providerId: oldOrder.providerId,
         operatorId: oldOrder.operatorId

@@ -145,7 +145,7 @@ export default function AdminDashboardPage() {
   const [ticketReplyLoading, setTicketReplyLoading] = useState(false);
 
   // Settings extended fields
-  const [siteSettingsForm, setSiteSettingsForm] = useState({ siteName: "", siteUrl: "", telegramBotToken: "", telegramChatId: "", telegramChannelId: "", depositMin: "", depositMax: "" });
+  const [siteSettingsForm, setSiteSettingsForm] = useState({ siteName: "", siteUrl: "", telegramBotToken: "", telegramChatId: "", telegramChannelId: "", depositMin: "", depositMax: "", rumahOtpApiKey: "", simuruApiKey: "", pakasirProject: "", pakasirApiKey: "", cronSecret: "", adminCode: "", referralBonusPercent: "" });
   const [savingSiteSettings, setSavingSiteSettings] = useState(false);
   const [siteSettingsMsg, setSiteSettingsMsg] = useState("");
   const [siteSettingsSubmitting, setSiteSettingsSubmitting] = useState(false);
@@ -246,11 +246,18 @@ export default function AdminDashboardPage() {
       if (siteSettingsForm.telegramChannelId !== "") patch.telegramChannelId = siteSettingsForm.telegramChannelId;
       if (siteSettingsForm.depositMin !== "") patch.depositMin = Number(siteSettingsForm.depositMin);
       if (siteSettingsForm.depositMax !== "") patch.depositMax = Number(siteSettingsForm.depositMax);
+      if (siteSettingsForm.rumahOtpApiKey !== "") patch.rumahOtpApiKey = siteSettingsForm.rumahOtpApiKey;
+      if (siteSettingsForm.simuruApiKey !== "") patch.simuruApiKey = siteSettingsForm.simuruApiKey;
+      if (siteSettingsForm.pakasirProject !== "") patch.pakasirProject = siteSettingsForm.pakasirProject;
+      if (siteSettingsForm.pakasirApiKey !== "") patch.pakasirApiKey = siteSettingsForm.pakasirApiKey;
+      if (siteSettingsForm.cronSecret !== "") patch.cronSecret = siteSettingsForm.cronSecret;
+      if (siteSettingsForm.adminCode !== "") patch.adminCode = siteSettingsForm.adminCode;
+      if (siteSettingsForm.referralBonusPercent !== "") patch.referralBonusPercent = Number(siteSettingsForm.referralBonusPercent);
       const res = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Gagal.");
       setSettings(d);
-      setSiteSettingsForm({ siteName: d.siteName || "", siteUrl: d.siteUrl || "", telegramBotToken: d.telegramBotToken || "", telegramChatId: d.telegramChatId || "", telegramChannelId: d.telegramChannelId || "", depositMin: String(d.depositMin || ""), depositMax: String(d.depositMax || "") });
+      setSiteSettingsForm({ siteName: d.siteName || "", siteUrl: d.siteUrl || "", telegramBotToken: d.telegramBotToken || "", telegramChatId: d.telegramChatId || "", telegramChannelId: d.telegramChannelId || "", depositMin: String(d.depositMin || ""), depositMax: String(d.depositMax || ""), rumahOtpApiKey: d.rumahOtpApiKey || "", simuruApiKey: d.simuruApiKey || "", pakasirProject: d.pakasirProject || "", pakasirApiKey: d.pakasirApiKey || "", cronSecret: d.cronSecret || "", adminCode: d.adminCode || "", referralBonusPercent: String(d.referralBonusPercent ?? "") });
       setSiteSettingsMsg("Pengaturan tersimpan.");
     } catch (err) { setSiteSettingsMsg(err.message); }
     finally { setSavingSiteSettings(false); setTimeout(() => setSiteSettingsMsg(""), 3000); }
@@ -422,6 +429,13 @@ export default function AdminDashboardPage() {
       telegramChannelId: data.telegramChannelId || "",
       depositMin: String(data.depositMin || ""),
       depositMax: String(data.depositMax || ""),
+      rumahOtpApiKey: data.rumahOtpApiKey || "",
+      simuruApiKey: data.simuruApiKey || "",
+      pakasirProject: data.pakasirProject || "",
+      pakasirApiKey: data.pakasirApiKey || "",
+      cronSecret: data.cronSecret || "",
+      adminCode: data.adminCode || "",
+      referralBonusPercent: String(data.referralBonusPercent ?? ""),
     });
   }, [router]);
 
@@ -2226,7 +2240,7 @@ export default function AdminDashboardPage() {
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
             <h2 className="font-display text-base font-semibold text-ink">🌐 Pengaturan Situs &amp; Env</h2>
             <p className="mt-1 text-xs text-muted">Override variabel environment langsung dari dashboard — tidak perlu redeploy. Kosongkan untuk kembali ke nilai env Vercel.</p>
-            <form onSubmit={async (e) => { e.preventDefault(); setSiteSettingsMsg(""); setSiteSettingsSubmitting(true); try { const patch = {}; if (siteSettingsForm.siteName !== "") patch.siteName = siteSettingsForm.siteName; if (siteSettingsForm.siteUrl !== "") patch.siteUrl = siteSettingsForm.siteUrl; if (siteSettingsForm.telegramBotToken !== "") patch.telegramBotToken = siteSettingsForm.telegramBotToken; if (siteSettingsForm.telegramChatId !== "") patch.telegramChatId = siteSettingsForm.telegramChatId; if (siteSettingsForm.depositMin !== "") patch.depositMin = Number(siteSettingsForm.depositMin); if (siteSettingsForm.depositMax !== "") patch.depositMax = Number(siteSettingsForm.depositMax); const res = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update", patch }) }); const d = await res.json(); if (!res.ok) { setSiteSettingsMsg(d.error || "Gagal."); return; } setSiteSettingsMsg("Pengaturan disimpan!"); } catch { setSiteSettingsMsg("Gagal menyimpan."); } finally { setSiteSettingsSubmitting(false); } }}>
+            <form onSubmit={async (e) => { e.preventDefault(); setSiteSettingsMsg(""); setSiteSettingsSubmitting(true); try { const patch = {}; if (siteSettingsForm.siteName !== "") patch.siteName = siteSettingsForm.siteName; if (siteSettingsForm.siteUrl !== "") patch.siteUrl = siteSettingsForm.siteUrl; if (siteSettingsForm.telegramBotToken !== "") patch.telegramBotToken = siteSettingsForm.telegramBotToken; if (siteSettingsForm.telegramChatId !== "") patch.telegramChatId = siteSettingsForm.telegramChatId; if (siteSettingsForm.depositMin !== "") patch.depositMin = Number(siteSettingsForm.depositMin); if (siteSettingsForm.depositMax !== "") patch.depositMax = Number(siteSettingsForm.depositMax); if (siteSettingsForm.rumahOtpApiKey !== "") patch.rumahOtpApiKey = siteSettingsForm.rumahOtpApiKey; if (siteSettingsForm.simuruApiKey !== "") patch.simuruApiKey = siteSettingsForm.simuruApiKey; if (siteSettingsForm.pakasirProject !== "") patch.pakasirProject = siteSettingsForm.pakasirProject; if (siteSettingsForm.pakasirApiKey !== "") patch.pakasirApiKey = siteSettingsForm.pakasirApiKey; if (siteSettingsForm.cronSecret !== "") patch.cronSecret = siteSettingsForm.cronSecret; if (siteSettingsForm.adminCode !== "") patch.adminCode = siteSettingsForm.adminCode; if (siteSettingsForm.referralBonusPercent !== "") patch.referralBonusPercent = Number(siteSettingsForm.referralBonusPercent); const res = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update", patch }) }); const d = await res.json(); if (!res.ok) { setSiteSettingsMsg(d.error || "Gagal."); return; } setSiteSettingsMsg("Pengaturan disimpan!"); } catch { setSiteSettingsMsg("Gagal menyimpan."); } finally { setSiteSettingsSubmitting(false); } }}>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="text-xs font-medium text-muted">Nama Situs</label>
@@ -2255,6 +2269,40 @@ export default function AdminDashboardPage() {
                 <div>
                   <label className="text-xs font-medium text-muted">Max Deposit (Rp)</label>
                   <input type="number" min="1" value={siteSettingsForm.depositMax} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, depositMax: e.target.value }))} placeholder="1000000 (dari env)" className="mt-1.5 input w-full text-sm" />
+                </div>
+              </div>
+              <div className="mt-5 border-t border-line pt-4">
+                <p className="text-xs font-semibold text-ink mb-1">🔑 API Keys &amp; Konfigurasi</p>
+                <p className="text-xs text-muted mb-3">Isi langsung dari sini — tidak perlu set env variable di Netlify/Vercel. Hanya <code className="bg-line/60 px-1 rounded">MONGODB_URI</code> yang wajib diset di platform.</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-medium text-muted">RumahOTP API Key</label>
+                    <input type="password" value={siteSettingsForm.rumahOtpApiKey} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, rumahOtpApiKey: e.target.value }))} placeholder="Masukkan API key RumahOTP" className="mt-1.5 input w-full text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted">Simuru API Key</label>
+                    <input type="password" value={siteSettingsForm.simuruApiKey} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, simuruApiKey: e.target.value }))} placeholder="Masukkan API key Simuru" className="mt-1.5 input w-full text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted">Pakasir Project ID</label>
+                    <input value={siteSettingsForm.pakasirProject} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, pakasirProject: e.target.value }))} placeholder="Masukkan Pakasir Project ID" className="mt-1.5 input w-full text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted">Pakasir API Key</label>
+                    <input type="password" value={siteSettingsForm.pakasirApiKey} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, pakasirApiKey: e.target.value }))} placeholder="Masukkan API key Pakasir" className="mt-1.5 input w-full text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted">Cron Secret</label>
+                    <input type="password" value={siteSettingsForm.cronSecret} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, cronSecret: e.target.value }))} placeholder="Secret untuk endpoint /api/cron/*" className="mt-1.5 input w-full text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted">Admin Code (Password Login)</label>
+                    <input type="password" value={siteSettingsForm.adminCode} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, adminCode: e.target.value }))} placeholder="Default: arta12123" className="mt-1.5 input w-full text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted">Bonus Referral (%)</label>
+                    <input type="number" min="0" max="100" step="0.5" value={siteSettingsForm.referralBonusPercent} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, referralBonusPercent: e.target.value }))} placeholder="10" className="mt-1.5 input w-full text-sm" />
+                  </div>
                 </div>
               </div>
               {siteSettingsMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{siteSettingsMsg}</p>}

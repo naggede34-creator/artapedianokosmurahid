@@ -13,8 +13,9 @@ export async function GET() {
   const limits = depositLimits();
   try {
     const { maintenance, maintenanceMsg, depositProviders, depositFeePercent, smm } = await getSettings();
+    const simOk = await simuruConfigured();
     const providers = { ...depositProviders };
-    if (!simuruConfigured()) providers.simuru = false;
+    if (!simOk) providers.simuru = false;
     return NextResponse.json({
       maintenance: !!maintenance,
       maintenanceMsg,
@@ -22,7 +23,7 @@ export async function GET() {
       depositFeePercent,
       depositMin: limits.min,
       depositMax: limits.max,
-      smmEnabled: Boolean(smm?.enabled) && simuruConfigured(),
+      smmEnabled: Boolean(smm?.enabled) && simOk,
       ...CHANNELS()
     });
   } catch (err) {
@@ -30,7 +31,7 @@ export async function GET() {
     // Kalau DB bermasalah, jangan sampai malah mengunci seluruh web.
     return NextResponse.json({
       maintenance: false,
-      depositProviders: { simuru: simuruConfigured(), pakasir: true, rumahotp: false },
+      depositProviders: { simuru: await simuruConfigured(), pakasir: true, rumahotp: false },
       depositFeePercent: { simuru: 0, pakasir: 0, rumahotp: 0.7 },
       depositMin: limits.min,
       depositMax: limits.max,

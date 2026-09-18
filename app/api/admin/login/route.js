@@ -12,7 +12,7 @@ export async function POST(req) {
       return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi dalam 5 menit." }, { status: 429 });
     }
 
-    if (!code || String(code) !== getAdminCode()) {
+    if (!code || String(code) !== await getAdminCode()) {
       sendMonitorLog(adminLoginLog({ success: false, ip }));
       return NextResponse.json({ error: "Kode admin salah." }, { status: 401 });
     }

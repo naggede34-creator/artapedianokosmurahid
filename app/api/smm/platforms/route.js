@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const { smm } = await getSettings();
-    if (!smm?.enabled || !simuruConfigured()) {
+    if (!smm?.enabled || !await simuruConfigured()) {
       return NextResponse.json({ enabled: false, items: [] });
     }
     const list = await getSmmPlatforms();

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { depositsCol, usersCol } from "@/lib/db";
 import { cancelTransaction } from "@/lib/pakasir";
 import { cancelDeposit } from "@/lib/rumahotp";
+import { getApiKeys } from "@/lib/apiKeys";
 import { fetchProviderStatus, creditDeposit } from "@/lib/depositService";
 import { sendTelegramNotif, depositCanceledNotif } from "@/lib/telegram";
 
@@ -38,10 +39,14 @@ export async function POST(req) {
 
     // Simuru tidak menyediakan endpoint batal — QRIS-nya kedaluwarsa sendiri.
     // Kalau user tetap membayar setelah membatalkan, cron tetap mengkreditkan saldonya.
-    if (deposit.provider === "pakasir") {
-      cancelTransaction(process.env.PAKASIR_PROJECT, process.env.PAKASIR_APIKEY, orderId, deposit.amount).catch(() => {});
-    } else if (deposit.provider === "rumahotp") {
-      cancelDeposit(process.env.RUMAHOTP_APIKEY, deposit.providerRef || orderId).catch(() => {});
+    if (deposit.provider === "pakasir" || deposit.provider === "rumahotp") {
+      getApiKeys().then(({ pakasirProject, pakasirApiKey, rumahOtp }) => {
+        if (deposit.provider === "pakasir") {
+          cancelTransaction(pakasirProject, pakasirApiKey, orderId, deposit.amount).catch(() => {});
+        } else {
+          cancelDeposit(rumahOtp, deposit.providerRef || orderId).catch(() => {});
+        }
+      }).catch(() => {});
     }
 
     const u = await (await usersCol()).findOne({ token }, { projection: { name: 1 } });

@@ -55,7 +55,7 @@ export async function POST(req) {
     } else if (cmd === "/statistik") {
       await handleStatistik(chatId, users);
     } else if (cmd === "/saldosimuru") {
-      if (!simuruConfigured()) {
+      if (!await simuruConfigured()) {
         await sendMessage(chatId, "SIMURU_APIKEY belum diisi di environment.");
       } else {
         try {
