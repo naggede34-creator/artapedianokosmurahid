@@ -73,7 +73,7 @@ function ProductCard({ product, onBuy }) {
       </div>
 
       {product.description && (
-        <p className="text-xs text-muted line-clamp-2 mb-3 leading-relaxed">{product.description}</p>
+        <p className="text-xs text-muted line-clamp-3 mb-3 leading-relaxed whitespace-pre-line">{product.description}</p>
       )}
 
       <div className="flex items-center justify-between gap-2 mt-auto pt-2 border-t border-line">
@@ -119,8 +119,8 @@ function BuyModal({ product, balance, onClose, onSuccess }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-3xl bg-bg border-2 border-line overflow-hidden"
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-3xl bg-bg border-2 border-line overflow-hidden max-h-[88vh] flex flex-col"
         style={{ boxShadow: "6px 6px 0 0 rgba(0,0,0,0.15)" }}>
         {/* Header */}
         <div className="bg-gradient-to-r from-amber to-amber-bright p-5 text-white">
@@ -128,7 +128,7 @@ function BuyModal({ product, balance, onClose, onSuccess }) {
           <p className="text-lg font-black leading-tight">{product.name}</p>
         </div>
 
-        <div className="p-5">
+        <div className="p-5 overflow-y-auto">
           {!result ? (
             <>
               <div className="space-y-2.5 mb-5">

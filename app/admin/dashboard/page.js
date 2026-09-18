@@ -1783,7 +1783,8 @@ export default function AdminDashboardPage() {
               </div>
               <div className="sm:col-span-2">
                 <label className="text-xs font-medium text-muted">Deskripsi</label>
-                <textarea value={productForm.description} onChange={(e) => setProductForm((f) => ({...f, description: e.target.value}))} placeholder="Deskripsi produk..." rows={2} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber resize-none" />
+                <textarea value={productForm.description} onChange={(e) => setProductForm((f) => ({...f, description: e.target.value}))} placeholder="Deskripsi produk... (Enter untuk baris baru)" rows={4} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+                <p className="text-[10px] text-muted mt-0.5">Tekan Enter untuk baris baru. Formatnya akan ditampilkan ke user.</p>
               </div>
               <div>
                 <label className="text-xs font-medium text-muted">URL Gambar</label>
@@ -1912,7 +1913,8 @@ export default function AdminDashboardPage() {
               </div>
               <div className="sm:col-span-2">
                 <label className="text-xs font-medium text-muted">Deskripsi / Instruksi</label>
-                <textarea value={jobForm.description} onChange={(e) => setJobForm((f) => ({...f, description: e.target.value}))} placeholder="Instruksi yang harus dilakukan pengguna..." rows={3} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber resize-none" />
+                <textarea value={jobForm.description} onChange={(e) => setJobForm((f) => ({...f, description: e.target.value}))} placeholder={"Instruksi yang harus dilakukan user...\nContoh:\n1. Follow akun @artapedia\n2. Like postingan terbaru\n3. Screenshot buktinya"} rows={5} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber font-mono" />
+                <p className="text-[10px] text-muted mt-0.5">Tekan Enter untuk baris baru. Format akan ditampilkan rapi ke user.</p>
               </div>
               <div className="sm:col-span-2">
                 <label className="flex items-center gap-2 cursor-pointer">
