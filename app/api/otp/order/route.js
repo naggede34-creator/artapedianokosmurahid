@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { usersCol, otpOrdersCol } from "@/lib/db";
 import { createOrder, getCountries, toEpochMs } from "@/lib/rumahotp";
-import { sendTelegramNotif, sendTelegramPhoto, otpPurchaseNotif } from "@/lib/telegram";
-import { generateReceiptPng, otpPurchaseParams } from "@/lib/receiptImage";
+import { sendTelegramNotif, otpPurchaseNotif } from "@/lib/telegram";
 import { getSettings } from "@/lib/settings";
 import { logBalance } from "@/lib/ledger";
 
@@ -137,17 +136,6 @@ export async function POST(req) {
       balance: afterDebit.balance
     });
     sendTelegramNotif(purchaseText);
-    generateReceiptPng(otpPurchaseParams({
-      orderId,
-      token,
-      name: user.name,
-      serviceName: finalService,
-      countryName: finalCountry,
-      phoneNumber: data.phone_number || "-",
-      price: sellPrice,
-      balance: afterDebit.balance,
-      operator: operatorName
-    })).then((png) => sendTelegramPhoto(png, purchaseText.slice(0, 800))).catch((err) => console.error("[receipt/otp-purchase]", err?.message || err));
 
     return NextResponse.json({
       orderId,

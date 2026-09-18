@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@/app/providers";
 import SimCard from "@/components/SimCard";
 import AccountInfoModal from "@/components/AccountInfoModal";
@@ -56,13 +56,12 @@ function WarrantyModal({ open, onClose, token }) {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [description, setDescription] = useState("");
-  const [screenshotData, setScreenshotData] = useState(null);
-  const [screenshotName, setScreenshotName] = useState("");
+  const [contactInfo, setContactInfo] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState({ text: "", ok: false });
   const [claims, setClaims] = useState([]);
-  const fileRef = useRef(null);
+  const [tab, setTab] = useState("form"); // "form" | "history"
 
   useEffect(() => {
     if (!open) return;
@@ -75,10 +74,10 @@ function WarrantyModal({ open, onClose, token }) {
     setOrdersLoading(true);
     setSelectedOrder(null);
     setDescription("");
-    setScreenshotData(null);
-    setScreenshotName("");
+    setContactInfo("");
     setPurchasePrice("");
     setMsg({ text: "", ok: false });
+    setTab("form");
 
     const t = encodeURIComponent(token);
     Promise.all([
@@ -97,22 +96,6 @@ function WarrantyModal({ open, onClose, token }) {
 
   const claimedIds = new Set(claims.map((c) => c.orderId));
 
-  function handleFile(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 1_500_000) {
-      setMsg({ text: "Ukuran gambar maks 1.5 MB.", ok: false });
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setScreenshotData(ev.target.result);
-      setScreenshotName(file.name);
-      setMsg({ text: "", ok: false });
-    };
-    reader.readAsDataURL(file);
-  }
-
   async function submit(e) {
     e.preventDefault();
     if (!selectedOrder) { setMsg({ text: "Pilih nokos terlebih dahulu.", ok: false }); return; }
@@ -122,199 +105,206 @@ function WarrantyModal({ open, onClose, token }) {
     setSubmitting(true);
     setMsg({ text: "", ok: false });
     try {
+      const fullDesc = contactInfo.trim()
+        ? `${description.trim()}\n\nKontak/info tambahan: ${contactInfo.trim()}`
+        : description.trim();
+
       const res = await fetch("/api/warranty/claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token,
           orderId: selectedOrder.orderId,
-          description: description.trim(),
-          screenshotData,
+          description: fullDesc,
           purchasePrice: Number(purchasePrice)
         })
       });
       const data = await res.json();
       if (!res.ok) { setMsg({ text: data.error || "Gagal mengirim klaim.", ok: false }); return; }
-      setMsg({ text: "Klaim garansi berhasil dikirim! Admin akan memproses dalam 1x24 jam.", ok: true });
+      setMsg({ text: "Klaim garansi berhasil dikirim! Admin akan memproses dalam 1×24 jam.", ok: true });
       setClaims((prev) => [
         { orderId: selectedOrder.orderId, status: "pending", createdAt: new Date() },
         ...prev
       ]);
       setSelectedOrder(null);
       setDescription("");
-      setScreenshotData(null);
-      setScreenshotName("");
+      setContactInfo("");
       setPurchasePrice("");
+      setTimeout(() => setTab("history"), 1200);
     } finally {
       setSubmitting(false);
     }
   }
 
-  const statusBadge = (s) => {
-    if (s === "approved") return <span className="rounded-full bg-teal-soft px-2 py-0.5 text-[10px] font-semibold text-teal-bright">Disetujui</span>;
-    if (s === "rejected") return <span className="rounded-full bg-rose-soft px-2 py-0.5 text-[10px] font-semibold text-rose">Ditolak</span>;
-    return <span className="rounded-full bg-amber-soft px-2 py-0.5 text-[10px] font-semibold text-amber-bright">Menunggu</span>;
+  const STATUS_CONFIG = {
+    approved: { label: "Disetujui", dot: "bg-teal-bright", cls: "bg-teal-soft text-teal-bright border-teal/30" },
+    rejected: { label: "Ditolak", dot: "bg-rose", cls: "bg-rose-soft text-rose border-rose/30" },
+    pending: { label: "Menunggu", dot: "bg-amber animate-pulse", cls: "bg-amber-soft text-amber-bright border-amber/30" }
   };
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center px-0 sm:px-5">
-      <button
-        aria-label="Tutup"
-        onClick={onClose}
-        className="animate-fade-in absolute inset-0"
-        style={{ background: "rgb(var(--c-ink) / 0.45)" }}
-      />
-      <div className="animate-scale-in relative w-full max-w-lg overflow-hidden rounded-t-2xl sm:rounded-2xl border border-line bg-surface shadow-lift flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="flex items-center justify-between bg-rose px-5 py-4 text-white shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-base">🛡️</span>
-            <p className="text-sm font-semibold">Klaim Garansi Nokos</p>
+      <button aria-label="Tutup" onClick={onClose} className="animate-fade-in absolute inset-0" style={{ background: "rgb(var(--c-ink) / 0.5)" }} />
+      <div className="animate-scale-in relative w-full max-w-lg overflow-hidden rounded-t-3xl sm:rounded-3xl border border-line bg-bg shadow-lift flex flex-col max-h-[92vh]">
+
+        {/* Header gradient */}
+        <div className="shrink-0 bg-gradient-to-br from-rose to-rose/80 px-5 py-5 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 text-xl">🛡️</span>
+              <div>
+                <p className="text-base font-extrabold tracking-tight">Klaim Garansi</p>
+                <p className="text-xs opacity-75 mt-0.5">Nomor bermasalah? Ajukan refund saldo</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 hover:bg-white/25 transition-colors" aria-label="Tutup">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
+            </button>
           </div>
-          <button onClick={onClose} className="press flex h-7 w-7 items-center justify-center rounded-lg hover:bg-white/15" aria-label="Tutup">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </button>
+          {/* Tab pills */}
+          <div className="mt-4 flex gap-2">
+            {[["form", "📝 Ajukan"], ["history", `📋 Riwayat${claims.length ? ` (${claims.length})` : ""}`]].map(([v, l]) => (
+              <button key={v} onClick={() => setTab(v)} className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${tab === v ? "bg-white text-rose" : "bg-white/15 text-white/80 hover:bg-white/25"}`}>{l}</button>
+            ))}
+          </div>
         </div>
 
-        <div className="overflow-y-auto flex-1 p-5 space-y-5">
-          {/* Info */}
-          <div className="rounded-xl border border-amber/30 bg-amber-soft p-3.5 text-xs text-amber-bright">
-            Garansi hanya bisa diklaim <strong>1x per nokos</strong>. Klaim akan diproses admin dalam 1×24 jam. Jika disetujui, saldo dikembalikan sesuai harga beli.
-          </div>
-
-          {/* Riwayat klaim */}
-          {claims.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted mb-2">Riwayat klaim kamu</p>
-              <div className="space-y-1.5">
-                {claims.map((c) => (
-                  <div key={c.orderId} className="flex items-center justify-between rounded-xl border border-line bg-surface2 px-3 py-2.5 text-xs">
-                    <span className="font-mono text-ink truncate max-w-[160px]">#{c.orderId}</span>
-                    {statusBadge(c.status)}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={submit} className="space-y-4">
-            {/* Pilih nokos */}
-            <div>
-              <p className="text-xs font-semibold text-ink mb-2">1. Pilih nokos yang bermasalah</p>
-              {ordersLoading ? (
-                <div className="skeleton h-20 rounded-xl" />
-              ) : orders.length === 0 ? (
-                <p className="text-sm text-muted">Belum ada riwayat nokos.</p>
-              ) : (
-                <div className="max-h-44 overflow-y-auto space-y-1.5 rounded-xl border border-line p-2">
-                  {orders.map((o) => {
-                    const alreadyClaimed = claimedIds.has(o.orderId);
-                    const isSelected = selectedOrder?.orderId === o.orderId;
-                    return (
-                      <button
-                        key={o.orderId}
-                        type="button"
-                        disabled={alreadyClaimed}
-                        onClick={() => {
-                          setSelectedOrder(o);
-                          setPurchasePrice(String(o.price || ""));
-                        }}
-                        className={`w-full text-left rounded-lg px-3 py-2.5 text-xs transition-colors ${
-                          alreadyClaimed
-                            ? "opacity-40 cursor-not-allowed bg-surface2"
-                            : isSelected
-                            ? "border border-rose/50 bg-rose-soft text-rose"
-                            : "border border-transparent hover:border-line bg-surface hover:bg-surface2 text-ink"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-semibold truncate">{o.serviceName} — {o.countryName}</span>
-                          <span className="shrink-0 font-mono text-[10px] text-muted">#{o.orderId?.slice(-8)}</span>
-                        </div>
-                        <div className="mt-0.5 flex items-center gap-2 text-muted">
-                          <span>{o.phoneNumber || "-"}</span>
-                          <span>·</span>
-                          <span>{rupiah(o.price)}</span>
-                          {alreadyClaimed && <span className="text-rose ml-auto">Sudah diklaim</span>}
-                        </div>
-                      </button>
-                    );
-                  })}
+        <div className="overflow-y-auto flex-1 p-5">
+          {tab === "history" ? (
+            <div className="space-y-3">
+              {claims.length === 0 ? (
+                <div className="py-10 text-center">
+                  <p className="text-4xl mb-2">📭</p>
+                  <p className="text-sm font-semibold text-ink">Belum ada klaim</p>
+                  <p className="text-xs text-muted mt-1">Klaim yang kamu ajukan akan muncul di sini.</p>
                 </div>
-              )}
+              ) : claims.map((c) => {
+                const cfg = STATUS_CONFIG[c.status] || STATUS_CONFIG.pending;
+                return (
+                  <div key={c.orderId} className={`rounded-2xl border p-4 ${cfg.cls}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`h-2 w-2 rounded-full shrink-0 ${cfg.dot}`} />
+                        <span className="text-xs font-black">{cfg.label}</span>
+                      </div>
+                      <span className="font-mono text-[10px] opacity-70">#{c.orderId?.slice(-10)}</span>
+                    </div>
+                    {c.adminNote && <p className="mt-2 text-xs opacity-80 bg-white/30 rounded-xl px-3 py-2">💬 {c.adminNote}</p>}
+                    <p className="text-[10px] opacity-60 mt-2">{c.createdAt ? new Date(c.createdAt).toLocaleDateString("id-ID", { day:"2-digit", month:"short", year:"numeric" }) : ""}</p>
+                  </div>
+                );
+              })}
             </div>
+          ) : (
+            <form onSubmit={submit} className="space-y-5">
+              {/* Info */}
+              <div className="flex gap-3 rounded-2xl bg-amber-soft border border-amber/30 p-3.5">
+                <span className="text-lg shrink-0">⚠️</span>
+                <p className="text-xs text-amber-bright leading-relaxed">Garansi <strong>1x per nokos</strong>. Diproses admin dalam <strong>1×24 jam</strong>. Jika disetujui, saldo dikembalikan otomatis.</p>
+              </div>
 
-            {/* Deskripsi */}
-            <div>
-              <label className="text-xs font-semibold text-ink">2. Deskripsi masalah</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Jelaskan masalahnya, misal: nomor tidak menerima SMS / kode OTP tidak masuk..."
-                rows={3}
-                maxLength={1000}
-                required
-                className="mt-1.5 w-full rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-sm text-ink outline-none focus:border-rose"
-              />
-            </div>
-
-            {/* Screenshot */}
-            <div>
-              <label className="text-xs font-semibold text-ink">3. Screenshot bukti masalah (opsional, maks 1.5 MB)</label>
-              <div className="mt-1.5 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="btn-ghost px-3 py-2 text-xs"
-                >
-                  {screenshotName ? `✓ ${screenshotName}` : "Pilih gambar"}
-                </button>
-                {screenshotData && (
-                  <button
-                    type="button"
-                    onClick={() => { setScreenshotData(null); setScreenshotName(""); }}
-                    className="text-xs text-rose hover:underline"
-                  >
-                    Hapus
-                  </button>
+              {/* Step 1 - Pilih nokos */}
+              <div>
+                <div className="flex items-center gap-2 mb-2.5">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose text-white text-[10px] font-black">1</span>
+                  <p className="text-xs font-black text-ink">Pilih nokos yang bermasalah</p>
+                </div>
+                {ordersLoading ? (
+                  <div className="skeleton h-20 rounded-2xl" />
+                ) : orders.length === 0 ? (
+                  <p className="text-sm text-muted py-3 text-center">Belum ada riwayat nokos.</p>
+                ) : (
+                  <div className="max-h-44 overflow-y-auto space-y-1.5 rounded-2xl border border-line bg-surface p-2">
+                    {orders.map((o) => {
+                      const alreadyClaimed = claimedIds.has(o.orderId);
+                      const isSelected = selectedOrder?.orderId === o.orderId;
+                      return (
+                        <button key={o.orderId} type="button" disabled={alreadyClaimed}
+                          onClick={() => { setSelectedOrder(o); setPurchasePrice(String(o.price || "")); }}
+                          className={`w-full text-left rounded-xl px-3 py-2.5 text-xs transition-all ${
+                            alreadyClaimed ? "opacity-40 cursor-not-allowed bg-surface2" :
+                            isSelected ? "bg-rose-soft border-2 border-rose/50 text-rose" :
+                            "border border-transparent hover:border-rose/20 hover:bg-rose-soft/30 text-ink"
+                          }`}>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold truncate">{o.serviceName} — {o.countryName}</span>
+                            <span className="shrink-0 font-mono text-[10px] text-muted">#{o.orderId?.slice(-8)}</span>
+                          </div>
+                          <div className="mt-0.5 flex items-center gap-2 text-muted">
+                            <span>{o.phoneNumber || "—"}</span>·<span className="font-semibold">{rupiah(o.price)}</span>
+                            {alreadyClaimed && <span className="text-rose ml-auto font-bold">✓ Diklaim</span>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
-              {screenshotData && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={screenshotData} alt="Preview" className="mt-2 max-h-32 rounded-lg object-contain border border-line" />
+
+              {/* Step 2 - Harga beli */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose text-white text-[10px] font-black">2</span>
+                  <label className="text-xs font-black text-ink">Harga beli nokos (Rp)</label>
+                </div>
+                <div className="flex items-center rounded-2xl border border-line bg-surface focus-within:border-rose overflow-hidden">
+                  <span className="pl-4 text-sm font-bold text-muted">Rp</span>
+                  <input type="number" min="1" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)}
+                    placeholder="Contoh: 3000" required
+                    className="flex-1 bg-transparent px-3 py-3 text-sm text-ink outline-none tabular-nums" />
+                </div>
+              </div>
+
+              {/* Step 3 - Deskripsi */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose text-white text-[10px] font-black">3</span>
+                  <label className="text-xs font-black text-ink">Detail masalah</label>
+                </div>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Jelaskan masalahnya secara detail. Contoh: Nomor tidak menerima SMS OTP sama sekali setelah ditunggu 15 menit. Layanan: WhatsApp."
+                  rows={4} maxLength={1000} required
+                  className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-rose resize-none leading-relaxed" />
+                <p className="text-[10px] text-muted mt-1 text-right">{description.length}/1000</p>
+              </div>
+
+              {/* Step 4 - Info kontak tambahan (opsional) */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-surface2 text-muted text-[10px] font-black border border-line">4</span>
+                  <label className="text-xs font-black text-ink">Info tambahan <span className="text-muted font-normal">(opsional)</span></label>
+                </div>
+                <input value={contactInfo} onChange={(e) => setContactInfo(e.target.value)}
+                  placeholder="Contoh: Telegram @username, atau bukti pendukung lainnya (link/teks)"
+                  className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-rose" />
+              </div>
+
+              {/* Selected summary */}
+              {selectedOrder && (
+                <div className="rounded-2xl bg-rose-soft border border-rose/20 p-4">
+                  <p className="text-xs font-black text-rose mb-2">📋 Ringkasan Klaim</p>
+                  <div className="space-y-1.5 text-xs text-rose/80">
+                    <div className="flex justify-between"><span>Layanan</span><span className="font-bold">{selectedOrder.serviceName}</span></div>
+                    <div className="flex justify-between"><span>Nomor</span><span className="font-mono font-bold">{selectedOrder.phoneNumber || "—"}</span></div>
+                    <div className="flex justify-between"><span>Refund jika disetujui</span><span className="font-extrabold text-rose">{rupiah(Number(purchasePrice) || selectedOrder.price)}</span></div>
+                  </div>
+                </div>
               )}
-            </div>
 
-            {/* Harga beli */}
-            <div>
-              <label className="text-xs font-semibold text-ink">4. Harga beli nokos (Rp)</label>
-              <input
-                type="number"
-                min="1"
-                value={purchasePrice}
-                onChange={(e) => setPurchasePrice(e.target.value)}
-                placeholder="Contoh: 3000"
-                required
-                className="mt-1.5 w-full rounded-xl border border-line bg-surface2 px-3.5 py-2.5 text-sm text-ink outline-none focus:border-rose"
-              />
-            </div>
+              {msg.text && (
+                <div className={`rounded-2xl border p-3.5 text-xs font-semibold flex items-start gap-2 ${msg.ok ? "bg-teal-soft border-teal/30 text-teal-bright" : "bg-rose-soft border-rose/30 text-rose"}`}>
+                  <span>{msg.ok ? "✅" : "❌"}</span>
+                  <span>{msg.text}</span>
+                </div>
+              )}
 
-            {msg.text && (
-              <p className={`text-xs font-medium ${msg.ok ? "text-teal-bright" : "text-rose"}`}>{msg.text}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting || !selectedOrder}
-              className="w-full rounded-xl bg-rose hover:opacity-90 px-5 py-3 text-sm font-bold text-white shadow-3d disabled:opacity-50 transition-opacity"
-            >
-              {submitting ? "Mengirim..." : "Kirim Klaim Garansi"}
-            </button>
-          </form>
+              <button type="submit" disabled={submitting || !selectedOrder}
+                className="w-full rounded-2xl bg-rose py-3.5 text-sm font-extrabold text-white transition-all active:scale-95 disabled:opacity-50"
+                style={{ boxShadow: "0 6px 0 0 rgba(180,0,0,0.3)" }}>
+                {submitting ? "⏳ Mengirim klaim..." : "🛡️ Kirim Klaim Garansi"}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
@@ -338,6 +328,21 @@ export default function DashboardPage() {
   const [targetInput, setTargetInput] = useState("");
   const [achievements, setAchievements] = useState(null);
   const [recentOrders, setRecentOrders] = useState(null);
+  const [dashboardBanners, setDashboardBanners] = useState([]);
+  const [tickets, setTickets] = useState([]);
+  const [ticketsLoaded, setTicketsLoaded] = useState(false);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [ticketForm, setTicketForm] = useState({ subject: "", message: "" });
+  const [ticketSubmitting, setTicketSubmitting] = useState(false);
+  const [ticketMsg, setTicketMsg] = useState("");
+  const [expandedTicket, setExpandedTicket] = useState(null);
+  const [ticketReply, setTicketReply] = useState("");
+  const [ticketReplyLoading, setTicketReplyLoading] = useState(false);
+  const [showTicketForm, setShowTicketForm] = useState(false);
+  const [apiKeyInfo, setApiKeyInfo] = useState(null);
+  const [apiKeyGenerating, setApiKeyGenerating] = useState(false);
+  const [newApiKey, setNewApiKey] = useState(null);
+  const [apiKeyConfirm, setApiKeyConfirm] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -363,6 +368,14 @@ export default function DashboardPage() {
       .then((r) => r.json())
       .then((d) => setRecentOrders(Array.isArray(d.items) ? d.items.slice(0, 5) : []))
       .catch(() => setRecentOrders([]));
+    fetch(`/api/banners/public?placement=dashboard`)
+      .then((r) => r.json())
+      .then((d) => setDashboardBanners(Array.isArray(d.items) ? d.items : []))
+      .catch(() => {});
+    fetch(`/api/apikey?token=${t}`)
+      .then((r) => r.json())
+      .then((d) => setApiKeyInfo(d))
+      .catch(() => {});
   }, [token]);
 
   useEffect(() => {
@@ -407,6 +420,89 @@ export default function DashboardPage() {
     setBalanceTarget(val);
     try { localStorage.setItem("artapedia_balance_target", String(val)); } catch {}
     setEditingTarget(false);
+  }
+
+  async function loadTickets() {
+    if (!token || ticketsLoading) return;
+    setTicketsLoading(true);
+    try {
+      const r = await fetch(`/api/support/tickets?token=${encodeURIComponent(token)}`);
+      const d = await r.json();
+      setTickets(Array.isArray(d.items) ? d.items : []);
+      setTicketsLoaded(true);
+    } catch {
+    } finally {
+      setTicketsLoading(false);
+    }
+  }
+
+  async function submitTicket(e) {
+    e.preventDefault();
+    if (!token || ticketSubmitting) return;
+    setTicketSubmitting(true);
+    setTicketMsg("");
+    try {
+      const r = await fetch("/api/support/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, subject: ticketForm.subject, message: ticketForm.message }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        setTicketMsg("Tiket berhasil dibuat! Admin akan merespons segera.");
+        setTicketForm({ subject: "", message: "" });
+        setShowTicketForm(false);
+        loadTickets();
+      } else {
+        setTicketMsg(d.error || "Gagal membuat tiket.");
+      }
+    } catch {
+      setTicketMsg("Terjadi kesalahan. Coba lagi.");
+    } finally {
+      setTicketSubmitting(false);
+    }
+  }
+
+  async function replyTicket(ticketId) {
+    if (!token || !ticketReply.trim() || ticketReplyLoading) return;
+    setTicketReplyLoading(true);
+    try {
+      const r = await fetch("/api/support/tickets/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, ticketId, message: ticketReply }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        setTicketReply("");
+        loadTickets();
+      }
+    } catch {
+    } finally {
+      setTicketReplyLoading(false);
+    }
+  }
+
+  async function generateApiKey() {
+    if (!token || apiKeyGenerating) return;
+    setApiKeyGenerating(true);
+    setNewApiKey(null);
+    try {
+      const r = await fetch("/api/apikey", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        setNewApiKey(d.apiKey);
+        setApiKeyInfo({ hasKey: true, maskedKey: `${d.apiKey.slice(0, 4)}${"•".repeat(d.apiKey.length - 8)}${d.apiKey.slice(-4)}` });
+      }
+    } catch {
+    } finally {
+      setApiKeyGenerating(false);
+      setApiKeyConfirm(false);
+    }
   }
 
   useEffect(() => {
@@ -784,6 +880,187 @@ export default function DashboardPage() {
             )}
           </ol>
         </div>
+      </div>
+
+      {/* Dashboard Banners */}
+      {dashboardBanners.length > 0 && (
+        <div className="mt-5 flex gap-3 overflow-x-auto pb-1 scrollbar-none">
+          {dashboardBanners.map((b) => (
+            b.linkUrl ? (
+              <a key={b._id} href={b.linkUrl} target="_blank" rel="noopener noreferrer"
+                className="shrink-0 rounded-2xl overflow-hidden border border-line hover:border-rose/40 transition-all">
+                <img src={b.imageUrl} alt={b.title || "Banner"} className="h-20 w-auto max-w-xs object-cover" />
+              </a>
+            ) : (
+              <div key={b._id} className="shrink-0 rounded-2xl overflow-hidden border border-line">
+                <img src={b.imageUrl} alt={b.title || "Banner"} className="h-20 w-auto max-w-xs object-cover" />
+              </div>
+            )
+          ))}
+        </div>
+      )}
+
+      {/* API Key Section */}
+      <div className="mt-5 card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-base font-bold text-ink">🔑 API Key Developer</h2>
+            <p className="text-xs text-muted mt-0.5">Akses programatik ke akun kamu</p>
+          </div>
+          <Link href="/api-docs" className="text-xs text-rose font-semibold hover:underline">Docs →</Link>
+        </div>
+        {apiKeyInfo === null ? (
+          <div className="skeleton h-10 rounded-xl" />
+        ) : apiKeyInfo.hasKey ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 rounded-xl bg-surface2 border border-line px-4 py-3">
+              <span className="font-mono text-sm text-ink flex-1 tracking-wider">{apiKeyInfo.maskedKey}</span>
+              <span className="text-xs text-success font-semibold">Aktif</span>
+            </div>
+            {newApiKey && (
+              <div className="rounded-xl bg-teal-soft border border-teal/30 p-3">
+                <p className="text-xs text-teal-bright font-bold mb-1.5">⚠️ Simpan API key ini sekarang — tidak akan ditampilkan lagi!</p>
+                <p className="font-mono text-xs text-ink bg-surface rounded-lg px-3 py-2 border border-line break-all select-all">{newApiKey}</p>
+              </div>
+            )}
+            {apiKeyConfirm ? (
+              <div className="rounded-xl bg-amber-soft border border-amber/30 p-3">
+                <p className="text-xs text-amber-bright font-semibold mb-2">API key lama akan tidak berlaku. Lanjutkan?</p>
+                <div className="flex gap-2">
+                  <button onClick={generateApiKey} disabled={apiKeyGenerating}
+                    className="flex-1 rounded-lg bg-rose py-2 text-xs font-bold text-white disabled:opacity-50">
+                    {apiKeyGenerating ? "⏳ Generating..." : "Ya, Generate Ulang"}
+                  </button>
+                  <button onClick={() => setApiKeyConfirm(false)}
+                    className="flex-1 rounded-lg border border-line py-2 text-xs font-bold text-ink">
+                    Batal
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => setApiKeyConfirm(true)}
+                className="w-full rounded-xl border border-line py-2.5 text-xs font-bold text-muted hover:text-ink hover:border-rose/40 transition-all">
+                🔄 Generate Ulang API Key
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted">Kamu belum memiliki API key. Generate sekarang untuk mulai integrasi.</p>
+            <button onClick={generateApiKey} disabled={apiKeyGenerating}
+              className="w-full rounded-xl bg-rose py-3 text-sm font-bold text-white disabled:opacity-50 transition-all active:scale-95"
+              style={{ boxShadow: "0 4px 0 0 rgba(180,0,0,0.25)" }}>
+              {apiKeyGenerating ? "⏳ Generating..." : "🔑 Generate API Key"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Support Tickets */}
+      <div className="mt-5 card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-base font-bold text-ink">🎫 Tiket Support</h2>
+            <p className="text-xs text-muted mt-0.5">Butuh bantuan? Hubungi tim kami</p>
+          </div>
+          <button onClick={() => { setShowTicketForm((v) => !v); if (!ticketsLoaded) loadTickets(); }}
+            className="text-xs font-bold text-white bg-rose rounded-lg px-3 py-1.5 active:scale-95 transition-all">
+            + Buat Tiket
+          </button>
+        </div>
+
+        {showTicketForm && (
+          <form onSubmit={submitTicket} className="mb-4 space-y-3 rounded-2xl bg-surface2 border border-line p-4">
+            <h3 className="text-sm font-black text-ink">Buat Tiket Baru</h3>
+            <input value={ticketForm.subject} onChange={(e) => setTicketForm((f) => ({ ...f, subject: e.target.value }))}
+              placeholder="Subjek / judul masalah" required maxLength={200}
+              className="w-full rounded-xl border border-line bg-surface px-4 py-2.5 text-sm text-ink outline-none focus:border-rose" />
+            <textarea value={ticketForm.message} onChange={(e) => setTicketForm((f) => ({ ...f, message: e.target.value }))}
+              placeholder="Jelaskan masalah kamu secara detail..." rows={4} required maxLength={2000}
+              className="w-full rounded-xl border border-line bg-surface px-4 py-2.5 text-sm text-ink outline-none focus:border-rose resize-none" />
+            {ticketMsg && (
+              <p className={`text-xs font-semibold ${ticketMsg.includes("berhasil") ? "text-teal-bright" : "text-rose"}`}>{ticketMsg}</p>
+            )}
+            <div className="flex gap-2">
+              <button type="submit" disabled={ticketSubmitting}
+                className="flex-1 rounded-xl bg-rose py-2.5 text-sm font-bold text-white disabled:opacity-50 active:scale-95 transition-all">
+                {ticketSubmitting ? "⏳ Mengirim..." : "Kirim Tiket"}
+              </button>
+              <button type="button" onClick={() => setShowTicketForm(false)}
+                className="rounded-xl border border-line px-4 py-2.5 text-sm font-bold text-ink hover:bg-surface2 transition-all">
+                Batal
+              </button>
+            </div>
+          </form>
+        )}
+
+        {!ticketsLoaded ? (
+          <button onClick={loadTickets} disabled={ticketsLoading}
+            className="w-full rounded-xl border border-line py-3 text-sm text-muted hover:text-ink hover:border-rose/40 transition-all">
+            {ticketsLoading ? "⏳ Memuat tiket..." : "📋 Lihat riwayat tiket saya"}
+          </button>
+        ) : tickets.length === 0 ? (
+          <p className="text-sm text-muted text-center py-4">Belum ada tiket. Buat tiket jika ada pertanyaan atau masalah.</p>
+        ) : (
+          <div className="space-y-3">
+            {tickets.map((t) => {
+              const statusColor = t.status === "open" ? "text-amber-bright bg-amber-soft border-amber/30"
+                : t.status === "answered" ? "text-teal-bright bg-teal-soft border-teal/30"
+                : "text-muted bg-surface2 border-line";
+              const isExpanded = expandedTicket === t.ticketId;
+              return (
+                <div key={t.ticketId} className="rounded-2xl border border-line overflow-hidden">
+                  <button onClick={() => setExpandedTicket(isExpanded ? null : t.ticketId)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface2 transition-all">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusColor} shrink-0 uppercase`}>
+                          {t.status === "open" ? "Terbuka" : t.status === "answered" ? "Dijawab" : "Ditutup"}
+                        </span>
+                        <span className="font-semibold text-sm text-ink truncate">{t.subject}</span>
+                      </div>
+                      <p className="text-[11px] text-muted mt-0.5">{t.messageCount} pesan · {new Date(t.updatedAt).toLocaleDateString("id-ID")}</p>
+                    </div>
+                    <span className="text-muted text-lg shrink-0">{isExpanded ? "▲" : "▼"}</span>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="border-t border-line bg-surface2 p-4 space-y-3">
+                      <div className="max-h-64 overflow-y-auto space-y-2">
+                        {(t.messages || []).map((m, i) => (
+                          <div key={i} className={`flex ${m.from === "user" ? "justify-end" : "justify-start"}`}>
+                            <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs ${
+                              m.from === "user"
+                                ? "bg-rose text-white rounded-br-sm"
+                                : "bg-surface border border-line text-ink rounded-bl-sm"
+                            }`}>
+                              <p className="leading-relaxed">{m.text}</p>
+                              <p className={`text-[10px] mt-1 ${m.from === "user" ? "text-white/60" : "text-muted"}`}>
+                                {m.from === "user" ? "Kamu" : "Admin"} · {new Date(m.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {t.status !== "closed" && (
+                        <div className="flex gap-2">
+                          <input value={ticketReply} onChange={(e) => setTicketReply(e.target.value)}
+                            placeholder="Tulis balasan..." maxLength={2000}
+                            className="flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-xs text-ink outline-none focus:border-rose"
+                            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); replyTicket(t.ticketId); } }} />
+                          <button onClick={() => replyTicket(t.ticketId)} disabled={ticketReplyLoading || !ticketReply.trim()}
+                            className="rounded-xl bg-rose px-4 py-2 text-xs font-bold text-white disabled:opacity-50 active:scale-95 transition-all">
+                            Kirim
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <AccountInfoModal open={modal} onClose={() => setModal(false)} token={token} balance={balance} joinedAt={joinedAt} />

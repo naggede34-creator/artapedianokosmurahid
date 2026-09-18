@@ -22,7 +22,6 @@ export async function GET(req) {
       countryName: c.countryName,
       phoneNumber: c.phoneNumber,
       description: c.description,
-      screenshotData: c.screenshotData || null,
       purchasePrice: c.purchasePrice,
       status: c.status,
       adminNote: c.adminNote || "",
