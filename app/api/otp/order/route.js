@@ -19,7 +19,9 @@ async function resolveBasePrice(serviceId, numberId, providerId) {
   if (!p) return null;
   const price = Number(p.price);
   if (!Number.isFinite(price) || price <= 0) return null;
-  if (p.available === false || p.stock === 0) return { price, outOfStock: true, country };
+  // Tidak blokir berdasarkan data stok dari endpoint countries — data ini
+  // sering basi atau tidak akurat untuk WA. Biarkan createOrder yang handle.
+  if (p.available === false && p.stock === 0) return { price, outOfStock: true, country };
   return { price, outOfStock: false, country };
 }
 

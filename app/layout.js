@@ -1,4 +1,4 @@
-import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono, Bangers } from "next/font/google";
 import "./globals.css";
 import { UserProvider, ThemeProvider } from "./providers";
 import SiteChrome from "@/components/SiteChrome";
@@ -13,9 +13,6 @@ const themeInitScript = `
 })();
 `;
 
-// Plus Jakarta Sans: huruf yang dirancang untuk identitas kota Jakarta — pas untuk
-// produk lokal. JetBrains Mono khusus untuk data yang harus dibaca persis
-// (kode OTP, kode akun, ID transaksi).
 const sans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-body",
@@ -23,23 +20,24 @@ const sans = Plus_Jakarta_Sans({
   display: "swap"
 });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", weight: ["500", "600"], display: "swap" });
+const bangers = Bangers({ subsets: ["latin"], variable: "--font-display", weight: ["400"], display: "swap" });
 
 export const metadata = {
-  title: "Artapedia — Nokos, Suntik Sosmed & Deposit QRIS Otomatis",
+  title: "Artapedia — Nokos & Deposit QRIS Otomatis",
   description:
-    "Beli nomor OTP (nokos) untuk WhatsApp, Telegram, Google dan ratusan layanan lain, suntik followers/likes/views, dan isi saldo otomatis via QRIS. Diproses 24 jam."
+    "Beli nomor OTP (nokos) untuk WhatsApp, Telegram, Google dan ratusan layanan lain, dan isi saldo otomatis via QRIS. Diproses 24 jam."
 };
 
 export const viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F4F7FC" },
-    { media: "(prefers-color-scheme: dark)", color: "#070C1A" }
+    { media: "(prefers-color-scheme: light)", color: "#FFF8DC" },
+    { media: "(prefers-color-scheme: dark)", color: "#120A28" }
   ]
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id" className={`${sans.variable} ${mono.variable}`} style={{ "--font-display": "var(--font-body)" }} suppressHydrationWarning>
+    <html lang="id" className={`${sans.variable} ${mono.variable} ${bangers.variable}`} suppressHydrationWarning>
       <head>
         <meta httpEquiv="Cache-Control" content="no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />

@@ -40,10 +40,10 @@ function Bars({ data, keyName, className }) {
 
 const shortcuts = [
   { href: "/otp", label: "Beli nokos", icon: Icon.phone },
-  { href: "/suntik", label: "Suntik sosmed", icon: Icon.rocket },
   { href: "/deposit", label: "Isi saldo", icon: Icon.qris },
   { href: "/transfer", label: "Transfer", icon: Icon.transfer },
   { href: "/mutasi", label: "Mutasi", icon: Icon.ledger },
+  { href: "/misi", label: "Misi & Poin", icon: Icon.star },
   { href: "/referral", label: "Undang teman", icon: Icon.gift }
 ];
 
