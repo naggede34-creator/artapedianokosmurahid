@@ -147,7 +147,7 @@ export async function POST(req) {
       price: sellPrice,
       balance: afterDebit.balance,
       operator: operatorName
-    })).then((png) => sendTelegramPhoto(png, purchaseText.slice(0, 800))).catch(() => {});
+    })).then((png) => sendTelegramPhoto(png, purchaseText.slice(0, 800))).catch((err) => console.error("[receipt/otp-purchase]", err?.message || err));
 
     return NextResponse.json({
       orderId,

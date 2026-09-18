@@ -17,7 +17,8 @@ export async function POST(req) {
           token: existing.token,
           balance: existing.balance,
           name: existing.name || null,
-          createdAt: existing.createdAt || null
+          createdAt: existing.createdAt || null,
+          tourDone: existing.tourDone === true
         });
       }
       return NextResponse.json({ error: "Kode akun tidak ditemukan." }, { status: 404 });
@@ -60,7 +61,7 @@ export async function POST(req) {
     sendTelegramNotif(newUserNotif({ token, referredBy }));
     sendMonitorLog(userLoginLog({ token, isNew: true }));
 
-    return NextResponse.json({ token, balance: 0, createdAt });
+    return NextResponse.json({ token, balance: 0, createdAt, tourDone: false });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Terjadi kesalahan server." }, { status: 500 });

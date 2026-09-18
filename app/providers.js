@@ -48,6 +48,7 @@ export function UserProvider({ children }) {
   const [balance, setBalance] = useState(0);
   const [name, setName] = useState(null);
   const [joinedAt, setJoinedAt] = useState(null);
+  const [tourDone, setTourDone] = useState(false);
   const [ready, setReady] = useState(false);
 
   const init = useCallback(async (existingToken, ref) => {
@@ -65,6 +66,7 @@ export function UserProvider({ children }) {
       setBalance(data.balance);
       setName(data.name || null);
       setJoinedAt(data.createdAt || null);
+      setTourDone(data.tourDone === true);
       return data;
     }
     throw new Error(data.error || "Gagal memuat akun.");
@@ -114,9 +116,21 @@ export function UserProvider({ children }) {
     [token]
   );
 
+  const completeTour = useCallback(async () => {
+    setTourDone(true);
+    try { localStorage.setItem("artapedia_tour_done", "1"); } catch {}
+    if (token) {
+      fetch("/api/user/tour-done", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      }).catch(() => {});
+    }
+  }, [token]);
+
   return (
     <UserContext.Provider
-      value={{ token, balance, name, joinedAt, ready, setBalance, refreshBalance, restoreToken, updateName }}
+      value={{ token, balance, name, joinedAt, tourDone, ready, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
     >
       {children}
     </UserContext.Provider>

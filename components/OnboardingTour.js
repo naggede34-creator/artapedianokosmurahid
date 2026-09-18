@@ -35,7 +35,7 @@ const STEPS = [
 ];
 
 export default function OnboardingTour({ onDone }) {
-  const { name, updateName, token } = useUser();
+  const { name, updateName, completeTour } = useUser();
   const [step, setStep] = useState(0);
   const [inputName, setInputName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -72,7 +72,7 @@ export default function OnboardingTour({ onDone }) {
   }
 
   function finish() {
-    try { localStorage.setItem(TOUR_KEY, "1"); } catch {}
+    completeTour?.();
     onDone?.();
   }
 
@@ -171,22 +171,27 @@ export default function OnboardingTour({ onDone }) {
   );
 }
 
-// Hook: returns true if tour should be shown (new user, hasn't completed tour)
+// Hook: returns [show, hideFn]. Tour shows once per user (server-side flag).
 export function useShouldShowTour() {
-  const { ready, joinedAt } = useUser();
+  const { ready, tourDone, joinedAt } = useUser();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
     if (!ready) return;
+    // Server-side flag: if tourDone is true, never show
+    if (tourDone) {
+      try { localStorage.setItem(TOUR_KEY, "1"); } catch {}
+      return;
+    }
+    // Also check localStorage for instant response without waiting for server
     try {
-      const done = localStorage.getItem(TOUR_KEY);
-      if (done) return;
-      // Show for users created within last 7 days OR no joinedAt (very new)
-      if (!joinedAt) { setShow(true); return; }
-      const age = Date.now() - new Date(joinedAt).getTime();
-      if (age < 7 * 24 * 60 * 60 * 1000) setShow(true);
+      if (localStorage.getItem(TOUR_KEY)) return;
     } catch {}
-  }, [ready, joinedAt]);
+    // Show for new accounts (created within last 30 days) or accounts with no joinedAt
+    if (!joinedAt) { setShow(true); return; }
+    const age = Date.now() - new Date(joinedAt).getTime();
+    if (age < 30 * 24 * 60 * 60 * 1000) setShow(true);
+  }, [ready, tourDone, joinedAt]);
 
   return [show, () => setShow(false)];
 }

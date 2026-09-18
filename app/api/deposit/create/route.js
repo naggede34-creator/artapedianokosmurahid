@@ -129,7 +129,35 @@ export async function POST(req) {
         return NextResponse.json({ error: "Gagal membuat QRIS Pakasir, coba metode lain." }, { status: 400 });
       }
     } else {
-      const result = await createRumahOtpDeposit(process.env.RUMAHOTP_APIKEY, { amount: amt, paymentId: "qris" });
+      let result;
+      try {
+        result = await createRumahOtpDeposit(process.env.RUMAHOTP_APIKEY, { amount: amt, paymentId: "qris" });
+      } catch (err) {
+        const errData = err?.response?.data;
+        console.error("[deposit/create] rumahotp request error:", err?.response?.status, errData || err?.message);
+        const status = err?.response?.status;
+        if (status === 401 || (status && status >= 500)) {
+          sendTelegramNotif(providerAlertNotif({ provider: "RumahOTP", action: "Buat deposit QRIS", message: err.message }));
+        }
+        return NextResponse.json(
+          { error: errData?.message || err?.message || "Gagal membuat pembayaran RumahOTP, coba metode lain." },
+          { status: 400 }
+        );
+      }
+
+      // Detect soft errors: API returns 200 but with error body
+      const isSoftError =
+        result?.success === false ||
+        result?.status === false ||
+        (result?.message && !result?.data);
+      if (isSoftError) {
+        console.error("[deposit/create] rumahotp soft error:", JSON.stringify(result));
+        return NextResponse.json(
+          { error: result?.message || result?.error || "Gagal membuat pembayaran RumahOTP, coba metode lain." },
+          { status: 400 }
+        );
+      }
+
       const data = result?.data || result;
       qrisString = pickField(data, ["qr_string", "qris", "payment_number", "qris_string", "qr_code", "qris_content"]);
       qrImage = asImageSrc(pickField(data, ["qr_image", "qr_image_url"]));
@@ -147,7 +175,11 @@ export async function POST(req) {
       }
       if (totalAmount === null) totalAmount = amt;
       if (!qrisString && !qrImage && !paymentUrl) {
-        return NextResponse.json({ error: data?.message || "Gagal membuat pembayaran RumahOTP, coba metode lain." }, { status: 400 });
+        console.error("[deposit/create] rumahotp missing qris fields, full response:", JSON.stringify(result));
+        return NextResponse.json(
+          { error: data?.message || result?.message || "Gagal membuat pembayaran RumahOTP, coba metode lain." },
+          { status: 400 }
+        );
       }
     }
 
@@ -184,7 +216,7 @@ export async function POST(req) {
     generateReceiptPng(depositPendingParams({
       orderId, token, name: user.name, provider: chosen,
       amount: amt, fee: adminFee, total: totalAmount, expiredAt
-    })).then((png) => sendTelegramPhoto(png, pendingText.slice(0, 800))).catch(() => {});
+    })).then((png) => sendTelegramPhoto(png, pendingText.slice(0, 800))).catch((err) => console.error("[receipt/deposit-pending]", err?.message || err));
 
     return NextResponse.json({
       orderId,
