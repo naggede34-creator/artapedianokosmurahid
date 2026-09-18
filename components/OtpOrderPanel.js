@@ -3,6 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 
 const CANCEL_COOLDOWN_MS = 3 * 60 * 1000;
+const AUTO_TRY_OTHER_MS = 120 * 1000; // 2 menit → muncul tombol "Coba Nomor Lain"
+
+const WAITING_MSGS = [
+  "Menunggu kode OTP masuk…",
+  "Lagi ngecek inbox nomor…",
+  "Hampir masuk nih! Sabar ya…",
+  "Sistem lagi standby…",
+  "On the way! Tunggu sebentar…"
+];
 
 function fmtCountdown(ms) {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -36,8 +45,13 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
   const [replacing, setReplacing] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
+  const [waitingMsgIdx, setWaitingMsgIdx] = useState(0);
   const pollRef = useRef(null);
   const tickRef = useRef(null);
+  const msgRef = useRef(null);
+
+  const waitElapsedMs = now - new Date(order.createdAt).getTime();
+  const showTryOther = !status.otpCode && !refunded && waitElapsedMs > AUTO_TRY_OTHER_MS && status.status === "pending";
 
   const isFinal = ["completed", "received", "done", "canceled", "expired"].includes(status.status);
 
@@ -64,6 +78,15 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
     return () => clearInterval(pollRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeOrder.orderId, token, isFinal]);
+
+  // Rotate waiting messages
+  useEffect(() => {
+    if (isFinal || status.otpCode) return undefined;
+    msgRef.current = setInterval(() => {
+      setWaitingMsgIdx((i) => (i + 1) % WAITING_MSGS.length);
+    }, 2500);
+    return () => clearInterval(msgRef.current);
+  }, [isFinal, status.otpCode]);
 
   // Tombol refresh manual di luar (header "Pesanan Pending") memicu fetch status seketika.
   useEffect(() => {
@@ -208,11 +231,45 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
             {refunded ? "Pesanan kedaluwarsa. Saldo sudah dikembalikan." : "Pesanan kedaluwarsa sebelum kode masuk."}
           </p>
         ) : (
-          <div className="flex items-center gap-2 text-sm font-medium text-teal-bright">
-            <span className="signal-pulse h-2 w-2 rounded-full bg-amber" />
-            <span className="text-ink">Menunggu kode OTP masuk…</span>
-            {expiresMs !== null && expiresMs > 0 && (
-              <span className="ml-auto font-mono text-xs text-muted">sisa {fmtCountdown(expiresMs)}</span>
+          <div className="space-y-3">
+            {/* Animated waiting ring */}
+            <div className="flex flex-col items-center gap-2 py-2">
+              <div className="relative flex items-center justify-center w-16 h-16">
+                {/* Outer ring */}
+                <div className="absolute inset-0 rounded-full border-4 border-amber/20" />
+                <div className="absolute inset-0 rounded-full border-4 border-t-amber border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+                {/* Inner ping */}
+                <div className="absolute inset-2 rounded-full bg-amber/10 animate-ping" style={{ animationDuration: "1.5s" }} />
+                <span className="relative text-2xl">📨</span>
+              </div>
+              {/* Rotating waiting message */}
+              <p className="text-sm font-semibold text-ink text-center transition-all" key={waitingMsgIdx}>
+                {WAITING_MSGS[waitingMsgIdx]}
+              </p>
+              {/* Progress bar */}
+              {expiresMs !== null && expiresMs > 0 && activeOrder.expiredAt && (
+                <div className="w-full">
+                  <div className="flex justify-between text-[10px] text-muted mb-1">
+                    <span>Menunggu</span>
+                    <span className="font-mono font-bold text-amber-bright">{fmtCountdown(expiresMs)}</span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-surface2 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-amber to-amber-bright transition-all"
+                      style={{
+                        width: `${Math.max(2, Math.min(100, (expiresMs / (activeOrder.ttlMs || 300000)) * 100))}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Try another number hint after 2 min */}
+            {showTryOther && (
+              <div className="rounded-xl border border-amber/30 bg-amber-soft px-3 py-2.5 text-xs text-amber-bright font-semibold flex items-start gap-2">
+                <span>⏰</span>
+                <span>Sudah 2 menit belum masuk? Kamu bisa coba <strong>Ganti Nomor</strong> di bawah setelah order ini habis, atau <strong>Batal</strong> dan beli nomor baru.</span>
+              </div>
             )}
           </div>
         )}
