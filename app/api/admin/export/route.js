@@ -1,4 +1,8 @@
-// GET /api/admin/export?type=deposits|transactions|users&from=YYYY-MM-DD&to=YYYY-MM-DD
+// GET /api/admin/export?type=deposits|transactions|users|backup&from=YYYY-MM-DD&to=YYYY-MM-DD
+// type=backup  → JSON penuh semua user (untuk restore)
+// type=users   → CSV ringkasan user
+// type=deposits → CSV deposit
+// type=transactions → CSV transaksi OTP
 import { NextResponse } from "next/server";
 import { usersCol, depositsCol, otpOrdersCol } from "@/lib/db";
 import { isAdminRequest } from "@/lib/adminAuth";
@@ -35,7 +39,25 @@ export async function GET(req) {
     let csv = "";
     let filename = "";
 
-    if (type === "users") {
+    if (type === "backup") {
+      const users = await usersCol();
+      const rows = await users.find({}).sort({ createdAt: -1 }).limit(50000).toArray();
+      // Strip MongoDB internal _id, replace with stable string
+      const clean = rows.map((u) => {
+        const { _id, ...rest } = u;
+        return { _id: _id?.toString(), ...rest };
+      });
+      const json = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), count: clean.length, users: clean }, null, 2);
+      return new NextResponse(json, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Content-Disposition": `attachment; filename="artapedia-backup-${Date.now()}.json"`,
+          "Cache-Control": "no-store"
+        }
+      });
+
+    } else if (type === "users") {
       const users = await usersCol();
       const filter = from || to ? { createdAt: dateFilter } : {};
       const rows = await users.find(filter).sort({ createdAt: -1 }).limit(5000).toArray();

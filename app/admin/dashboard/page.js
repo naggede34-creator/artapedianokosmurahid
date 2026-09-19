@@ -2443,6 +2443,15 @@ function ExportSection() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [backupLoading, setBackupLoading] = useState(false);
+
+  // Import state
+  const [importFile, setImportFile] = useState(null);
+  const [importMode, setImportMode] = useState("merge");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const [importError, setImportError] = useState("");
+  const fileInputRef = useRef(null);
 
   async function doExport() {
     setLoading(true);
@@ -2464,31 +2473,139 @@ function ExportSection() {
     }
   }
 
+  async function doBackup() {
+    setBackupLoading(true);
+    try {
+      const res = await fetch("/api/admin/export?type=backup");
+      if (!res.ok) { alert("Gagal export backup."); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `artapedia-backup-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setBackupLoading(false);
+    }
+  }
+
+  async function doImport() {
+    if (!importFile) return;
+    setImporting(true);
+    setImportResult(null);
+    setImportError("");
+    try {
+      const text = await importFile.text();
+      let parsed;
+      try { parsed = JSON.parse(text); } catch { setImportError("File bukan JSON valid."); return; }
+      if (!Array.isArray(parsed.users)) { setImportError("Format backup tidak dikenal."); return; }
+
+      if (importMode === "restore") {
+        const ok = window.confirm(`⚠️ Mode RESTORE akan HAPUS SEMUA data user terlebih dahulu lalu isi ulang dari backup (${parsed.users.length} user). Lanjutkan?`);
+        if (!ok) return;
+      }
+
+      const res = await fetch("/api/admin/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...parsed, mode: importMode }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setImportError(data.error || "Gagal import."); return; }
+      setImportResult(data);
+    } catch (e) {
+      setImportError("Terjadi kesalahan: " + e.message);
+    } finally {
+      setImporting(false);
+    }
+  }
+
   return (
-    <div className="glass rounded-2xl p-5 shadow-soft">
-      <h2 className="text-base font-bold text-ink mb-1">📥 Export Data (CSV)</h2>
-      <p className="text-xs text-muted mb-4">Unduh data transaksi, deposit, atau user dalam format CSV.</p>
-      <div className="flex flex-wrap gap-2 mb-3">
-        {[{ v: "transactions", l: "Transaksi OTP" }, { v: "deposits", l: "Deposit" }, { v: "users", l: "User" }].map((opt) => (
-          <button key={opt.v} type="button" onClick={() => setType(opt.v)}
-            className={`rounded-xl border px-4 py-2 text-xs font-bold press transition-colors ${type === opt.v ? "bg-amber text-white border-amber-bright" : "bg-surface border-line text-muted hover:border-amber/50"}`}>
-            {opt.l}
+    <div className="space-y-4">
+      {/* CSV Export */}
+      <div className="glass rounded-2xl p-5 shadow-soft">
+        <h2 className="text-base font-bold text-ink mb-1">📥 Export Data (CSV)</h2>
+        <p className="text-xs text-muted mb-4">Unduh data transaksi, deposit, atau user ringkasan dalam format CSV.</p>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {[{ v: "transactions", l: "Transaksi OTP" }, { v: "deposits", l: "Deposit" }, { v: "users", l: "User" }].map((opt) => (
+            <button key={opt.v} type="button" onClick={() => setType(opt.v)}
+              className={`rounded-xl border px-4 py-2 text-xs font-bold press transition-colors ${type === opt.v ? "bg-amber text-white border-amber-bright" : "bg-surface border-line text-muted hover:border-amber/50"}`}>
+              {opt.l}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 mb-3 flex-wrap">
+          <div className="flex-1 min-w-[130px]">
+            <label className="block text-xs font-semibold text-muted mb-1">Dari Tanggal</label>
+            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input text-sm w-full" />
+          </div>
+          <div className="flex-1 min-w-[130px]">
+            <label className="block text-xs font-semibold text-muted mb-1">Sampai Tanggal</label>
+            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input text-sm w-full" />
+          </div>
+        </div>
+        <button onClick={doExport} disabled={loading} className="w-full rounded-xl bg-teal-bright text-white py-2.5 text-sm font-bold press disabled:opacity-50 border border-teal">
+          {loading ? "Menyiapkan…" : "⬇️ Download CSV"}
+        </button>
+      </div>
+
+      {/* Full Backup (JSON) */}
+      <div className="glass rounded-2xl p-5 shadow-soft border border-indigo/20">
+        <h2 className="text-base font-bold text-ink mb-1">🗄️ Backup Penuh (JSON)</h2>
+        <p className="text-xs text-muted mb-4">Ekspor semua data user lengkap ke file JSON — bisa digunakan untuk restore jika data hilang.</p>
+        <button onClick={doBackup} disabled={backupLoading} className="w-full rounded-xl bg-indigo-500 text-white py-2.5 text-sm font-bold press disabled:opacity-50 border border-indigo-400">
+          {backupLoading ? "Menyiapkan backup…" : "📦 Download Backup JSON"}
+        </button>
+      </div>
+
+      {/* Import / Restore */}
+      <div className="glass rounded-2xl p-5 shadow-soft border border-rose/20">
+        <h2 className="text-base font-bold text-ink mb-1">📤 Import / Restore Data User</h2>
+        <p className="text-xs text-muted mb-4">Upload file backup JSON untuk memulihkan data user yang hilang.</p>
+
+        {/* Mode selector */}
+        <div className="mb-3 space-y-1">
+          <label className="block text-xs font-semibold text-muted mb-1.5">Mode Import</label>
+          {[
+            { v: "merge", l: "Merge", desc: "Update user yang ada + tambah user baru" },
+            { v: "safe", l: "Safe (Hanya Baru)", desc: "Hanya tambah user yang belum ada, jangan ubah yang sudah ada" },
+            { v: "restore", l: "⚠️ Restore Penuh", desc: "Hapus SEMUA user lalu isi ulang dari backup" },
+          ].map((m) => (
+            <label key={m.v} className={`flex items-start gap-2 rounded-xl border px-3 py-2 cursor-pointer transition-colors ${importMode === m.v ? "border-amber/60 bg-amber/10" : "border-line hover:border-amber/30"}`}>
+              <input type="radio" name="importMode" value={m.v} checked={importMode === m.v} onChange={() => setImportMode(m.v)} className="mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-ink">{m.l}</p>
+                <p className="text-[10px] text-muted">{m.desc}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        {/* File picker */}
+        <div className="mb-3">
+          <input ref={fileInputRef} type="file" accept=".json,application/json" className="hidden"
+            onChange={(e) => { setImportFile(e.target.files?.[0] || null); setImportResult(null); setImportError(""); }} />
+          <button type="button" onClick={() => fileInputRef.current?.click()}
+            className="w-full rounded-xl border-2 border-dashed border-line py-3 text-xs text-muted hover:border-amber/50 hover:text-amber-bright transition-colors press">
+            {importFile ? `📄 ${importFile.name} (${(importFile.size / 1024).toFixed(1)} KB)` : "Pilih file backup .json…"}
           </button>
-        ))}
-      </div>
-      <div className="flex gap-2 mb-3 flex-wrap">
-        <div className="flex-1 min-w-[130px]">
-          <label className="block text-xs font-semibold text-muted mb-1">Dari Tanggal</label>
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input text-sm w-full" />
         </div>
-        <div className="flex-1 min-w-[130px]">
-          <label className="block text-xs font-semibold text-muted mb-1">Sampai Tanggal</label>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input text-sm w-full" />
-        </div>
+
+        {importError && <p className="text-xs font-semibold text-rose mb-2">{importError}</p>}
+
+        {importResult && (
+          <div className="rounded-xl border border-teal/30 bg-teal-soft px-4 py-3 mb-2 text-xs space-y-0.5">
+            <p className="font-bold text-teal-bright">✅ Import selesai!</p>
+            <p className="text-muted">Total: <span className="text-ink font-semibold">{importResult.total}</span> &nbsp;|&nbsp; Ditambah: <span className="text-teal-bright font-semibold">{importResult.inserted}</span> &nbsp;|&nbsp; Diperbarui: <span className="text-amber-bright font-semibold">{importResult.updated}</span> &nbsp;|&nbsp; Dilewati: <span className="text-muted font-semibold">{importResult.skipped}</span></p>
+          </div>
+        )}
+
+        <button onClick={doImport} disabled={!importFile || importing}
+          className={`w-full rounded-xl py-2.5 text-sm font-bold press disabled:opacity-50 border transition-colors ${importMode === "restore" ? "bg-rose text-white border-rose/60" : "bg-amber text-white border-amber-bright"}`}>
+          {importing ? "Mengimport…" : importMode === "restore" ? "🔄 Restore (Hapus & Timpa)" : "📤 Import Data"}
+        </button>
       </div>
-      <button onClick={doExport} disabled={loading} className="w-full rounded-xl bg-teal-bright text-white py-2.5 text-sm font-bold press disabled:opacity-50 border border-teal">
-        {loading ? "Menyiapkan…" : "⬇️ Download CSV"}
-      </button>
     </div>
   );
 }
