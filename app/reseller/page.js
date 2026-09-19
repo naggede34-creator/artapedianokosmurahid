@@ -32,105 +32,144 @@ function slugify(str) {
   return String(str || "").toLowerCase().replace(/[^a-z0-9\-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
 }
 
-/* ── Comic Aria Hero ─────────────────────────────────────────────── */
-function AriaComicHero() {
+/* ── Comic 3D Hero (tanpa foto karakter) ─────────────────────────── */
+function ComicHero({ reseller, onBuy, router }) {
   return (
-    <div style={{ position: "relative", width: "100%", maxWidth: 860, margin: "0 auto", padding: "20px 16px 0" }}>
+    <div style={{ position: "relative", width: "100%", maxWidth: 900, margin: "0 auto", padding: "8px 16px 0" }}>
       {/* Halftone BG */}
-      <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(37,211,102,.13) 1.5px, transparent 1.5px)", backgroundSize: "18px 18px", borderRadius: 24, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(37,211,102,.1) 1.5px, transparent 1.5px)", backgroundSize: "20px 20px", borderRadius: 24, pointerEvents: "none" }} />
 
-      <div style={{ display: "flex", gap: 0, alignItems: "flex-end", position: "relative", zIndex: 1, flexWrap: "wrap", justifyContent: "center" }}>
+      <div style={{ display: "flex", gap: 12, alignItems: "stretch", position: "relative", zIndex: 1, flexWrap: "wrap", justifyContent: "center" }}>
 
-        {/* Panel kiri kecil — speech bubble Aria ngobrol */}
-        <div style={{ transform: "perspective(600px) rotateY(12deg) rotateX(-3deg)", transformOrigin: "right center", flex: "0 0 auto", width: "min(220px,42vw)", zIndex: 2, marginRight: -18, marginBottom: 20 }}>
-          <div style={{ background: "#fff", border: "3.5px solid #111", borderRadius: "16px 16px 4px 16px", padding: "14px 16px", boxShadow: "5px 5px 0 #111", position: "relative" }}>
-            <div style={{ position: "absolute", bottom: -16, right: 20, width: 0, height: 0, borderLeft: "10px solid transparent", borderRight: "0 solid transparent", borderTop: "16px solid #111" }} />
-            <div style={{ position: "absolute", bottom: -12, right: 21, width: 0, height: 0, borderLeft: "8px solid transparent", borderRight: "0 solid transparent", borderTop: "13px solid white" }} />
-            <p style={{ margin: 0, fontSize: 13, color: "#111", fontWeight: 700, lineHeight: 1.4, fontFamily: "system-ui,sans-serif" }}>
-              Hei! Mau punya toko OTP sendiri? 🌟
-            </p>
+        {/* ── Panel kiri ── */}
+        <div style={{ transform: "perspective(700px) rotateY(14deg) rotateX(-2deg)", transformOrigin: "right center", flex: "0 0 auto", width: "min(210px,44vw)", zIndex: 2, marginRight: -20, display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* Stat card 1 */}
+          <div style={{ background: "linear-gradient(135deg,#0d1f12,#162a1d)", border: "3px solid #111", borderRadius: 14, padding: "14px 14px", boxShadow: "5px 5px 0 #111" }}>
+            <div style={{ fontSize: 10, color: "#25D366", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>💳 Biaya Aktivasi</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: "#fff", lineHeight: 1, marginBottom: 2 }}>Rp10K</div>
+            <div style={{ fontSize: 10.5, color: "rgba(255,255,255,.35)" }}>Sekali bayar • selamanya</div>
           </div>
-          {/* Mini panel di bawah */}
-          <div style={{ marginTop: 12, background: "linear-gradient(135deg,#1a1a2e,#16213e)", border: "3px solid #111", borderRadius: 12, padding: "10px 12px", boxShadow: "4px 4px 0 #111" }}>
-            <div style={{ fontSize: 11, color: "#fbbf24", fontWeight: 800, letterSpacing: ".5px", textTransform: "uppercase", marginBottom: 4 }}>💰 Komisi Tiap Order</div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: "#25D366", letterSpacing: -1 }}>+Markup%</div>
-            <div style={{ fontSize: 10.5, color: "rgba(255,255,255,.45)", marginTop: 2 }}>Langsung ke saldo kamu</div>
+          {/* Stat card 2 */}
+          <div style={{ background: "linear-gradient(135deg,#1a0d2e,#1e1040)", border: "3px solid #111", borderRadius: 14, padding: "14px 14px", boxShadow: "5px 5px 0 #111" }}>
+            <div style={{ fontSize: 10, color: "#a78bfa", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>📈 Markup Kamu</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: "#fff", lineHeight: 1, marginBottom: 2 }}>0 – 50%</div>
+            <div style={{ fontSize: 10.5, color: "rgba(255,255,255,.35)" }}>Bebas atur harga jual</div>
+          </div>
+          {/* Speech bubble */}
+          <div style={{ background: "#fff", border: "3px solid #111", borderRadius: "14px 14px 4px 14px", padding: "10px 12px", boxShadow: "4px 4px 0 #111", position: "relative" }}>
+            <div style={{ position: "absolute", bottom: -14, right: 16, width: 0, height: 0, borderLeft: "9px solid transparent", borderTop: "14px solid #111" }} />
+            <div style={{ position: "absolute", bottom: -10, right: 17, width: 0, height: 0, borderLeft: "7px solid transparent", borderTop: "11px solid white" }} />
+            <p style={{ margin: 0, fontSize: 12, color: "#111", fontWeight: 700, lineHeight: 1.4 }}>Bisnis nokos tanpa modal besar! 🚀</p>
           </div>
         </div>
 
-        {/* Panel utama — Aria */}
-        <div style={{ flex: "0 0 auto", width: "min(300px,70vw)", zIndex: 4, position: "relative" }}>
-          {/* Sunburst behind */}
-          <div style={{ position: "absolute", top: "10%", left: "50%", transform: "translateX(-50%)", width: 260, height: 260, background: "conic-gradient(from 0deg, rgba(37,211,102,.18) 0deg, transparent 20deg, rgba(37,211,102,.18) 40deg, transparent 60deg, rgba(37,211,102,.18) 80deg, transparent 100deg, rgba(37,211,102,.18) 120deg, transparent 140deg, rgba(37,211,102,.18) 160deg, transparent 180deg, rgba(37,211,102,.18) 200deg, transparent 220deg, rgba(37,211,102,.18) 240deg, transparent 260deg, rgba(37,211,102,.18) 280deg, transparent 300deg, rgba(37,211,102,.18) 320deg, transparent 340deg, rgba(37,211,102,.18) 360deg)", borderRadius: "50%", zIndex: 0, pointerEvents: "none" }} />
+        {/* ── Panel tengah utama ── */}
+        <div style={{ flex: "0 0 auto", width: "min(320px,80vw)", zIndex: 4, position: "relative" }}>
+          {/* Sunburst */}
+          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 300, height: 300, background: "conic-gradient(from 0deg,rgba(37,211,102,.12) 0deg,transparent 18deg,rgba(37,211,102,.12) 36deg,transparent 54deg,rgba(37,211,102,.12) 72deg,transparent 90deg,rgba(37,211,102,.12) 108deg,transparent 126deg,rgba(37,211,102,.12) 144deg,transparent 162deg,rgba(37,211,102,.12) 180deg,transparent 198deg,rgba(37,211,102,.12) 216deg,transparent 234deg,rgba(37,211,102,.12) 252deg,transparent 270deg,rgba(37,211,102,.12) 288deg,transparent 306deg,rgba(37,211,102,.12) 324deg,transparent 342deg,rgba(37,211,102,.12) 360deg)", borderRadius: "50%", pointerEvents: "none", opacity: .7 }} />
 
-          <div style={{ position: "relative", zIndex: 1, border: "4px solid #111", borderRadius: "20px 20px 8px 8px", overflow: "hidden", boxShadow: "8px 8px 0 #111, 0 0 0 2px #25D366" }}>
-            {/* Top bar komik */}
-            <div style={{ background: "#25D366", padding: "6px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "3px solid #111" }}>
+          <div style={{ position: "relative", zIndex: 1, border: "4px solid #111", borderRadius: 20, overflow: "hidden", boxShadow: "8px 8px 0 #111, 0 0 0 2px #25D366" }}>
+            {/* Top bar */}
+            <div style={{ background: "#25D366", padding: "8px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "3px solid #111" }}>
               <span style={{ fontSize: 10, fontWeight: 900, color: "#111", textTransform: "uppercase", letterSpacing: 1 }}>✦ Artapedia Reseller ✦</span>
               <div style={{ display: "flex", gap: 4 }}>
                 {["#ff5f57","#febc2e","#28c840"].map(c => <div key={c} style={{ width: 8, height: 8, borderRadius: "50%", background: c, border: "1px solid rgba(0,0,0,.3)" }} />)}
               </div>
             </div>
-            {/* Karakter Aria */}
-            <div style={{ background: "linear-gradient(180deg,#e8f5e9 0%,#c8e6c9 40%,#a5d6a7 100%)", position: "relative", minHeight: 280, display: "flex", alignItems: "flex-end", justifyContent: "center", overflow: "hidden" }}>
-              {/* Speed lines */}
-              <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: .12 }} viewBox="0 0 300 280" preserveAspectRatio="none">
-                {Array.from({ length: 16 }).map((_, i) => (
-                  <line key={i} x1="150" y1="140" x2={i * 20} y2="0" stroke="#111" strokeWidth="1.5" />
+
+            {/* Main body — dashboard style */}
+            <div style={{ background: "linear-gradient(180deg,#0d1f12,#111827)", padding: "22px 18px", position: "relative", minHeight: 240 }}>
+              {/* SVG speed lines */}
+              <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: .07, pointerEvents: "none" }} viewBox="0 0 320 240" preserveAspectRatio="none">
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <line key={i} x1="160" y1="120" x2={i * 17} y2="0" stroke="#25D366" strokeWidth="1.2" />
                 ))}
-                {Array.from({ length: 16 }).map((_, i) => (
-                  <line key={`b${i}`} x1="150" y1="140" x2={i * 20} y2="280" stroke="#111" strokeWidth="1.5" />
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <line key={`b${i}`} x1="160" y1="120" x2={i * 17} y2="240" stroke="#25D366" strokeWidth="1.2" />
                 ))}
               </svg>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/chars/char-angel.jpg" alt="Aria" style={{ height: 270, width: "auto", objectFit: "cover", objectPosition: "top", position: "relative", zIndex: 1, display: "block" }} onError={e => { e.currentTarget.style.display = "none"; }} />
-              {/* Nama badge */}
-              <div style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", background: "#111", color: "#25D366", borderRadius: 99, padding: "4px 16px", fontSize: 13, fontWeight: 900, letterSpacing: 1, border: "2px solid #25D366", zIndex: 2, whiteSpace: "nowrap" }}>
-                ★ ARIA ★
+
+              {/* Content */}
+              <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 6 }}>🏪</div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginBottom: 4, letterSpacing: -.5 }}>Web Nokos Kamu</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,.4)", marginBottom: 18 }}>Branded store milikmu sendiri</div>
+
+                {/* Mini stats */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 18 }}>
+                  {[
+                    { label: "Biaya bulanan", val: "Rp0", color: "#25D366" },
+                    { label: "Bagi hasil", val: "100%", color: "#a78bfa" },
+                    { label: "Batas order", val: "∞", color: "#fbbf24" },
+                    { label: "Layanan", val: "Semua", color: "#f87171" },
+                  ].map(s => (
+                    <div key={s.label} style={{ background: "rgba(255,255,255,.06)", borderRadius: 10, padding: "8px 10px", border: "1px solid rgba(255,255,255,.06)" }}>
+                      <div style={{ fontSize: 15, fontWeight: 900, color: s.color }}>{s.val}</div>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,.35)", marginTop: 1 }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {reseller ? (
+                  <button onClick={() => router.push("/reseller/dashboard")}
+                    style={{ width: "100%", padding: "11px", background: "linear-gradient(135deg,#128C7E,#25D366)", border: "none", borderRadius: 10, color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+                    📊 Buka Dashboard →
+                  </button>
+                ) : (
+                  <button onClick={onBuy}
+                    style={{ width: "100%", padding: "11px", background: "linear-gradient(135deg,#128C7E,#25D366)", border: "none", borderRadius: 10, color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+                    🚀 Aktifkan — Rp10.000
+                  </button>
+                )}
               </div>
             </div>
-            {/* Bottom caption */}
-            <div style={{ background: "#111", padding: "8px 14px", display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 800, color: "#25D366", letterSpacing: .5 }}>AMBASSADOR RESELLER</span>
-              <span style={{ marginLeft: "auto", fontSize: 18 }}>🌸</span>
+
+            {/* Bottom bar */}
+            <div style={{ background: "#111", padding: "7px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#25D366", display: "inline-block", animation: "blink 1.4s infinite" }} />
+              <span style={{ fontSize: 11, fontWeight: 800, color: "#25D366", letterSpacing: .5 }}>PROGRAM AKTIF</span>
+              <span style={{ marginLeft: "auto", fontSize: 11, color: "rgba(255,255,255,.3)" }}>artapedia.web.id</span>
             </div>
           </div>
 
-          {/* Action starburst */}
-          <div style={{ position: "absolute", top: -16, right: -16, width: 64, height: 64, background: "#fbbf24", border: "3px solid #111", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "3px 3px 0 #111", zIndex: 5, transform: "rotate(12deg)" }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 9, fontWeight: 900, color: "#111", lineHeight: 1.1, textTransform: "uppercase" }}>Cuma</div>
+          {/* Price starburst */}
+          <div style={{ position: "absolute", top: -14, right: -14, width: 60, height: 60, background: "#fbbf24", border: "3px solid #111", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "3px 3px 0 #111", zIndex: 5, transform: "rotate(12deg)", cursor: "pointer" }} onClick={onBuy}>
+            <div style={{ textAlign: "center", transform: "rotate(-12deg)" }}>
+              <div style={{ fontSize: 8, fontWeight: 900, color: "#111", lineHeight: 1.1, textTransform: "uppercase" }}>Cuma</div>
               <div style={{ fontSize: 14, fontWeight: 900, color: "#111", lineHeight: 1 }}>10K</div>
-              <div style={{ fontSize: 8, fontWeight: 900, color: "#111", lineHeight: 1.1 }}>sekali!</div>
+              <div style={{ fontSize: 7, fontWeight: 900, color: "#111", lineHeight: 1.1 }}>sekali!</div>
             </div>
           </div>
         </div>
 
-        {/* Panel kanan — stats */}
-        <div style={{ transform: "perspective(600px) rotateY(-12deg) rotateX(-3deg)", transformOrigin: "left center", flex: "0 0 auto", width: "min(220px,42vw)", zIndex: 2, marginLeft: -18, marginBottom: 20 }}>
-          <div style={{ background: "linear-gradient(135deg,#0d1117,#161b22)", border: "3.5px solid #111", borderRadius: "16px 16px 16px 4px", padding: "14px", boxShadow: "-5px 5px 0 #111" }}>
-            <div style={{ fontSize: 11, color: "#25D366", fontWeight: 800, textTransform: "uppercase", letterSpacing: .8, marginBottom: 10 }}>📊 Keuntungan</div>
+        {/* ── Panel kanan ── */}
+        <div style={{ transform: "perspective(700px) rotateY(-14deg) rotateX(-2deg)", transformOrigin: "left center", flex: "0 0 auto", width: "min(210px,44vw)", zIndex: 2, marginLeft: -20, display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* Komisi card */}
+          <div style={{ background: "linear-gradient(135deg,#1a1000,#2d1d00)", border: "3px solid #111", borderRadius: 14, padding: "14px 14px", boxShadow: "-5px 5px 0 #111" }}>
+            <div style={{ fontSize: 10, color: "#fbbf24", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>💰 Komisi Per Order</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: "#fff", lineHeight: 1, marginBottom: 2 }}>+Markup</div>
+            <div style={{ fontSize: 10.5, color: "rgba(255,255,255,.35)" }}>Langsung ke saldo kamu</div>
+          </div>
+          {/* Cara kerja card */}
+          <div style={{ background: "linear-gradient(135deg,#0d1117,#161b22)", border: "3px solid #111", borderRadius: 14, padding: "14px 14px", boxShadow: "-5px 5px 0 #111" }}>
+            <div style={{ fontSize: 10, color: "#60a5fa", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>🗺️ Cara Kerja</div>
             {[
-              { label: "Bayar sekali", val: "Rp10.000", color: "#fbbf24" },
-              { label: "Biaya bulanan", val: "GRATIS", color: "#25D366" },
-              { label: "Bagi hasil", val: "100%", color: "#a78bfa" },
-              { label: "Batas order", val: "∞", color: "#f87171" },
+              { n: "1", t: "Beli paket 10K" },
+              { n: "2", t: "Set nama & markup" },
+              { n: "3", t: "Share link toko" },
             ].map(s => (
-              <div key={s.label} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid rgba(255,255,255,.06)" }}>
-                <span style={{ fontSize: 11.5, color: "rgba(255,255,255,.55)" }}>{s.label}</span>
-                <span style={{ fontSize: 12, fontWeight: 800, color: s.color }}>{s.val}</span>
+              <div key={s.n} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#25D366", border: "2px solid #111", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: "#111", flexShrink: 0 }}>{s.n}</div>
+                <span style={{ fontSize: 11.5, color: "rgba(255,255,255,.65)", fontWeight: 600 }}>{s.t}</span>
               </div>
             ))}
           </div>
-
           {/* Thought bubble */}
-          <div style={{ marginTop: 10, background: "#fff", border: "3px solid #111", borderRadius: "4px 16px 16px 16px", padding: "10px 14px", boxShadow: "-4px 4px 0 #111", position: "relative" }}>
+          <div style={{ background: "#fff", border: "3px solid #111", borderRadius: "4px 14px 14px 14px", padding: "10px 12px", boxShadow: "-4px 4px 0 #111", position: "relative" }}>
             <div style={{ position: "absolute", top: -10, left: 14, display: "flex", gap: 3 }}>
               {[6, 4, 3].map((s, i) => <div key={i} style={{ width: s, height: s, borderRadius: "50%", background: "#111" }} />)}
             </div>
-            <p style={{ margin: 0, fontSize: 12.5, color: "#111", fontWeight: 700, lineHeight: 1.4 }}>
-              Mulai bisnis nokos sekarang! 💪
-            </p>
+            <p style={{ margin: 0, fontSize: 12, color: "#111", fontWeight: 700, lineHeight: 1.4 }}>Komisi ngalir tiap hari! 💪</p>
           </div>
         </div>
       </div>
@@ -165,53 +204,68 @@ function RegisterModal({ token, balance, onClose, onSuccess }) {
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,.75)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ width: "100%", maxWidth: 420, background: "#0d1117", borderRadius: 20, overflow: "hidden", border: "1px solid rgba(255,255,255,.08)", boxShadow: "0 24px 64px rgba(0,0,0,.7)" }}>
-        <div style={{ height: 4, background: "linear-gradient(90deg,#128C7E,#25D366,#fbbf24)" }} />
-        <div style={{ padding: "24px 22px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg,#128C7E,#25D366)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🏪</div>
+    <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,.8)", backdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ width: "100%", maxWidth: 440, background: "#0d1117", borderRadius: 22, overflow: "hidden", border: "1px solid rgba(255,255,255,.08)", boxShadow: "0 32px 80px rgba(0,0,0,.7), 0 0 0 1.5px #25D36644" }}>
+        {/* Comic top bar */}
+        <div style={{ background: "linear-gradient(90deg,#128C7E,#25D366,#fbbf24)", height: 5 }} />
+        <div style={{ background: "#111", padding: "6px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+          <span style={{ fontSize: 10, fontWeight: 900, color: "#25D366", textTransform: "uppercase", letterSpacing: 1 }}>✦ Aktivasi Web Reseller ✦</span>
+          <div style={{ display: "flex", gap: 4 }}>
+            {["#ff5f57","#febc2e","#28c840"].map(c => <div key={c} style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />)}
+          </div>
+        </div>
+        <div style={{ padding: "22px 22px 24px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
+            <div style={{ width: 46, height: 46, borderRadius: 14, background: "linear-gradient(135deg,#0d1f12,#25D366)", border: "2px solid #25D36655", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, boxShadow: "0 4px 12px rgba(37,211,102,.3)" }}>🏪</div>
             <div>
-              <div style={{ fontSize: 17, fontWeight: 800, color: "white" }}>Aktifkan Web Reseller</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "white" }}>Buat Web Nokos</div>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,.4)", marginTop: 1 }}>Saldo kamu: <b style={{ color: balance >= 10000 ? "#25D366" : "#f87171" }}>Rp{balance.toLocaleString("id-ID")}</b></div>
             </div>
           </div>
 
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 11.5, color: "rgba(255,255,255,.4)", marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".7px" }}>Nama Web Toko</div>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,.35)", marginBottom: 6, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".8px" }}>Nama Web Toko</div>
             <input type="text" value={webName} onChange={e => { setWebName(e.target.value); setErr(""); }}
-              placeholder="contoh: Toko OTP Budi" maxLength={50}
-              style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10, padding: "11px 14px", color: "rgba(255,255,255,.88)", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+              placeholder="contoh: Toko Nokos Budi" maxLength={50}
+              style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10, padding: "11px 14px", color: "rgba(255,255,255,.9)", fontSize: 14, outline: "none", boxSizing: "border-box", transition: "border .2s" }}
+              onFocus={e => e.currentTarget.style.borderColor = "rgba(37,211,102,.5)"}
+              onBlur={e => e.currentTarget.style.borderColor = "rgba(255,255,255,.1)"} />
             {slug && (
-              <div style={{ fontSize: 11.5, color: "rgba(255,255,255,.3)", marginTop: 5 }}>
-                🔗 URL toko kamu: <span style={{ color: "#25D366", fontWeight: 600 }}>/store/{slug}</span>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,.25)", marginTop: 5 }}>
+                🔗 URL toko: <span style={{ color: "#25D366", fontWeight: 700 }}>/store/{slug}</span>
               </div>
             )}
           </div>
 
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11.5, color: "rgba(255,255,255,.4)", marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".7px" }}>Markup Harga</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <input type="range" min={0} max={50} value={markup} onChange={e => setMarkup(Number(e.target.value))}
-                style={{ flex: 1, accentColor: "#25D366" }} />
-              <div style={{ background: "rgba(37,211,102,.15)", border: "1px solid rgba(37,211,102,.3)", borderRadius: 8, padding: "6px 14px", fontSize: 16, fontWeight: 800, color: "#25D366", minWidth: 56, textAlign: "center" }}>+{markup}%</div>
+          <div style={{ marginBottom: 22 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,.35)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".8px" }}>Markup Harga</div>
+              <div style={{ background: "rgba(37,211,102,.15)", border: "1px solid rgba(37,211,102,.35)", borderRadius: 8, padding: "4px 14px", fontSize: 16, fontWeight: 900, color: "#25D366" }}>+{markup}%</div>
             </div>
-            <div style={{ fontSize: 11.5, color: "rgba(255,255,255,.3)", marginTop: 4 }}>Keuntungan kamu per transaksi pelanggan</div>
+            <input type="range" min={0} max={50} value={markup} onChange={e => setMarkup(Number(e.target.value))}
+              style={{ width: "100%", accentColor: "#25D366", height: 6 }} />
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "rgba(255,255,255,.2)", marginTop: 3 }}>
+              <span>0% (gratis)</span><span>25%</span><span>50% (max)</span>
+            </div>
           </div>
 
-          {err && <div style={{ background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.3)", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, color: "#f87171", marginBottom: 14 }}>⚠ {err}</div>}
+          {err && (
+            <div style={{ background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.3)", borderRadius: 10, padding: "9px 14px", fontSize: 13, color: "#f87171", marginBottom: 16, display: "flex", gap: 8, alignItems: "flex-start" }}>
+              <span style={{ flexShrink: 0 }}>⚠</span> {err}
+            </div>
+          )}
 
-          <div style={{ background: "rgba(251,191,36,.07)", border: "1px solid rgba(251,191,36,.2)", borderRadius: 10, padding: "10px 14px", marginBottom: 18 }}>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,.7)", lineHeight: 1.5 }}>
-              💳 Biaya aktivasi <b style={{ color: "#fbbf24" }}>Rp10.000</b> akan dipotong dari saldo. Pembayaran tidak dapat dikembalikan.
+          <div style={{ background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.18)", borderRadius: 12, padding: "10px 14px", marginBottom: 20 }}>
+            <div style={{ fontSize: 12.5, color: "rgba(255,255,255,.65)", lineHeight: 1.6 }}>
+              💳 Biaya aktivasi <b style={{ color: "#fbbf24" }}>Rp10.000</b> dipotong dari saldo kamu. Tidak dapat dikembalikan.
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={onClose} style={{ flex: 1, padding: "12px", borderRadius: 10, background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(255,255,255,.6)", fontSize: 14, cursor: "pointer" }}>Batal</button>
+            <button onClick={onClose} style={{ flex: 1, padding: "12px", borderRadius: 12, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(255,255,255,.55)", fontSize: 14, cursor: "pointer" }}>Batal</button>
             <button onClick={submit} disabled={loading || balance < 10000 || !slug}
-              style={{ flex: 2, padding: "12px", borderRadius: 10, background: loading || balance < 10000 || !slug ? "rgba(37,211,102,.3)" : "linear-gradient(135deg,#128C7E,#25D366)", border: "none", color: "white", fontSize: 14, fontWeight: 700, cursor: loading || balance < 10000 || !slug ? "not-allowed" : "pointer", transition: "all .2s" }}>
-              {loading ? "Memproses…" : "🚀 Aktifkan — Rp10.000"}
+              style={{ flex: 2, padding: "12px", borderRadius: 12, background: loading || balance < 10000 || !slug ? "rgba(37,211,102,.25)" : "linear-gradient(135deg,#128C7E,#25D366)", border: "none", color: loading || balance < 10000 || !slug ? "rgba(255,255,255,.35)" : "white", fontSize: 14, fontWeight: 800, cursor: loading || balance < 10000 || !slug ? "not-allowed" : "pointer", transition: "all .2s", boxShadow: loading || balance < 10000 || !slug ? "none" : "0 4px 16px rgba(37,211,102,.35)" }}>
+              {loading ? "Memproses…" : balance < 10000 ? "Saldo tidak cukup" : "🚀 Aktifkan — Rp10.000"}
             </button>
           </div>
         </div>
@@ -223,7 +277,7 @@ function RegisterModal({ token, balance, onClose, onSuccess }) {
 /* ── Main Page ────────────────────────────────────────────────────── */
 export default function ResellerPage() {
   const router = useRouter();
-  const { token, ready } = useUser();
+  const { token, balance: userBalance, ready } = useUser();
   const [balance, setBalance] = useState(0);
   const [reseller, setReseller] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -232,14 +286,22 @@ export default function ResellerPage() {
 
   useEffect(() => {
     if (!ready || !token) return;
-    fetch(`/api/user/stats?token=${token}`).then(r => r.json()).then(d => setBalance(d.balance || 0)).catch(() => {});
-    fetch(`/api/reseller/my?token=${token}`).then(r => r.json()).then(d => { if (d.reseller) setReseller(d.reseller); }).catch(() => {});
-  }, [ready, token]);
+    setBalance(Number(userBalance || 0));
+    fetch(`/api/reseller/my?token=${token}`)
+      .then(r => r.json())
+      .then(d => { if (d.reseller) setReseller(d.reseller); })
+      .catch(() => {});
+  }, [ready, token, userBalance]);
 
   function handleSuccess(data) {
     setSuccessSlug(data.slug);
     setShowModal(false);
     setReseller(data);
+  }
+
+  function handleBuyClick() {
+    if (!token) { router.push("/"); return; }
+    setShowModal(true);
   }
 
   return (
@@ -251,146 +313,160 @@ export default function ResellerPage() {
 
       {/* Success banner */}
       {successSlug && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "linear-gradient(135deg,#128C7E,#25D366)", padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 4px 20px rgba(37,211,102,.4)" }}>
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "linear-gradient(135deg,#128C7E,#25D366)", padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 4px 20px rgba(37,211,102,.4)", flexWrap: "wrap" }}>
           <span style={{ fontSize: 20 }}>🎉</span>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 160 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Web reseller berhasil diaktifkan!</div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,.8)" }}>Toko kamu: <b>/store/{successSlug}</b></div>
           </div>
           <button onClick={() => router.push(`/store/${successSlug}`)} style={{ background: "rgba(255,255,255,.2)", border: "none", borderRadius: 8, padding: "7px 14px", color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Lihat Toko →</button>
-          <button onClick={() => router.push("/reseller/dashboard")} style={{ background: "rgba(255,255,255,.2)", border: "none", borderRadius: 8, padding: "7px 14px", color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Dashboard</button>
+          <button onClick={() => router.push("/reseller/dashboard")} style={{ background: "rgba(0,0,0,.2)", border: "none", borderRadius: 8, padding: "7px 14px", color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Dashboard →</button>
+          <button onClick={() => setSuccessSlug(null)} style={{ background: "none", border: "none", color: "rgba(255,255,255,.6)", fontSize: 20, cursor: "pointer", padding: "0 4px" }}>×</button>
         </div>
       )}
 
       {/* ── HERO ── */}
-      <div style={{ background: "linear-gradient(180deg,#0d1f12,#0a0d12)", paddingBottom: 40, borderBottom: "1px solid rgba(37,211,102,.1)" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 16px 0" }}>
-          {/* Nav crumb */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
-            <button onClick={() => router.back()} style={{ background: "rgba(255,255,255,.06)", border: "none", borderRadius: 8, padding: "6px 12px", color: "rgba(255,255,255,.5)", fontSize: 12.5, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-              ← Kembali
-            </button>
-            <span style={{ color: "rgba(255,255,255,.2)", fontSize: 12 }}>/</span>
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,.4)" }}>Program Reseller</span>
+      <div style={{ background: "linear-gradient(180deg,#0d1f12 0%,#0a0d12 100%)", paddingBottom: 40, borderBottom: "1px solid rgba(37,211,102,.08)" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", padding: "20px 16px 0" }}>
+
+          {/* Breadcrumb */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 28 }}>
+            <button onClick={() => router.back()} style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 8, padding: "6px 12px", color: "rgba(255,255,255,.45)", fontSize: 12, cursor: "pointer" }}>← Kembali</button>
+            <span style={{ color: "rgba(255,255,255,.15)" }}>/</span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,.35)" }}>Program Reseller</span>
           </div>
 
-          <div style={{ textAlign: "center", marginBottom: 10 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(37,211,102,.1)", border: "1px solid rgba(37,211,102,.25)", borderRadius: 99, padding: "5px 14px", marginBottom: 12 }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#25D366", display: "inline-block", animation: "pulse 1.5s infinite" }} />
+          {/* Headline */}
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(37,211,102,.08)", border: "1px solid rgba(37,211,102,.2)", borderRadius: 99, padding: "5px 16px", marginBottom: 14 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#25D366", display: "inline-block", animation: "blink 1.4s infinite" }} />
               <span style={{ fontSize: 12, fontWeight: 700, color: "#25D366", letterSpacing: .5 }}>Program Reseller Aktif</span>
             </div>
-            <h1 style={{ fontSize: "clamp(26px,5vw,44px)", fontWeight: 900, color: "white", margin: "0 0 8px", letterSpacing: "-1px", lineHeight: 1.15 }}>
-              Punya Toko OTP<br /><span style={{ color: "#25D366" }}>Sendiri</span> Mulai 10 Ribu
+            <h1 style={{ fontSize: "clamp(26px,5vw,46px)", fontWeight: 900, color: "white", margin: "0 0 10px", letterSpacing: "-1.5px", lineHeight: 1.1 }}>
+              Punya Toko Nokos<br /><span style={{ color: "#25D366" }}>Sendiri</span> Mulai 10 Ribu
             </h1>
-            <p style={{ fontSize: 15, color: "rgba(255,255,255,.5)", margin: "0 auto", maxWidth: 480, lineHeight: 1.6 }}>
-              Jadi reseller Artapedia, dapat web toko branded, markup bebas, dan komisi otomatis setiap order pelangganmu.
+            <p style={{ fontSize: 15, color: "rgba(255,255,255,.45)", margin: "0 auto", maxWidth: 460, lineHeight: 1.65 }}>
+              Jadi reseller Artapedia — dapat web toko branded, markup bebas, dan komisi otomatis setiap order pelanggan.
             </p>
           </div>
 
-          <AriaComicHero />
+          {/* Comic 3D Hero panels */}
+          <ComicHero reseller={reseller} onBuy={handleBuyClick} router={router} />
 
-          {/* CTA */}
-          <div style={{ textAlign: "center", marginTop: 32 }}>
+          {/* CTA bawah */}
+          <div style={{ textAlign: "center", marginTop: 36 }}>
             {reseller ? (
               <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
                 <button onClick={() => router.push(`/store/${reseller.slug}`)}
-                  style={{ padding: "14px 28px", borderRadius: 14, background: "rgba(37,211,102,.15)", border: "1.5px solid rgba(37,211,102,.4)", color: "#25D366", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ padding: "13px 26px", borderRadius: 14, background: "rgba(37,211,102,.1)", border: "1.5px solid rgba(37,211,102,.35)", color: "#25D366", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                   🌐 Lihat Toko Saya
                 </button>
                 <button onClick={() => router.push("/reseller/dashboard")}
-                  style={{ padding: "14px 28px", borderRadius: 14, background: "linear-gradient(135deg,#128C7E,#25D366)", border: "none", color: "white", fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 24px rgba(37,211,102,.4)" }}>
+                  style={{ padding: "13px 26px", borderRadius: 14, background: "linear-gradient(135deg,#128C7E,#25D366)", border: "none", color: "white", fontSize: 14, fontWeight: 800, cursor: "pointer", boxShadow: "0 6px 24px rgba(37,211,102,.4)" }}>
                   📊 Dashboard Reseller →
                 </button>
               </div>
             ) : (
-              <button onClick={() => token ? setShowModal(true) : router.push("/")}
-                style={{ padding: "16px 40px", borderRadius: 16, background: "linear-gradient(135deg,#128C7E,#25D366)", border: "none", color: "white", fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 8px 32px rgba(37,211,102,.45)", letterSpacing: .3, transition: "transform .15s" }}
-                onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px) scale(1.02)"}
-                onMouseLeave={e => e.currentTarget.style.transform = "translateY(0) scale(1)"}>
+              <button onClick={handleBuyClick}
+                style={{ padding: "15px 44px", borderRadius: 16, background: "linear-gradient(135deg,#128C7E,#25D366)", border: "none", color: "white", fontSize: 16, fontWeight: 900, cursor: "pointer", boxShadow: "0 8px 32px rgba(37,211,102,.45)", letterSpacing: .3, transition: "transform .15s,box-shadow .15s" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(37,211,102,.5)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(37,211,102,.45)"; }}>
                 🚀 Buat Web Nokos Saya — Rp10.000
               </button>
             )}
-            {!token && <p style={{ fontSize: 12, color: "rgba(255,255,255,.3)", marginTop: 8 }}>Login dulu dengan kode akun AP-XXXX kamu</p>}
+            {!token && <p style={{ fontSize: 12, color: "rgba(255,255,255,.25)", marginTop: 8 }}>Login dulu dengan kode akun AP-XXXX kamu</p>}
           </div>
         </div>
       </div>
 
       {/* ── BENEFITS ── */}
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "56px 16px 0" }}>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "60px 16px 0" }}>
         <div style={{ textAlign: "center", marginBottom: 36 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#25D366", textTransform: "uppercase", letterSpacing: 2, marginBottom: 8 }}>Kenapa Jadi Reseller?</div>
-          <h2 style={{ fontSize: "clamp(22px,4vw,34px)", fontWeight: 900, color: "white", margin: 0 }}>8 Keuntungan Jadi Reseller Artapedia</h2>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#25D366", textTransform: "uppercase", letterSpacing: 2.5, marginBottom: 10 }}>Kenapa Jadi Reseller?</div>
+          <h2 style={{ fontSize: "clamp(22px,4vw,36px)", fontWeight: 900, color: "white", margin: 0 }}>8 Keuntungan Jadi Reseller Artapedia</h2>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14 }}>
           {BENEFITS.map((b, i) => (
-            <div key={i} style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 16, padding: "18px 16px", transition: "all .2s", cursor: "default" }}
-              onMouseEnter={e => { e.currentTarget.style.background = "rgba(37,211,102,.06)"; e.currentTarget.style.borderColor = "rgba(37,211,102,.2)"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,.04)"; e.currentTarget.style.borderColor = "rgba(255,255,255,.07)"; }}>
+            <div key={i}
+              style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 16, padding: "20px 16px", transition: "all .2s", cursor: "default", position: "relative", overflow: "hidden" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(37,211,102,.06)"; e.currentTarget.style.borderColor = "rgba(37,211,102,.2)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,.06)"; e.currentTarget.style.transform = "translateY(0)"; }}>
+              <div style={{ position: "absolute", top: -8, right: -8, fontSize: 52, opacity: .06, userSelect: "none", lineHeight: 1 }}>{b.icon}</div>
               <div style={{ fontSize: 28, marginBottom: 10 }}>{b.icon}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 6 }}>{b.title}</div>
-              <div style={{ fontSize: 12.5, color: "rgba(255,255,255,.45)", lineHeight: 1.55 }}>{b.desc}</div>
+              <div style={{ fontSize: 12.5, color: "rgba(255,255,255,.4)", lineHeight: 1.6 }}>{b.desc}</div>
             </div>
           ))}
         </div>
       </div>
 
       {/* ── HOW IT WORKS ── */}
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "56px 16px 0" }}>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "60px 16px 0" }}>
         <div style={{ textAlign: "center", marginBottom: 36 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#fbbf24", textTransform: "uppercase", letterSpacing: 2, marginBottom: 8 }}>Cara Kerja</div>
-          <h2 style={{ fontSize: "clamp(22px,4vw,34px)", fontWeight: 900, color: "white", margin: 0 }}>3 Langkah Mulai Bisnis</h2>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: 2.5, marginBottom: 10 }}>Cara Kerja</div>
+          <h2 style={{ fontSize: "clamp(22px,4vw,36px)", fontWeight: 900, color: "white", margin: 0 }}>3 Langkah Mulai Bisnis</h2>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 20 }}>
           {[
-            { step: "01", icon: "💳", title: "Beli Paket", desc: "Klik tombol 'Buat Web Nokos', bayar Rp10.000 dari saldo Artapedia kamu." },
-            { step: "02", icon: "⚙️", title: "Set Toko", desc: "Isi nama web, URL slug, dan markup harga. Dashboard langsung aktif." },
-            { step: "03", icon: "💰", title: "Terima Komisi", desc: "Share link tokomu. Setiap pelanggan order, komisi langsung masuk saldo." },
+            { step: "01", icon: "💳", title: "Beli Paket", desc: "Klik 'Buat Web Nokos', bayar Rp10.000 dari saldo Artapedia kamu. Langsung aktif." },
+            { step: "02", icon: "⚙️", title: "Set Toko", desc: "Isi nama web, URL slug, dan markup harga. Dashboard dan toko langsung hidup." },
+            { step: "03", icon: "💰", title: "Terima Komisi", desc: "Share link tokomu ke pelanggan. Setiap order, komisi langsung masuk saldo." },
           ].map(s => (
-            <div key={s.step} style={{ background: "linear-gradient(135deg,rgba(37,211,102,.06),rgba(18,140,126,.04))", border: "1px solid rgba(37,211,102,.12)", borderRadius: 18, padding: "24px 20px", position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", top: 16, right: 16, fontSize: 40, fontWeight: 900, color: "rgba(37,211,102,.07)", lineHeight: 1, letterSpacing: -2, userSelect: "none" }}>{s.step}</div>
-              <div style={{ fontSize: 34, marginBottom: 12 }}>{s.icon}</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "white", marginBottom: 8 }}>{s.title}</div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,.5)", lineHeight: 1.6 }}>{s.desc}</div>
+            <div key={s.step} style={{ background: "linear-gradient(135deg,rgba(37,211,102,.05),rgba(18,140,126,.03))", border: "1px solid rgba(37,211,102,.1)", borderRadius: 18, padding: "26px 22px", position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: 14, right: 18, fontSize: 44, fontWeight: 900, color: "rgba(37,211,102,.06)", lineHeight: 1, letterSpacing: -2, userSelect: "none" }}>{s.step}</div>
+              <div style={{ fontSize: 36, marginBottom: 14 }}>{s.icon}</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "white", marginBottom: 8 }}>{s.title}</div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,.45)", lineHeight: 1.65 }}>{s.desc}</div>
             </div>
           ))}
         </div>
       </div>
 
       {/* ── PRICING ── */}
-      <div style={{ maxWidth: 500, margin: "56px auto 0", padding: "0 16px" }}>
-        <div style={{ background: "linear-gradient(135deg,rgba(37,211,102,.08),rgba(18,140,126,.06))", border: "2px solid rgba(37,211,102,.3)", borderRadius: 24, padding: "30px 24px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+      <div style={{ maxWidth: 480, margin: "60px auto 0", padding: "0 16px" }}>
+        <div style={{ background: "linear-gradient(135deg,rgba(37,211,102,.06),rgba(18,140,126,.04))", border: "2px solid rgba(37,211,102,.25)", borderRadius: 24, padding: "30px 26px", textAlign: "center", position: "relative", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,.4)" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "linear-gradient(90deg,#128C7E,#25D366,#fbbf24)" }} />
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#25D366", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Harga Spesial</div>
-          <div style={{ fontSize: 48, fontWeight: 900, color: "white", lineHeight: 1, marginBottom: 4 }}>Rp10.000</div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,.4)", marginBottom: 20 }}>Bayar sekali, aktif selamanya • Tidak ada biaya bulanan</div>
-          {[
-            "✅ Web toko branded dengan URL unik",
-            "✅ Dashboard reseller lengkap",
-            "✅ Markup bebas 0–50%",
-            "✅ Komisi otomatis setiap order",
-            "✅ Semua layanan OTP & SMM",
-            "✅ Notifikasi Telegram real-time",
-          ].map(f => <div key={f} style={{ fontSize: 13, color: "rgba(255,255,255,.7)", textAlign: "left", padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,.05)" }}>{f}</div>)}
-          <button onClick={() => token ? setShowModal(true) : router.push("/")}
-            style={{ marginTop: 22, width: "100%", padding: "14px", borderRadius: 12, background: "linear-gradient(135deg,#128C7E,#25D366)", border: "none", color: "white", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: "0 6px 24px rgba(37,211,102,.4)" }}>
-            🚀 Buat Web Nokos Sekarang
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#25D366", textTransform: "uppercase", letterSpacing: 2, marginBottom: 8 }}>Harga Spesial</div>
+          <div style={{ fontSize: 52, fontWeight: 900, color: "white", lineHeight: 1, marginBottom: 4 }}>Rp10.000</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,.35)", marginBottom: 24 }}>Bayar sekali • aktif selamanya • tidak ada biaya bulanan</div>
+          <div style={{ textAlign: "left", marginBottom: 24 }}>
+            {[
+              "✅ Web toko branded dengan URL unik",
+              "✅ Dashboard reseller lengkap",
+              "✅ Markup bebas 0 – 50%",
+              "✅ Komisi otomatis setiap order",
+              "✅ Semua layanan OTP & SMM",
+              "✅ Notifikasi Telegram real-time",
+              "✅ Tidak ada biaya tambahan",
+            ].map(f => (
+              <div key={f} style={{ fontSize: 13, color: "rgba(255,255,255,.65)", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,.04)", display: "flex", alignItems: "center", gap: 8 }}>{f}</div>
+            ))}
+          </div>
+          {reseller ? (
+            <div style={{ background: "rgba(37,211,102,.1)", border: "1px solid rgba(37,211,102,.3)", borderRadius: 12, padding: "12px", marginBottom: 14 }}>
+              <div style={{ fontSize: 13, color: "#25D366", fontWeight: 700 }}>✓ Kamu sudah punya web reseller</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,.4)", marginTop: 3 }}>/store/{reseller.slug}</div>
+            </div>
+          ) : null}
+          <button onClick={handleBuyClick}
+            style={{ width: "100%", padding: "14px", borderRadius: 14, background: reseller ? "rgba(37,211,102,.15)" : "linear-gradient(135deg,#128C7E,#25D366)", border: reseller ? "1px solid rgba(37,211,102,.3)" : "none", color: reseller ? "#25D366" : "white", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: reseller ? "none" : "0 6px 24px rgba(37,211,102,.4)" }}>
+            {reseller ? "🏪 Buka Dashboard Reseller" : "🚀 Buat Web Nokos Sekarang"}
           </button>
-          {reseller && <p style={{ fontSize: 12, color: "#25D366", marginTop: 8 }}>✓ Kamu sudah punya web reseller: /store/{reseller.slug}</p>}
         </div>
       </div>
 
       {/* ── SYARAT & KETENTUAN ── */}
-      <div style={{ maxWidth: 680, margin: "56px auto 0", padding: "0 16px" }}>
+      <div style={{ maxWidth: 700, margin: "56px auto 0", padding: "0 16px" }}>
         <button onClick={() => setOpenTnc(v => !v)}
-          style={{ width: "100%", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 14, padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", color: "white" }}>
+          style={{ width: "100%", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", borderRadius: openTnc ? "14px 14px 0 0" : 14, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", color: "white", transition: "all .15s" }}>
           <span style={{ fontSize: 15, fontWeight: 700 }}>📋 Syarat & Ketentuan Reseller</span>
-          <span style={{ fontSize: 18, transform: openTnc ? "rotate(180deg)" : "none", transition: "transform .2s" }}>⌄</span>
+          <span style={{ fontSize: 20, transform: openTnc ? "rotate(180deg)" : "none", transition: "transform .25s", color: "rgba(255,255,255,.4)" }}>⌄</span>
         </button>
         {openTnc && (
-          <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", borderTop: "none", borderRadius: "0 0 14px 14px", padding: "16px 18px" }}>
+          <div style={{ background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.06)", borderTop: "none", borderRadius: "0 0 14px 14px", padding: "16px 20px" }}>
             {TNC.map((t, i) => (
-              <div key={i} style={{ display: "flex", gap: 10, marginBottom: 10, fontSize: 13, color: "rgba(255,255,255,.55)", lineHeight: 1.55 }}>
-                <span style={{ color: "#25D366", fontWeight: 700, flexShrink: 0 }}>{i + 1}.</span>
+              <div key={i} style={{ display: "flex", gap: 12, marginBottom: 10, fontSize: 13, color: "rgba(255,255,255,.5)", lineHeight: 1.6 }}>
+                <span style={{ color: "#25D366", fontWeight: 800, flexShrink: 0, fontSize: 12, paddingTop: 2 }}>{i + 1}.</span>
                 <span>{t}</span>
               </div>
             ))}
@@ -398,10 +474,10 @@ export default function ResellerPage() {
         )}
       </div>
 
-      <div style={{ height: 64 }} />
+      <div style={{ height: 80 }} />
 
       <style>{`
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.75)} }
+        @keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.7)} }
       `}</style>
     </div>
   );
