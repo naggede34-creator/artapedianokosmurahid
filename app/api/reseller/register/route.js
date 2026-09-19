@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { usersCol, resellersCol } from "@/lib/db";
 import { logBalance } from "@/lib/ledger";
+import { getSettings } from "@/lib/settings";
 import { sendTelegramNotif, sendTelegramChannelNotif, resellerRegisteredNotif, esc } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,11 @@ function slugify(str) {
 
 export async function POST(req) {
   try {
+    const settings = await getSettings();
+    if (!settings.reseller?.enabled) {
+      return NextResponse.json({ error: "Fitur web reseller saat ini dinonaktifkan oleh admin." }, { status: 403 });
+    }
+
     const { token, webName, markup } = await req.json().catch(() => ({}));
     if (!token) return NextResponse.json({ error: "Token diperlukan." }, { status: 400 });
     if (!webName || String(webName).trim().length < 3)
