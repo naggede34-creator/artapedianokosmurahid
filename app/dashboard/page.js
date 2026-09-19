@@ -52,8 +52,7 @@ const shortcuts = [
   { href: "/referral", label: "Undang teman", icon: Icon.gift },
   { href: "/produk", label: "Toko Produk", icon: Icon.shop, badge: "Baru" },
   { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin, badge: "Baru" },
-  { href: "/chat", label: "Grup Chat", icon: "💬", badge: "Live" },
-  { href: "/reseller", label: "Buat Web Nokos", icon: "🏪", badge: "Baru" }
+  { href: "/chat", label: "Grup Chat", icon: "💬", badge: "Live" }
 ];
 
 function WarrantyModal({ open, onClose, token }) {
