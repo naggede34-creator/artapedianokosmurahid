@@ -77,6 +77,7 @@ export default function AdminDashboardPage() {
   const [simuru, setSimuru] = useState(null);
   const [smmMarkupInput, setSmmMarkupInput] = useState("");
   const [savingSmm, setSavingSmm] = useState(false);
+  const [savingReseller, setSavingReseller] = useState(false);
 
   const [warrantyClaims, setWarrantyClaims] = useState([]);
   const [warrantyLoading, setWarrantyLoading] = useState(true);
@@ -403,6 +404,27 @@ export default function AdminDashboardPage() {
       }
     } finally {
       setSavingSmm(false);
+      setTimeout(() => setSettingsMsg(""), 2500);
+    }
+  }
+
+  async function saveReseller(patch) {
+    setSavingReseller(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reseller: patch })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSettings(data);
+        setSettingsMsg("Pengaturan web reseller tersimpan.");
+      } else {
+        setSettingsMsg(data.error || "Gagal menyimpan.");
+      }
+    } finally {
+      setSavingReseller(false);
       setTimeout(() => setSettingsMsg(""), 2500);
     }
   }
@@ -2177,6 +2199,20 @@ export default function AdminDashboardPage() {
                   <span className="text-sm text-muted">% markup</span>
                   <button onClick={() => saveSmm({ markupPercent: Number(smmMarkupInput) || 0 })} disabled={savingSmm} className="rounded-lg bg-amber px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">Simpan</button>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Web Reseller */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">🏪 Web Reseller (Buat Web Nokos)</h2>
+            <p className="mt-1 text-xs text-muted">Aktifkan/nonaktifkan fitur pembuatan web reseller. Jika dinonaktifkan, user tidak bisa mendaftar sebagai reseller baru.</p>
+            <div className="mt-4">
+              <div className="flex items-center justify-between rounded-lg border border-line bg-surface px-3.5 py-2.5">
+                <span className="text-sm text-ink">{settings?.reseller?.enabled ? "Aktif — user bisa buat web" : "Nonaktif — pendaftaran ditutup"}</span>
+                <button onClick={() => saveReseller({ enabled: !settings?.reseller?.enabled })} disabled={!settings || savingReseller} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${settings?.reseller?.enabled ? "bg-teal" : "bg-line"}`} aria-label="Toggle web reseller">
+                  <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings?.reseller?.enabled ? "translate-x-6" : "translate-x-1"}`} />
+                </button>
               </div>
             </div>
           </div>
