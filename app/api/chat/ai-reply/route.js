@@ -22,7 +22,6 @@ Info singkat Artapedia:
 - Kode akun format AP-XXXX-XXXX adalah kunci akun, simpan baik-baik
 
 Aturan menjawab:
-- Balas HANYA jika pesan relevan atau kamu ingin menyapa/merespons
 - Jawab singkat (1-3 kalimat max), sesuai gaya karaktermu
 - Boleh pakai emoji tapi jangan berlebihan
 - JANGAN minta kode akun atau data sensitif
@@ -34,7 +33,18 @@ function pickPersona(lastAiName) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-function shouldReply(message, msgType) {
+function detectCommand(message) {
+  const txt = String(message || "").trim().toLowerCase();
+  if (txt.startsWith("/tanya ")) return { cmd: "tanya", arg: message.slice(7).trim() };
+  if (txt === "/kurs") return { cmd: "kurs" };
+  if (txt.startsWith("/kurs")) return { cmd: "kurs" };
+  if (txt === "/cek-otp") return { cmd: "cekotp" };
+  if (txt.startsWith("/cek-otp")) return { cmd: "cekotp" };
+  return null;
+}
+
+function shouldReply(message, msgType, isCommand) {
+  if (isCommand) return true;
   if (msgType !== "text") return Math.random() < 0.15;
   const txt = message.toLowerCase();
   const triggers = ["?", "gimana", "cara", "bisa", "saldo", "otp", "deposit", "error", "kenapa", "halo", "hai", "helo", "kok", "minta", "tolong", "help", "bantu"];
@@ -45,9 +55,11 @@ function shouldReply(message, msgType) {
 export async function POST(req) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { message, type, displayName } = body;
+    const { message, type, displayName, isCommand: cmdFlag } = body;
 
-    if (!shouldReply(message || "", type || "text")) {
+    const cmd = detectCommand(message);
+
+    if (!shouldReply(message || "", type || "text", cmdFlag || !!cmd)) {
       return NextResponse.json({ ok: true, replied: false });
     }
 
@@ -57,24 +69,35 @@ export async function POST(req) {
     const lastAiMsg = await col.findOne({ isAI: true }, { sort: { createdAt: -1 } });
     const lastAiName = lastAiMsg?.aiPersona || null;
 
-    // Cek jika AI baru saja balas (< 8 detik lalu)
-    if (lastAiMsg?.createdAt) {
+    // Cek jika AI baru saja balas (< 8 detik), kecuali command
+    if (!cmd && !cmdFlag && lastAiMsg?.createdAt) {
       const diff = Date.now() - new Date(lastAiMsg.createdAt).getTime();
       if (diff < 8000) return NextResponse.json({ ok: true, replied: false });
     }
 
-    const persona = pickPersona(lastAiName);
+    const persona = cmd?.cmd === "cekotp" || cmd?.cmd === "kurs"
+      ? AI_PERSONAS.find(p => p.name === "Dunia OTP")
+      : pickPersona(lastAiName);
 
     // Ambil 8 pesan terakhir untuk konteks
     const recent = await col.find({ deleted: { $ne: true } }).sort({ createdAt: -1 }).limit(8).toArray();
     const history = [...recent].reverse().map((m) => `${m.displayName}: ${m.message || "[stiker/suara]"}`).join("\n");
 
-    const prompt = `${GROUP_CONTEXT}\n\nGaya karaktermu: ${persona.style}\nNamamu: ${persona.name}\n\nPercakapan terbaru di grup:\n${history}\n\n${displayName}: ${message || "[stiker]"}\n${persona.name}:`;
+    let promptSuffix = `${displayName}: ${message || "[stiker]"}\n${persona.name}:`;
+
+    if (cmd?.cmd === "tanya") {
+      promptSuffix = `${displayName} bertanya langsung: "${cmd.arg}"\nJawab dengan jelas dan membantu.\n${persona.name}:`;
+    } else if (cmd?.cmd === "kurs") {
+      promptSuffix = `${displayName} minta info kurs QRIS atau nilai tukar untuk deposit. Berikan info umum cara deposit di Artapedia dan estimasi kurs.\n${persona.name}:`;
+    } else if (cmd?.cmd === "cekotp") {
+      promptSuffix = `${displayName} mau cek status OTP. Berikan panduan singkat cara cek nomor OTP di Artapedia.\n${persona.name}:`;
+    }
+
+    const prompt = `${GROUP_CONTEXT}\n\nGaya karaktermu: ${persona.style}\nNamamu: ${persona.name}\n\nPercakapan terbaru di grup:\n${history}\n\n${promptSuffix}`;
 
     const reply = await askCsAi(prompt);
     if (!reply) return NextResponse.json({ ok: true, replied: false });
 
-    // Delay alami (0.5-2.5 detik sudah lewat sisi client, di sini langsung insert)
     const aiMsg = {
       msgId: crypto.randomUUID(),
       token: null,
@@ -86,8 +109,16 @@ export async function POST(req) {
       replyToPreview: null,
       voiceData: null,
       stickerCode: null,
+      imageData: null,
+      pollQuestion: null,
+      pollOptions: null,
       isAI: true,
+      isSystem: false,
       aiPersona: persona.name,
+      reactions: {},
+      pinned: false,
+      pinnedBy: null,
+      mentions: [],
       createdAt: new Date(),
       deleted: false,
     };

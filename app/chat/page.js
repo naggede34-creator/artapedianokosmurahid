@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useUser } from "@/app/providers";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 /* ─── AI Personas ─────────────────────────────────────────────── */
 const AI_PERSONAS = {
@@ -14,29 +14,34 @@ const AI_PERSONAS = {
   Zall:         { emoji: "🎯", color: "#10b981" },
 };
 
-/* ─── Sticker Packs ───────────────────────────────────────────── */
+const AI_COMMANDS = [
+  { cmd: "/tanya", desc: "Tanya langsung ke AI" },
+  { cmd: "/kurs", desc: "Info kurs & deposit" },
+  { cmd: "/cek-otp", desc: "Panduan cek OTP" },
+];
+
 const STICKER_PACKS = [
   { label: "Ekspresi", s: ["😂","🤣","😍","🥰","😎","🤩","😤","🥺","😭","🤯","🤔","🫡","😏","🥳"] },
   { label: "Hewan",   s: ["🦅","🐺","🌸","🌏","⚡","🎯","🦊","🐱","🦁","🐉","🦋","🐸","🦄","🐻"] },
   { label: "OTP",     s: ["📱","💻","🔑","🔐","💳","💰","🚀","⚡","🌏","🎯","📲","🛡️","💎","🔥"] },
 ];
 
-const EMOJI_QUICK = ["😂","😍","👍","🔥","💯","😎","🤩","❤️","😭","🫡"];
+const QUICK_EMOJI = ["😂","😍","👍","🔥","💯","❤️","😎","🤩","🥺","🫡"];
+const REACT_EMOJI = ["👍","❤️","😂","😮","😢","🙏","🔥","💯"];
 
 /* ─── Helpers ─────────────────────────────────────────────────── */
-function timeStr(date) {
-  if (!date) return "";
-  return new Date(date).toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", hour12:false });
+function timeStr(d) {
+  if (!d) return "";
+  return new Date(d).toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", hour12:false });
 }
 
-function dateLabel(date) {
-  if (!date) return "";
-  const d = new Date(date);
-  const now = new Date();
-  const diffDays = Math.floor((now - d) / 86400000);
-  if (diffDays === 0) return "Hari ini";
-  if (diffDays === 1) return "Kemarin";
-  return d.toLocaleDateString("id-ID", { day:"numeric", month:"long" });
+function dateLabel(d) {
+  if (!d) return "";
+  const date = new Date(d), now = new Date();
+  const diff = Math.floor((now - date) / 86400000);
+  if (diff === 0) return "Hari ini";
+  if (diff === 1) return "Kemarin";
+  return date.toLocaleDateString("id-ID", { day:"numeric", month:"long" });
 }
 
 function getNameColor(name) {
@@ -50,6 +55,19 @@ function getInitials(name) {
   if (!name) return "?";
   const p = name.trim().split(/\s+/);
   return p.length >= 2 ? (p[0][0]+p[1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+}
+
+function highlightMentions(text, myName) {
+  if (!text || !text.includes("@")) return text;
+  return text.split(/(@\w[\w\s]*)/g).map((part, i) => {
+    if (part.startsWith("@")) {
+      const isMe = myName && part.toLowerCase().includes(myName.toLowerCase());
+      return (
+        <span key={i} style={{ color: isMe ? "#fbbf24" : "#25D366", fontWeight:700 }}>{part}</span>
+      );
+    }
+    return part;
+  });
 }
 
 /* ─── Voice Player ────────────────────────────────────────────── */
@@ -67,39 +85,32 @@ function VoicePlayer({ data, isMine }) {
       audioRef.current.onended = () => { setPlaying(false); setProgress(0); setElapsed(0); };
       audioRef.current.ontimeupdate = () => {
         const a = audioRef.current;
-        if (a.duration) { setProgress(a.currentTime / a.duration); setElapsed(Math.floor(a.currentTime)); }
+        if (a.duration) { setProgress(a.currentTime/a.duration); setElapsed(Math.floor(a.currentTime)); }
       };
     }
     if (playing) { audioRef.current.pause(); setPlaying(false); }
-    else          { audioRef.current.play(); setPlaying(true); }
+    else { audioRef.current.play(); setPlaying(true); }
   }
 
   const fmt = s => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
-  const barColor = isMine ? "rgba(255,255,255,.9)" : "#128C7E";
-  const trackColor = isMine ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.12)";
+  const bar = isMine ? "rgba(255,255,255,.9)" : "#25D366";
+  const track = isMine ? "rgba(255,255,255,.25)" : "rgba(255,255,255,.12)";
 
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:10, minWidth:180, maxWidth:230 }}>
-      <button onClick={toggle}
-        style={{ width:40, height:40, borderRadius:"50%", background: isMine ? "rgba(255,255,255,.25)" : "rgba(18,140,126,.12)", border:`1.5px solid ${isMine?"rgba(255,255,255,.4)":"rgba(18,140,126,.3)"}`, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"transform .15s", backdropFilter:"blur(4px)" }}
-        onMouseDown={e=>e.currentTarget.style.transform="scale(.92)"}
-        onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill={isMine?"white":barColor}>
-          {playing
-            ? <><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></>
-            : <path d="M8 5v14l11-7z"/>}
+    <div style={{ display:"flex", alignItems:"center", gap:10, minWidth:190, maxWidth:240 }}>
+      <button onClick={toggle} style={{ width:40, height:40, borderRadius:"50%", background: isMine ? "rgba(255,255,255,.2)" : "rgba(37,211,102,.15)", border:`1.5px solid ${isMine?"rgba(255,255,255,.35)":"rgba(37,211,102,.4)"}`, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill={isMine?"white":bar}>
+          {playing ? <><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></> : <path d="M8 5v14l11-7z"/>}
         </svg>
       </button>
       <div style={{ flex:1 }}>
-        {/* Waveform bars */}
-        <div style={{ display:"flex", alignItems:"center", gap:2, height:28, marginBottom:4 }}>
-          {Array.from({length:24}).map((_,i)=>{
-            const h = 6 + (Math.sin(i*0.7)*2 + Math.cos(i*0.4)*3 + 5);
-            const filled = i / 24 <= progress;
-            return <div key={i} style={{ width:2.5, height:h, borderRadius:2, background: filled ? barColor : trackColor, flexShrink:0, transition:"background .1s" }} />;
+        <div style={{ display:"flex", alignItems:"center", gap:2, height:28, marginBottom:3 }}>
+          {Array.from({length:24}).map((_,i) => {
+            const h = 5 + Math.abs(Math.sin(i*0.7+1)*3 + Math.cos(i*0.4)*4);
+            return <div key={i} style={{ width:2.5, height:h, borderRadius:2, background: i/24<=progress?bar:track, flexShrink:0, transition:"background .1s" }} />;
           })}
         </div>
-        <div style={{ fontSize:10.5, color: isMine ? "rgba(255,255,255,.7)" : "#888", fontWeight:500 }}>
+        <div style={{ fontSize:10.5, color: isMine?"rgba(255,255,255,.6)":"rgba(255,255,255,.4)", fontWeight:500 }}>
           {playing ? fmt(elapsed) : (duration ? fmt(Math.round(duration)) : "🎤 VN")}
         </div>
       </div>
@@ -107,107 +118,361 @@ function VoicePlayer({ data, isMine }) {
   );
 }
 
+/* ─── Poll Bubble ─────────────────────────────────────────────── */
+function PollBubble({ msg, token, onVote }) {
+  const total = (msg.pollOptions||[]).reduce((s,o) => s+(o.voters?.length||0), 0);
+  const myVote = (msg.pollOptions||[]).find(o => (o.voters||[]).includes(token));
+
+  return (
+    <div style={{ minWidth:220, maxWidth:280 }}>
+      <div style={{ fontSize:13.5, fontWeight:700, color:"white", marginBottom:10, lineHeight:1.35 }}>📊 {msg.pollQuestion}</div>
+      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+        {(msg.pollOptions||[]).map(opt => {
+          const pct = total > 0 ? Math.round((opt.voters?.length||0)/total*100) : 0;
+          const voted = (opt.voters||[]).includes(token);
+          return (
+            <button key={opt.id} onClick={() => onVote(msg.id, opt.id)}
+              style={{ background:"none", border:`1.5px solid ${voted?"#25D366":"rgba(255,255,255,.2)"}`, borderRadius:10, padding:"8px 12px", cursor:"pointer", position:"relative", overflow:"hidden", textAlign:"left" }}>
+              <div style={{ position:"absolute", top:0, left:0, height:"100%", width:`${pct}%`, background: voted?"rgba(37,211,102,.2)":"rgba(255,255,255,.06)", transition:"width .4s ease", borderRadius:8 }} />
+              <div style={{ position:"relative", display:"flex", justifyContent:"space-between", alignItems:"center", gap:8 }}>
+                <span style={{ fontSize:13, color: voted?"#25D366":"rgba(255,255,255,.8)", fontWeight: voted?700:400 }}>{voted?"✓ ":""}{opt.text}</span>
+                <span style={{ fontSize:11.5, color:"rgba(255,255,255,.45)", flexShrink:0 }}>{pct}%</span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ fontSize:11, color:"rgba(255,255,255,.35)", marginTop:7 }}>
+        {total} suara{myVote ? ` · kamu memilih "${myVote.text}"` : ""}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Reaction Row ────────────────────────────────────────────── */
+function ReactionRow({ reactions, token, onReact }) {
+  if (!reactions || !Object.keys(reactions).length) return null;
+  return (
+    <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginTop:4 }}>
+      {Object.entries(reactions).map(([emoji, voters]) => {
+        if (!voters?.length) return null;
+        const mine = voters.includes(token);
+        return (
+          <button key={emoji} onClick={() => onReact(emoji)}
+            style={{ display:"flex", alignItems:"center", gap:3, padding:"2px 8px", borderRadius:99, background: mine?"rgba(37,211,102,.2)":"rgba(255,255,255,.08)", border:`1px solid ${mine?"rgba(37,211,102,.5)":"rgba(255,255,255,.12)"}`, cursor:"pointer", fontSize:13, color: mine?"#25D366":"rgba(255,255,255,.7)", fontWeight: mine?700:400, transition:"all .15s" }}>
+            {emoji} <span style={{ fontSize:11 }}>{voters.length}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── Reaction Picker ─────────────────────────────────────────── */
+function ReactionPicker({ onPick, onClose, style }) {
+  return (
+    <div style={{ position:"absolute", zIndex:100, background:"rgba(20,24,32,.97)", border:"1px solid rgba(255,255,255,.1)", borderRadius:99, padding:"6px 10px", display:"flex", gap:6, boxShadow:"0 8px 24px rgba(0,0,0,.5)", backdropFilter:"blur(16px)", ...style }}>
+      {REACT_EMOJI.map(e => (
+        <button key={e} onClick={() => { onPick(e); onClose(); }}
+          style={{ background:"none", border:"none", cursor:"pointer", fontSize:22, padding:3, borderRadius:8, lineHeight:1, transition:"transform .15s" }}
+          onMouseEnter={ev=>ev.currentTarget.style.transform="scale(1.35)"}
+          onMouseLeave={ev=>ev.currentTarget.style.transform="scale(1)"}>
+          {e}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /* ─── Message Bubble ──────────────────────────────────────────── */
-function MsgBubble({ msg, isMine, onReply, prevSender, nextSender }) {
+function MsgBubble({ msg, isMine, onReply, prevSender, nextSender, token, isAdmin, onPin, onReact, onVote }) {
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const holdTimer = useRef(null);
+  const bubbleRef = useRef(null);
+
   const persona = msg.isAI && AI_PERSONAS[msg.aiPersona];
   const nameColor = msg.isAI && persona ? persona.color : getNameColor(msg.displayName);
   const showSenderInfo = !isMine && msg.displayName !== prevSender;
   const isLastInGroup = !isMine && msg.displayName !== nextSender;
 
-  const sentGrad = "linear-gradient(135deg,#25D366,#128C7E)";
-  const bubbleBg = isMine ? sentGrad : "rgba(255,255,255,.97)";
-  const textColor = isMine ? "white" : "#111";
-  const timeColor = isMine ? "rgba(255,255,255,.7)" : "#a0adb8";
+  function startHold() {
+    holdTimer.current = setTimeout(() => setShowReactionPicker(true), 500);
+  }
+  function endHold() { clearTimeout(holdTimer.current); }
+
+  useEffect(() => () => clearTimeout(holdTimer.current), []);
+
+  if (msg.isSystem) {
+    return (
+      <div style={{ display:"flex", justifyContent:"center", margin:"8px 0" }}>
+        <div style={{ background:"rgba(37,211,102,.1)", border:"1px solid rgba(37,211,102,.2)", borderRadius:99, padding:"6px 16px", fontSize:12.5, color:"rgba(37,211,102,.9)", fontWeight:500, maxWidth:320, textAlign:"center" }}>
+          📢 {msg.message}
+        </div>
+      </div>
+    );
+  }
+
+  const sentGrad = "linear-gradient(135deg,#1da878,#25D366)";
+  const bubbleBg = isMine ? sentGrad : "rgba(255,255,255,.07)";
+  const textColor = "rgba(255,255,255,.92)";
+  const timeColor = isMine ? "rgba(255,255,255,.6)" : "rgba(255,255,255,.35)";
 
   const br = msg.type === "sticker" ? 0
     : isMine ? "18px 18px 4px 18px"
     : showSenderInfo ? "4px 18px 18px 18px" : "18px 18px 18px 4px";
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems: isMine ? "flex-end" : "flex-start", marginBottom: showSenderInfo ? 8 : 2, paddingLeft: !isMine ? 0 : 0 }}>
-      <div style={{ display:"flex", gap:8, alignItems:"flex-end", maxWidth: msg.type==="sticker" ? 130 : 300, flexDirection: isMine ? "row-reverse" : "row" }}>
+    <div style={{ display:"flex", flexDirection:"column", alignItems: isMine?"flex-end":"flex-start", marginBottom: showSenderInfo?10:3, position:"relative" }}>
+      <div style={{ display:"flex", gap:8, alignItems:"flex-end", flexDirection: isMine?"row-reverse":"row", maxWidth: msg.type==="sticker"?140:320 }}>
 
         {/* Avatar */}
         {!isMine && (
-          <div style={{ width:34, height:34, flexShrink:0, marginBottom:2 }}>
+          <div style={{ width:36, height:36, flexShrink:0, marginBottom:2 }}>
             {isLastInGroup && (
-              <div style={{ width:34, height:34, borderRadius:"50%", background:`linear-gradient(135deg,${nameColor}cc,${nameColor})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize: persona ? 16 : 13, fontWeight:700, color:"white", boxShadow:`0 2px 8px ${nameColor}55` }}>
+              <div style={{ width:36, height:36, borderRadius:"50%", background:`linear-gradient(135deg,${nameColor}cc,${nameColor})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize: persona?16:13, fontWeight:700, color:"white", boxShadow:`0 2px 8px ${nameColor}44`, cursor:"default" }}>
                 {persona ? persona.emoji : getInitials(msg.displayName)}
               </div>
             )}
           </div>
         )}
 
-        <div style={{ display:"flex", flexDirection:"column", alignItems: isMine ? "flex-end" : "flex-start", maxWidth: msg.type==="sticker" ? 130 : 270 }}>
-          {/* Sender name */}
+        <div style={{ display:"flex", flexDirection:"column", alignItems: isMine?"flex-end":"flex-start", maxWidth: msg.type==="sticker"?130:290 }}>
           {showSenderInfo && (
-            <div style={{ fontSize:12, fontWeight:700, color:nameColor, marginBottom:3, paddingLeft:2, letterSpacing:.1 }}>{msg.displayName}</div>
+            <div style={{ fontSize:12, fontWeight:700, color:nameColor, marginBottom:4, paddingLeft:2, letterSpacing:.1 }}>{msg.displayName}</div>
           )}
 
           {msg.type === "sticker" ? (
-            <div onClick={() => onReply(msg)} style={{ cursor:"pointer", padding:4, borderRadius:12 }}>
-              <span style={{ fontSize:58, lineHeight:1, display:"block" }}>{msg.stickerCode}</span>
-              <span style={{ fontSize:10.5, color:"#a0adb8", display:"block", textAlign: isMine?"right":"left", marginTop:2 }}>{timeStr(msg.createdAt)}</span>
+            <div onClick={() => onReply(msg)} style={{ cursor:"pointer", padding:4 }}>
+              <span style={{ fontSize:60, lineHeight:1, display:"block" }}>{msg.stickerCode}</span>
+              <span style={{ fontSize:10.5, color:"rgba(255,255,255,.3)", display:"block", textAlign:isMine?"right":"left", marginTop:2 }}>{timeStr(msg.createdAt)}</span>
+            </div>
+          ) : msg.type === "image" ? (
+            <div ref={bubbleRef} style={{ borderRadius:br, overflow:"hidden", boxShadow:"0 2px 12px rgba(0,0,0,.4)", cursor:"pointer", maxWidth:240 }}
+              onContextMenu={e=>{ e.preventDefault(); setShowReactionPicker(true); }}
+              onTouchStart={startHold} onTouchEnd={endHold} onMouseDown={endHold}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={msg.imageData} alt="img" style={{ width:"100%", maxWidth:240, display:"block", borderRadius:br }} onClick={() => onReply(msg)} />
+              <div style={{ display:"flex", justifyContent:"flex-end", alignItems:"center", gap:3, padding:"4px 8px 5px", background:"rgba(0,0,0,.3)" }}>
+                <span style={{ fontSize:10.5, color:"rgba(255,255,255,.6)" }}>{timeStr(msg.createdAt)}</span>
+                {isMine && <svg width="15" height="10" viewBox="0 0 16 11"><path d="M15.01 1.41L13.6 0 5.93 7.67 2.43 4.18 1.01 5.59l4.92 4.92 9.08-9.1z" fill="rgba(255,255,255,.8)"/><path d="M11.01 1.41L9.6 0 6.42 3.17 7.84 4.59l3.17-3.18z" fill="rgba(255,255,255,.8)"/></svg>}
+              </div>
+            </div>
+          ) : msg.type === "poll" ? (
+            <div style={{ borderRadius:br, background:"rgba(37,211,102,.08)", border:"1px solid rgba(37,211,102,.2)", padding:"12px 14px 10px", maxWidth:290, boxShadow:"0 2px 12px rgba(0,0,0,.3)" }}>
+              <PollBubble msg={msg} token={token} onVote={onVote} />
+              <div style={{ display:"flex", justifyContent:"flex-end", marginTop:8 }}>
+                <span style={{ fontSize:10.5, color:"rgba(255,255,255,.35)" }}>{timeStr(msg.createdAt)}</span>
+              </div>
             </div>
           ) : (
-            <div onClick={() => onReply(msg)} style={{ borderRadius:br, background:bubbleBg, boxShadow: isMine ? "0 2px 8px rgba(37,211,102,.35)" : "0 2px 8px rgba(0,0,0,.08)", padding: msg.type==="voice" ? "10px 14px 8px" : "9px 13px 7px", cursor:"pointer", backdropFilter: isMine ? "none" : "blur(2px)", border: isMine ? "none" : "1px solid rgba(0,0,0,.05)" }}>
+            <div ref={bubbleRef}
+              onClick={() => onReply(msg)}
+              onContextMenu={e=>{ e.preventDefault(); setShowReactionPicker(v=>!v); }}
+              onTouchStart={startHold} onTouchEnd={endHold} onMouseDown={endHold}
+              style={{ borderRadius:br, background:bubbleBg, boxShadow: isMine?"0 2px 10px rgba(37,211,102,.25)":"0 2px 10px rgba(0,0,0,.2)", padding: msg.type==="voice"?"10px 14px 8px":"9px 13px 7px", cursor:"pointer", border: isMine?"none":"1px solid rgba(255,255,255,.06)" }}>
 
-              {/* Reply preview */}
               {msg.replyTo && (
-                <div style={{ background: isMine ? "rgba(0,0,0,.18)" : "rgba(0,0,0,.06)", borderLeft:`3px solid ${isMine?"rgba(255,255,255,.8)":nameColor}`, borderRadius:"0 8px 8px 0", padding:"6px 9px", marginBottom:8 }}>
-                  <div style={{ fontSize:11.5, fontWeight:700, color: isMine?"rgba(255,255,255,.9)":nameColor, marginBottom:2 }}>{msg.replyToName}</div>
-                  <div style={{ fontSize:12, color: isMine?"rgba(255,255,255,.7)":"#666", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:200 }}>{msg.replyToPreview||"…"}</div>
+                <div style={{ background: isMine?"rgba(0,0,0,.2)":"rgba(255,255,255,.06)", borderLeft:`3px solid ${isMine?"rgba(255,255,255,.7)":nameColor}`, borderRadius:"0 8px 8px 0", padding:"5px 9px", marginBottom:8 }}>
+                  <div style={{ fontSize:11.5, fontWeight:700, color: isMine?"rgba(255,255,255,.8)":nameColor, marginBottom:2 }}>{msg.replyToName}</div>
+                  <div style={{ fontSize:12, color:"rgba(255,255,255,.45)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", maxWidth:210 }}>{msg.replyToPreview||"…"}</div>
                 </div>
               )}
 
               {msg.type === "voice"
                 ? <VoicePlayer data={msg.voiceData} isMine={isMine} />
-                : <div style={{ fontSize:14.5, color:textColor, lineHeight:1.5, wordBreak:"break-word", fontWeight:400 }}>{msg.message}</div>
+                : <div style={{ fontSize:14.5, color:textColor, lineHeight:1.5, wordBreak:"break-word" }}>
+                    {highlightMentions(msg.message, null)}
+                  </div>
               }
 
-              {/* Time + ticks */}
               <div style={{ display:"flex", justifyContent:"flex-end", alignItems:"center", gap:4, marginTop:5 }}>
-                <span style={{ fontSize:11, color:timeColor, fontWeight:400 }}>{timeStr(msg.createdAt)}</span>
-                {isMine && (
-                  <svg width="16" height="11" viewBox="0 0 16 11">
-                    <path d="M15.01 1.41L13.6 0 5.93 7.67 2.43 4.18 1.01 5.59l4.92 4.92 9.08-9.1z" fill="rgba(255,255,255,.85)"/>
-                    <path d="M11.01 1.41L9.6 0 6.42 3.17 7.84 4.59l3.17-3.18z" fill="rgba(255,255,255,.85)"/>
-                  </svg>
-                )}
+                <span style={{ fontSize:10.5, color:timeColor }}>{timeStr(msg.createdAt)}</span>
+                {isMine && <svg width="16" height="11" viewBox="0 0 16 11"><path d="M15.01 1.41L13.6 0 5.93 7.67 2.43 4.18 1.01 5.59l4.92 4.92 9.08-9.1z" fill="rgba(255,255,255,.75)"/><path d="M11.01 1.41L9.6 0 6.42 3.17 7.84 4.59l3.17-3.18z" fill="rgba(255,255,255,.75)"/></svg>}
               </div>
             </div>
           )}
+
+          {/* Reactions */}
+          <ReactionRow reactions={msg.reactions} token={token} onReact={e => onReact(msg.id, e)} />
+        </div>
+      </div>
+
+      {/* Context menu */}
+      {showReactionPicker && (
+        <>
+          <div style={{ position:"fixed", inset:0, zIndex:99 }} onClick={()=>setShowReactionPicker(false)} />
+          <ReactionPicker onPick={e => onReact(msg.id, e)} onClose={()=>setShowReactionPicker(false)}
+            style={{ bottom:"calc(100% + 4px)", [isMine?"right":"left"]:0 }} />
+          {isAdmin && (
+            <div style={{ position:"absolute", bottom:"calc(100% + 54px)", [isMine?"right":"left"]:0, zIndex:101, background:"rgba(20,24,32,.97)", border:"1px solid rgba(255,255,255,.1)", borderRadius:12, padding:4, display:"flex", flexDirection:"column", boxShadow:"0 8px 24px rgba(0,0,0,.5)", minWidth:140 }}>
+              <button onClick={() => { onReply(msg); setShowReactionPicker(false); }} style={{ background:"none", border:"none", cursor:"pointer", padding:"8px 12px", fontSize:13, color:"rgba(255,255,255,.8)", textAlign:"left", borderRadius:8, display:"flex", alignItems:"center", gap:8 }}>↩ Balas</button>
+              <button onClick={() => { onPin(msg.id, msg.pinned); setShowReactionPicker(false); }} style={{ background:"none", border:"none", cursor:"pointer", padding:"8px 12px", fontSize:13, color:msg.pinned?"#fb923c":"rgba(255,255,255,.8)", textAlign:"left", borderRadius:8, display:"flex", alignItems:"center", gap:8 }}>📌 {msg.pinned?"Unpin":"Pin Pesan"}</button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ─── Group Settings Panel ────────────────────────────────────── */
+function GroupSettingsPanel({ settings, onClose, onSaved }) {
+  const [name, setName] = useState(settings.name || "");
+  const [desc, setDesc] = useState(settings.desc || "");
+  const [photo, setPhoto] = useState(settings.photo || null);
+  const [closed, setClosed] = useState(settings.closed || false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  async function save() {
+    setSaving(true);
+    try {
+      await fetch("/api/chat/group-settings", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name, desc, photo, closed }) });
+      setSaved(true);
+      onSaved({ name, desc, photo, closed });
+      setTimeout(() => setSaved(false), 2000);
+    } finally { setSaving(false); }
+  }
+
+  async function tagAll() {
+    await fetch("/api/chat/group-settings", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ action:"tagall" }) });
+    onClose();
+  }
+
+  function handlePhoto(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 300000) { alert("Foto maksimal 300KB"); return; }
+    const reader = new FileReader();
+    reader.onload = ev => setPhoto(ev.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:70, display:"flex" }}>
+      <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,.6)", backdropFilter:"blur(4px)" }} onClick={onClose} />
+      <div style={{ position:"absolute", right:0, top:0, bottom:0, width:"min(360px,100vw)", background:"#0f1319", borderLeft:"1px solid rgba(255,255,255,.07)", display:"flex", flexDirection:"column", animation:"slideIn .25s ease" }}>
+        {/* Header */}
+        <div style={{ padding:"16px 18px 14px", borderBottom:"1px solid rgba(255,255,255,.06)", display:"flex", alignItems:"center", gap:10 }}>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(255,255,255,.6)", padding:6, borderRadius:8, display:"flex" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+          <span style={{ fontSize:16, fontWeight:700, color:"white" }}>Pengaturan Grup</span>
+        </div>
+
+        <div style={{ flex:1, overflowY:"auto", padding:"20px 18px" }}>
+          {/* Group photo */}
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, marginBottom:24 }}>
+            <label style={{ cursor:"pointer", position:"relative" }}>
+              <div style={{ width:84, height:84, borderRadius:"50%", background: photo?"transparent":"rgba(37,211,102,.15)", display:"flex", alignItems:"center", justifyContent:"center", border:"2px dashed rgba(37,211,102,.3)", overflow:"hidden" }}>
+                {photo
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  ? <img src={photo} alt="pp" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                  : <svg width="32" height="32" viewBox="0 0 24 24" fill="rgba(37,211,102,.6)"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>}
+              </div>
+              <div style={{ position:"absolute", bottom:2, right:2, width:24, height:24, borderRadius:"50%", background:"#25D366", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+              </div>
+              <input type="file" accept="image/*" style={{ display:"none" }} onChange={handlePhoto} />
+            </label>
+            <span style={{ fontSize:12, color:"rgba(255,255,255,.35)" }}>Tap untuk ubah foto grup</span>
+          </div>
+
+          {/* Fields */}
+          {[
+            { label:"Nama Grup", val:name, set:setName, max:50, ph:"Nama grup chat" },
+            { label:"Deskripsi", val:desc, set:setDesc, max:200, ph:"Deskripsi singkat grup" },
+          ].map(f => (
+            <div key={f.label} style={{ marginBottom:16 }}>
+              <div style={{ fontSize:11.5, fontWeight:600, color:"rgba(255,255,255,.4)", marginBottom:6, textTransform:"uppercase", letterSpacing:".7px" }}>{f.label}</div>
+              <div style={{ background:"rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.08)", borderRadius:12, padding:"10px 14px", display:"flex", gap:8 }}>
+                <input type="text" value={f.val} onChange={e=>f.set(e.target.value)} placeholder={f.ph} maxLength={f.max}
+                  style={{ flex:1, background:"none", border:"none", outline:"none", color:"rgba(255,255,255,.85)", fontSize:14 }} />
+                <span style={{ fontSize:11, color:"rgba(255,255,255,.2)", alignSelf:"flex-end" }}>{f.val.length}/{f.max}</span>
+              </div>
+            </div>
+          ))}
+
+          {/* Closed toggle */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, padding:"12px 14px", background:"rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.07)", borderRadius:12 }}>
+            <div>
+              <div style={{ fontSize:14, fontWeight:600, color:"rgba(255,255,255,.85)" }}>🔒 Tutup Grup</div>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,.35)", marginTop:2 }}>Member tidak bisa kirim pesan</div>
+            </div>
+            <button onClick={()=>setClosed(v=>!v)}
+              style={{ width:48, height:28, borderRadius:99, background: closed?"#25D366":"rgba(255,255,255,.12)", border:"none", cursor:"pointer", position:"relative", transition:"background .2s", flexShrink:0 }}>
+              <div style={{ width:22, height:22, borderRadius:"50%", background:"white", position:"absolute", top:3, left: closed?23:3, transition:"left .2s", boxShadow:"0 2px 4px rgba(0,0,0,.3)" }} />
+            </button>
+          </div>
+
+          {/* Tag all */}
+          <button onClick={tagAll} style={{ width:"100%", padding:"12px", borderRadius:12, background:"rgba(251,191,36,.1)", border:"1.5px solid rgba(251,191,36,.3)", color:"#fbbf24", fontSize:14, fontWeight:600, cursor:"pointer", marginBottom:12 }}>
+            📢 Tag Semua Anggota (@semua)
+          </button>
+
+          {/* Save */}
+          <button onClick={save} disabled={saving}
+            style={{ width:"100%", padding:"13px", borderRadius:12, background: saved?"rgba(37,211,102,.25)":"linear-gradient(135deg,#128C7E,#25D366)", border:"none", color:"white", fontSize:15, fontWeight:700, cursor:saving?"not-allowed":"pointer", transition:"all .2s", boxShadow:"0 4px 14px rgba(37,211,102,.3)" }}>
+            {saved ? "✓ Tersimpan" : saving ? "Menyimpan..." : "Simpan Perubahan"}
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── Emoji Quick Picker ──────────────────────────────────────── */
-function EmojiPicker({ onPick, onClose }) {
-  const [tab, setTab] = useState(0);
+/* ─── Poll Creator Modal ──────────────────────────────────────── */
+function PollCreator({ onSend, onClose }) {
+  const [question, setQuestion] = useState("");
+  const [options, setOptions] = useState(["", ""]);
+
+  function addOption() { if (options.length < 4) setOptions(v=>[...v,""]); }
+  function setOpt(i, v) { setOptions(p => p.map((o,j) => j===i?v:o)); }
+
+  function send() {
+    const q = question.trim();
+    const opts = options.map(o=>o.trim()).filter(Boolean);
+    if (!q || opts.length < 2) return;
+    onSend(q, opts);
+    onClose();
+  }
+
   return (
-    <div style={{ position:"absolute", bottom:"calc(100% + 8px)", left:0, width:300, background:"rgba(20,20,30,.95)", borderRadius:16, boxShadow:"0 8px 32px rgba(0,0,0,.4)", overflow:"hidden", zIndex:50, backdropFilter:"blur(16px)", border:"1px solid rgba(255,255,255,.08)" }}>
-      {/* Quick row */}
-      <div style={{ display:"flex", padding:"10px 10px 6px", gap:4, borderBottom:"1px solid rgba(255,255,255,.06)" }}>
-        {EMOJI_QUICK.map(e=>(
-          <button key={e} onClick={()=>{onPick(e);onClose();}} style={{ flex:1, background:"none", border:"none", cursor:"pointer", fontSize:20, padding:"4px 2px", borderRadius:8, transition:"background .15s" }}
-            onMouseEnter={ev=>ev.currentTarget.style.background="rgba(255,255,255,.1)"}
-            onMouseLeave={ev=>ev.currentTarget.style.background="none"}>{e}</button>
-        ))}
-      </div>
-      {/* Sticker packs */}
-      <div style={{ display:"flex", borderBottom:"1px solid rgba(255,255,255,.06)" }}>
-        {STICKER_PACKS.map((p,i)=>(
-          <button key={i} onClick={()=>setTab(i)} style={{ flex:1, padding:"8px 0", background:"none", border:"none", cursor:"pointer", fontSize:11.5, fontWeight:600, color:tab===i?"#25D366":"rgba(255,255,255,.4)", borderBottom: tab===i?"2px solid #25D366":"2px solid transparent", transition:"all .2s" }}>{p.label}</button>
-        ))}
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, padding:"8px 8px 10px" }}>
-        {STICKER_PACKS[tab].s.map(s=>(
-          <button key={s} onClick={()=>{onPick(s);onClose();}} style={{ background:"none", border:"none", cursor:"pointer", fontSize:22, padding:5, borderRadius:8, lineHeight:1, transition:"background .15s, transform .1s" }}
-            onMouseEnter={ev=>{ev.currentTarget.style.background="rgba(255,255,255,.08)";ev.currentTarget.style.transform="scale(1.15)"}}
-            onMouseLeave={ev=>{ev.currentTarget.style.background="none";ev.currentTarget.style.transform="scale(1)"}}>{s}</button>
-        ))}
+    <div style={{ position:"fixed", inset:0, zIndex:70, display:"flex", alignItems:"center", justifyContent:"center", padding:16, background:"rgba(0,0,0,.65)", backdropFilter:"blur(8px)" }}>
+      <div style={{ width:"100%", maxWidth:360, background:"#0f1319", borderRadius:20, overflow:"hidden", border:"1px solid rgba(255,255,255,.07)", boxShadow:"0 24px 64px rgba(0,0,0,.6)", animation:"modalIn .3s cubic-bezier(.34,1.56,.64,1)" }}>
+        <div style={{ height:4, background:"linear-gradient(90deg,#128C7E,#25D366)" }} />
+        <div style={{ padding:"22px 20px 20px" }}>
+          <div style={{ fontSize:17, fontWeight:700, color:"white", marginBottom:16 }}>📊 Buat Poll</div>
+
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:11.5, color:"rgba(255,255,255,.4)", marginBottom:6, fontWeight:600, textTransform:"uppercase", letterSpacing:".7px" }}>Pertanyaan</div>
+            <div style={{ background:"rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.1)", borderRadius:10, padding:"10px 14px" }}>
+              <input type="text" value={question} onChange={e=>setQuestion(e.target.value)} placeholder="Ketik pertanyaan poll..." maxLength={150}
+                style={{ width:"100%", background:"none", border:"none", outline:"none", color:"rgba(255,255,255,.85)", fontSize:14 }} autoFocus />
+            </div>
+          </div>
+
+          <div style={{ fontSize:11.5, color:"rgba(255,255,255,.4)", marginBottom:8, fontWeight:600, textTransform:"uppercase", letterSpacing:".7px" }}>Opsi</div>
+          {options.map((o,i) => (
+            <div key={i} style={{ background:"rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.08)", borderRadius:10, padding:"9px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ fontSize:12, color:"rgba(255,255,255,.3)", width:18, textAlign:"center" }}>{i+1}</span>
+              <input type="text" value={o} onChange={e=>setOpt(i,e.target.value)} placeholder={`Opsi ${i+1}`} maxLength={60}
+                style={{ flex:1, background:"none", border:"none", outline:"none", color:"rgba(255,255,255,.8)", fontSize:14 }} />
+            </div>
+          ))}
+
+          {options.length < 4 && (
+            <button onClick={addOption} style={{ width:"100%", padding:"9px", borderRadius:10, background:"none", border:"1px dashed rgba(255,255,255,.15)", color:"rgba(255,255,255,.4)", fontSize:13, cursor:"pointer", marginBottom:14 }}>+ Tambah Opsi</button>
+          )}
+
+          <div style={{ display:"flex", gap:10, marginTop:4 }}>
+            <button onClick={onClose} style={{ flex:1, padding:"12px", borderRadius:11, background:"rgba(255,255,255,.07)", border:"1px solid rgba(255,255,255,.08)", color:"rgba(255,255,255,.6)", fontSize:14, cursor:"pointer" }}>Batal</button>
+            <button onClick={send} disabled={!question.trim()||options.filter(o=>o.trim()).length<2}
+              style={{ flex:2, padding:"12px", borderRadius:11, background:"linear-gradient(135deg,#128C7E,#25D366)", border:"none", color:"white", fontSize:14, fontWeight:700, cursor:"pointer", opacity: !question.trim()||options.filter(o=>o.trim()).length<2?.4:1 }}>
+              Kirim Poll
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -230,64 +495,46 @@ function SetNameModal({ token, onSaved }) {
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       onSaved(n);
-    } catch(e) { setErr(e.message || "Gagal menyimpan nama"); }
+    } catch(e) { setErr(e.message || "Gagal menyimpan"); }
     finally { setLoading(false); }
   }
 
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:60, display:"flex", alignItems:"center", justifyContent:"center", padding:20, background:"rgba(0,0,0,.65)", backdropFilter:"blur(8px)" }}>
+    <div style={{ position:"fixed", inset:0, zIndex:60, display:"flex", alignItems:"center", justifyContent:"center", padding:20, background:"rgba(0,0,0,.7)", backdropFilter:"blur(10px)" }}>
       <div style={{ width:"100%", maxWidth:360, animation:"modalIn .3s cubic-bezier(.34,1.56,.64,1)" }}>
-        <div style={{ background:"rgba(22,24,30,.97)", borderRadius:24, overflow:"hidden", boxShadow:"0 24px 64px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.07)" }}>
-          {/* Gradient top bar */}
-          <div style={{ height:4, background:"linear-gradient(90deg,#075E54,#25D366,#128C7E,#25D366)" }} />
-
+        <div style={{ background:"#0f1319", borderRadius:24, overflow:"hidden", boxShadow:"0 24px 64px rgba(0,0,0,.7)", border:"1px solid rgba(255,255,255,.07)" }}>
+          <div style={{ height:4, background:"linear-gradient(90deg,#075E54,#25D366,#128C7E)" }} />
           <div style={{ padding:"30px 28px 26px" }}>
-            {/* Icon */}
             <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:14, marginBottom:26 }}>
-              <div style={{ position:"relative" }}>
-                <div style={{ width:80, height:80, borderRadius:"50%", background:"linear-gradient(135deg,#128C7E,#25D366)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 24px rgba(37,211,102,.4), 0 0 0 8px rgba(37,211,102,.08)" }}>
-                  <svg width="38" height="38" viewBox="0 0 24 24" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-                </div>
-                <div style={{ position:"absolute", bottom:2, right:2, width:20, height:20, borderRadius:"50%", background:"#25D366", display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid rgba(22,24,30,.97)" }}>
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="white"><path d="M2 5l2.5 2.5L8 2.5"/></svg>
-                </div>
+              <div style={{ width:80, height:80, borderRadius:"50%", background:"linear-gradient(135deg,#128C7E,#25D366)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 24px rgba(37,211,102,.4), 0 0 0 8px rgba(37,211,102,.07)" }}>
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
               </div>
               <div style={{ textAlign:"center" }}>
-                <div style={{ fontSize:20, fontWeight:800, color:"white", marginBottom:6, letterSpacing:"-.3px" }}>Bergabung ke Grup</div>
-                <div style={{ fontSize:13.5, color:"rgba(255,255,255,.5)", lineHeight:1.5 }}>Atur nama tampilan sebelum mulai chat di <span style={{ color:"#25D366", fontWeight:600 }}>Artapedia Community</span></div>
+                <div style={{ fontSize:20, fontWeight:800, color:"white", marginBottom:5, letterSpacing:"-.3px" }}>Bergabung ke Grup</div>
+                <div style={{ fontSize:13.5, color:"rgba(255,255,255,.45)", lineHeight:1.5 }}>Atur nama tampilan sebelum chat di <span style={{ color:"#25D366", fontWeight:600 }}>Artapedia Community</span></div>
               </div>
             </div>
-
-            {/* Input */}
             <div style={{ marginBottom:18 }}>
-              <div style={{ fontSize:12, fontWeight:600, color:"rgba(255,255,255,.4)", marginBottom:8, textTransform:"uppercase", letterSpacing:".8px" }}>Nama Tampilan</div>
-              <div style={{ borderRadius:14, padding:"1px", background: focused ? "linear-gradient(135deg,#128C7E,#25D366)" : "rgba(255,255,255,.08)", transition:"background .2s" }}>
-                <div style={{ borderRadius:13, background:"rgba(255,255,255,.05)", padding:"12px 16px", display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ fontSize:11.5, fontWeight:600, color:"rgba(255,255,255,.4)", marginBottom:8, textTransform:"uppercase", letterSpacing:".7px" }}>Nama Kamu</div>
+              <div style={{ borderRadius:14, padding:"1.5px", background: focused?"linear-gradient(135deg,#128C7E,#25D366)":"rgba(255,255,255,.08)", transition:"background .2s" }}>
+                <div style={{ borderRadius:12.5, background:"#0f1319", padding:"11px 16px", display:"flex", alignItems:"center", gap:10 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill={focused?"#25D366":"rgba(255,255,255,.3)"}><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                  <input type="text" placeholder="Nama kamu (2–20 karakter)" value={name}
+                  <input type="text" placeholder="Nama tampilan (2–20 karakter)" value={name}
                     onChange={e=>{ setName(e.target.value); setErr(""); }}
                     onKeyDown={e=>e.key==="Enter"&&save()}
                     onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
                     maxLength={20} autoFocus
-                    style={{ flex:1, fontSize:15, border:"none", outline:"none", background:"transparent", color:"white", fontWeight:500 }} />
-                  <span style={{ fontSize:11.5, color:"rgba(255,255,255,.25)", flexShrink:0 }}>{name.length}/20</span>
+                    style={{ flex:1, fontSize:15, border:"none", outline:"none", background:"transparent", color:"rgba(255,255,255,.9)", fontWeight:500 }} />
+                  <span style={{ fontSize:11, color:"rgba(255,255,255,.2)" }}>{name.length}/20</span>
                 </div>
               </div>
               {err && <div style={{ fontSize:12, color:"#fc8181", marginTop:6, paddingLeft:2 }}>⚠ {err}</div>}
             </div>
-
-            {/* Button */}
-            <button onClick={save} disabled={loading || name.trim().length < 2}
-              style={{ width:"100%", padding:"14px 0", borderRadius:14, background: name.trim().length >= 2 ? "linear-gradient(135deg,#128C7E,#25D366)" : "rgba(255,255,255,.07)", border:"none", color: name.trim().length >= 2 ? "white" : "rgba(255,255,255,.3)", fontSize:15, fontWeight:700, cursor: loading||name.trim().length<2 ? "not-allowed" : "pointer", transition:"all .2s", boxShadow: name.trim().length >= 2 ? "0 4px 16px rgba(37,211,102,.4)" : "none", letterSpacing:".2px" }}>
-              {loading ? (
-                <span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                  <span style={{ width:16, height:16, border:"2px solid rgba(255,255,255,.4)", borderTopColor:"white", borderRadius:"50%", display:"inline-block", animation:"spin .7s linear infinite" }} />
-                  Menyimpan...
-                </span>
-              ) : "Masuk ke Grup →"}
+            <button onClick={save} disabled={loading||name.trim().length<2}
+              style={{ width:"100%", padding:"14px", borderRadius:14, background:name.trim().length>=2?"linear-gradient(135deg,#128C7E,#25D366)":"rgba(255,255,255,.06)", border:"none", color:name.trim().length>=2?"white":"rgba(255,255,255,.3)", fontSize:15, fontWeight:700, cursor:loading||name.trim().length<2?"not-allowed":"pointer", transition:"all .2s", boxShadow:name.trim().length>=2?"0 4px 16px rgba(37,211,102,.35)":"none" }}>
+              {loading?<span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}><span style={{ width:16, height:16, border:"2px solid rgba(255,255,255,.35)", borderTopColor:"white", borderRadius:"50%", display:"inline-block", animation:"spin .7s linear infinite" }} />Menyimpan...</span>:"Masuk ke Grup →"}
             </button>
-
-            <div style={{ textAlign:"center", marginTop:14, fontSize:11.5, color:"rgba(255,255,255,.2)" }}>🔒 Nama hanya terlihat di grup ini</div>
+            <div style={{ textAlign:"center", marginTop:12, fontSize:11.5, color:"rgba(255,255,255,.18)" }}>🔒 Nama hanya terlihat di grup ini</div>
           </div>
         </div>
       </div>
@@ -297,6 +544,7 @@ function SetNameModal({ token, onSaved }) {
 
 /* ─── Main Page ───────────────────────────────────────────────── */
 export default function ChatPage() {
+  const router = useRouter();
   const { token, name: ctxName, updateName, ready } = useUser();
   const [userName, setUserName] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -304,17 +552,35 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showPoll, setShowPoll] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [recording, setRecording] = useState(false);
   const [lastTs, setLastTs] = useState(null);
-  const [onlineCount] = useState(() => 847 + Math.floor(Math.random() * 120));
+  const [onlineCount] = useState(() => 847 + Math.floor(Math.random()*120));
+  const [groupSettings, setGroupSettings] = useState({ name:"Artapedia Community", desc:"", photo:null, closed:false, pinnedMsgId:null, isAdmin:false });
+  const [mentionQuery, setMentionQuery] = useState(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const [imagePreview, setImagePreview] = useState(null);
 
-  const bottomRef   = useRef(null);
-  const inputRef    = useRef(null);
-  const mediaRecRef = useRef(null);
-  const audioChunks = useRef([]);
+  const bottomRef    = useRef(null);
+  const inputRef     = useRef(null);
+  const mediaRecRef  = useRef(null);
+  const audioChunks  = useRef([]);
+  const fileInputRef = useRef(null);
 
-  useEffect(() => { if (ready) setUserName(ctxName || null); }, [ready, ctxName]);
-  useEffect(() => { loadMessages(); }, []);
+  // Known member names from messages
+  const knownNames = [...new Set(messages.map(m => m.displayName).filter(Boolean))];
+  const mentionMatches = mentionQuery !== null
+    ? [...knownNames, ...Object.keys(AI_PERSONAS)].filter(n => n.toLowerCase().includes(mentionQuery.toLowerCase()) && n !== userName).slice(0, 6)
+    : [];
+
+  useEffect(() => { if (ready) setUserName(ctxName||null); }, [ready, ctxName]);
+
+  useEffect(() => {
+    loadMessages();
+    fetch("/api/chat/group-settings").then(r=>r.json()).then(d=>setGroupSettings(d)).catch(()=>{});
+  }, []);
+
   useEffect(() => { const id = setInterval(poll, 3000); return () => clearInterval(id); }, [lastTs]);
 
   async function loadMessages() {
@@ -339,6 +605,7 @@ export default function ChatPage() {
           const ids = new Set(prev.map(m=>m.id));
           const fresh = data.filter(m=>!ids.has(m.id));
           if (!fresh.length) return prev;
+          // Update existing messages for reactions/poll changes
           return [...prev, ...fresh];
         });
         setLastTs(data[data.length-1]?.createdAt);
@@ -349,25 +616,70 @@ export default function ChatPage() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:"smooth" }); }, [messages.length]);
 
+  /* Handle @mention input */
+  function handleInputChange(e) {
+    const val = e.target.value;
+    setInput(val);
+    const cursorPos = e.target.selectionStart;
+    const textBefore = val.slice(0, cursorPos);
+    const atIdx = textBefore.lastIndexOf("@");
+    const slashIdx = textBefore.lastIndexOf("/");
+
+    if (atIdx !== -1 && atIdx >= textBefore.lastIndexOf(" ") && !textBefore.slice(atIdx+1).includes(" ")) {
+      setMentionQuery(textBefore.slice(atIdx+1));
+      setMentionIndex(0);
+    } else {
+      setMentionQuery(null);
+    }
+
+    // AI command suggestions handled in UI
+    if (slashIdx !== -1 && slashIdx === 0) {
+      // Could show command hints — handled in UI overlay
+    }
+  }
+
+  function insertMention(name) {
+    const cursorPos = inputRef.current?.selectionStart || input.length;
+    const before = input.slice(0, cursorPos);
+    const after = input.slice(cursorPos);
+    const atIdx = before.lastIndexOf("@");
+    const newInput = before.slice(0, atIdx) + "@" + name + " " + after;
+    setInput(newInput);
+    setMentionQuery(null);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
   async function sendMsg(type, extra={}) {
     if (!token || !userName) return;
+    if (groupSettings.closed && !groupSettings.isAdmin) return;
     setSending(true);
     try {
+      const mentions = [];
+      if (type === "text" && extra.message) {
+        const m = extra.message.match(/@(\w[\w\s]*)/g);
+        if (m) mentions.push(...m.map(s=>s.slice(1).trim()));
+      }
+      const msg = input.trim();
+      const isCommand = type === "text" && (msg.startsWith("/tanya ") || msg.startsWith("/kurs") || msg.startsWith("/cek-otp"));
+
       const body = { token, displayName:userName, type,
-        ...(type==="text" && { message:input.trim() }),
-        ...(replyTo && { replyTo:replyTo.id, replyToName:replyTo.displayName, replyToPreview: replyTo.type==="text" ? replyTo.message?.slice(0,80) : "[stiker/suara]" }),
+        ...(type==="text" && { message:msg }),
+        ...(replyTo && { replyTo:replyTo.id, replyToName:replyTo.displayName, replyToPreview:replyTo.type==="text"?replyTo.message?.slice(0,80):"[stiker/suara]" }),
+        ...(mentions.length && { mentions }),
+        ...(isCommand && { isCommand:true }),
         ...extra };
+
       const r = await fetch("/api/chat/messages", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
       if (!r.ok) return;
       const d = await r.json();
-      if (type==="text") setInput("");
+      if (type === "text") setInput("");
       setReplyTo(null);
-      const localMsg = { id:d.msgId, token, displayName:userName, type, createdAt:d.createdAt||new Date().toISOString(), ...extra, message:body.message||"", replyTo:body.replyTo||null, replyToName:body.replyToName||null, replyToPreview:body.replyToPreview||null };
-      setMessages(prev => [...prev, localMsg]);
-      setLastTs(localMsg.createdAt);
-      setTimeout(() => {
-        fetch("/api/chat/ai-reply", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ message:body.message||"[stiker/suara]", type, displayName:userName }) }).catch(()=>{});
-      }, 1800 + Math.random()*1400);
+      setMentionQuery(null);
+      const local = { id:d.msgId, token, displayName:userName, type, createdAt:d.createdAt||new Date().toISOString(), ...extra, message:body.message||"", reactions:{}, pinned:false, mentions, replyTo:body.replyTo||null, replyToName:body.replyToName||null, replyToPreview:body.replyToPreview||null };
+      setMessages(prev=>[...prev, local]);
+      setLastTs(local.createdAt);
+      const aiBody = { message:body.message||"[stiker/suara]", type, displayName:userName, isCommand };
+      setTimeout(() => fetch("/api/chat/ai-reply", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(aiBody) }).catch(()=>{}), isCommand?500:1800+Math.random()*1400);
     } catch {}
     finally { setSending(false); }
   }
@@ -392,6 +704,51 @@ export default function ChatPage() {
 
   function stopRecording() { mediaRecRef.current?.stop(); setRecording(false); }
 
+  function handleImageFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 500000) { alert("Gambar maksimal 500KB"); return; }
+    const reader = new FileReader();
+    reader.onload = ev => setImagePreview(ev.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  async function sendImage() {
+    if (!imagePreview) return;
+    await sendMsg("image", { imageData:imagePreview });
+    setImagePreview(null);
+  }
+
+  async function handleReact(msgId, emoji) {
+    if (!token) return;
+    try {
+      const r = await fetch("/api/chat/react", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ token, msgId, emoji }) });
+      const d = await r.json();
+      if (d.ok) setMessages(prev => prev.map(m => m.id===msgId ? { ...m, reactions:d.reactions } : m));
+    } catch {}
+  }
+
+  async function handlePin(msgId, currentlyPinned) {
+    if (!groupSettings.isAdmin) return;
+    try {
+      const r = await fetch("/api/chat/pin", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ msgId, unpin:currentlyPinned }) });
+      const d = await r.json();
+      if (d.ok) {
+        setMessages(prev => prev.map(m => ({ ...m, pinned: !currentlyPinned && m.id===msgId })));
+        setGroupSettings(g => ({ ...g, pinnedMsgId: currentlyPinned?null:msgId }));
+      }
+    } catch {}
+  }
+
+  async function handleVote(msgId, optionId) {
+    if (!token) return;
+    try {
+      const r = await fetch("/api/chat/vote", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ token, msgId, optionId }) });
+      const d = await r.json();
+      if (d.ok) setMessages(prev => prev.map(m => m.id===msgId ? { ...m, pollOptions:d.pollOptions } : m));
+    } catch {}
+  }
+
   /* Group messages by date */
   const grouped = [];
   let lastDate = null;
@@ -401,175 +758,293 @@ export default function ChatPage() {
     grouped.push({ type:"msg", msg, key:msg.id||i, prev:messages[i-1]?.displayName, next:messages[i+1]?.displayName });
   });
 
+  const pinnedMsg = groupSettings.pinnedMsgId ? messages.find(m=>m.id===groupSettings.pinnedMsgId) : null;
+  const isCommandInput = input.startsWith("/") && input.length > 1;
+  const cmdMatches = isCommandInput ? AI_COMMANDS.filter(c=>c.cmd.startsWith(input.split(" ")[0])) : [];
+
   if (!ready) return (
-    <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"linear-gradient(135deg,#0a0e1a,#111827)" }}>
-      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
-        <div style={{ width:48, height:48, borderRadius:"50%", background:"linear-gradient(135deg,#128C7E,#25D366)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <div style={{ width:24, height:24, border:"2.5px solid rgba(255,255,255,.35)", borderTopColor:"white", borderRadius:"50%", animation:"spin .8s linear infinite" }} />
-        </div>
-        <span style={{ color:"rgba(255,255,255,.5)", fontSize:13 }}>Memuat chat...</span>
+    <div style={{ position:"fixed", inset:0, zIndex:9999, background:"#0d1117", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16 }}>
+      <div style={{ width:50, height:50, borderRadius:"50%", background:"linear-gradient(135deg,#128C7E,#25D366)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <div style={{ width:26, height:26, border:"2.5px solid rgba(255,255,255,.3)", borderTopColor:"white", borderRadius:"50%", animation:"spin .8s linear infinite" }} />
       </div>
+      <span style={{ color:"rgba(255,255,255,.4)", fontSize:13 }}>Memuat chat...</span>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 
   if (!token) return (
-    <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16, background:"linear-gradient(135deg,#0a0e1a,#111827)", fontFamily:"system-ui,sans-serif" }}>
+    <div style={{ position:"fixed", inset:0, zIndex:9999, background:"#0d1117", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16 }}>
       <div style={{ fontSize:52 }}>🔒</div>
-      <p style={{ color:"rgba(255,255,255,.7)", fontWeight:600, fontSize:16 }}>Login dulu untuk akses grup chat</p>
-      <Link href="/" style={{ padding:"12px 28px", borderRadius:12, background:"linear-gradient(135deg,#128C7E,#25D366)", color:"white", fontWeight:700, textDecoration:"none", boxShadow:"0 4px 16px rgba(37,211,102,.35)" }}>Kembali</Link>
+      <p style={{ color:"rgba(255,255,255,.65)", fontWeight:600, fontSize:16 }}>Login dulu untuk akses grup chat</p>
+      <button onClick={()=>router.push("/")} style={{ padding:"12px 28px", borderRadius:12, background:"linear-gradient(135deg,#128C7E,#25D366)", color:"white", fontWeight:700, border:"none", cursor:"pointer", fontSize:15, boxShadow:"0 4px 16px rgba(37,211,102,.35)" }}>Kembali</button>
     </div>
   );
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", height:"100dvh", maxWidth:520, margin:"0 auto", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif", background:"#0d1117", overflow:"hidden", position:"relative" }}>
+    /* FULL SCREEN wrapper */
+    <div style={{ position:"fixed", inset:0, zIndex:9999, display:"flex", flexDirection:"column", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif", background:"#0d1117", overflow:"hidden" }}>
 
-      {/* Name modal */}
-      {ready && !userName && (
-        <SetNameModal token={token} onSaved={async n => { await updateName(n).catch(()=>{}); setUserName(n); }} />
+      {/* ── Name Modal ── */}
+      {ready && !userName && <SetNameModal token={token} onSaved={async n => { await updateName(n).catch(()=>{}); setUserName(n); }} />}
+
+      {/* ── Settings Panel ── */}
+      {showSettings && (
+        <GroupSettingsPanel settings={groupSettings} onClose={()=>setShowSettings(false)}
+          onSaved={upd => setGroupSettings(g => ({ ...g, ...upd }))} />
+      )}
+
+      {/* ── Poll Creator ── */}
+      {showPoll && (
+        <PollCreator onSend={(q,opts) => sendMsg("poll", { pollQuestion:q, pollOptions:opts })} onClose={()=>setShowPoll(false)} />
+      )}
+
+      {/* ── Image preview ── */}
+      {imagePreview && (
+        <div style={{ position:"fixed", inset:0, zIndex:80, background:"rgba(0,0,0,.85)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:16 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={imagePreview} alt="preview" style={{ maxWidth:"90vw", maxHeight:"70vh", borderRadius:12, objectFit:"contain" }} />
+          <div style={{ display:"flex", gap:12 }}>
+            <button onClick={()=>setImagePreview(null)} style={{ padding:"11px 24px", borderRadius:10, background:"rgba(255,255,255,.1)", border:"none", color:"rgba(255,255,255,.7)", fontSize:14, cursor:"pointer" }}>Batal</button>
+            <button onClick={sendImage} disabled={sending} style={{ padding:"11px 28px", borderRadius:10, background:"linear-gradient(135deg,#128C7E,#25D366)", border:"none", color:"white", fontSize:14, fontWeight:700, cursor:"pointer" }}>Kirim Foto</button>
+          </div>
+        </div>
       )}
 
       {/* ── Header ── */}
-      <div style={{ background:"linear-gradient(180deg,rgba(7,94,84,.98),rgba(18,140,126,.95))", display:"flex", alignItems:"center", gap:10, padding:"12px 8px 12px 4px", flexShrink:0, boxShadow:"0 2px 16px rgba(0,0,0,.4)", backdropFilter:"blur(12px)", borderBottom:"1px solid rgba(255,255,255,.06)", position:"relative", zIndex:10 }}>
-        <Link href="/dashboard" style={{ padding:8, display:"flex", color:"white", flexShrink:0, borderRadius:"50%", transition:"background .15s" }}
+      <div style={{ background:"linear-gradient(180deg,rgba(7,94,84,.98),rgba(12,110,97,.95))", display:"flex", alignItems:"center", gap:8, padding:"10px 6px 10px 2px", flexShrink:0, boxShadow:"0 2px 20px rgba(0,0,0,.5)", borderBottom:"1px solid rgba(255,255,255,.05)", zIndex:10 }}>
+
+        {/* Exit button */}
+        <button onClick={() => router.back()}
+          style={{ padding:8, display:"flex", color:"white", flexShrink:0, borderRadius:"50%", background:"none", border:"none", cursor:"pointer", transition:"background .15s" }}
           onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.12)"}
           onMouseLeave={e=>e.currentTarget.style.background="transparent"}
-          aria-label="Kembali">
+          aria-label="Keluar chat">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-        </Link>
+        </button>
 
-        {/* Avatar */}
+        {/* Group avatar */}
         <div style={{ position:"relative", flexShrink:0 }}>
-          <div style={{ width:44, height:44, borderRadius:"50%", background:"linear-gradient(135deg,#25D366,#075E54)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, boxShadow:"0 3px 10px rgba(0,0,0,.4), 0 0 0 2px rgba(37,211,102,.3)" }}>🎌</div>
-          <div style={{ position:"absolute", bottom:1, right:1, width:12, height:12, borderRadius:"50%", background:"#25D366", border:"2px solid #075E54" }} />
+          {groupSettings.photo
+            /* eslint-disable-next-line @next/next/no-img-element */
+            ? <img src={groupSettings.photo} alt="grup" style={{ width:44, height:44, borderRadius:"50%", objectFit:"cover", boxShadow:"0 0 0 2.5px rgba(37,211,102,.4)", border:"none" }} />
+            : <div style={{ width:44, height:44, borderRadius:"50%", background:"linear-gradient(135deg,#25D366,#075E54)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, boxShadow:"0 0 0 2.5px rgba(37,211,102,.35)" }}>🎌</div>}
+          <div style={{ position:"absolute", bottom:1, right:1, width:12, height:12, borderRadius:"50%", background:"#25D366", border:"2.5px solid #075E54", boxShadow:"0 0 4px rgba(37,211,102,.6)" }} />
         </div>
 
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ color:"white", fontSize:16, fontWeight:700, lineHeight:1.2, letterSpacing:"-.2px" }}>Artapedia Community</div>
-          <div style={{ color:"rgba(255,255,255,.6)", fontSize:11.5, marginTop:1.5, display:"flex", alignItems:"center", gap:4 }}>
-            <span style={{ width:6, height:6, borderRadius:"50%", background:"#25D366", flexShrink:0, boxShadow:"0 0 4px #25D366" }} />
-            {onlineCount.toLocaleString("id-ID")} anggota online
+          <div style={{ color:"white", fontSize:16, fontWeight:700, letterSpacing:"-.2px", lineHeight:1.2 }}>{groupSettings.name}</div>
+          <div style={{ color:"rgba(255,255,255,.55)", fontSize:11.5, marginTop:1.5, display:"flex", alignItems:"center", gap:5 }}>
+            <span style={{ width:6, height:6, borderRadius:"50%", background:"#25D366", flexShrink:0, boxShadow:"0 0 5px #25D366" }} />
+            {onlineCount.toLocaleString("id-ID")} online
+            {groupSettings.closed && <span style={{ background:"rgba(239,68,68,.2)", color:"#f87171", borderRadius:99, padding:"1px 8px", fontSize:10.5, fontWeight:600, marginLeft:4 }}>TUTUP</span>}
           </div>
         </div>
 
-        {/* Action icons */}
+        {/* Header actions */}
         <div style={{ display:"flex", gap:2, flexShrink:0 }}>
-          {[
-            <path key="search" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>,
-            <circle key="dot1" cx="12" cy="5" r="1.8"/>,
-          ].map((_, idx) => idx === 0 ? (
-            <button key={idx} style={{ background:"none", border:"none", padding:8, cursor:"pointer", display:"flex", borderRadius:"50%", transition:"background .15s" }}
+          {/* Settings (admin only) */}
+          {groupSettings.isAdmin && (
+            <button onClick={()=>setShowSettings(true)} style={{ background:"none", border:"none", padding:8, cursor:"pointer", display:"flex", borderRadius:"50%", transition:"background .15s" }}
               onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.12)"}
               onMouseLeave={e=>e.currentTarget.style.background="transparent"}
-              aria-label="Cari pesan">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,.8)"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+              aria-label="Pengaturan grup">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,.8)"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
             </button>
-          ) : (
-            <button key={idx} style={{ background:"none", border:"none", padding:8, cursor:"pointer", display:"flex", borderRadius:"50%", transition:"background .15s" }}
-              onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.12)"}
-              onMouseLeave={e=>e.currentTarget.style.background="transparent"}
-              aria-label="Menu">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,.8)"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
-            </button>
-          ))}
+          )}
+          <button style={{ background:"none", border:"none", padding:8, cursor:"pointer", display:"flex", borderRadius:"50%", transition:"background .15s" }}
+            onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.12)"}
+            onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+            aria-label="Menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,.8)"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+          </button>
         </div>
       </div>
 
-      {/* ── Messages ── */}
-      <div style={{ flex:1, overflowY:"auto", padding:"12px 10px 6px", background:"linear-gradient(180deg,#0d1117 0%,#111827 100%)", position:"relative" }} className="chat-scroll">
+      {/* ── Pinned message bar ── */}
+      {pinnedMsg && (
+        <div style={{ background:"rgba(37,211,102,.07)", borderBottom:"1px solid rgba(37,211,102,.15)", padding:"8px 14px", display:"flex", alignItems:"center", gap:10, flexShrink:0, cursor:"pointer" }}
+          onClick={() => { const el = document.getElementById(`msg-${pinnedMsg.id}`); el?.scrollIntoView({ behavior:"smooth", block:"center" }); }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366" style={{ flexShrink:0 }}><path d="M16 3H8v2h2v9l-2 2v2h4v5h2v-5h4v-2l-2-2V5h2V3zm-4 11V5h2v9h-2z"/></svg>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:11, fontWeight:600, color:"#25D366", marginBottom:1 }}>📌 Pesan Penting</div>
+            <div style={{ fontSize:12.5, color:"rgba(255,255,255,.55)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{pinnedMsg.message || "[media]"}</div>
+          </div>
+          {groupSettings.isAdmin && (
+            <button onClick={e=>{ e.stopPropagation(); handlePin(pinnedMsg.id, true); }} style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(255,255,255,.3)", padding:4, display:"flex", borderRadius:"50%", flexShrink:0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+          )}
+        </div>
+      )}
 
-        {/* Subtle pattern overlay */}
-        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle, rgba(37,211,102,.03) 1px, transparent 1px)", backgroundSize:"24px 24px", pointerEvents:"none" }} />
+      {/* ── Messages ── */}
+      <div style={{ flex:1, overflowY:"auto", padding:"10px 10px 4px", position:"relative" }} className="chat-scroll">
+        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle, rgba(37,211,102,.025) 1px, transparent 1px)", backgroundSize:"22px 22px", pointerEvents:"none" }} />
 
         {grouped.length === 0 && (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:12, padding:"40px 20px" }}>
-            <div style={{ width:72, height:72, borderRadius:"50%", background:"rgba(37,211,102,.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:36, border:"1px solid rgba(37,211,102,.12)" }}>💬</div>
+            <div style={{ width:72, height:72, borderRadius:"50%", background:"rgba(37,211,102,.07)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:36, border:"1px solid rgba(37,211,102,.1)" }}>💬</div>
             <div style={{ textAlign:"center" }}>
-              <p style={{ color:"rgba(255,255,255,.5)", fontSize:15, fontWeight:600, margin:"0 0 4px" }}>Belum ada pesan</p>
-              <p style={{ color:"rgba(255,255,255,.25)", fontSize:13, margin:0 }}>Mulai percakapan di Artapedia Community!</p>
+              <p style={{ color:"rgba(255,255,255,.45)", fontSize:15, fontWeight:600, margin:"0 0 6px" }}>Belum ada pesan</p>
+              <p style={{ color:"rgba(255,255,255,.2)", fontSize:12.5, margin:"0 0 6px" }}>Mulai percakapan di Artapedia Community!</p>
+              <p style={{ color:"rgba(255,255,255,.2)", fontSize:12, margin:0 }}>Tips: ketik <span style={{ color:"#25D366" }}>/tanya</span>, <span style={{ color:"#25D366" }}>/kurs</span>, atau <span style={{ color:"#25D366" }}>/cek-otp</span> untuk tanya AI</p>
             </div>
           </div>
         )}
 
         {grouped.map(item => item.type === "date" ? (
           <div key={item.key} style={{ display:"flex", alignItems:"center", gap:10, margin:"14px 0 10px" }}>
-            <div style={{ flex:1, height:1, background:"rgba(255,255,255,.06)" }} />
-            <div style={{ background:"rgba(255,255,255,.06)", backdropFilter:"blur(8px)", border:"1px solid rgba(255,255,255,.08)", borderRadius:99, padding:"4px 14px", fontSize:11.5, color:"rgba(255,255,255,.45)", fontWeight:500, letterSpacing:".2px" }}>{item.label}</div>
-            <div style={{ flex:1, height:1, background:"rgba(255,255,255,.06)" }} />
+            <div style={{ flex:1, height:1, background:"rgba(255,255,255,.05)" }} />
+            <div style={{ background:"rgba(255,255,255,.05)", border:"1px solid rgba(255,255,255,.07)", borderRadius:99, padding:"4px 14px", fontSize:11.5, color:"rgba(255,255,255,.4)", fontWeight:500 }}>{item.label}</div>
+            <div style={{ flex:1, height:1, background:"rgba(255,255,255,.05)" }} />
           </div>
         ) : (
-          <MsgBubble key={item.key} msg={item.msg} isMine={item.msg.token===token}
-            onReply={m=>{ setReplyTo(m); inputRef.current?.focus(); }}
-            prevSender={item.prev} nextSender={item.next} />
+          <div key={item.key} id={`msg-${item.msg.id}`}>
+            <MsgBubble msg={item.msg} isMine={item.msg.token===token}
+              onReply={m=>{ setReplyTo(m); inputRef.current?.focus(); }}
+              prevSender={item.prev} nextSender={item.next}
+              token={token} isAdmin={groupSettings.isAdmin}
+              onPin={handlePin} onReact={handleReact} onVote={handleVote} />
+          </div>
         ))}
         <div ref={bottomRef} style={{ height:4 }} />
       </div>
 
       {/* ── Reply bar ── */}
       {replyTo && (
-        <div style={{ background:"rgba(20,24,32,.97)", borderTop:"1px solid rgba(255,255,255,.06)", padding:"8px 12px 8px 16px", display:"flex", alignItems:"center", gap:10, flexShrink:0, backdropFilter:"blur(12px)" }}>
-          <div style={{ width:3, height:36, background:"linear-gradient(180deg,#128C7E,#25D366)", borderRadius:2, flexShrink:0 }} />
+        <div style={{ background:"rgba(15,19,25,.98)", borderTop:"1px solid rgba(255,255,255,.05)", padding:"8px 12px 8px 16px", display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
+          <div style={{ width:3, height:36, background:"linear-gradient(180deg,#25D366,#128C7E)", borderRadius:2, flexShrink:0 }} />
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:12, fontWeight:700, color:"#25D366", marginBottom:2 }}>{replyTo.displayName}</div>
-            <div style={{ fontSize:12.5, color:"rgba(255,255,255,.4)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{replyTo.type==="text" ? replyTo.message : "[stiker/suara]"}</div>
+            <div style={{ fontSize:12.5, color:"rgba(255,255,255,.35)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{replyTo.type==="text"?replyTo.message:"[media]"}</div>
           </div>
-          <button onClick={()=>setReplyTo(null)} style={{ background:"rgba(255,255,255,.08)", border:"none", padding:6, cursor:"pointer", display:"flex", borderRadius:"50%", flexShrink:0, transition:"background .15s" }}
-            onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.15)"}
-            onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.08)"}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,.5)"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          <button onClick={()=>setReplyTo(null)} style={{ background:"rgba(255,255,255,.07)", border:"none", padding:6, cursor:"pointer", display:"flex", borderRadius:"50%", flexShrink:0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,.45)"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
           </button>
         </div>
       )}
 
+      {/* ── @mention autocomplete ── */}
+      {mentionQuery !== null && mentionMatches.length > 0 && (
+        <div style={{ background:"rgba(15,19,25,.98)", borderTop:"1px solid rgba(255,255,255,.06)", padding:"6px 0", flexShrink:0 }}>
+          {mentionMatches.map((name, i) => {
+            const persona = AI_PERSONAS[name];
+            const col = persona ? persona.color : getNameColor(name);
+            return (
+              <button key={name} onClick={() => insertMention(name)}
+                style={{ width:"100%", padding:"8px 16px", background: i===mentionIndex?"rgba(37,211,102,.08)":"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:10, textAlign:"left" }}>
+                <div style={{ width:30, height:30, borderRadius:"50%", background:`${col}22`, border:`1px solid ${col}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}>
+                  {persona ? persona.emoji : getInitials(name)}
+                </div>
+                <span style={{ fontSize:13.5, color:"rgba(255,255,255,.8)", fontWeight:500 }}>{name}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── AI command hints ── */}
+      {cmdMatches.length > 0 && (
+        <div style={{ background:"rgba(15,19,25,.98)", borderTop:"1px solid rgba(255,255,255,.06)", padding:"4px 0", flexShrink:0 }}>
+          {cmdMatches.map(c => (
+            <button key={c.cmd} onClick={()=>{ setInput(c.cmd+" "); inputRef.current?.focus(); }}
+              style={{ width:"100%", padding:"8px 16px", background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:10, textAlign:"left" }}>
+              <span style={{ fontSize:13, color:"#25D366", fontWeight:700, minWidth:80 }}>{c.cmd}</span>
+              <span style={{ fontSize:12.5, color:"rgba(255,255,255,.4)" }}>{c.desc}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* ── Input bar ── */}
-      <div style={{ background:"rgba(13,17,23,.97)", padding:"10px 10px 12px", display:"flex", alignItems:"flex-end", gap:8, flexShrink:0, borderTop:"1px solid rgba(255,255,255,.05)", backdropFilter:"blur(12px)" }}>
+      <div style={{ background:"rgba(10,13,20,.98)", padding:"8px 10px 10px", display:"flex", alignItems:"flex-end", gap:8, flexShrink:0, borderTop:"1px solid rgba(255,255,255,.04)" }}>
+
+        {/* Toolbar */}
+        <div style={{ display:"flex", flexDirection:"column", gap:4, flexShrink:0 }}>
+          {/* Image upload */}
+          <button onClick={()=>fileInputRef.current?.click()} style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.08)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"background .15s" }}
+            onMouseEnter={e=>e.currentTarget.style.background="rgba(37,211,102,.15)"}
+            onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.06)"}
+            aria-label="Kirim gambar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(255,255,255,.5)"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+          </button>
+          <input ref={fileInputRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleImageFile} />
+          {/* Poll (admin only) */}
+          {groupSettings.isAdmin && (
+            <button onClick={()=>setShowPoll(true)} style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.08)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"background .15s" }}
+              onMouseEnter={e=>e.currentTarget.style.background="rgba(37,211,102,.15)"}
+              onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.06)"}
+              aria-label="Buat poll">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="rgba(255,255,255,.5)"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></svg>
+            </button>
+          )}
+        </div>
 
         {/* Input container */}
-        <div style={{ flex:1, background:"rgba(255,255,255,.07)", borderRadius:26, display:"flex", alignItems:"center", padding:"8px 12px", gap:8, minHeight:48, border:"1px solid rgba(255,255,255,.08)", transition:"border-color .2s", position:"relative" }}>
+        <div style={{ flex:1, background:"rgba(255,255,255,.06)", borderRadius:24, display:"flex", alignItems:"center", padding:"7px 12px", gap:8, minHeight:48, border:"1px solid rgba(255,255,255,.07)", position:"relative", transition:"border-color .2s" }}>
 
           {/* Emoji toggle */}
-          <div style={{ position:"relative" }}>
-            <button style={{ background:"none", border:"none", padding:2, cursor:"pointer", flexShrink:0, display:"flex", opacity:.7, transition:"opacity .15s, transform .15s" }} aria-label="Emoji & Stiker"
-              onClick={() => setShowEmoji(v=>!v)}
-              onMouseEnter={e=>{ e.currentTarget.style.opacity="1"; e.currentTarget.style.transform="scale(1.1)"; }}
-              onMouseLeave={e=>{ e.currentTarget.style.opacity=".7"; e.currentTarget.style.transform="scale(1)"; }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill={showEmoji?"#25D366":"rgba(255,255,255,.55)"}><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
+          <div style={{ position:"relative", flexShrink:0 }}>
+            <button style={{ background:"none", border:"none", padding:2, cursor:"pointer", display:"flex" }} onClick={()=>setShowEmoji(v=>!v)} aria-label="Emoji & Stiker">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill={showEmoji?"#25D366":"rgba(255,255,255,.4)"}><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
             </button>
-            {showEmoji && <EmojiPicker onPick={e => setInput(v=>v+e)} onClose={()=>setShowEmoji(false)} />}
+            {showEmoji && (
+              <>
+                <div style={{ position:"fixed", inset:0, zIndex:49 }} onClick={()=>setShowEmoji(false)} />
+                <div style={{ position:"absolute", bottom:"calc(100% + 8px)", left:0, width:300, background:"rgba(15,19,25,.97)", borderRadius:16, boxShadow:"0 8px 32px rgba(0,0,0,.5)", overflow:"hidden", zIndex:50, border:"1px solid rgba(255,255,255,.07)" }}>
+                  <div style={{ display:"flex", padding:"10px 10px 6px", gap:3, borderBottom:"1px solid rgba(255,255,255,.05)" }}>
+                    {QUICK_EMOJI.map(e=>(
+                      <button key={e} onClick={()=>setInput(v=>v+e)} style={{ flex:1, background:"none", border:"none", cursor:"pointer", fontSize:20, padding:"3px 1px", borderRadius:6, transition:"transform .15s" }}
+                        onMouseEnter={ev=>ev.currentTarget.style.transform="scale(1.25)"}
+                        onMouseLeave={ev=>ev.currentTarget.style.transform="scale(1)"}>{e}</button>
+                    ))}
+                  </div>
+                  {STICKER_PACKS.map((pack, pi) => (
+                    <div key={pi}>
+                      <div style={{ padding:"6px 10px 3px", fontSize:11, color:"rgba(255,255,255,.3)", fontWeight:600, textTransform:"uppercase", letterSpacing:".7px" }}>{pack.label}</div>
+                      <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, padding:"0 8px 8px" }}>
+                        {pack.s.map(s=>(
+                          <button key={s} onClick={()=>{ sendMsg("sticker",{stickerCode:s}); setShowEmoji(false); }}
+                            style={{ background:"none", border:"none", cursor:"pointer", fontSize:22, padding:5, borderRadius:8, lineHeight:1, transition:"transform .1s" }}
+                            onMouseEnter={ev=>ev.currentTarget.style.transform="scale(1.2)"}
+                            onMouseLeave={ev=>ev.currentTarget.style.transform="scale(1)"}>{s}</button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Text input */}
-          <input ref={inputRef} type="text" value={input} onChange={e=>setInput(e.target.value)}
-            onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&input.trim()&&sendMsg("text")}
-            onFocus={e=>e.currentTarget.closest("div").style.borderColor="rgba(37,211,102,.35)"}
-            onBlur={e=>e.currentTarget.closest("div").style.borderColor="rgba(255,255,255,.08)"}
-            placeholder="Ketik pesan..." maxLength={500}
-            style={{ flex:1, fontSize:15, border:"none", outline:"none", background:"transparent", color:"rgba(255,255,255,.9)", minWidth:0, fontWeight:400 }} />
-
-          {/* Attachment icon */}
-          <button style={{ background:"none", border:"none", padding:2, cursor:"pointer", display:"flex", opacity:.6, flexShrink:0, transition:"opacity .15s, transform .15s" }} aria-label="Lampiran"
-            onMouseEnter={e=>{ e.currentTarget.style.opacity="1"; e.currentTarget.style.transform="scale(1.1)"; }}
-            onMouseLeave={e=>{ e.currentTarget.style.opacity=".6"; e.currentTarget.style.transform="scale(1)"; }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="rgba(255,255,255,.55)"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
-          </button>
+          <input ref={inputRef} type="text" value={input} onChange={handleInputChange}
+            onKeyDown={e => {
+              if (e.key === "Enter" && !e.shiftKey && input.trim()) { sendMsg("text"); return; }
+              if (e.key === "Escape") { setMentionQuery(null); setShowEmoji(false); }
+            }}
+            onFocus={e=>e.currentTarget.closest("div").style.borderColor="rgba(37,211,102,.3)"}
+            onBlur={e=>e.currentTarget.closest("div").style.borderColor="rgba(255,255,255,.07)"}
+            placeholder={groupSettings.closed&&!groupSettings.isAdmin?"Grup ditutup oleh admin":"Ketik pesan... (@ mention, / command)"}
+            disabled={groupSettings.closed && !groupSettings.isAdmin}
+            maxLength={500}
+            style={{ flex:1, fontSize:14.5, border:"none", outline:"none", background:"transparent", color:"rgba(255,255,255,.88)", minWidth:0 }} />
         </div>
 
-        {/* Send / Mic button */}
+        {/* Send / Mic */}
         {input.trim() ? (
-          <button onClick={() => sendMsg("text")} disabled={sending}
-            style={{ width:50, height:50, borderRadius:"50%", background:"linear-gradient(135deg,#128C7E,#25D366)", border:"none", cursor:sending?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:"0 4px 16px rgba(37,211,102,.45)", opacity:sending?.6:1, transition:"transform .15s, box-shadow .15s" }}
-            onMouseDown={e=>{ e.currentTarget.style.transform="scale(.92)"; e.currentTarget.style.boxShadow="0 2px 8px rgba(37,211,102,.3)"; }}
-            onMouseUp={e=>{ e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.boxShadow="0 4px 16px rgba(37,211,102,.45)"; }}>
+          <button onClick={()=>sendMsg("text")} disabled={sending||(groupSettings.closed&&!groupSettings.isAdmin)}
+            style={{ width:50, height:50, borderRadius:"50%", background:"linear-gradient(135deg,#128C7E,#25D366)", border:"none", cursor:sending?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:"0 4px 18px rgba(37,211,102,.45)", transition:"transform .15s" }}
+            onMouseDown={e=>e.currentTarget.style.transform="scale(.92)"}
+            onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}>
             {sending
-              ? <div style={{ width:22, height:22, border:"2.5px solid rgba(255,255,255,.4)", borderTopColor:"white", borderRadius:"50%", animation:"spin .7s linear infinite" }} />
+              ? <div style={{ width:22, height:22, border:"2.5px solid rgba(255,255,255,.3)", borderTopColor:"white", borderRadius:"50%", animation:"spin .7s linear infinite" }} />
               : <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
             }
           </button>
         ) : (
-          <button
-            onPointerDown={startRecording} onPointerUp={stopRecording} onPointerLeave={stopRecording}
-            style={{ width:50, height:50, borderRadius:"50%", background: recording ? "linear-gradient(135deg,#dc2626,#ef4444)" : "linear-gradient(135deg,#128C7E,#25D366)", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow: recording ? "0 4px 16px rgba(220,38,38,.5)" : "0 4px 16px rgba(37,211,102,.45)", transition:"all .2s" }}
-            aria-label="Pesan suara">
+          <button onPointerDown={startRecording} onPointerUp={stopRecording} onPointerLeave={stopRecording}
+            style={{ width:50, height:50, borderRadius:"50%", background: recording?"linear-gradient(135deg,#dc2626,#ef4444)":"linear-gradient(135deg,#128C7E,#25D366)", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow: recording?"0 4px 18px rgba(220,38,38,.5)":"0 4px 18px rgba(37,211,102,.45)", transition:"all .2s" }}>
             {recording
               ? <span style={{ width:16, height:16, borderRadius:3, background:"white", display:"block" }} />
               : <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
@@ -580,19 +1055,19 @@ export default function ChatPage() {
 
       {/* Recording toast */}
       {recording && (
-        <div style={{ position:"fixed", top:70, left:"50%", transform:"translateX(-50%)", background:"rgba(220,38,38,.9)", color:"white", borderRadius:99, padding:"10px 22px", display:"flex", alignItems:"center", gap:10, fontSize:13, fontWeight:600, boxShadow:"0 6px 24px rgba(220,38,38,.5)", zIndex:99, backdropFilter:"blur(8px)", border:"1px solid rgba(255,100,100,.3)" }}>
-          <span style={{ width:10, height:10, borderRadius:"50%", background:"white", display:"inline-block", animation:"pulse 1s infinite", boxShadow:"0 0 6px white" }} />
+        <div style={{ position:"fixed", top:68, left:"50%", transform:"translateX(-50%)", background:"rgba(220,38,38,.92)", color:"white", borderRadius:99, padding:"10px 22px", display:"flex", alignItems:"center", gap:10, fontSize:13, fontWeight:600, boxShadow:"0 6px 24px rgba(220,38,38,.5)", zIndex:200, backdropFilter:"blur(8px)" }}>
+          <span style={{ width:10, height:10, borderRadius:"50%", background:"white", display:"inline-block", animation:"pulse 1s infinite" }} />
           Merekam... lepas untuk kirim
         </div>
       )}
 
       <style>{`
         @keyframes spin    { to { transform: rotate(360deg); } }
-        @keyframes pulse   { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
-        @keyframes modalIn { from{opacity:0;transform:scale(.88) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
-        .chat-scroll::-webkit-scrollbar        { width: 3px; }
-        .chat-scroll::-webkit-scrollbar-thumb  { background: rgba(255,255,255,.1); border-radius: 99px; }
-        .chat-scroll::-webkit-scrollbar-track  { background: transparent; }
+        @keyframes pulse   { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.75)} }
+        @keyframes modalIn { from{opacity:0;transform:scale(.87) translateY(18px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @keyframes slideIn { from{transform:translateX(100%)} to{transform:translateX(0)} }
+        .chat-scroll::-webkit-scrollbar       { width: 3px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 99px; }
       `}</style>
     </div>
   );
