@@ -172,7 +172,8 @@ export async function POST(req) {
 
       const data = result?.data || result;
       qrisString = pickField(data, ["qr_string", "qris", "payment_number", "qris_string", "qr_code", "qris_content"]);
-      qrImage = asImageSrc(pickField(data, ["qr_image", "qr_image_url"]));
+      // Simpan URL qr_image sebagai fallback; kita selalu generate lokal dari qr_string
+      const qrImageUrl = asImageSrc(pickField(data, ["qr_image", "qr_image_url"]));
       expiredAt = toEpochMs(
         pickField(data, ["expired_at_ts", "expires_at_ts", "expired_ts", "expired", "expired_at", "expire_at", "expires_at"])
       );
@@ -180,12 +181,24 @@ export async function POST(req) {
       providerRef = String(pickField(data, ["id", "order_id", "trx_id", "reference", "deposit_id"]) || orderId);
       adminFee = toNumberOrNull(pickField(data, ["fee", "admin_fee", "biaya_admin", "total_fee"]));
       totalAmount = toNumberOrNull(pickField(data, ["total", "amount", "total_amount", "amount_total", "total_pembayaran"]));
+      // currency.diterima = nominal bersih yang masuk (setelah dipotong fee)
+      // currency.total / currency.fee = rincian per mata uang metode
       const curr = data?.currency;
-      if (curr && typeof curr === "object" && curr.type === "IDR") {
+      if (curr && typeof curr === "object") {
         if (adminFee === null) adminFee = toNumberOrNull(curr.fee);
-        if (totalAmount === null) totalAmount = toNumberOrNull(curr.total);
+        if (totalAmount === null) totalAmount = toNumberOrNull(curr.total) ?? toNumberOrNull(curr.diterima);
       }
       if (totalAmount === null) totalAmount = amt;
+      // Selalu generate QR lokal dari qr_string (lebih andal, tidak bergantung URL eksternal yang bisa expire)
+      if (qrisString) {
+        try {
+          qrImage = await QRCode.toDataURL(String(qrisString), { margin: 1, scale: 8, errorCorrectionLevel: "M" });
+        } catch {
+          qrImage = qrImageUrl; // fallback ke URL jika generate gagal
+        }
+      } else {
+        qrImage = qrImageUrl; // fallback: pakai URL dari RumahOTP
+      }
       if (!qrisString && !qrImage && !paymentUrl) {
         console.error("[deposit/create] rumahotp missing qris fields, full response:", JSON.stringify(result));
         return NextResponse.json(
