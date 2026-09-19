@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@/app/providers";
 import SimCard from "@/components/SimCard";
 import AccountInfoModal from "@/components/AccountInfoModal";
@@ -59,12 +59,36 @@ function WarrantyModal({ open, onClose, token }) {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [description, setDescription] = useState("");
-  const [contactInfo, setContactInfo] = useState("");
+  const [screenshotData, setScreenshotData] = useState(null);
+  const [screenshotPreview, setScreenshotPreview] = useState(null);
   const [purchasePrice, setPurchasePrice] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState({ text: "", ok: false });
   const [claims, setClaims] = useState([]);
   const [tab, setTab] = useState("form"); // "form" | "history"
+  const screenshotInputRef = useRef(null);
+
+  function handleScreenshot(file) {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setMsg({ text: "Ukuran foto terlalu besar (maks 5 MB).", ok: false }); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const MAX = 800;
+        const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+        const canvas = document.createElement("canvas");
+        canvas.width  = Math.round(img.width  * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+        setScreenshotData(dataUrl);
+        setScreenshotPreview(dataUrl);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -77,7 +101,8 @@ function WarrantyModal({ open, onClose, token }) {
     setOrdersLoading(true);
     setSelectedOrder(null);
     setDescription("");
-    setContactInfo("");
+    setScreenshotData(null);
+    setScreenshotPreview(null);
     setPurchasePrice("");
     setMsg({ text: "", ok: false });
     setTab("form");
@@ -108,17 +133,14 @@ function WarrantyModal({ open, onClose, token }) {
     setSubmitting(true);
     setMsg({ text: "", ok: false });
     try {
-      const fullDesc = contactInfo.trim()
-        ? `${description.trim()}\n\nKontak/info tambahan: ${contactInfo.trim()}`
-        : description.trim();
-
       const res = await fetch("/api/warranty/claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token,
           orderId: selectedOrder.orderId,
-          description: fullDesc,
+          description: description.trim(),
+          screenshotData: screenshotData || null,
           purchasePrice: Number(purchasePrice)
         })
       });
@@ -131,7 +153,8 @@ function WarrantyModal({ open, onClose, token }) {
       ]);
       setSelectedOrder(null);
       setDescription("");
-      setContactInfo("");
+      setScreenshotData(null);
+      setScreenshotPreview(null);
       setPurchasePrice("");
       setTimeout(() => setTab("history"), 1200);
     } finally {
@@ -271,15 +294,28 @@ function WarrantyModal({ open, onClose, token }) {
                 <p className="text-[10px] text-muted mt-1 text-right">{description.length}/1000</p>
               </div>
 
-              {/* Step 4 - Info kontak tambahan (opsional) */}
+              {/* Step 4 - Upload foto bukti */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-surface2 text-muted text-[10px] font-black border border-line">4</span>
-                  <label className="text-xs font-black text-ink">Info tambahan <span className="text-muted font-normal">(opsional)</span></label>
+                  <label className="text-xs font-black text-ink">Foto bukti <span className="text-muted font-normal">(opsional, maks 5 MB)</span></label>
                 </div>
-                <input value={contactInfo} onChange={(e) => setContactInfo(e.target.value)}
-                  placeholder="Contoh: Telegram @username, atau bukti pendukung lainnya (link/teks)"
-                  className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-rose" />
+                <input ref={screenshotInputRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => handleScreenshot(e.target.files?.[0])} />
+                {screenshotPreview ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-rose/30">
+                    <img src={screenshotPreview} alt="Preview" className="w-full max-h-40 object-cover" />
+                    <button type="button" onClick={() => { setScreenshotData(null); setScreenshotPreview(null); if (screenshotInputRef.current) screenshotInputRef.current.value = ""; }}
+                      className="absolute top-2 right-2 rounded-full bg-black/60 text-white w-7 h-7 flex items-center justify-center text-xs font-bold hover:bg-black/80">✕</button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => screenshotInputRef.current?.click()}
+                    className="w-full rounded-2xl border-2 border-dashed border-rose/30 py-4 text-xs text-muted hover:border-rose/60 hover:text-rose transition-colors flex flex-col items-center gap-1">
+                    <span className="text-2xl">📸</span>
+                    <span>Tap untuk upload foto bukti</span>
+                    <span className="text-[10px] opacity-60">Screenshot pesan gagal / inbox kosong</span>
+                  </button>
+                )}
               </div>
 
               {/* Selected summary */}

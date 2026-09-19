@@ -935,45 +935,62 @@ export default function AdminDashboardPage() {
   return (
     <div className="mx-auto max-w-content px-4 pb-16 pt-6 sm:px-5 sm:pt-10">
 
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold text-teal-bright">Admin Panel</p>
-          <h1 className="mt-1 font-display text-xl font-semibold text-ink sm:text-2xl">Dashboard Artapedia</h1>
+      {/* ── Manga Header ── */}
+      <div className="manga-panel manga-halftone relative overflow-hidden rounded-2xl bg-ink px-5 py-5 mb-5"
+        style={{ background: "linear-gradient(135deg, #06090f 0%, #0d1730 60%, #0a1040 100%)" }}>
+        {/* Speed lines */}
+        <div className="pointer-events-none absolute inset-0 opacity-[0.06]"
+          style={{ backgroundImage: "repeating-linear-gradient(86deg, transparent 0, transparent 16px, rgba(255,255,255,.9) 16px, rgba(255,255,255,.9) 17px)" }} />
+        {/* Accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-1 rounded-b-none"
+          style={{ background: "linear-gradient(90deg, rgb(var(--c-blue)), rgb(var(--c-danger)), rgb(var(--c-blue)))" }} />
+        <div className="relative flex items-center justify-between gap-3 z-10">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue/20 text-sm border border-blue/30">⚡</span>
+              <p className="text-xs font-black uppercase tracking-widest text-amber opacity-80">Admin Panel</p>
+            </div>
+            <h1 className="font-display text-xl font-black text-white sm:text-2xl tracking-tight">
+              Dashboard <span style={{ color: "rgb(var(--c-blue))" }}>Artapedia</span>
+            </h1>
+            <p className="text-[10px] text-white/40 mt-0.5 font-mono">Control Center · {new Date().toLocaleDateString("id-ID", { weekday:"long", day:"2-digit", month:"long", year:"numeric" })}</p>
+          </div>
+          <button onClick={logout}
+            className="shrink-0 rounded-xl border border-rose/40 bg-rose/10 px-4 py-2 text-sm font-bold text-rose press hover:bg-rose/20 transition-colors">
+            ⬅ Keluar
+          </button>
         </div>
-        <button
-          onClick={logout}
-          className="btn-3d rounded-lg border border-rose/40 px-4 py-2 text-sm font-medium text-rose transition-colors hover:bg-rose-soft"
-        >
-          Keluar
-        </button>
       </div>
 
       {/* ── Quick stat strip ── */}
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <StatCard label="Total user" value={total.toLocaleString("id-ID")} />
-        <StatCard label="Saldo beredar" value={fmtRp(totalBalance)} />
+      <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <StatCard label="Total User" value={total.toLocaleString("id-ID")} icon="👥" floatClass="pop-float" />
+        <StatCard label="Saldo Beredar" value={fmtRp(totalBalance)} icon="💰" accent="text-amber-bright" floatClass="pop-float-2" />
         <StatCard
-          label="Status website"
-          value={settings ? (settings.maintenance ? "Maintenance" : "Online") : "..."}
+          label="Status Website"
+          value={settings ? (settings.maintenance ? "Maintenance" : "Online ✓") : "..."}
+          icon={settings?.maintenance ? "🔧" : "🟢"}
           accent={settings?.maintenance ? "text-rose" : "text-teal-bright"}
+          floatClass="pop-float-3"
         />
         <StatCard
-          label="Klaim garansi"
+          label="Klaim Garansi"
           value={`${warrantyClaims.filter((c) => c.status === "pending").length} menunggu`}
+          icon="🛡️"
           accent={warrantyClaims.filter((c) => c.status === "pending").length > 0 ? "text-rose" : "text-ink"}
+          floatClass="pop-float-4"
         />
       </div>
 
       {/* ── Tab navigation ── */}
-      <div className="mt-5 sticky top-2 z-30 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-surface/95 p-1 shadow-soft backdrop-blur-sm">
+      <div className="mt-4 sticky top-2 z-30 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-surface/95 p-1 shadow-soft backdrop-blur-sm">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 min-w-max rounded-xl px-3 py-2 text-xs font-bold transition-colors whitespace-nowrap ${
+            className={`relative flex-1 min-w-max rounded-xl px-3 py-2 text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === tab.id
-                ? "bg-ink text-bg shadow-soft"
+                ? "bg-ink text-bg shadow-soft scale-[1.02]"
                 : "text-muted hover:bg-surface2 hover:text-ink"
             }`}
           >
@@ -1798,70 +1815,12 @@ export default function AdminDashboardPage() {
         <div className="mt-5 space-y-5">
 
           {/* Klaim Garansi */}
-          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="font-display text-base font-semibold text-ink">Klaim Garansi Nokos</h2>
-                <p className="mt-1 text-xs text-muted">Approve = saldo dikembalikan sesuai harga beli.</p>
-              </div>
-              <span className="rounded-full bg-rose-soft px-3 py-1 text-xs font-semibold text-rose">
-                {warrantyClaims.filter((c) => c.status === "pending").length} menunggu
-              </span>
-            </div>
-            {warrantyMsg && <p className="mt-2 text-xs font-medium text-teal-bright">{warrantyMsg}</p>}
-
-            <div className="glass mt-4 overflow-x-auto rounded-xl shadow-soft">
-              <table className="w-full min-w-[600px] text-sm">
-                <thead>
-                  <tr className="border-b border-line text-left text-xs text-muted">
-                    <th className="px-4 py-2.5 font-medium">User</th>
-                    <th className="px-4 py-2.5 font-medium">Nokos</th>
-                    <th className="px-4 py-2.5 font-medium">Harga</th>
-                    <th className="px-4 py-2.5 font-medium">Detail Masalah</th>
-                    <th className="px-4 py-2.5 font-medium">Status</th>
-                    <th className="px-4 py-2.5 font-medium text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {warrantyLoading ? (
-                    <tr><td colSpan={6} className="px-4 py-5 text-center text-muted">Memuat...</td></tr>
-                  ) : warrantyClaims.length === 0 ? (
-                    <tr><td colSpan={6} className="px-4 py-5 text-center text-muted">Belum ada klaim garansi.</td></tr>
-                  ) : (
-                    warrantyClaims.map((c) => (
-                      <tr key={c.id} className="border-b border-line last:border-0">
-                        <td className="px-4 py-2.5 font-mono text-[11px] text-ink max-w-[100px] truncate">{c.token}</td>
-                        <td className="px-4 py-2.5 text-xs text-ink">
-                          <div className="font-semibold">{c.serviceName}</div>
-                          <div className="text-muted">{c.phoneNumber}</div>
-                          <div className="font-mono text-[10px] text-muted">#{c.orderId?.slice(-10)}</div>
-                        </td>
-                        <td className="px-4 py-2.5 text-xs font-semibold text-ink">{fmtRp(c.purchasePrice)}</td>
-                        <td className="px-4 py-2.5 max-w-[220px]">
-                          <p className="line-clamp-3 text-xs text-ink whitespace-pre-line">{c.description}</p>
-                          {c.adminNote && <p className="mt-0.5 text-[10px] text-muted italic">Catatan: {c.adminNote}</p>}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className={`rounded-full border px-2 py-0.5 text-xs ${c.status === "approved" ? "border-teal/40 text-teal-bright" : c.status === "rejected" ? "border-rose/30 text-rose" : "border-amber/40 text-amber-bright"}`}>
-                            {c.status === "approved" ? "Disetujui" : c.status === "rejected" ? "Ditolak" : "Menunggu"}
-                          </span>
-                          <p className="mt-0.5 text-[10px] text-muted">{fmtDate(c.createdAt)}</p>
-                        </td>
-                        <td className="px-4 py-2.5 text-right">
-                          {c.status === "pending" ? (
-                            <div className="flex justify-end gap-1.5">
-                              <button onClick={() => handleWarrantyAction(c.id, "approve")} className="btn-3d rounded-md border border-teal/40 px-2 py-1 text-xs font-medium text-teal-bright hover:bg-teal-soft">Setujui</button>
-                              <button onClick={() => handleWarrantyAction(c.id, "reject")} className="btn-3d rounded-md border border-rose/40 px-2 py-1 text-xs font-medium text-rose hover:bg-rose-soft">Tolak</button>
-                            </div>
-                          ) : <span className="text-xs text-muted">—</span>}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <WarrantyAdminPanel
+            claims={warrantyClaims}
+            loading={warrantyLoading}
+            msg={warrantyMsg}
+            onAction={handleWarrantyAction}
+          />
 
           {/* Flash Sale */}
           <div className="glass rounded-2xl p-5 shadow-soft">
@@ -2549,61 +2508,240 @@ export default function AdminDashboardPage() {
 // Sub-components
 // ────────────────────────────────────────────────────────────────────────────
 
+function WarrantyAdminPanel({ claims, loading, msg, onAction }) {
+  const [previewSrc, setPreviewSrc] = useState(null);
+  const [notifTarget, setNotifTarget] = useState(null);
+  const [notifMsg, setNotifMsg] = useState({ title: "", body: "" });
+  const [sendingNotif, setSendingNotif] = useState(false);
+  const [notifDone, setNotifDone] = useState("");
+
+  async function sendQuickNotif() {
+    if (!notifTarget || !notifMsg.title) return;
+    setSendingNotif(true);
+    try {
+      const res = await fetch("/api/admin/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target: "single", token: notifTarget, type: "info", title: notifMsg.title, body: notifMsg.body }),
+      });
+      const d = await res.json();
+      setNotifDone(d.ok ? "✅ Notifikasi terkirim!" : `❌ ${d.error}`);
+      setTimeout(() => { setNotifTarget(null); setNotifDone(""); setNotifMsg({ title: "", body: "" }); }, 2000);
+    } finally { setSendingNotif(false); }
+  }
+
+  return (
+    <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div>
+          <h2 className="font-display text-base font-semibold text-ink">🛡️ Klaim Garansi Nokos</h2>
+          <p className="mt-1 text-xs text-muted">Approve = saldo dikembalikan sesuai harga beli. Lihat foto bukti sebelum keputusan.</p>
+        </div>
+        <span className="rounded-full bg-rose-soft px-3 py-1 text-xs font-semibold text-rose shrink-0">
+          {claims.filter((c) => c.status === "pending").length} menunggu
+        </span>
+      </div>
+      {msg && <p className="mb-2 text-xs font-medium text-teal-bright">{msg}</p>}
+
+      <div className="overflow-x-auto rounded-xl border border-line">
+        <table className="w-full min-w-[700px] text-sm">
+          <thead>
+            <tr className="border-b border-line text-left text-xs text-muted bg-surface">
+              <th className="px-4 py-2.5 font-medium">User</th>
+              <th className="px-4 py-2.5 font-medium">Nokos</th>
+              <th className="px-4 py-2.5 font-medium">Harga</th>
+              <th className="px-4 py-2.5 font-medium">Detail + Foto</th>
+              <th className="px-4 py-2.5 font-medium">Status</th>
+              <th className="px-4 py-2.5 font-medium text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={6} className="px-4 py-5 text-center text-muted">Memuat...</td></tr>
+            ) : claims.length === 0 ? (
+              <tr><td colSpan={6} className="px-4 py-5 text-center text-muted">Belum ada klaim garansi.</td></tr>
+            ) : claims.map((c) => (
+              <tr key={c.id} className="border-b border-line last:border-0 hover:bg-surface/60 transition-colors">
+                <td className="px-4 py-3 font-mono text-[11px] text-ink max-w-[110px] truncate">{c.token}</td>
+                <td className="px-4 py-3 text-xs text-ink">
+                  <div className="font-semibold">{c.serviceName}</div>
+                  <div className="text-muted">{c.phoneNumber}</div>
+                  <div className="font-mono text-[10px] text-muted">#{c.orderId?.slice(-10)}</div>
+                </td>
+                <td className="px-4 py-3 text-xs font-semibold text-ink whitespace-nowrap">{fmtRp(c.purchasePrice)}</td>
+                <td className="px-4 py-3 max-w-[240px]">
+                  <p className="line-clamp-2 text-xs text-ink whitespace-pre-line">{c.description}</p>
+                  {c.adminNote && <p className="mt-0.5 text-[10px] text-muted italic">Catatan: {c.adminNote}</p>}
+                  {c.screenshotData && (
+                    <button onClick={() => setPreviewSrc(c.screenshotData)}
+                      className="mt-1.5 flex items-center gap-1 rounded-lg border border-blue/30 bg-blue-soft px-2 py-0.5 text-[10px] font-bold text-blue hover:opacity-80 press">
+                      🖼️ Lihat Foto Bukti
+                    </button>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  <span className={`rounded-full border px-2 py-0.5 text-xs ${c.status === "approved" ? "border-teal/40 text-teal-bright" : c.status === "rejected" ? "border-rose/30 text-rose" : "border-amber/40 text-amber-bright"}`}>
+                    {c.status === "approved" ? "✓ Disetujui" : c.status === "rejected" ? "✕ Ditolak" : "⏳ Menunggu"}
+                  </span>
+                  <p className="mt-0.5 text-[10px] text-muted">{fmtDate(c.createdAt)}</p>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-col items-end gap-1.5">
+                    {c.status === "pending" ? (
+                      <>
+                        <button onClick={() => onAction(c.id, "approve")} className="btn-3d rounded-md border border-teal/40 px-2.5 py-1 text-xs font-bold text-teal-bright hover:bg-teal-soft w-full">✓ Setujui</button>
+                        <button onClick={() => onAction(c.id, "reject")} className="btn-3d rounded-md border border-rose/40 px-2.5 py-1 text-xs font-bold text-rose hover:bg-rose-soft w-full">✕ Tolak</button>
+                      </>
+                    ) : null}
+                    <button onClick={() => { setNotifTarget(c.token); setNotifMsg({ title: c.status === "approved" ? "Klaim Garansi Disetujui ✅" : c.status === "rejected" ? "Klaim Garansi Ditolak" : "Update Klaim Garansi", body: "" }); }}
+                      className="btn-3d rounded-md border border-indigo-400/40 px-2.5 py-1 text-xs font-bold text-indigo-400 hover:bg-indigo-50/20 w-full">
+                      📢 Notif
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Screenshot lightbox */}
+      {previewSrc && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" onClick={() => setPreviewSrc(null)}
+          style={{ background: "rgba(0,0,0,0.85)" }}>
+          <img src={previewSrc} alt="Bukti" className="max-w-full max-h-[80vh] rounded-2xl border-4 border-white/20 shadow-2xl" />
+          <button className="absolute top-4 right-4 rounded-full bg-white/20 p-2 text-white text-lg hover:bg-white/30">✕</button>
+        </div>
+      )}
+
+      {/* Quick Notif Modal */}
+      {notifTarget && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)" }}>
+          <div className="w-full max-w-sm rounded-2xl border border-line bg-bg p-5 shadow-2xl space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm text-ink">📢 Kirim Notifikasi</h3>
+              <button onClick={() => setNotifTarget(null)} className="text-muted hover:text-ink text-lg">✕</button>
+            </div>
+            <p className="text-xs text-muted font-mono bg-surface rounded-lg px-3 py-1.5">{notifTarget}</p>
+            <input value={notifMsg.title} onChange={(e) => setNotifMsg((m) => ({ ...m, title: e.target.value }))}
+              placeholder="Judul notifikasi" className="input text-sm w-full" />
+            <textarea value={notifMsg.body} onChange={(e) => setNotifMsg((m) => ({ ...m, body: e.target.value }))}
+              placeholder="Isi pesan (opsional)" rows={3} className="input text-sm w-full resize-none" />
+            {notifDone && <p className={`text-xs font-semibold ${notifDone.startsWith("✅") ? "text-teal-bright" : "text-rose"}`}>{notifDone}</p>}
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setNotifTarget(null)} className="flex-1 rounded-xl border border-line py-2 text-sm text-muted hover:border-ink/30">Batal</button>
+              <button onClick={sendQuickNotif} disabled={sendingNotif || !notifMsg.title}
+                className="flex-1 rounded-xl bg-indigo-500 py-2 text-sm font-bold text-white disabled:opacity-50 press">
+                {sendingNotif ? "Mengirim…" : "Kirim"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SecuritySection() {
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState(null);
   const [msg, setMsg] = useState("");
+  const [lastScan, setLastScan] = useState(null);
 
   async function runScan() {
     setScanning(true);
     setMsg("");
     setResult(null);
     try {
-      const res = await fetch("/api/cron/security-scan");
+      const res = await fetch("/api/admin/security-scan", { method: "POST" });
       const data = await res.json();
       if (res.ok) {
         setResult(data);
-        setMsg(data.flagged === 0 ? "✅ Tidak ada aktivitas mencurigakan." : `⚠️ ${data.flagged} flag, ${data.autoSuspended} auto-suspend.`);
+        setLastScan(new Date());
+        setMsg(data.flagged === 0 ? "✅ Semua bersih — tidak ada ancaman terdeteksi." : `⚠️ ${data.flagged} flag ditemukan, ${data.autoSuspended} akun di-suspend otomatis.`);
       } else {
-        setMsg(data.error || "Scan gagal.");
+        setMsg(`❌ ${data.error || "Scan gagal."}`);
       }
     } catch {
-      setMsg("Scan gagal — cek koneksi.");
+      setMsg("❌ Scan gagal — cek koneksi.");
     } finally {
       setScanning(false);
-      setTimeout(() => setMsg(""), 6000);
     }
   }
 
+  const sevColor = { critical: "text-rose border-rose/40 bg-rose-soft", high: "text-amber-bright border-amber/40 bg-amber-soft", medium: "text-blue border-blue/30 bg-blue-soft" };
+  const sevIcon  = { critical: "🚨", high: "🔴", medium: "🟡" };
+  const catLabel = { spam: "SPAM", balance: "SALDO", warranty: "GARANSI", phone: "NOMOR" };
+
   return (
-    <div className="glass rounded-2xl p-5 shadow-soft">
-      <div className="flex items-center justify-between mb-3">
+    <div className="glass rounded-2xl p-5 shadow-soft space-y-4">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold text-ink">🛡️ Security — Auto-Ban</h2>
-          <p className="text-xs text-muted mt-0.5">Deteksi spam order, deposit massal, saldo anomali, dan auto-suspend.</p>
+          <h2 className="text-base font-bold text-ink flex items-center gap-2">🛡️ Security — Auto-Ban</h2>
+          <p className="text-xs text-muted mt-0.5">Deteksi spam order, deposit massal, abuse garansi, saldo anomali, nomor berulang.</p>
+          {lastScan && <p className="text-[10px] text-muted mt-1">Scan terakhir: {lastScan.toLocaleTimeString("id-ID")}</p>}
         </div>
-        <button onClick={runScan} disabled={scanning} className="rounded-xl bg-rose px-4 py-2 text-sm font-bold text-white press disabled:opacity-50 border border-rose/60">
-          {scanning ? "Scanning…" : "Jalankan Scan"}
+        <button onClick={runScan} disabled={scanning}
+          className="shrink-0 rounded-xl bg-rose px-4 py-2 text-sm font-bold text-white press disabled:opacity-50 border border-rose/60 flex items-center gap-2">
+          {scanning ? (
+            <><span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />Scanning…</>
+          ) : "🔍 Jalankan Scan"}
         </button>
       </div>
-      {msg && <p className={`text-sm font-semibold mb-3 ${msg.startsWith("✅") ? "text-teal-bright" : "text-rose"}`}>{msg}</p>}
-      {result && result.flags?.length > 0 && (
-        <div className="space-y-1.5 mt-2">
+
+      {/* Summary stats (after scan) */}
+      {result && (
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: "Critical", val: result.summary?.critical ?? 0, color: "text-rose bg-rose-soft border-rose/30" },
+            { label: "High", val: result.summary?.high ?? 0, color: "text-amber-bright bg-amber-soft border-amber/30" },
+            { label: "Medium", val: result.summary?.medium ?? 0, color: "text-blue bg-blue-soft border-blue/30" },
+          ].map((s) => (
+            <div key={s.label} className={`rounded-xl border p-2.5 text-center ${s.color}`}>
+              <p className="text-lg font-black">{s.val}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide opacity-70">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Status message */}
+      {msg && (
+        <p className={`text-xs font-semibold rounded-xl px-3 py-2 ${msg.startsWith("✅") ? "bg-teal-soft text-teal-bright" : msg.startsWith("⚠️") ? "bg-amber-soft text-amber-bright" : "bg-rose-soft text-rose"}`}>
+          {msg}
+        </p>
+      )}
+
+      {/* Flagged list */}
+      {result?.flags?.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-bold text-ink">Akun Terdeteksi ({result.flags.length})</p>
           {result.flags.map((f, i) => (
-            <div key={i} className="flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2">
-              <span className={`text-lg ${f.severity === "critical" ? "text-rose" : f.severity === "high" ? "text-amber-bright" : "text-amber"}`}>
-                {f.severity === "critical" ? "🚨" : f.severity === "high" ? "🔴" : "🟡"}
-              </span>
+            <div key={i} className={`flex items-start gap-3 rounded-xl border px-3 py-2.5 ${sevColor[f.severity] || "border-line bg-surface text-muted"}`}>
+              <span className="text-base mt-0.5 shrink-0">{sevIcon[f.severity] || "🔵"}</span>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-mono text-ink">{f.token}</p>
-                <p className="text-xs text-muted">{f.reason}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-xs font-mono font-bold">{f.token}</p>
+                  {f.category && (
+                    <span className="rounded-full border border-current/30 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest opacity-70">
+                      {catLabel[f.category] || f.category}
+                    </span>
+                  )}
+                  {(f.severity === "high" || f.severity === "critical") && (
+                    <span className="rounded-full bg-rose text-white px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest">AUTO-SUSPEND</span>
+                  )}
+                </div>
+                <p className="text-[11px] mt-0.5 opacity-80">{f.reason}</p>
               </div>
             </div>
           ))}
         </div>
       )}
-      {result && result.flagged === 0 && (
-        <div className="rounded-xl border border-teal/30 bg-teal-soft px-4 py-3">
+
+      {result?.flagged === 0 && (
+        <div className="rounded-xl border border-teal/30 bg-teal-soft px-4 py-3 flex items-center gap-2">
+          <span className="text-xl">✅</span>
           <p className="text-sm font-semibold text-teal-bright">Semua bersih — tidak ada aktivitas mencurigakan.</p>
         </div>
       )}
@@ -2616,6 +2754,15 @@ function ExportSection() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [backupLoading, setBackupLoading] = useState(false);
+
+  // Import state
+  const [importFile, setImportFile] = useState(null);
+  const [importMode, setImportMode] = useState("merge");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const [importError, setImportError] = useState("");
+  const fileInputRef = useRef(null);
 
   async function doExport() {
     setLoading(true);
@@ -2637,31 +2784,139 @@ function ExportSection() {
     }
   }
 
+  async function doBackup() {
+    setBackupLoading(true);
+    try {
+      const res = await fetch("/api/admin/export?type=backup");
+      if (!res.ok) { alert("Gagal export backup."); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `artapedia-backup-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setBackupLoading(false);
+    }
+  }
+
+  async function doImport() {
+    if (!importFile) return;
+    setImporting(true);
+    setImportResult(null);
+    setImportError("");
+    try {
+      const text = await importFile.text();
+      let parsed;
+      try { parsed = JSON.parse(text); } catch { setImportError("File bukan JSON valid."); return; }
+      if (!Array.isArray(parsed.users)) { setImportError("Format backup tidak dikenal."); return; }
+
+      if (importMode === "restore") {
+        const ok = window.confirm(`⚠️ Mode RESTORE akan HAPUS SEMUA data user terlebih dahulu lalu isi ulang dari backup (${parsed.users.length} user). Lanjutkan?`);
+        if (!ok) return;
+      }
+
+      const res = await fetch("/api/admin/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...parsed, mode: importMode }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setImportError(data.error || "Gagal import."); return; }
+      setImportResult(data);
+    } catch (e) {
+      setImportError("Terjadi kesalahan: " + e.message);
+    } finally {
+      setImporting(false);
+    }
+  }
+
   return (
-    <div className="glass rounded-2xl p-5 shadow-soft">
-      <h2 className="text-base font-bold text-ink mb-1">📥 Export Data (CSV)</h2>
-      <p className="text-xs text-muted mb-4">Unduh data transaksi, deposit, atau user dalam format CSV.</p>
-      <div className="flex flex-wrap gap-2 mb-3">
-        {[{ v: "transactions", l: "Transaksi OTP" }, { v: "deposits", l: "Deposit" }, { v: "users", l: "User" }].map((opt) => (
-          <button key={opt.v} type="button" onClick={() => setType(opt.v)}
-            className={`rounded-xl border px-4 py-2 text-xs font-bold press transition-colors ${type === opt.v ? "bg-amber text-white border-amber-bright" : "bg-surface border-line text-muted hover:border-amber/50"}`}>
-            {opt.l}
+    <div className="space-y-4">
+      {/* CSV Export */}
+      <div className="glass rounded-2xl p-5 shadow-soft">
+        <h2 className="text-base font-bold text-ink mb-1">📥 Export Data (CSV)</h2>
+        <p className="text-xs text-muted mb-4">Unduh data transaksi, deposit, atau user ringkasan dalam format CSV.</p>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {[{ v: "transactions", l: "Transaksi OTP" }, { v: "deposits", l: "Deposit" }, { v: "users", l: "User" }].map((opt) => (
+            <button key={opt.v} type="button" onClick={() => setType(opt.v)}
+              className={`rounded-xl border px-4 py-2 text-xs font-bold press transition-colors ${type === opt.v ? "bg-amber text-white border-amber-bright" : "bg-surface border-line text-muted hover:border-amber/50"}`}>
+              {opt.l}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 mb-3 flex-wrap">
+          <div className="flex-1 min-w-[130px]">
+            <label className="block text-xs font-semibold text-muted mb-1">Dari Tanggal</label>
+            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input text-sm w-full" />
+          </div>
+          <div className="flex-1 min-w-[130px]">
+            <label className="block text-xs font-semibold text-muted mb-1">Sampai Tanggal</label>
+            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input text-sm w-full" />
+          </div>
+        </div>
+        <button onClick={doExport} disabled={loading} className="w-full rounded-xl bg-teal-bright text-white py-2.5 text-sm font-bold press disabled:opacity-50 border border-teal">
+          {loading ? "Menyiapkan…" : "⬇️ Download CSV"}
+        </button>
+      </div>
+
+      {/* Full Backup (JSON) */}
+      <div className="glass rounded-2xl p-5 shadow-soft border border-indigo/20">
+        <h2 className="text-base font-bold text-ink mb-1">🗄️ Backup Penuh (JSON)</h2>
+        <p className="text-xs text-muted mb-4">Ekspor semua data user lengkap ke file JSON — bisa digunakan untuk restore jika data hilang.</p>
+        <button onClick={doBackup} disabled={backupLoading} className="w-full rounded-xl bg-indigo-500 text-white py-2.5 text-sm font-bold press disabled:opacity-50 border border-indigo-400">
+          {backupLoading ? "Menyiapkan backup…" : "📦 Download Backup JSON"}
+        </button>
+      </div>
+
+      {/* Import / Restore */}
+      <div className="glass rounded-2xl p-5 shadow-soft border border-rose/20">
+        <h2 className="text-base font-bold text-ink mb-1">📤 Import / Restore Data User</h2>
+        <p className="text-xs text-muted mb-4">Upload file backup JSON untuk memulihkan data user yang hilang.</p>
+
+        {/* Mode selector */}
+        <div className="mb-3 space-y-1">
+          <label className="block text-xs font-semibold text-muted mb-1.5">Mode Import</label>
+          {[
+            { v: "merge", l: "Merge", desc: "Update user yang ada + tambah user baru" },
+            { v: "safe", l: "Safe (Hanya Baru)", desc: "Hanya tambah user yang belum ada, jangan ubah yang sudah ada" },
+            { v: "restore", l: "⚠️ Restore Penuh", desc: "Hapus SEMUA user lalu isi ulang dari backup" },
+          ].map((m) => (
+            <label key={m.v} className={`flex items-start gap-2 rounded-xl border px-3 py-2 cursor-pointer transition-colors ${importMode === m.v ? "border-amber/60 bg-amber/10" : "border-line hover:border-amber/30"}`}>
+              <input type="radio" name="importMode" value={m.v} checked={importMode === m.v} onChange={() => setImportMode(m.v)} className="mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-ink">{m.l}</p>
+                <p className="text-[10px] text-muted">{m.desc}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        {/* File picker */}
+        <div className="mb-3">
+          <input ref={fileInputRef} type="file" accept=".json,application/json" className="hidden"
+            onChange={(e) => { setImportFile(e.target.files?.[0] || null); setImportResult(null); setImportError(""); }} />
+          <button type="button" onClick={() => fileInputRef.current?.click()}
+            className="w-full rounded-xl border-2 border-dashed border-line py-3 text-xs text-muted hover:border-amber/50 hover:text-amber-bright transition-colors press">
+            {importFile ? `📄 ${importFile.name} (${(importFile.size / 1024).toFixed(1)} KB)` : "Pilih file backup .json…"}
           </button>
-        ))}
-      </div>
-      <div className="flex gap-2 mb-3 flex-wrap">
-        <div className="flex-1 min-w-[130px]">
-          <label className="block text-xs font-semibold text-muted mb-1">Dari Tanggal</label>
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input text-sm w-full" />
         </div>
-        <div className="flex-1 min-w-[130px]">
-          <label className="block text-xs font-semibold text-muted mb-1">Sampai Tanggal</label>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input text-sm w-full" />
-        </div>
+
+        {importError && <p className="text-xs font-semibold text-rose mb-2">{importError}</p>}
+
+        {importResult && (
+          <div className="rounded-xl border border-teal/30 bg-teal-soft px-4 py-3 mb-2 text-xs space-y-0.5">
+            <p className="font-bold text-teal-bright">✅ Import selesai!</p>
+            <p className="text-muted">Total: <span className="text-ink font-semibold">{importResult.total}</span> &nbsp;|&nbsp; Ditambah: <span className="text-teal-bright font-semibold">{importResult.inserted}</span> &nbsp;|&nbsp; Diperbarui: <span className="text-amber-bright font-semibold">{importResult.updated}</span> &nbsp;|&nbsp; Dilewati: <span className="text-muted font-semibold">{importResult.skipped}</span></p>
+          </div>
+        )}
+
+        <button onClick={doImport} disabled={!importFile || importing}
+          className={`w-full rounded-xl py-2.5 text-sm font-bold press disabled:opacity-50 border transition-colors ${importMode === "restore" ? "bg-rose text-white border-rose/60" : "bg-amber text-white border-amber-bright"}`}>
+          {importing ? "Mengimport…" : importMode === "restore" ? "🔄 Restore (Hapus & Timpa)" : "📤 Import Data"}
+        </button>
       </div>
-      <button onClick={doExport} disabled={loading} className="w-full rounded-xl bg-teal-bright text-white py-2.5 text-sm font-bold press disabled:opacity-50 border border-teal">
-        {loading ? "Menyiapkan…" : "⬇️ Download CSV"}
-      </button>
     </div>
   );
 }
@@ -2680,11 +2935,17 @@ function StatusBadge({ status }) {
   return <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${cls}`}>{label}</span>;
 }
 
-function StatCard({ label, value, accent }) {
+function StatCard({ label, value, accent, icon, floatClass }) {
   return (
-    <div className="glass rounded-2xl p-4 shadow-soft">
-      <p className="text-xs text-muted">{label}</p>
-      <p className={`mt-1 font-display text-lg font-semibold ${accent || "text-ink"}`}>{value}</p>
+    <div className={`manga-panel relative overflow-hidden rounded-2xl bg-surface p-4 ${floatClass || ""}`}>
+      {/* Subtle dot grid */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        style={{ backgroundImage: "radial-gradient(circle, rgb(var(--c-ink)) 0.6px, transparent 0.6px)", backgroundSize: "7px 7px" }} />
+      <div className="relative z-10">
+        {icon && <span className="text-xl mb-1 block">{icon}</span>}
+        <p className="text-[11px] font-bold uppercase tracking-widest text-muted">{label}</p>
+        <p className={`mt-1 font-display text-lg font-black ${accent || "text-ink"}`}>{value}</p>
+      </div>
     </div>
   );
 }
