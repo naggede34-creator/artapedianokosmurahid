@@ -16,8 +16,12 @@ export async function GET() {
     const { maintenance, maintenanceMsg, depositProviders, depositFeePercent, smm, heroChars } = await getSettings();
     const providers = { ...depositProviders };
     if (!simuruConfigured()) providers.simuru = false;
-    // Aktifkan rumahotp otomatis jika API key tersedia dan admin belum set eksplisit
-    if (providers.rumahotp === undefined && rumahOtpConfigured()) providers.rumahotp = true;
+    // Aktifkan rumahotp jika API key tersedia; nonaktifkan jika tidak ada key
+    if (rumahOtpConfigured()) {
+      if (providers.rumahotp === undefined || providers.rumahotp === null) providers.rumahotp = true;
+    } else {
+      providers.rumahotp = false;
+    }
     return NextResponse.json({
       maintenance: !!maintenance,
       maintenanceMsg,

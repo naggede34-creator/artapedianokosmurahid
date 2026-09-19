@@ -93,14 +93,21 @@ export default function AnimeHero() {
       <div className={`flex items-center gap-4 transition-all duration-300 ${animating ? "opacity-0 scale-95 translate-x-3" : "opacity-100 scale-100 translate-x-0"}`}>
         {/* Avatar */}
         <div className="shrink-0 relative">
-          <div className="w-[78px] h-[78px] rounded-2xl flex items-center justify-center"
+          <div className="w-[78px] h-[78px] rounded-2xl flex items-center justify-center overflow-hidden"
             style={{
               background: `linear-gradient(135deg, ${char.glow}30, ${char.glow}15)`,
               border: `2px solid ${char.accent}50`,
               boxShadow: `0 0 24px ${char.glow}60, 4px 4px 0 rgba(0,0,0,0.6)`,
               animation: "char-float 3s ease-in-out infinite",
             }}>
-            <span className="text-4xl select-none">{char.emoji}</span>
+            {char.imageSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={char.imageSrc} alt={char.name || "character"}
+                className="w-full h-full object-cover select-none"
+                style={{ mixBlendMode: "normal" }} />
+            ) : (
+              <span className="text-4xl select-none">{char.emoji}</span>
+            )}
           </div>
           {/* Name badge */}
           <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest backdrop-blur"

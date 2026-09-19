@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import QRCode from "qrcode";
 import { usersCol, depositsCol } from "@/lib/db";
 import { createTransaction } from "@/lib/pakasir";
-import { createDeposit as createRumahOtpDeposit, toEpochMs } from "@/lib/rumahotp";
+import { createDeposit as createRumahOtpDeposit, toEpochMs, rumahOtpConfigured } from "@/lib/rumahotp";
 import { createSimuruDeposit, simuruConfigured } from "@/lib/simuru";
 import { getSettings, depositLimits } from "@/lib/settings";
 import { PROVIDER_KEYS } from "@/lib/paymentProviders";
@@ -68,6 +68,9 @@ export async function POST(req) {
     }
     if (chosen === "simuru" && !simuruConfigured()) {
       return NextResponse.json({ error: "QRIS Simuru belum dikonfigurasi admin. Pilih metode lain." }, { status: 400 });
+    }
+    if (chosen === "rumahotp" && !rumahOtpConfigured()) {
+      return NextResponse.json({ error: "QRIS RumahOTP belum dikonfigurasi. Pilih metode lain." }, { status: 400 });
     }
 
     const users = await usersCol();

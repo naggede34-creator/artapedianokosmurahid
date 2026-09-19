@@ -1550,9 +1550,11 @@ export default function AdminDashboardPage() {
                   style={{ borderLeft: `4px solid ${c.accent || "#818cf8"}` }}>
                   {/* Preview mini */}
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 overflow-hidden"
                       style={{ background: `${c.glow || "#6366f1"}20`, border: `2px solid ${c.accent || "#818cf8"}40` }}>
-                      {c.emoji || "✨"}
+                      {c.imageSrc
+                        ? <img src={c.imageSrc} alt={c.name} className="w-full h-full object-cover" />
+                        : (c.emoji || "✨")}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-black uppercase" style={{ color: c.accent || "#818cf8" }}>{c.name || "Karakter"}</p>
@@ -1564,9 +1566,62 @@ export default function AdminDashboardPage() {
                       Hapus
                     </button>
                   </div>
+
+                  {/* Foto / Gambar Upload */}
+                  <div className="mb-3 rounded-xl border border-dashed border-amber/30 bg-amber/5 p-3">
+                    <p className="text-[10px] font-semibold text-amber-bright mb-2">🖼️ Foto / Gambar Karakter</p>
+                    <div className="flex items-center gap-3">
+                      {c.imageSrc && (
+                        <div className="relative shrink-0">
+                          <img src={c.imageSrc} alt="preview" className="w-14 h-14 rounded-xl object-cover border-2"
+                            style={{ borderColor: `${c.accent || "#818cf8"}60` }} />
+                          <button type="button"
+                            onClick={() => setHeroCharsForm((f) => f.map((x, j) => j === i ? { ...x, imageSrc: undefined } : x))}
+                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose text-white text-[10px] font-bold flex items-center justify-center">
+                            ×
+                          </button>
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <label className="cursor-pointer flex items-center gap-2 rounded-lg border border-amber/30 bg-amber/10 px-3 py-2 text-xs font-semibold text-amber-bright hover:bg-amber/20 transition-colors">
+                          📁 {c.imageSrc ? "Ganti Foto" : "Upload Foto"}
+                          <input type="file" accept="image/*" className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              if (file.size > 512 * 1024) { alert("Ukuran foto maks 500KB."); return; }
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                const base64 = ev.target.result;
+                                // Resize via canvas to max 200px
+                                const img = new Image();
+                                img.onload = () => {
+                                  const canvas = document.createElement("canvas");
+                                  const MAX = 200;
+                                  const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+                                  canvas.width = Math.round(img.width * ratio);
+                                  canvas.height = Math.round(img.height * ratio);
+                                  canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+                                  const src = canvas.toDataURL("image/jpeg", 0.82);
+                                  setHeroCharsForm((f) => f.map((x, j) => j === i ? { ...x, imageSrc: src } : x));
+                                };
+                                img.src = base64;
+                              };
+                              reader.readAsDataURL(file);
+                              e.target.value = "";
+                            }} />
+                        </label>
+                        <p className="mt-1 text-[10px] text-muted">JPG/PNG/WebP, maks 500KB. Gambar otomatis dikecilkan ke 200×200px.</p>
+                        {c.imageSrc && (
+                          <p className="mt-0.5 text-[10px] text-teal-bright">✓ Foto terpasang — akan gantikan emoji di beranda.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid gap-2 sm:grid-cols-2">
                     <div>
-                      <label className="text-[10px] font-medium text-muted">Emoji</label>
+                      <label className="text-[10px] font-medium text-muted">Emoji (jika tidak pakai foto)</label>
                       <input value={c.emoji} maxLength={8}
                         onChange={(e) => setHeroCharsForm((f) => f.map((x, j) => j === i ? { ...x, emoji: e.target.value } : x))}
                         className="mt-0.5 w-full rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-amber" />
