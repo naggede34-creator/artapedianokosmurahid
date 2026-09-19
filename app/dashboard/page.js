@@ -51,7 +51,8 @@ const shortcuts = [
   { href: "/misi", label: "Misi & Poin", icon: Icon.star },
   { href: "/referral", label: "Undang teman", icon: Icon.gift },
   { href: "/produk", label: "Toko Produk", icon: Icon.shop, badge: "Baru" },
-  { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin, badge: "Baru" }
+  { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin, badge: "Baru" },
+  { href: "/chat", label: "Grup Chat", icon: "💬", badge: "Live" }
 ];
 
 function WarrantyModal({ open, onClose, token }) {
@@ -632,6 +633,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-8 lg:grid-cols-4">
           {shortcuts.map((s) => {
             const I = s.icon;
+            const isEmoji = typeof I === "string";
             return (
               <Link key={s.href} href={s.href} className="card card-3d hover-lift manga-lines relative flex flex-col items-center justify-center gap-2 px-2 py-4 text-center">
                 {s.badge && (
@@ -640,7 +642,7 @@ export default function DashboardPage() {
                   </span>
                 )}
                 <span className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110 ${s.badge ? "bg-gradient-to-br from-amber to-amber-bright text-white shadow-md" : "bg-amber-soft text-amber-bright"}`}>
-                  <I />
+                  {isEmoji ? <span className="text-2xl leading-none">{I}</span> : <I />}
                 </span>
                 <span className="text-xs font-semibold text-ink">{s.label}</span>
               </Link>
