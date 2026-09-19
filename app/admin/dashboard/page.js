@@ -162,6 +162,17 @@ export default function AdminDashboardPage() {
   const [jobSubFilter, setJobSubFilter] = useState("pending");
   const [jobSubMsg, setJobSubMsg] = useState("");
 
+  // Hero Chars editor
+  const DEFAULT_HERO_CHARS = [
+    { emoji: "🥷", name: "Gojo",   accent: "#818cf8", glow: "#6366f1", sub: "Infinite Nokos ✨",             line: "Dengan mata tak terbatas... aku melihat nokos paling murah!" },
+    { emoji: "⚡", name: "Shadow", accent: "#fcd34d", glow: "#f59e0b", sub: "Shadow Clone OTP 🌀",           line: "Seribu bayangan... semua beli OTP di Artapedia!" },
+    { emoji: "🤖", name: "Cyber",  accent: "#2dd4bf", glow: "#14b8a6", sub: 'System.execute("buy_nokos") 💻', line: "Sistem optimal: nokos cepat, harga minimal, proses instan!" },
+    { emoji: "🌸", name: "Aria",   accent: "#fb7185", glow: "#f43f5e", sub: "Magic Bonus ✦ +EXP",            line: "Abrakadabra! Saldo kamu bertambah dengan tiap transaksi bersama ku~" },
+  ];
+  const [heroCharsForm, setHeroCharsForm] = useState(DEFAULT_HERO_CHARS);
+  const [heroCharsMsg, setHeroCharsMsg] = useState("");
+  const [heroCharsSaving, setHeroCharsSaving] = useState(false);
+
   const loadBanners = useCallback(async () => {
     setBannersLoading(true);
     try {
@@ -423,6 +434,9 @@ export default function AdminDashboardPage() {
       depositMin: String(data.depositMin || ""),
       depositMax: String(data.depositMax || ""),
     });
+    if (Array.isArray(data.heroChars) && data.heroChars.length > 0) {
+      setHeroCharsForm(data.heroChars);
+    }
   }, [router]);
 
   const loadUsers = useCallback(
@@ -1516,6 +1530,110 @@ export default function AdminDashboardPage() {
               </table>
             </div>
           </div>
+          {/* ── Hero Panel Karakter ── */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="font-display text-base font-semibold text-ink">🦸 Hero Panel Karakter (Beranda)</h2>
+              {heroCharsForm.length < 6 && (
+                <button type="button"
+                  onClick={() => setHeroCharsForm((f) => [...f, { emoji: "✨", name: "Karakter", accent: "#818cf8", glow: "#6366f1", sub: "Subtitle", line: "Dialog karakter di sini." }])}
+                  className="text-xs font-bold px-3 py-1.5 rounded-xl border border-amber/40 text-amber-bright hover:bg-amber/10 transition-colors press">
+                  + Tambah
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-muted mb-4">Atur karakter yang berputar di hero panel beranda. Maks 6 karakter.</p>
+
+            <div className="space-y-3">
+              {heroCharsForm.map((c, i) => (
+                <div key={i} className="rounded-2xl border border-line bg-bg p-4 relative"
+                  style={{ borderLeft: `4px solid ${c.accent || "#818cf8"}` }}>
+                  {/* Preview mini */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
+                      style={{ background: `${c.glow || "#6366f1"}20`, border: `2px solid ${c.accent || "#818cf8"}40` }}>
+                      {c.emoji || "✨"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-black uppercase" style={{ color: c.accent || "#818cf8" }}>{c.name || "Karakter"}</p>
+                      <p className="text-xs text-muted truncate">{c.sub || "-"}</p>
+                    </div>
+                    <button type="button"
+                      onClick={() => setHeroCharsForm((f) => f.filter((_, j) => j !== i))}
+                      className="shrink-0 text-xs font-bold px-2 py-1 rounded-lg border border-rose/30 text-rose hover:bg-rose/10 press">
+                      Hapus
+                    </button>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <label className="text-[10px] font-medium text-muted">Emoji</label>
+                      <input value={c.emoji} maxLength={8}
+                        onChange={(e) => setHeroCharsForm((f) => f.map((x, j) => j === i ? { ...x, emoji: e.target.value } : x))}
+                        className="mt-0.5 w-full rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-amber" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-medium text-muted">Nama</label>
+                      <input value={c.name} maxLength={20}
+                        onChange={(e) => setHeroCharsForm((f) => f.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
+                        className="mt-0.5 w-full rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-amber" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-medium text-muted">Warna Accent (hex)</label>
+                      <div className="flex gap-2 mt-0.5">
+                        <input type="color" value={c.accent || "#818cf8"}
+                          onChange={(e) => setHeroCharsForm((f) => f.map((x, j) => j === i ? { ...x, accent: e.target.value } : x))}
+                          className="h-9 w-10 rounded-lg border border-line cursor-pointer" />
+                        <input value={c.accent} maxLength={12}
+                          onChange={(e) => setHeroCharsForm((f) => f.map((x, j) => j === i ? { ...x, accent: e.target.value } : x))}
+                          className="flex-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-amber" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-medium text-muted">Warna Glow (hex)</label>
+                      <div className="flex gap-2 mt-0.5">
+                        <input type="color" value={c.glow || "#6366f1"}
+                          onChange={(e) => setHeroCharsForm((f) => f.map((x, j) => j === i ? { ...x, glow: e.target.value } : x))}
+                          className="h-9 w-10 rounded-lg border border-line cursor-pointer" />
+                        <input value={c.glow} maxLength={12}
+                          onChange={(e) => setHeroCharsForm((f) => f.map((x, j) => j === i ? { ...x, glow: e.target.value } : x))}
+                          className="flex-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-amber" />
+                      </div>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-[10px] font-medium text-muted">Subtitle (maks 80 karakter)</label>
+                      <input value={c.sub} maxLength={80}
+                        onChange={(e) => setHeroCharsForm((f) => f.map((x, j) => j === i ? { ...x, sub: e.target.value } : x))}
+                        className="mt-0.5 w-full rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-amber" />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-[10px] font-medium text-muted">Dialog / Line (maks 200 karakter)</label>
+                      <textarea value={c.line} maxLength={200} rows={2}
+                        onChange={(e) => setHeroCharsForm((f) => f.map((x, j) => j === i ? { ...x, line: e.target.value } : x))}
+                        className="mt-0.5 w-full resize-none rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-amber" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {heroCharsMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{heroCharsMsg}</p>}
+            <button type="button" disabled={heroCharsSaving}
+              onClick={async () => {
+                setHeroCharsSaving(true); setHeroCharsMsg("");
+                try {
+                  const res = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ heroChars: heroCharsForm }) });
+                  const d = await res.json();
+                  if (!res.ok) throw new Error(d.error || "Gagal.");
+                  setHeroCharsMsg("✓ Hero karakter tersimpan!");
+                  if (Array.isArray(d.heroChars)) setHeroCharsForm(d.heroChars);
+                } catch (err) { setHeroCharsMsg(err.message); }
+                finally { setHeroCharsSaving(false); setTimeout(() => setHeroCharsMsg(""), 3000); }
+              }}
+              className="mt-4 btn-3d rounded-xl bg-amber hover:bg-amber-bright px-5 py-2.5 text-sm font-bold text-white shadow-3d disabled:opacity-60">
+              {heroCharsSaving ? "Menyimpan..." : "Simpan Hero Panel"}
+            </button>
+          </div>
+
         </div>
       )}
 
