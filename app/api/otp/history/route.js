@@ -14,6 +14,7 @@ export async function GET(req) {
   return NextResponse.json({
     items: list.map((o) => ({
       orderId: o.orderId,
+      provider: o.provider || "rumahotp",
       serviceName: o.serviceName,
       countryName: o.countryName,
       phoneNumber: o.phoneNumber,

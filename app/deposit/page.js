@@ -19,8 +19,8 @@ export default function DepositPage() {
   const { token, balance, refreshBalance } = useUser();
 
   const [cfg, setCfg] = useState({
-    providers: { simuru: false, pakasir: true, rumahotp: false },
-    fees: { simuru: 0, pakasir: 0, rumahotp: 0.7 },
+    providers: { simuru: false, pakasir: true, rumahotp: false, virtusim: false },
+    fees: { simuru: 0, pakasir: 0, rumahotp: 0.7, virtusim: 0 },
     min: 2000,
     max: 1000000
   });

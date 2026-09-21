@@ -10,7 +10,7 @@ import LuckyHourBanner from "@/components/LuckyHourBanner";
 import FlashSaleTimer from "@/components/FlashSaleTimer";
 import { PageHeader, Icon } from "@/components/ui";
 
-// WhatsApp selalu tampil paling atas, sisanya tetap mengikuti urutan asli dari RumahOTP.
+// WhatsApp selalu tampil paling atas, sisanya tetap mengikuti urutan asli dari RumahOTP (Server Murah).
 function sortWithWaFirst(items) {
   const rank = (name = "") => {
     const n = name.toLowerCase();
@@ -145,7 +145,7 @@ function OtpPageInner() {
       <PageHeader
         icon={<Icon.phone />}
         title="Beli nokos"
-        desc="Pilih aplikasi, negara, dan server. Nomor langsung tampil, kode OTP muncul sendiri begitu masuk. Tidak ada kode dalam waktu tertentu? Saldo dikembalikan otomatis."
+        desc="Pilih server (Nokos Murah atau OTP Fast), aplikasi, lalu negara. Nomor langsung tampil, kode OTP muncul sendiri begitu masuk. Tidak ada kode dalam waktu tertentu? Saldo dikembalikan otomatis."
         action={
           <button onClick={() => setSheetOpen(true)} className="btn-primary px-5">
             + Pesan nomor

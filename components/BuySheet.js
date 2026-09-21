@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { OTP_SERVERS } from "@/lib/otpServers";
 
 // Ambil field yang mungkin berbeda nama antar respons API, tanpa merusak tampilan kalau tidak ada.
 function pick(obj, keys, fallback) {
@@ -11,7 +12,15 @@ function pick(obj, keys, fallback) {
 }
 
 export default function BuySheet({ open, onClose, services, servicesLoading, token, balance, onOrderCreated, initialQuery = "" }) {
-  const [screen, setScreen] = useState("apps"); // apps | countries | operators
+  // server -> (murah: apps -> countries -> operators) | (fast: vs)
+  const [screen, setScreen] = useState("server"); // server | apps | countries | operators | vs
+  const [server, setServer] = useState(null); // rumahotp | virtusim
+  const [available, setAvailable] = useState({ rumahotp: true, virtusim: false });
+  const [vsServices, setVsServices] = useState([]);
+  const [vsLoading, setVsLoading] = useState(false);
+  const [vsError, setVsError] = useState("");
+  const [vsCountry, setVsCountry] = useState("Indonesia");
+  const [vsSearch, setVsSearch] = useState("");
   const [appSearch, setAppSearch] = useState("");
   const [countrySearch, setCountrySearch] = useState("");
   const [sortMode, setSortMode] = useState("rate"); // rate | harga
@@ -26,14 +35,34 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   const [buyError, setBuyError] = useState("");
 
   useEffect(() => {
-    if (open && initialQuery) setAppSearch(initialQuery);
+    if (!open) return;
+    fetch("/api/otp/servers")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.available) setAvailable(d.available);
+        if (d?.virtusimCountry) setVsCountry(d.virtusimCountry);
+      })
+      .catch(() => {});
+  }, [open]);
+
+  // Datang dari ?q= (cari layanan tertentu) -> langsung ke daftar aplikasi Server Murah.
+  useEffect(() => {
+    if (open && initialQuery) {
+      setAppSearch(initialQuery);
+      setServer("rumahotp");
+      setScreen("apps");
+    }
   }, [open, initialQuery]);
 
   // Reset total tiap kali sheet ditutup, biar buka lagi selalu mulai dari awal.
   useEffect(() => {
     if (!open) {
       const t = setTimeout(() => {
-        setScreen("apps");
+        setScreen("server");
+        setServer(null);
+        setVsServices([]);
+        setVsError("");
+        setVsSearch("");
         setAppSearch("");
         setCountrySearch("");
         setSelectedService(null);
@@ -65,6 +94,72 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
       return r !== 0 ? r : minPrice(a) - minPrice(b);
     });
   }, [countries, countrySearch, sortMode]);
+
+  function chooseServer(key) {
+    setBuyError("");
+    setServer(key);
+    if (key === "virtusim") {
+      setScreen("vs");
+      loadVsServices();
+    } else {
+      setScreen("apps");
+    }
+  }
+
+  async function loadVsServices() {
+    setVsLoading(true);
+    setVsError("");
+    try {
+      const res = await fetch("/api/otp/vs/services");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memuat layanan.");
+      setVsServices(Array.isArray(data.items) ? data.items : []);
+      if (data.country) setVsCountry(data.country);
+    } catch (err) {
+      setVsServices([]);
+      setVsError(err.message || "Gagal memuat layanan.");
+    } finally {
+      setVsLoading(false);
+    }
+  }
+
+  async function orderVirtusim(svc) {
+    setBuyError("");
+    setBuyingKey(`vs-${svc.id}`);
+    try {
+      const res = await fetch("/api/otp/vs-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, serviceId: svc.id })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal membeli nomor.");
+      const created = new Date(data.createdAt).getTime();
+      onOrderCreated({
+        orderId: data.orderId,
+        phoneNumber: data.phoneNumber,
+        price: data.price,
+        createdAt: data.createdAt,
+        serviceName: svc.name,
+        countryName: vsCountry,
+        status: "pending",
+        otpCode: null,
+        otpMsg: null,
+        expiredAt: data.expiredAt || null,
+        ttlMs: data.expiredAt && created ? data.expiredAt - created : null,
+        server: "virtusim"
+      });
+    } catch (err) {
+      setBuyError(err.message);
+    } finally {
+      setBuyingKey(null);
+    }
+  }
+
+  const filteredVs = useMemo(() => {
+    const q = vsSearch.trim().toLowerCase();
+    return q ? vsServices.filter((s) => (s.name || "").toLowerCase().includes(q)) : vsServices;
+  }, [vsServices, vsSearch]);
 
   async function chooseService(svc) {
     setSelectedService(svc);
@@ -159,7 +254,13 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
             <div>
               <h3 className="text-lg font-extrabold tracking-tight text-ink">Beli nomor virtual</h3>
               <p className="text-xs text-muted">
-                {screen === "apps" ? "Langkah 1 dari 2 · pilih aplikasi" : "Langkah 2 dari 2 · pilih negara & server"}
+                {screen === "server"
+                  ? "Langkah 1 · pilih server"
+                  : screen === "vs"
+                  ? `Server OTP Fast · ${vsCountry}`
+                  : screen === "apps"
+                  ? "Server Murah · pilih aplikasi"
+                  : "Server Murah · pilih negara & server"}
               </p>
             </div>
             <div className="text-right">
@@ -170,8 +271,136 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
+          {screen === "server" && (
+            <div className="fade-up space-y-3">
+              <p className="text-sm text-muted">Mau pakai server yang mana?</p>
+              {OTP_SERVERS.map((sv) => {
+                const on = available[sv.key] !== false && (sv.key !== "virtusim" || available.virtusim);
+                const fast = sv.key === "virtusim";
+                return (
+                  <button
+                    key={sv.key}
+                    onClick={() => on && chooseServer(sv.key)}
+                    disabled={!on}
+                    className={`btn-3d flex w-full items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-colors ${
+                      on ? "border-line bg-surface2/50 hover:border-amber/50" : "cursor-not-allowed border-line opacity-50"
+                    }`}
+                  >
+                    <span
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl ${
+                        fast ? "bg-amber-soft text-amber-bright" : "bg-success-soft text-success"
+                      }`}
+                    >
+                      {fast ? "⚡" : "💸"}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="text-[15px] font-bold text-ink">{sv.name}</span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                            fast ? "bg-amber-soft text-amber-bright" : "bg-success-soft text-success"
+                          }`}
+                        >
+                          {sv.badge}
+                        </span>
+                        {!on && <span className="rounded-full bg-rose-soft px-2 py-0.5 text-[10px] font-semibold text-rose">nonaktif</span>}
+                      </span>
+                      <span className="mt-1 block text-xs leading-relaxed text-muted">{sv.desc}</span>
+                    </span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="mt-1 shrink-0 text-muted">
+                      <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {screen === "vs" && (
+            <div className="fade-up">
+              <button onClick={() => { setScreen("server"); setBuyError(""); }} className="underline-grow text-xs text-muted hover:text-ink">
+                ← Ganti server
+              </button>
+
+              <div className="mt-3 flex items-center gap-2 rounded-2xl border border-line bg-surface2/60 px-4 py-3">
+                <span className="text-lg">🇮🇩</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-ink">{vsCountry}</span>
+                  <span className="block text-xs text-muted">Server Nokos OTP Fast · nomor langsung tampil</span>
+                </span>
+                <span className="rounded-full bg-amber-soft px-2 py-0.5 text-[10px] font-semibold text-amber-bright">Fast</span>
+              </div>
+
+              <input
+                value={vsSearch}
+                onChange={(e) => setVsSearch(e.target.value)}
+                placeholder="Cari nama aplikasi..."
+                className="field mt-3"
+              />
+
+              {buyError && <p className="mt-3 rounded-xl bg-rose-soft px-3 py-2 text-sm text-rose">{buyError}</p>}
+
+              {vsLoading ? (
+                <div className="mt-4 space-y-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="skeleton h-[64px] rounded-2xl border border-line" />
+                  ))}
+                </div>
+              ) : vsError ? (
+                <div className="mt-6 text-center">
+                  <p className="text-sm text-rose">{vsError}</p>
+                  <button onClick={loadVsServices} className="btn-ghost mt-3">Coba lagi</button>
+                </div>
+              ) : filteredVs.length === 0 ? (
+                <p className="mt-6 text-sm text-muted">Layanan tidak ditemukan.</p>
+              ) : (
+                <div className="mt-4 space-y-2">
+                  {filteredVs.map((s, i) => {
+                    const top = i === 0 && !vsSearch.trim() && /whats\s*app|^wa\b/i.test(s.name || "");
+                    const out = s.stock === 0;
+                    return (
+                      <div
+                        key={s.id}
+                        className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${
+                          top ? "border-amber/50 bg-amber-soft/40" : "border-line bg-surface"
+                        }`}
+                      >
+                        {s.img ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={s.img} alt="" className="h-9 w-9 shrink-0 rounded object-contain" />
+                        ) : (
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-surface2 text-sm text-muted">
+                            {(s.name || "?")[0]}
+                          </span>
+                        )}
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-center gap-1.5">
+                            <span className="truncate text-sm font-semibold text-ink">{s.name}</span>
+                            {top && <span className="rounded-full bg-amber-soft px-1.5 py-0.5 text-[10px] font-semibold text-amber-bright">Teratas</span>}
+                          </span>
+                          <span className="block text-[11px] text-muted">{out ? "stok habis" : `stok ${s.stock ?? "-"}`}</span>
+                        </span>
+                        <span className="shrink-0 text-sm font-semibold text-ink">Rp{Number(s.sell_price || 0).toLocaleString("id-ID")}</span>
+                        <button
+                          onClick={() => orderVirtusim(s)}
+                          disabled={out || buyingKey !== null}
+                          className="btn-3d shrink-0 rounded-lg border border-amber px-3 py-1.5 text-xs font-medium text-amber-bright transition-colors hover:bg-amber-soft disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {buyingKey === `vs-${s.id}` ? "..." : "Order"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {screen === "apps" && (
             <div className="fade-up">
+              <button onClick={() => setScreen("server")} className="underline-grow mb-3 text-xs text-muted hover:text-ink">
+                ← Ganti server
+              </button>
               <input
                 value={appSearch}
                 onChange={(e) => setAppSearch(e.target.value)}

@@ -15,7 +15,7 @@ Yang perlu kamu ketahui tentang cara kerja website:
 - Kode OTP yang masuk ditampilkan otomatis di halaman pesanan, tidak perlu refresh manual.
 - Kalau nomor tidak kunjung menerima kode, user bisa membatalkan pesanan untuk refund otomatis
   selama pesanan belum menerima kode.
-- Deposit bisa pakai QRIS Simuru, QRIS Pakasir, atau QRIS RumahOTP (tergantung yang sedang aktif). Kalau
+- Deposit bisa pakai QRIS Simuru, QRIS Pakasir, QRIS RumahOTP, atau QRIS VirtuSIM (tergantung yang sedang aktif). Kalau
   QRIS sudah dibayar tapi saldo belum masuk, tunggu beberapa menit — sistem mengecek ulang otomatis.
 - Suntik sosmed (followers, likes, views, dll untuk Instagram, TikTok, YouTube, Telegram, dsb) ada di
   halaman /suntik: pilih platform, kategori, layanan, isi link/username target & jumlah. Akun target harus

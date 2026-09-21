@@ -272,3 +272,33 @@ body `{ token: "AP-...." }`.
   sebelum), memakai operasi atomik `$inc` dengan syarat saldo cukup.
 - Semua API key (Pakasir, RumahOTP) hanya dipakai di server (API routes), tidak
   pernah dikirim ke browser.
+
+## VirtuSIM: deposit QRIS + server "Nokos OTP Fast"
+
+Isi `VIRTUSIM_APIKEY` di environment (lokal: `.env.local`, Vercel/Netlify: Environment
+Variables), lalu deploy ulang. Satu key dipakai untuk dua fitur:
+
+1. **Deposit** — metode baru "QRIS VirtuSIM" muncul di halaman Deposit (bisa
+   di-on/off-kan + diatur biaya adminnya dari Dashboard Admin, sama seperti metode
+   lain). Status dicek lewat polling & cron, saldo hanya dikreditkan kalau VirtuSIM
+   menjawab status lunas yang jelas.
+2. **Pesan nomor** — tombol "Pesan nomor" sekarang membuka pilihan server:
+   - **Server Nokos Murah** → RumahOTP (alur lama: aplikasi → negara → server).
+   - **Server Nokos OTP Fast** → VirtuSIM, negara Indonesia (`VIRTUSIM_COUNTRY`),
+     daftar layanan dengan WhatsApp selalu paling atas.
+
+File utama: `lib/virtusim.js` (client API), `lib/otpServers.js` (daftar server),
+`app/api/otp/vs/services` & `app/api/otp/vs-order` (beli nomor OTP Fast),
+`lib/orderReconcile.js` (status/refund untuk kedua provider).
+
+Pesanan VirtuSIM disimpan dengan `provider: "virtusim"` dan `orderId` berawalan `VS`.
+Batal setelah 3 menit, refund otomatis kalau kedaluwarsa, dan Ganti Nomor bekerja sama
+seperti server murah.
+
+**Catatan penting:** dokumentasi VirtuSIM yang dipakai saat integrasi hanya memuat
+`list_country`, `list_operator`, `active_order`, `order`, dan `reactive_order`. Nama action
+lain (`services`, `status`, `set_status`, `deposit`, `deposit_status`, `deposit_cancel`)
+memakai nama umum dan semuanya ada di objek `ACTIONS` di `lib/virtusim.js` — bisa diganti
+lewat env `VIRTUSIM_ACTION_*` tanpa ubah kode. Cocokkan dengan dokumentasi Postman
+VirtuSIM (bagian Service / Transaction / Deposit), lalu **tes deposit kecil (mis. Rp2.000)
+dan satu pembelian nomor** sebelum dibuka ke user.
