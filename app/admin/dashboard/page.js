@@ -67,6 +67,12 @@ export default function AdminDashboardPage() {
 
   const [savingLoyalty, setSavingLoyalty] = useState(false);
   const [loyaltyMsg, setLoyaltyMsg] = useState("");
+  const [savingTransfer, setSavingTransfer] = useState(false);
+  const [transferMsg, setTransferMsg] = useState("");
+  const [stockServices, setStockServices] = useState("wa,tg,gojek,shopee,dana,grab");
+  const [stockBusy, setStockBusy] = useState("");
+  const [stockMsg, setStockMsg] = useState("");
+  const [stockPreview, setStockPreview] = useState(null);
 
   const [announcements, setAnnouncements] = useState([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(true);
@@ -177,7 +183,7 @@ export default function AdminDashboardPage() {
     { emoji: "🥷", name: "Gojo",   accent: "#818cf8", glow: "#6366f1", sub: "Infinite Nokos ✨",             line: "Dengan mata tak terbatas... aku melihat nokos paling murah!" },
     { emoji: "⚡", name: "Shadow", accent: "#fcd34d", glow: "#f59e0b", sub: "Shadow Clone OTP 🌀",           line: "Seribu bayangan... semua beli OTP di Artapedia!" },
     { emoji: "🤖", name: "Cyber",  accent: "#2dd4bf", glow: "#14b8a6", sub: 'System.execute("buy_nokos") 💻', line: "Sistem optimal: nokos cepat, harga minimal, proses instan!" },
-    { emoji: "🌸", name: "Aria",   accent: "#fb7185", glow: "#f43f5e", sub: "Magic Bonus ✦ +EXP",            line: "Abrakadabra! Saldo kamu bertambah dengan tiap transaksi bersama ku~" },
+    { emoji: "🦅", name: "ARTA PEDIA SUPPORT", accent: "#FF6B1A", glow: "#2E86FF", sub: "Siap Bantu 24 Jam ✦", line: "Halo! Aku elang penjaga Arta Pedia. Ada kendala nokos atau deposit? Panggil aku~" },
   ];
   const [heroCharsForm, setHeroCharsForm] = useState(DEFAULT_HERO_CHARS);
   const [heroCharsMsg, setHeroCharsMsg] = useState("");
@@ -960,6 +966,65 @@ export default function AdminDashboardPage() {
     } finally {
       setSavingLoyalty(false);
       setTimeout(() => setLoyaltyMsg(""), 2500);
+    }
+  }
+
+  async function saveTransfer(patch) {
+    setSavingTransfer(true);
+    setTransferMsg("");
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transfer: patch })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSettings(data);
+      setTransferMsg("Pengaturan transfer tersimpan.");
+    } catch {
+      setTransferMsg("Gagal menyimpan pengaturan transfer.");
+    } finally {
+      setSavingTransfer(false);
+      setTimeout(() => setTransferMsg(""), 2500);
+    }
+  }
+
+  async function previewStockReport() {
+    setStockBusy("preview");
+    setStockMsg("");
+    setStockPreview(null);
+    try {
+      const res = await fetch(`/api/admin/stock-report?services=${encodeURIComponent(stockServices)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setStockPreview(data.groups || []);
+      if (!data.groups?.length) setStockMsg("Provider tidak mengembalikan data stok.");
+    } catch (err) {
+      setStockMsg(err.message || "Gagal mengambil pratinjau.");
+    } finally {
+      setStockBusy("");
+    }
+  }
+
+  async function sendStockReport() {
+    if (!window.confirm("Kirim info stok & harga nokos ke channel Telegram sekarang?")) return;
+    setStockBusy("send");
+    setStockMsg("");
+    try {
+      const res = await fetch("/api/admin/stock-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ services: stockServices })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setStockMsg(`Terkirim ke channel — ${data.sent} layanan.`);
+    } catch (err) {
+      setStockMsg(err.message || "Gagal mengirim.");
+    } finally {
+      setStockBusy("");
+      setTimeout(() => setStockMsg(""), 4000);
     }
   }
 
@@ -2437,6 +2502,142 @@ export default function AdminDashboardPage() {
               </div>
             </div>
             {loyaltyMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{loyaltyMsg}</p>}
+          </div>
+
+          {/* Info stok & harga ke channel */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">Info Stok &amp; Harga ke Channel</h2>
+            <p className="mt-1 text-xs text-muted">
+              Kirim ringkasan harga jual (sudah termasuk markup) dan sisa stok nomor Indonesia
+              dari semua server aktif ke channel Telegram. Otomatis terkirim 4x sehari lewat cron,
+              atau kirim manual dari sini.
+            </p>
+
+            <label className="mt-4 block text-xs font-medium text-muted">Kode layanan (pisahkan dengan koma)</label>
+            <input
+              value={stockServices}
+              onChange={(e) => setStockServices(e.target.value)}
+              placeholder="wa,tg,gojek,shopee"
+              className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+            />
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                onClick={previewStockReport}
+                disabled={!!stockBusy}
+                className="btn-3d rounded-lg border border-line bg-surface px-3.5 py-2 text-xs font-semibold text-ink disabled:opacity-60"
+              >
+                {stockBusy === "preview" ? "Memuat..." : "Pratinjau"}
+              </button>
+              <button
+                onClick={sendStockReport}
+                disabled={!!stockBusy}
+                className="btn-3d rounded-lg bg-amber px-3.5 py-2 text-xs font-semibold text-white disabled:opacity-60"
+              >
+                {stockBusy === "send" ? "Mengirim..." : "Kirim ke Channel"}
+              </button>
+            </div>
+
+            {stockPreview && stockPreview.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {stockPreview.map((g) => (
+                  <div key={g.service} className="rounded-lg border border-line bg-surface px-3.5 py-2.5">
+                    <p className="text-xs font-bold uppercase text-ink">{g.service}</p>
+                    <ul className="mt-1 space-y-0.5">
+                      {g.rows.map((r) => (
+                        <li key={`${g.service}-${r.server}`} className="flex justify-between text-[11px] text-muted">
+                          <span>{r.server}</span>
+                          <span className="tabular-nums text-ink">
+                            Rp{Number(r.price).toLocaleString("id-ID")} · stok {r.stock ?? "—"}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+            {stockMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{stockMsg}</p>}
+          </div>
+
+          {/* Transfer saldo antar pengguna */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="font-display text-base font-semibold text-ink">Transfer Saldo Antar Pengguna</h2>
+                <p className="mt-1 text-xs text-muted">
+                  Matikan kalau tidak mau user saling kirim saldo. Biaya admin dipotong dari pengirim
+                  dan jadi pendapatan web — penerima tetap dapat nominal penuh.
+                </p>
+              </div>
+              <button
+                onClick={() => saveTransfer({ enabled: !(settings?.transfer?.enabled !== false) })}
+                disabled={!settings || savingTransfer}
+                className={`btn-3d relative h-7 w-12 shrink-0 rounded-full transition-colors ${settings?.transfer?.enabled !== false ? "bg-teal" : "bg-line"}`}
+                aria-label="Toggle transfer saldo"
+              >
+                <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings?.transfer?.enabled !== false ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-medium text-muted">Biaya admin (%)</label>
+                <input
+                  key={`tfp-${settings?.transfer?.feePercent}`}
+                  type="number" min="0" max="50" step="0.1"
+                  defaultValue={settings?.transfer?.feePercent ?? 0}
+                  onBlur={(e) => saveTransfer({ feePercent: e.target.value })}
+                  disabled={!settings || savingTransfer}
+                  className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Biaya admin tetap (Rp)</label>
+                <input
+                  key={`tff-${settings?.transfer?.feeFlat}`}
+                  type="number" min="0" step="100"
+                  defaultValue={settings?.transfer?.feeFlat ?? 0}
+                  onBlur={(e) => saveTransfer({ feeFlat: e.target.value })}
+                  disabled={!settings || savingTransfer}
+                  className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Minimal transfer (Rp)</label>
+                <input
+                  key={`tfmin-${settings?.transfer?.minAmount}`}
+                  type="number" min="1" step="500"
+                  defaultValue={settings?.transfer?.minAmount ?? 1000}
+                  onBlur={(e) => saveTransfer({ minAmount: e.target.value })}
+                  disabled={!settings || savingTransfer}
+                  className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Maksimal transfer (Rp, 0 = bebas)</label>
+                <input
+                  key={`tfmax-${settings?.transfer?.maxAmount}`}
+                  type="number" min="0" step="1000"
+                  defaultValue={settings?.transfer?.maxAmount ?? 0}
+                  onBlur={(e) => saveTransfer({ maxAmount: e.target.value })}
+                  disabled={!settings || savingTransfer}
+                  className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+                />
+              </div>
+            </div>
+
+            <p className="mt-3 rounded-lg border border-line bg-surface px-3.5 py-2.5 text-[11px] leading-relaxed text-muted">
+              {(() => {
+                const t = settings?.transfer || {};
+                const pct = Number(t.feePercent) || 0;
+                const flat = Number(t.feeFlat) || 0;
+                if (pct <= 0 && flat <= 0) return "Belum ada biaya admin — transfer gratis. Isi persen atau nominal tetap supaya tiap transfer menghasilkan untung.";
+                const fee = Math.ceil((50000 * pct) / 100) + flat;
+                return `Contoh: user transfer Rp50.000 → dipotong Rp${(50000 + fee).toLocaleString("id-ID")}, penerima dapat Rp50.000, untung kamu Rp${fee.toLocaleString("id-ID")}.`;
+              })()}
+            </p>
+            {transferMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{transferMsg}</p>}
           </div>
 
           {/* Server OTP */}

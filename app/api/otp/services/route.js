@@ -1,18 +1,9 @@
 import { NextResponse } from "next/server";
-import { getServices } from "@/lib/rumahotp";
-import { getOtpmaniaServices, isOtpmaniaServer } from "@/lib/otpmania";
-import { getDibananaServices } from "@/lib/dibanana";
 import { getSettings } from "@/lib/settings";
+import { listServices, serverEnabled } from "@/lib/otpCatalog";
 
 export const dynamic = "force-dynamic";
 
-function serverEnabled(settings, id) {
-  const list = Array.isArray(settings.otpServers) ? settings.otpServers : [];
-  return list.find((s) => s.id === id)?.enabled !== false;
-}
-
-// Daftar aplikasi untuk satu server. Bentuk item sengaja sama untuk semua server
-// (service_code, service_name, service_img) supaya UI-nya identik.
 export async function GET(req) {
   const server = new URL(req.url).searchParams.get("server") || "rumahotp";
   try {
@@ -20,33 +11,7 @@ export async function GET(req) {
     if (!serverEnabled(settings, server)) {
       return NextResponse.json({ error: "Server ini sedang dinonaktifkan admin." }, { status: 503 });
     }
-
-    if (server === "dibanana") {
-      const list = await getDibananaServices();
-      const items = list
-        .map((s) => ({ service_code: s.code, service_name: s.name || s.code, service_img: null, server }))
-        .sort((a, b) => {
-          const wa = (x) => (x.service_code === "wa" || /whats\s*app/i.test(x.service_name) ? 0 : 1);
-          return wa(a) - wa(b) || a.service_name.localeCompare(b.service_name, "id");
-        });
-      return NextResponse.json({ items });
-    }
-
-    if (isOtpmaniaServer(server)) {
-      const list = await getOtpmaniaServices();
-      const items = list
-        .map((s) => ({ service_code: s.id, service_name: s.name, service_img: null, server }))
-        .sort((a, b) => {
-          const wa = (x) => (/whats\s*app|^wa$/i.test(x.service_name) || x.service_code === "wa" ? 0 : 1);
-          return wa(a) - wa(b) || a.service_name.localeCompare(b.service_name, "id");
-        });
-      return NextResponse.json({ items });
-    }
-
-    const result = await getServices(process.env.RUMAHOTP_APIKEY);
-    const list = result?.data || result?.services || result || [];
-    const items = (Array.isArray(list) ? list : []).map((s) => ({ ...s, server: "rumahotp" }));
-    return NextResponse.json({ items });
+    return NextResponse.json({ items: await listServices(server) });
   } catch (err) {
     console.error("[otp/services]", err?.response?.data || err?.message || err);
     return NextResponse.json({ error: err?.message || "Gagal mengambil daftar layanan." }, { status: 502 });

@@ -26,10 +26,11 @@ export default function BonusPage() {
   const [editingTarget, setEditingTarget] = useState(false);
   const [targetInput, setTargetInput] = useState("");
 
+  const [achievements, setAchievements] = useState(null);
+
+  // Hanya dipakai untuk menampilkan status di kartu pintasan; pengelolaannya
+  // sudah pindah ke halaman /apikey.
   const [apiKeyInfo, setApiKeyInfo] = useState(null);
-  const [apiKeyGenerating, setApiKeyGenerating] = useState(false);
-  const [newApiKey, setNewApiKey] = useState(null);
-  const [apiKeyConfirm, setApiKeyConfirm] = useState(false);
 
   useEffect(() => {
     try {
@@ -46,6 +47,10 @@ export default function BonusPage() {
       .then((d) => setCheckin(d.error ? null : d))
       .catch(() => {})
       .finally(() => setCheckinLoading(false));
+    fetch(`/api/achievements?token=${t}`)
+      .then((r) => r.json())
+      .then((d) => setAchievements(d.error ? null : d))
+      .catch(() => {});
     fetch(`/api/apikey?token=${t}`)
       .then((r) => r.json())
       .then((d) => setApiKeyInfo(d))
@@ -74,28 +79,6 @@ export default function BonusPage() {
     setBalanceTarget(val);
     try { localStorage.setItem(TARGET_KEY, String(val)); } catch {}
     setEditingTarget(false);
-  }
-
-  async function generateApiKey() {
-    if (!token || apiKeyGenerating) return;
-    setApiKeyGenerating(true);
-    setNewApiKey(null);
-    try {
-      const r = await fetch("/api/apikey", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token })
-      });
-      const d = await r.json();
-      if (d.ok) {
-        setNewApiKey(d.apiKey);
-        setApiKeyInfo({ hasKey: true, maskedKey: `${d.apiKey.slice(0, 4)}${"•".repeat(Math.max(0, d.apiKey.length - 8))}${d.apiKey.slice(-4)}` });
-      }
-    } catch {
-    } finally {
-      setApiKeyGenerating(false);
-      setApiKeyConfirm(false);
-    }
   }
 
   return (
@@ -226,66 +209,60 @@ export default function BonusPage() {
         </div>
       </div>
 
+      {achievements && achievements.items?.length > 0 && (
+        <div className="mt-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-ink">🏅 Badge Kamu ({achievements.unlockedCount}/{achievements.total})</h2>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {achievements.items.map((a) => (
+              <div
+                key={a.id}
+                title={a.desc}
+                className={`flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition-all w-[84px] ${
+                  a.unlocked
+                    ? a.tier === "diamond"
+                      ? "border-teal/40 bg-teal-soft"
+                      : a.tier === "gold"
+                      ? "border-amber/40 bg-amber-soft"
+                      : a.tier === "silver"
+                      ? "border-line bg-surface2"
+                      : "border-line bg-surface"
+                    : "border-dashed border-line bg-surface opacity-40 grayscale"
+                }`}
+              >
+                <span className="text-2xl">{a.icon}</span>
+                <p className="text-[10px] font-bold text-ink leading-tight">{a.name}</p>
+                {a.unlocked && (
+                  <span className="text-[9px] rounded-full bg-teal-soft px-1.5 py-0.5 font-semibold text-teal-bright">✓ Dapat</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <MissionsPanel token={token} />
         <WeeklyChallenge token={token} />
       </div>
 
-      {/* API key developer */}
-      <div className="card mt-5 p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-ink">🔑 API Key Developer</h2>
-            <p className="mt-0.5 text-xs text-muted">Akses programatik ke akun kamu</p>
-          </div>
-          <Link href="/api-docs" className="text-xs font-semibold text-rose hover:underline">Docs →</Link>
-        </div>
-        {apiKeyInfo === null ? (
-          <div className="skeleton h-10 rounded-xl" />
-        ) : apiKeyInfo.hasKey ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 rounded-xl border border-line bg-surface2 px-4 py-3">
-              <span className="flex-1 font-mono text-sm tracking-wider text-ink">{apiKeyInfo.maskedKey}</span>
-              <span className="text-xs font-semibold text-success">Aktif</span>
-            </div>
-            {newApiKey && (
-              <div className="rounded-xl border border-teal/30 bg-teal-soft p-3">
-                <p className="mb-1.5 text-xs font-bold text-teal-bright">⚠️ Simpan API key ini sekarang — tidak akan ditampilkan lagi!</p>
-                <p className="select-all break-all rounded-lg border border-line bg-surface px-3 py-2 font-mono text-xs text-ink">{newApiKey}</p>
-              </div>
-            )}
-            {apiKeyConfirm ? (
-              <div className="rounded-xl border border-amber/30 bg-amber-soft p-3">
-                <p className="mb-2 text-xs font-semibold text-amber-bright">API key lama akan tidak berlaku. Lanjutkan?</p>
-                <div className="flex gap-2">
-                  <button onClick={generateApiKey} disabled={apiKeyGenerating}
-                    className="flex-1 rounded-lg bg-rose py-2 text-xs font-bold text-white disabled:opacity-50">
-                    {apiKeyGenerating ? "⏳ Generating..." : "Ya, Generate Ulang"}
-                  </button>
-                  <button onClick={() => setApiKeyConfirm(false)}
-                    className="flex-1 rounded-lg border border-line py-2 text-xs font-bold text-ink">
-                    Batal
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button onClick={() => setApiKeyConfirm(true)}
-                className="w-full rounded-xl border border-line py-2.5 text-xs font-bold text-muted transition-all hover:border-rose/40 hover:text-ink">
-                🔄 Generate Ulang API Key
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-sm text-muted">Kamu belum memiliki API key. Generate sekarang untuk mulai integrasi.</p>
-            <button onClick={generateApiKey} disabled={apiKeyGenerating}
-              className="w-full rounded-xl bg-rose py-3 text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-50"
-              style={{ boxShadow: "0 4px 0 0 rgba(180,0,0,0.25)" }}>
-              {apiKeyGenerating ? "⏳ Generating..." : "🔑 Generate API Key"}
-            </button>
-          </div>
-        )}
-      </div>
+      {/* API key developer — panel lengkapnya ada di halaman khusus /apikey */}
+      <Link
+        href="/apikey"
+        className="card-3d press mt-5 flex items-center gap-4 rounded-2xl border border-line bg-surface p-5 transition-colors hover:border-amber/50"
+      >
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-soft text-2xl">🔑</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-base font-bold text-ink">API Key Developer</span>
+          <span className="mt-0.5 block text-xs leading-relaxed text-muted">
+            {apiKeyInfo?.hasKey
+              ? "API key kamu aktif. Kelola, buat ulang, dan lihat contoh kode di halaman khusus."
+              : "Integrasikan pembelian nokos ke aplikasi atau bot kamu sendiri."}
+          </span>
+        </span>
+        <span className="shrink-0 rounded-lg bg-amber px-3 py-2 text-xs font-bold text-white">Buka →</span>
+      </Link>
     </div>
   );
 }

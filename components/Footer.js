@@ -46,9 +46,6 @@ export default function Footer() {
             <a href="https://t.me/kkaelnokosmurah" target="_blank" rel="noreferrer" className="btn-ghost px-3 py-2 text-xs">
               Channel Telegram
             </a>
-            <a href="https://t.me/diskusiduniotp" target="_blank" rel="noreferrer" className="btn-ghost px-3 py-2 text-xs">
-              Grup diskusi
-            </a>
           </div>
         </div>
         {cols.map((c) => (

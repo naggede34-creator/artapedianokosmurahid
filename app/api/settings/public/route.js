@@ -6,8 +6,7 @@ import { rumahOtpConfigured } from "@/lib/rumahotp";
 export const dynamic = "force-dynamic";
 
 const CHANNELS = () => ({
-  channelInfo: process.env.TELEGRAM_CHANNEL_1 || "https://t.me/kkaelnokosmurah",
-  channelGroup: process.env.TELEGRAM_CHANNEL_2 || "https://t.me/diskusiduniotp"
+  channelInfo: process.env.TELEGRAM_CHANNEL_1 || "https://t.me/kkaelnokosmurah"
 });
 
 export async function GET() {

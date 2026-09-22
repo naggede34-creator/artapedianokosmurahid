@@ -21,6 +21,7 @@ export async function GET(req) {
     const r = await reconcileOtpOrder(order);
     return NextResponse.json({
       orderId: order.orderId,
+      server: order.server || "rumahotp",
       status: r.resolvedStatus,
       otpCode: r.otpCode || null,
       otpMsg: r.otpMsg || null,

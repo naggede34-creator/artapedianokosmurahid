@@ -22,7 +22,6 @@ export default function SiteChrome({ children }) {
   const [maintenanceBtnLabel, setMaintenanceBtnLabel] = useState("");
   const [maintenanceBtnUrl, setMaintenanceBtnUrl] = useState("");
   const [channelInfo, setChannelInfo] = useState("https://t.me/kkaelnokosmurah");
-  const [channelGroup, setChannelGroup] = useState("https://t.me/diskusiduniotp");
 
   useEffect(() => {
     if (isAdmin) {
@@ -37,7 +36,6 @@ export default function SiteChrome({ children }) {
         setMaintenanceBtnLabel(d.maintenanceButtonLabel || "");
         setMaintenanceBtnUrl(d.maintenanceButtonUrl || "");
         if (d.channelInfo) setChannelInfo(d.channelInfo);
-        if (d.channelGroup) setChannelGroup(d.channelGroup);
       })
       .catch(() => setMaintenance(false))
       .finally(() => setChecked(true));
@@ -61,7 +59,7 @@ export default function SiteChrome({ children }) {
       <main className="pb-24 md:pb-0">{children}</main>
       <Footer />
       <BottomNav />
-      <SupportWidget channelInfo={channelInfo} channelGroup={channelGroup} />
+      <SupportWidget channelInfo={channelInfo} />
     </>
   );
 }
@@ -97,14 +95,6 @@ function MaintenanceScreen({ message, buttonLabel, buttonUrl }) {
               className="btn-3d rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-amber/40 hover:text-amber-bright"
             >
               📢 Info &amp; Promo Terbaru
-            </a>
-            <a
-              href="https://t.me/diskusiduniotp"
-              target="_blank"
-              rel="noreferrer"
-              className="btn-3d rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-teal/40 hover:text-teal-bright"
-            >
-              💬 Diskusi Dunia OTP
             </a>
           </div>
         </div>

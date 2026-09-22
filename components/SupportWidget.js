@@ -38,9 +38,7 @@ function TypingDots() {
 }
 
 export default function SupportWidget({
-  channelInfo = "https://t.me/kkaelnokosmurah",
-  channelGroup = "https://t.me/diskusiduniotp"
-}) {
+  channelInfo = "https://t.me/kkaelnokosmurah"}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState([GREETING]);
@@ -149,15 +147,6 @@ export default function SupportWidget({
       {/* Speed-dial links */}
       {!chatOpen && menuOpen && (
         <div className="flex flex-col items-end gap-2">
-          <a
-            href={channelGroup}
-            target="_blank"
-            rel="noreferrer"
-            className="hover-lift flex items-center gap-2 rounded-full border border-line bg-surface py-2 pl-3 pr-4 text-sm font-medium text-ink shadow-lift"
-          >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-soft text-teal-bright">💬</span>
-            Group Diskusi
-          </a>
           <a
             href={channelInfo}
             target="_blank"

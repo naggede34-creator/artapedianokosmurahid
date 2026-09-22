@@ -29,7 +29,7 @@ const POSES = {
 // Dialogues per state
 const DIALOGUES = {
   idle: [
-    { text: "Haii~ Aku Aria, asisten Artapedia! Mau beli nokos hari ini? 👋", pose: "idle" },
+    { text: "Haii~ Aku elang Arta Pedia Support! Mau beli nokos hari ini? 🦅", pose: "idle" },
     { text: "Nomor OTP murah meriah ada di sini! Yuk cobain sekarang~ 🛒", pose: "idle" },
     { text: "Aku selalu siap bantuin kamu cari nokos terbaik! 💖", pose: "idle" },
   ],
@@ -84,7 +84,7 @@ export default function MangaWaifu({ balance, hasRecentOrder }) {
     setVisible(true);
   }, [balance, hasRecentOrder]);
 
-  const currentLine = sequence[idx] || { text: "Haii~ Aku Aria! Yuk beli nokos~ 💖", pose: "idle" };
+  const currentLine = sequence[idx] || { text: "Haii~ Aku Arta Pedia Support! Yuk beli nokos~ 🦅", pose: "idle" };
   const pose = POSES[currentLine.pose] || POSES.idle;
 
   // Typewriter effect
@@ -156,7 +156,7 @@ export default function MangaWaifu({ balance, hasRecentOrder }) {
           {/* Character name badge */}
           <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5">
             <span className="text-xs">{pose.label}</span>
-            <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Aria</span>
+            <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">ARTA PEDIA SUPPORT</span>
             {typing && <span className="ml-1 h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />}
           </div>
 

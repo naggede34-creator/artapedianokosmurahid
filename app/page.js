@@ -483,10 +483,6 @@ export default function HomePage() {
         </div>
         <p className="mt-4 text-center text-sm text-muted">
           Masih ada pertanyaan?{" "}
-          <a href="https://t.me/diskusiduniotp" target="_blank" rel="noreferrer"
-            className="font-black text-amber-bright hover:underline">
-            Hubungi CS kami →
-          </a>
         </p>
       </section>
 

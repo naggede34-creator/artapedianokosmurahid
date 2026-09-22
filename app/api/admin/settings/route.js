@@ -15,7 +15,11 @@ export async function POST(req) {
   if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const before = await getSettings();
-    const patch = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    // Sebagian form admin mengirim { action: "update", patch: {...} } dan sebagian
+    // mengirim patch langsung. Terima dua-duanya supaya tidak ada form yang
+    // tersimpan diam-diam tanpa efek.
+    const patch = body && typeof body.patch === "object" && body.patch !== null ? body.patch : body;
     const after = await updateSettings(patch);
 
     if (patch.markupPercent !== undefined && Number(patch.markupPercent) !== before.markupPercent) {

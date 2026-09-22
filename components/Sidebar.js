@@ -76,6 +76,8 @@ const sections = [
   {
     title: "Bantuan",
     items: [
+      { href: "/apikey", label: "API Key Developer", icon: <Icon.key width={19} height={19} />, badge: "Dev" },
+      { href: "/api-docs", label: "Dokumentasi API", icon: I.book },
       { href: "/informasi", label: "Pusat Informasi", icon: I.info },
       { href: "/cara-pakai", label: "Cara Pakai", icon: I.book },
       { href: "/faq", label: "FAQ", icon: <Icon.help width={19} height={19} /> }

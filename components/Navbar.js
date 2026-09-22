@@ -48,6 +48,10 @@ export default function Navbar() {
   useEffect(() => setSidebarOpen(false), [pathname]);
 
   return (
+    // Sidebar sengaja DI LUAR <header>: saat scroll, header memakai .glass yang
+    // ber-backdrop-filter, dan itu membuat elemen position:fixed di dalamnya
+    // terkurung di kotak header sehingga menu tidak kelihatan.
+    <>
     <header
       className={`sticky top-0 z-50 border-b transition-colors duration-200 ${
         scrolled ? "glass border-line" : "border-transparent bg-bg/0"
@@ -102,7 +106,8 @@ export default function Navbar() {
         </div>
       </div>
 
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
     </header>
+    <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    </>
   );
 }

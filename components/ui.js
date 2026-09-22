@@ -280,5 +280,11 @@ export const Icon = {
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
       <path d="M12 7v10M9.5 9.5C9.5 8.4 10.6 8 12 8s2.5.4 2.5 1.5-1 1.5-2.5 1.5-2.5.4-2.5 1.5S10.6 14 12 14s2.5.4 2.5 1.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
+  ),
+  key: (p) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" {...p}>
+      <circle cx="8" cy="8" r="4.2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="m11 11 8 8m-3-3 2-2m-4 4 1.5-1.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 };

@@ -6,7 +6,7 @@ const DEFAULT_CHARS = [
   { emoji: "🥷", name: "Gojo",   accent: "#818cf8", glow: "#6366f1", sub: "Infinite Nokos ✨",             line: "Dengan mata tak terbatas... aku melihat nokos paling murah!" },
   { emoji: "⚡", name: "Shadow", accent: "#fcd34d", glow: "#f59e0b", sub: "Shadow Clone OTP 🌀",           line: "Seribu bayangan... semua beli OTP di Artapedia!" },
   { emoji: "🤖", name: "Cyber",  accent: "#2dd4bf", glow: "#14b8a6", sub: 'System.execute("buy_nokos") 💻', line: "Sistem optimal: nokos cepat, harga minimal, proses instan!" },
-  { emoji: "🌸", name: "Aria",   accent: "#fb7185", glow: "#f43f5e", sub: "Magic Bonus ✦ +EXP",            line: "Abrakadabra! Saldo kamu bertambah dengan tiap transaksi bersama ku~" },
+  { emoji: "🦅", name: "ARTA PEDIA SUPPORT", accent: "#FF6B1A", glow: "#2E86FF", sub: "Siap Bantu 24 Jam ✦", line: "Halo! Aku elang penjaga Arta Pedia. Ada kendala nokos atau deposit? Panggil aku~" },
 ];
 
 export default function AnimeHero() {

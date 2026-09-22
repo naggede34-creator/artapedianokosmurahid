@@ -47,6 +47,7 @@ const shortcuts = [
   { href: "/mutasi", label: "Mutasi", icon: Icon.ledger },
   { href: "/misi", label: "Misi & Poin", icon: Icon.star },
   { href: "/referral", label: "Undang teman", icon: Icon.gift },
+  { href: "/apikey", label: "API Key", icon: Icon.key, badge: "Dev" },
   { href: "/produk", label: "Toko Produk", icon: Icon.shop, badge: "Baru" },
   { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin, badge: "Baru" },
   { href: "/chat", label: "Grup Chat", icon: "💬", badge: "Live" }
@@ -357,7 +358,6 @@ export default function DashboardPage() {
   const [board, setBoard] = useState(null);
   const [modal, setModal] = useState(false);
   const [warrantyModal, setWarrantyModal] = useState(false);
-  const [achievements, setAchievements] = useState(null);
   const [recentOrders, setRecentOrders] = useState(null);
   const [dashboardBanners, setDashboardBanners] = useState([]);
   const [tickets, setTickets] = useState([]);
@@ -381,10 +381,6 @@ export default function DashboardPage() {
     fetch(`/api/loyalty/info?token=${t}`)
       .then((r) => r.json())
       .then((d) => setLoyalty(d.error ? null : d))
-      .catch(() => {});
-    fetch(`/api/achievements?token=${t}`)
-      .then((r) => r.json())
-      .then((d) => setAchievements(d.error ? null : d))
       .catch(() => {});
     fetch(`/api/otp/history?token=${t}&limit=5`)
       .then((r) => r.json())
@@ -589,39 +585,6 @@ export default function DashboardPage() {
       </div>
 
       {/* Achievement Badges */}
-      {achievements && achievements.items?.length > 0 && (
-        <div className="mt-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-ink">🏅 Badge Kamu ({achievements.unlockedCount}/{achievements.total})</h2>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {achievements.items.map((a) => (
-              <div
-                key={a.id}
-                title={a.desc}
-                className={`flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition-all w-[84px] ${
-                  a.unlocked
-                    ? a.tier === "diamond"
-                      ? "border-teal/40 bg-teal-soft"
-                      : a.tier === "gold"
-                      ? "border-amber/40 bg-amber-soft"
-                      : a.tier === "silver"
-                      ? "border-line bg-surface2"
-                      : "border-line bg-surface"
-                    : "border-dashed border-line bg-surface opacity-40 grayscale"
-                }`}
-              >
-                <span className="text-2xl">{a.icon}</span>
-                <p className="text-[10px] font-bold text-ink leading-tight">{a.name}</p>
-                {a.unlocked && (
-                  <span className="text-[9px] rounded-full bg-teal-soft px-1.5 py-0.5 font-semibold text-teal-bright">✓ Dapat</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Recent Transactions */}
       {recentOrders !== null && (
         <div className="mt-5 card p-5">
