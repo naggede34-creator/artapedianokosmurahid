@@ -19,8 +19,14 @@ module.exports = {
         ink: "rgb(var(--c-ink) / <alpha-value>)",
         muted: "rgb(var(--c-muted) / <alpha-value>)",
 
-        // Biru — warna brand utama.
+        // Oranye logo — warna aksi utama (tombol, harga, sorotan).
         amber: {
+          DEFAULT: "rgb(var(--c-orange) / <alpha-value>)",
+          soft: "rgb(var(--c-orange-soft) / <alpha-value>)",
+          bright: "rgb(var(--c-orange-bright) / <alpha-value>)"
+        },
+        // Biru logo — aksen kedua.
+        blue: {
           DEFAULT: "rgb(var(--c-blue) / <alpha-value>)",
           soft: "rgb(var(--c-blue-soft) / <alpha-value>)",
           bright: "rgb(var(--c-blue-bright) / <alpha-value>)"

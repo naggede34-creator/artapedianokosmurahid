@@ -1,45 +1,70 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-// Layar pembuka bergaya komik. Tampil saat halaman pertama kali dimuat, lalu
-// menghilang setelah aset siap — dengan durasi minimum supaya tidak berkedip.
-const MIN_MS = 900;
-const MAX_MS = 2600;
+// Durasi intro penuh (detik pertama kali dibuka) dan versi singkat untuk
+// kunjungan berikutnya dalam sesi yang sama. Ubah angka ini kalau mau.
+const FULL_MS = 25000;
+const QUICK_MS = 1400;
+const SEEN_KEY = "artapedia_intro_seen";
+// Tombol lewati baru muncul setelah animasinya sempat terlihat.
+const SKIP_AFTER_MS = 2500;
 
 export default function LogoLoader() {
+  const [percent, setPercent] = useState(1);
+  const [showSkip, setShowSkip] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [gone, setGone] = useState(false);
+  const rafRef = useRef(0);
+  const doneRef = useRef(false);
+  // Diisi di dalam effect supaya tombol "Lewati" memakai penutup yang sama.
+  const finishRef = useRef(null);
 
   useEffect(() => {
-    const started = Date.now();
-    let hideTimer;
-    let outTimer;
+    let full = true;
+    try {
+      full = sessionStorage.getItem(SEEN_KEY) !== "1";
+      sessionStorage.setItem(SEEN_KEY, "1");
+    } catch {
+      // sessionStorage diblokir (mode privat) — anggap kunjungan pertama.
+    }
+    const duration = full ? FULL_MS : QUICK_MS;
 
-    const finish = () => {
-      const waited = Date.now() - started;
-      hideTimer = setTimeout(() => {
-        setLeaving(true);
-        outTimer = setTimeout(() => setGone(true), 520);
-      }, Math.max(0, MIN_MS - waited));
-    };
+    const reduce =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const total = reduce ? Math.min(duration, 1200) : duration;
 
-    // Selesai begitu halaman siap, tapi jangan sampai menggantung kalau ada
-    // aset yang lambat.
-    if (document.readyState === "complete") finish();
-    else window.addEventListener("load", finish, { once: true });
-    const cap = setTimeout(finish, MAX_MS);
-
-    // Jangan biarkan halaman di belakang ikut bergulir selama loader tampil.
-    const prev = document.body.style.overflow;
+    const started = performance.now();
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
+    const skipTimer = setTimeout(() => setShowSkip(true), Math.min(SKIP_AFTER_MS, total));
+
+    const tick = (now) => {
+      const p = Math.min(1, (now - started) / total);
+      // Mulai dari 1, bukan 0, supaya angkanya langsung terlihat hidup.
+      setPercent(Math.max(1, Math.round(p * 100)));
+      if (p >= 1) finish();
+      else rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+
+    function finish() {
+      if (doneRef.current) return;
+      doneRef.current = true;
+      cancelAnimationFrame(rafRef.current);
+      setPercent(100);
+      setLeaving(true);
+      setTimeout(() => setGone(true), 560);
+    }
+
+    finishRef.current = finish;
+
     return () => {
-      window.removeEventListener("load", finish);
-      clearTimeout(cap);
-      clearTimeout(hideTimer);
-      clearTimeout(outTimer);
-      document.body.style.overflow = prev;
+      cancelAnimationFrame(rafRef.current);
+      clearTimeout(skipTimer);
+      document.body.style.overflow = prevOverflow;
     };
   }, []);
 
@@ -50,26 +75,47 @@ export default function LogoLoader() {
   if (gone) return null;
 
   return (
-    <div className={`apl-root ${leaving ? "apl-out" : ""}`} role="status" aria-label="Memuat Arta Pedia ID">
-      {/* garis kecepatan komik yang berputar pelan */}
+    <div
+      className={`apl-root ${leaving ? "apl-out" : ""}`}
+      role="status"
+      aria-live="polite"
+      aria-label={`Memuat Arta Pedia ID, ${percent} persen`}
+    >
       <span className="apl-rays" aria-hidden="true" />
-      {/* titik halftone */}
+      <span className="apl-glow" aria-hidden="true" />
       <span className="apl-dots" aria-hidden="true" />
 
-      <div className="apl-stage">
-        {/* percikan mengorbit logo */}
-        <span className="apl-spark apl-spark-1" aria-hidden="true" />
-        <span className="apl-spark apl-spark-2" aria-hidden="true" />
-        <span className="apl-spark apl-spark-3" aria-hidden="true" />
+      <div className="apl-scene">
+        <div className="apl-stage">
+          <span className="apl-ring apl-ring-1" aria-hidden="true" />
+          <span className="apl-ring apl-ring-2" aria-hidden="true" />
+          <span className="apl-spark apl-spark-1" aria-hidden="true" />
+          <span className="apl-spark apl-spark-2" aria-hidden="true" />
+          <span className="apl-spark apl-spark-3" aria-hidden="true" />
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="ARTA PEDIA ID" className="apl-logo" width="620" height="390" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="ARTA PEDIA ID" className="apl-logo" width="620" height="390" />
+        </div>
       </div>
+
+      <p className="apl-percent" aria-hidden="true">
+        <span className="apl-percent-num">{percent}</span>
+        <span className="apl-percent-sign">%</span>
+      </p>
 
       <div className="apl-bar" aria-hidden="true">
-        <span className="apl-bar-fill" />
+        <span className="apl-bar-fill" style={{ width: `${percent}%` }} />
       </div>
-      <p className="apl-text">MEMUAT&hellip;</p>
+
+      <p className="apl-text">MENYIAPKAN NOKOS TERMURAH&hellip;</p>
+
+      <button
+        type="button"
+        onClick={() => finishRef.current?.()}
+        className={`apl-skip ${showSkip ? "apl-skip-on" : ""}`}
+      >
+        Lewati →
+      </button>
     </div>
   );
 }
