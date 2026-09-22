@@ -73,6 +73,7 @@ export default function AdminDashboardPage() {
   const [stockBusy, setStockBusy] = useState("");
   const [stockMsg, setStockMsg] = useState("");
   const [stockPreview, setStockPreview] = useState(null);
+  const [stockTarget, setStockTarget] = useState(null);
 
   const [announcements, setAnnouncements] = useState([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(true);
@@ -162,7 +163,6 @@ export default function AdminDashboardPage() {
 
   // Settings extended fields
   const [siteSettingsForm, setSiteSettingsForm] = useState({ siteName: "", siteUrl: "", telegramBotToken: "", telegramChatId: "", telegramChannelId: "", depositMin: "", depositMax: "" });
-  const [savingSiteSettings, setSavingSiteSettings] = useState(false);
   const [siteSettingsMsg, setSiteSettingsMsg] = useState("");
   const [siteSettingsSubmitting, setSiteSettingsSubmitting] = useState(false);
 
@@ -263,14 +263,18 @@ export default function AdminDashboardPage() {
   }
 
   async function saveSiteSettings(e) {
-    e.preventDefault(); setSavingSiteSettings(true); setSiteSettingsMsg("");
+    e.preventDefault(); setSiteSettingsSubmitting(true); setSiteSettingsMsg("");
     try {
-      const patch = {};
-      if (siteSettingsForm.siteName !== "") patch.siteName = siteSettingsForm.siteName;
-      if (siteSettingsForm.siteUrl !== "") patch.siteUrl = siteSettingsForm.siteUrl;
-      if (siteSettingsForm.telegramBotToken !== "") patch.telegramBotToken = siteSettingsForm.telegramBotToken;
-      if (siteSettingsForm.telegramChatId !== "") patch.telegramChatId = siteSettingsForm.telegramChatId;
-      if (siteSettingsForm.telegramChannelId !== "") patch.telegramChannelId = siteSettingsForm.telegramChannelId;
+      // Field teks dikirim apa adanya — termasuk saat dikosongkan, supaya admin
+      // bisa menghapus isian (nilai kosong otomatis kembali ke env).
+      const patch = {
+        siteName: siteSettingsForm.siteName,
+        siteUrl: siteSettingsForm.siteUrl,
+        telegramBotToken: siteSettingsForm.telegramBotToken,
+        telegramChatId: siteSettingsForm.telegramChatId,
+        telegramChannelId: siteSettingsForm.telegramChannelId.trim()
+      };
+      // Angka hanya dikirim kalau diisi; kosong berarti "biarkan seperti sekarang".
       if (siteSettingsForm.depositMin !== "") patch.depositMin = Number(siteSettingsForm.depositMin);
       if (siteSettingsForm.depositMax !== "") patch.depositMax = Number(siteSettingsForm.depositMax);
       const res = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) });
@@ -280,7 +284,7 @@ export default function AdminDashboardPage() {
       setSiteSettingsForm({ siteName: d.siteName || "", siteUrl: d.siteUrl || "", telegramBotToken: d.telegramBotToken || "", telegramChatId: d.telegramChatId || "", telegramChannelId: d.telegramChannelId || "", depositMin: String(d.depositMin || ""), depositMax: String(d.depositMax || "") });
       setSiteSettingsMsg("Pengaturan tersimpan.");
     } catch (err) { setSiteSettingsMsg(err.message); }
-    finally { setSavingSiteSettings(false); setTimeout(() => setSiteSettingsMsg(""), 3000); }
+    finally { setSiteSettingsSubmitting(false); setTimeout(() => setSiteSettingsMsg(""), 4000); }
   }
 
   const loadAdminProducts = useCallback(async () => {
@@ -999,6 +1003,7 @@ export default function AdminDashboardPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setStockPreview(data.groups || []);
+      setStockTarget({ channel: data.channel || "", source: data.channelSource, bot: data.botConfigured });
       if (!data.groups?.length) setStockMsg("Provider tidak mengembalikan data stok.");
     } catch (err) {
       setStockMsg(err.message || "Gagal mengambil pratinjau.");
@@ -2557,6 +2562,20 @@ export default function AdminDashboardPage() {
                 ))}
               </div>
             )}
+            {stockTarget && (
+              <p
+                className={`mt-3 rounded-lg border px-3 py-2 text-[11px] leading-relaxed ${
+                  stockTarget.channel && stockTarget.bot
+                    ? "border-line bg-surface text-muted"
+                    : "border-rose/40 bg-rose-soft text-rose"
+                }`}
+              >
+                {stockTarget.channel
+                  ? `Akan dikirim ke channel ${stockTarget.channel} (dari ${stockTarget.source}).`
+                  : "Channel ID belum tersimpan. Isi di Pengaturan Situs lalu tekan Simpan."}
+                {stockTarget.channel && !stockTarget.bot ? " Tapi bot token masih kosong." : ""}
+              </p>
+            )}
             {stockMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{stockMsg}</p>}
           </div>
 
@@ -2752,7 +2771,7 @@ export default function AdminDashboardPage() {
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
             <h2 className="font-display text-base font-semibold text-ink">🌐 Pengaturan Situs &amp; Env</h2>
             <p className="mt-1 text-xs text-muted">Override variabel environment langsung dari dashboard — tidak perlu redeploy. Kosongkan untuk kembali ke nilai env Vercel.</p>
-            <form onSubmit={async (e) => { e.preventDefault(); setSiteSettingsMsg(""); setSiteSettingsSubmitting(true); try { const patch = {}; if (siteSettingsForm.siteName !== "") patch.siteName = siteSettingsForm.siteName; if (siteSettingsForm.siteUrl !== "") patch.siteUrl = siteSettingsForm.siteUrl; if (siteSettingsForm.telegramBotToken !== "") patch.telegramBotToken = siteSettingsForm.telegramBotToken; if (siteSettingsForm.telegramChatId !== "") patch.telegramChatId = siteSettingsForm.telegramChatId; if (siteSettingsForm.depositMin !== "") patch.depositMin = Number(siteSettingsForm.depositMin); if (siteSettingsForm.depositMax !== "") patch.depositMax = Number(siteSettingsForm.depositMax); const res = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update", patch }) }); const d = await res.json(); if (!res.ok) { setSiteSettingsMsg(d.error || "Gagal."); return; } setSiteSettingsMsg("Pengaturan disimpan!"); } catch { setSiteSettingsMsg("Gagal menyimpan."); } finally { setSiteSettingsSubmitting(false); } }}>
+            <form onSubmit={saveSiteSettings}>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="text-xs font-medium text-muted">Nama Situs</label>

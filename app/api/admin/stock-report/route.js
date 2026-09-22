@@ -24,7 +24,16 @@ export async function GET(req) {
     const services = parseServices(new URL(req.url).searchParams.get("services"));
     const settings = await getSettings();
     const groups = await buildStockReport(settings, services);
-    return NextResponse.json({ services, groups, text: stockReportNotif(groups, { serverName: serverLabel }) });
+    const channel = settings.telegramChannelId || process.env.TELEGRAM_CHANNEL_ID || "";
+    return NextResponse.json({
+      services,
+      groups,
+      // Ditampilkan di panel admin supaya ketahuan kalau Channel ID belum tersimpan.
+      channel,
+      channelSource: settings.telegramChannelId ? "pengaturan" : channel ? "env" : "kosong",
+      botConfigured: Boolean(settings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN),
+      text: stockReportNotif(groups, { serverName: serverLabel })
+    });
   } catch (err) {
     console.error("[admin/stock-report:preview]", err?.message || err);
     return NextResponse.json({ error: "Gagal menyusun laporan stok." }, { status: 502 });
@@ -37,9 +46,20 @@ export async function POST(req) {
     const body = await req.json().catch(() => ({}));
     const services = parseServices(body.services);
     const settings = await getSettings();
-    if (!settings.telegramChannelId && !process.env.TELEGRAM_CHANNEL_ID) {
+    const channel = settings.telegramChannelId || process.env.TELEGRAM_CHANNEL_ID || "";
+    const botToken = settings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || "";
+    if (!channel) {
       return NextResponse.json(
-        { error: "Channel ID Telegram belum diisi. Isi dulu di Pengaturan Situs." },
+        {
+          error:
+            "Channel ID Telegram masih kosong di pengaturan yang tersimpan. Buka Pengaturan Situs, isi Channel ID, lalu tekan Simpan Pengaturan Situs sampai muncul 'Pengaturan tersimpan.'"
+        },
+        { status: 400 }
+      );
+    }
+    if (!botToken) {
+      return NextResponse.json(
+        { error: "Bot token Telegram belum diisi. Isi dulu di Pengaturan Situs." },
         { status: 400 }
       );
     }
