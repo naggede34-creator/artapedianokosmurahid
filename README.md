@@ -57,6 +57,26 @@ RuangOTP dipakai untuk **dua server nokos** sekaligus **dua gateway deposit QRIS
 5. Cek koneksinya dari Dashboard Admin → Server OTP → **Diagnosa koneksi**, atau
    kirim `/statusruangotp` ke bot owner.
 
+### Kalau muncul ENOTFOUND (bukan masalah whitelist)
+
+`ENOTFOUND` artinya **DNS gagal**, bukan IP ditolak. Saat tulisan ini dibuat,
+`api.ruangotp.io` yang tertulis di dokumentasi RuangOTP **belum punya catatan DNS**,
+sementara `ruangotp.io` resolve normal. Jadi request tidak pernah sampai ke mana pun.
+
+Karena itu `lib/ruangotp.js` mencoba beberapa host berurutan:
+
+1. `RUANGOTP_BASE_URL` (kalau diisi)
+2. `https://api.ruangotp.io/api`
+3. `https://ruangotp.io/api`
+
+Host pertama yang berhasil akan diingat. Percobaan ulang hanya dilakukan untuk
+kegagalan DNS — saat itu tidak ada request yang benar-benar terkirim, jadi tidak
+mungkin ada order atau deposit yang terproses dua kali. Kegagalan HTTP tidak
+pernah dicoba ke host lain.
+
+Kalau dua-duanya tetap gagal, tanyakan base URL yang benar ke CS RuangOTP lalu isi
+`RUANGOTP_BASE_URL` di Environment Variables Vercel.
+
 ### Whitelist IP di Vercel — baca ini dulu
 
 **Vercel Serverless/Edge tidak punya IP keluar yang tetap.** IP-nya berubah-ubah

@@ -20,12 +20,16 @@ export async function GET(req) {
       });
     }
     const d = await diagnoseRuangOtp();
-    const blocked = [d.ruangotp_s1, d.ruangotp_s2].some((r) => r?.ipBlocked);
+    const rows = [d.ruangotp_s1, d.ruangotp_s2];
+    const blocked = rows.some((r) => r?.ipBlocked);
+    const dnsFailed = rows.every((r) => r?.dnsFailed);
     const allOk = d.ruangotp_s1?.ok && d.ruangotp_s2?.ok;
     return NextResponse.json({
       ...d,
       verdict: allOk
-        ? "Koneksi RuangOTP normal, kedua server bisa dihubungi."
+        ? `Koneksi RuangOTP normal, kedua server bisa dihubungi lewat ${d.ruangotp_s1?.host || "host aktif"}.`
+        : dnsFailed
+        ? "Alamat API RuangOTP tidak ditemukan (DNS gagal) — ini BUKAN masalah whitelist IP. Tanyakan base URL yang benar ke RuangOTP, lalu isi RUANGOTP_BASE_URL di Environment Variables Vercel."
         : blocked
         ? "IP server ini belum di-whitelist di RuangOTP. Daftarkan dulu di menu Profil RuangOTP."
         : "Sebagian server RuangOTP tidak bisa dihubungi — lihat rincian di bawah."
