@@ -2460,7 +2460,7 @@ export default function AdminDashboardPage() {
                       <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${srv.enabled ? "translate-x-6" : "translate-x-1"}`} />
                     </button>
                   </div>
-                  <div className="mt-2.5 flex items-center gap-2">
+                  <div className="mt-2.5 flex flex-wrap items-center gap-2">
                     <input
                       type="number"
                       min="0"
@@ -2478,6 +2478,17 @@ export default function AdminDashboardPage() {
                     >
                       Simpan
                     </button>
+                    {/* Contoh nyata supaya admin langsung lihat efek markup ke harga jual. */}
+                    <span className="text-[11px] text-muted">
+                      {(() => {
+                        const raw = serverMarkups[srv.id];
+                        const useGlobal = raw === "" || raw === undefined;
+                        const pct = Number(useGlobal ? settings?.markupPercent : raw);
+                        if (!Number.isFinite(pct) || pct < 0) return null;
+                        const jual = Math.ceil(5000 * (1 + pct / 100));
+                        return `contoh: modal Rp5.000 → jual Rp${jual.toLocaleString("id-ID")}${useGlobal ? " (ikut global)" : ""}`;
+                      })()}
+                    </span>
                   </div>
                 </div>
               ))}

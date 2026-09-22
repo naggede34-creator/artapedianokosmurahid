@@ -245,41 +245,53 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
           {screen === "server" && (
             <div className="fade-up space-y-3">
               <p className="text-sm text-muted">Mau pakai server yang mana?</p>
-              {OTP_SERVERS.map((sv) => {
+              {OTP_SERVERS.map((sv, i) => {
                 const on = available[sv.key] !== false;
-                const fast = sv.key !== "rumahotp";
+                // Tiap provider punya warna & ikonnya sendiri supaya mudah dibedakan sekilas.
+                const look =
+                  sv.key === "rumahotp"
+                    ? { icon: "💸", ring: "rgb(var(--c-success))", soft: "bg-success-soft", text: "text-success" }
+                    : sv.key === "dibanana"
+                    ? { icon: "🍌", ring: "rgb(var(--c-amber))", soft: "bg-amber-soft", text: "text-amber-bright" }
+                    : { icon: "⚡", ring: "rgb(var(--c-blue))", soft: "bg-blue-soft", text: "text-blue-bright" };
                 return (
                   <button
                     key={sv.key}
                     onClick={() => on && chooseServer(sv.key)}
                     disabled={!on}
-                    className={`btn-3d flex w-full items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-colors ${
-                      on ? "border-line bg-surface2/50 hover:border-amber/50" : "cursor-not-allowed border-line opacity-50"
+                    className={`press relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border-2 px-4 py-4 text-left transition-all duration-200 ${
+                      on ? `stagger-${(i % 5) + 1} fade-up border-ink/15 bg-surface hover:-translate-y-0.5` : "cursor-not-allowed border-line opacity-45"
                     }`}
+                    style={on ? { boxShadow: `4px 4px 0 ${look.ring}33` } : undefined}
                   >
+                    {/* Pita warna tipis sebagai penanda provider */}
+                    <span className="absolute inset-y-0 left-0 w-1" style={{ background: look.ring }} />
+
                     <span
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl ${
-                        fast ? "bg-amber-soft text-amber-bright" : "bg-success-soft text-success"
-                      }`}
+                      className={`float-slow flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 border-ink/10 text-2xl ${look.soft}`}
+                      style={{ boxShadow: `2px 2px 0 ${look.ring}44` }}
                     >
-                      {fast ? "⚡" : "💸"}
+                      {look.icon}
                     </span>
+
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-2">
-                        <span className="text-[15px] font-bold text-ink">{sv.name}</span>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                            fast ? "bg-amber-soft text-amber-bright" : "bg-success-soft text-success"
-                          }`}
-                        >
+                        <span className="text-[15px] font-extrabold tracking-tight text-ink">{sv.name}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${look.soft} ${look.text}`}>
                           {sv.badge}
                         </span>
-                        {!on && <span className="rounded-full bg-rose-soft px-2 py-0.5 text-[10px] font-semibold text-rose">nonaktif</span>}
+                        {!on && (
+                          <span className="rounded-full bg-rose-soft px-2 py-0.5 text-[10px] font-bold text-rose">nonaktif</span>
+                        )}
                       </span>
                       <span className="mt-1 block text-xs leading-relaxed text-muted">{sv.desc}</span>
+                      <span className="mt-1.5 block font-mono text-[10px] uppercase tracking-wider text-muted opacity-60">
+                        via {sv.provider}
+                      </span>
                     </span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="mt-1 shrink-0 text-muted">
-                      <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="mt-1 shrink-0 text-muted">
+                      <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
                 );
@@ -411,77 +423,155 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
               ) : filteredCountries.length === 0 ? (
                 <p className="mt-6 text-sm text-muted">Belum ada stok untuk layanan ini.</p>
               ) : (
-                <div className="mt-4 space-y-2.5">
+                <div className="mt-4 space-y-3">
                   {filteredCountries.map((c) => {
                     const list = c.pricelist || [];
                     const minPrice = list.length ? Math.min(...list.map((p) => Number(p.sell_price ?? p.price ?? 0))) : null;
                     const isOpen = expandedCountry === c.number_id;
                     const dial = pick(c, ["dial_code", "phone_code", "calling_code", "code"], null);
                     const iso = pick(c, ["iso", "iso_code", "short_code", "country_code"], null);
+                    const stocks = list.map((p) => Number(p.stock)).filter((n) => Number.isFinite(n));
+                    const totalStock = stocks.length ? stocks.reduce((a, b) => a + b, 0) : null;
+                    const maxStock = stocks.length ? Math.max(1, ...stocks) : 1;
                     return (
-                      <div key={c.number_id} className="overflow-hidden rounded-2xl border border-line bg-surface">
+                      <div
+                        key={c.number_id}
+                        className={`overflow-hidden rounded-2xl border-2 transition-all duration-200 ${
+                          isOpen ? "border-amber bg-surface" : "border-ink/15 bg-surface hover:border-amber/50"
+                        }`}
+                        style={{ boxShadow: isOpen ? "5px 5px 0 rgb(var(--c-amber) / 0.35)" : "3px 3px 0 rgb(var(--c-ink) / 0.12)" }}
+                      >
                         <button
                           onClick={() => setExpandedCountry(isOpen ? null : c.number_id)}
-                          className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+                          className="press flex w-full items-center gap-3 px-3.5 py-3 text-left"
                         >
-                          {c.img ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={c.img} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
-                          ) : (
-                            <span className="h-6 w-6 shrink-0 rounded-full bg-surface2" />
-                          )}
-                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{c.name}</span>
-                          {dial && (
-                            <span className="shrink-0 rounded-full bg-surface2 px-2 py-0.5 text-[11px] text-muted">+{String(dial).replace("+", "")}</span>
-                          )}
-                          {iso && <span className="shrink-0 rounded-full bg-surface2 px-2 py-0.5 text-[11px] text-muted">{iso}</span>}
+                          <span
+                            className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-ink/20 bg-surface2 text-xl"
+                            style={{ boxShadow: "2px 2px 0 rgb(var(--c-ink) / 0.15)" }}
+                          >
+                            {c.flag ? (
+                              c.flag
+                            ) : c.img ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={c.img} alt="" className="h-6 w-6 rounded-full object-cover" />
+                            ) : (
+                              <span className="text-xs font-bold text-muted">{iso || (c.name || "?")[0]}</span>
+                            )}
+                          </span>
+
+                          <span className="min-w-0 flex-1">
+                            <span className="flex flex-wrap items-center gap-1.5">
+                              <span className="truncate text-sm font-extrabold tracking-tight text-ink">{c.name}</span>
+                              {dial && (
+                                <span className="shrink-0 rounded-md bg-surface2 px-1.5 py-0.5 font-mono text-[10px] text-muted">
+                                  +{String(dial).replace("+", "")}
+                                </span>
+                              )}
+                            </span>
+                            <span className="mt-1 flex items-center gap-1.5 text-[11px] text-muted">
+                              <span className="font-semibold">{list.length} paket</span>
+                              {totalStock != null && (
+                                <>
+                                  <span className="opacity-40">•</span>
+                                  <span className="inline-flex items-center gap-1">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-success" />
+                                    {totalStock.toLocaleString("id-ID")} stok
+                                  </span>
+                                </>
+                              )}
+                            </span>
+                          </span>
+
                           {minPrice != null && (
-                            <span className="shrink-0 rounded-full bg-amber-soft px-2.5 py-0.5 text-[11px] font-medium text-amber-bright">
-                              Mulai Rp{minPrice.toLocaleString("id-ID")}
+                            <span className="shrink-0 text-right">
+                              <span className="block text-[9px] font-bold uppercase tracking-wider text-muted">mulai</span>
+                              <span className="block text-sm font-black tabular-nums text-amber-bright">
+                                Rp{minPrice.toLocaleString("id-ID")}
+                              </span>
                             </span>
                           )}
+
                           <svg
-                            width="16"
-                            height="16"
+                            width="18"
+                            height="18"
                             viewBox="0 0 24 24"
                             fill="none"
-                            className={`shrink-0 text-muted transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                            className={`shrink-0 text-muted transition-transform duration-200 ${isOpen ? "rotate-180 text-amber-bright" : ""}`}
                           >
-                            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         </button>
 
                         {isOpen && (
-                          <div className="expand-down divide-y divide-line border-t border-line">
-                            {list.map((p) => {
+                          <div className="expand-down border-t-2 border-dashed border-line bg-surface2/30">
+                            {list.map((p, i) => {
                               const rate = pick(p, ["success_rate", "rate", "completion_rate", "percent"], null);
                               const providerLabel = pick(p, ["provider_name", "server_name", "name"], `Server ${p.provider_id}`);
-                              const providerNum = pick(p, ["id"], p.provider_id);
                               const disabled = p.available === false || p.stock === 0;
+                              const busy = buyingKey === p.provider_id;
+                              const ratio = p.stockRatio ?? (Number.isFinite(Number(p.stock)) ? Number(p.stock) / maxStock : null);
+                              const cheapest = p.cheapest === true || (list.length > 1 && i === 0 && p.cheapest === undefined && minPrice === Number(p.sell_price ?? p.price));
                               return (
-                                <div key={p.provider_id} className="flex items-center justify-between gap-2 px-4 py-3">
-                                  <div className="min-w-0">
+                                <div
+                                  key={p.provider_id}
+                                  className="flex items-center gap-3 border-b border-line/60 px-3.5 py-3 last:border-0"
+                                >
+                                  <span
+                                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-black ${
+                                      cheapest ? "bg-amber text-white" : "bg-surface2 text-muted"
+                                    }`}
+                                    style={cheapest ? { boxShadow: "2px 2px 0 rgb(var(--c-ink) / 0.2)" } : undefined}
+                                  >
+                                    {i + 1}
+                                  </span>
+
+                                  <div className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-center gap-1.5">
-                                      <span className="text-xs font-medium text-ink">{providerLabel}</span>
-                                      <span className="rounded-full bg-surface2 px-1.5 py-0.5 text-[10px] text-muted">ID: {providerNum}</span>
+                                      <span className="text-xs font-bold text-ink">{providerLabel}</span>
+                                      {cheapest && (
+                                        <span className="rounded-full bg-amber-soft px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-bright">
+                                          Termurah
+                                        </span>
+                                      )}
                                       {rate != null && (
-                                        <span className="rounded-full bg-success-soft px-1.5 py-0.5 text-[10px] font-semibold text-success">
+                                        <span className="rounded-full bg-success-soft px-1.5 py-0.5 text-[9px] font-bold text-success">
                                           {Number(rate).toFixed(0)}% sukses
                                         </span>
                                       )}
                                     </div>
-                                    {p.stock != null && <p className="mt-0.5 text-[11px] text-muted">stok {p.stock}</p>}
+
+                                    {ratio != null && (
+                                      <div className="mt-1.5 flex items-center gap-2">
+                                        <span className="h-1.5 w-20 overflow-hidden rounded-full bg-surface3">
+                                          <span
+                                            className="block h-full rounded-full transition-all"
+                                            style={{
+                                              width: `${Math.max(6, Math.round(ratio * 100))}%`,
+                                              background:
+                                                ratio > 0.5
+                                                  ? "linear-gradient(90deg, rgb(var(--c-success)), rgb(var(--c-success)))"
+                                                  : "linear-gradient(90deg, rgb(var(--c-warn)), rgb(var(--c-amber-bright)))"
+                                            }}
+                                          />
+                                        </span>
+                                        <span className="text-[10px] font-medium text-muted">
+                                          {p.stock != null ? `${Number(p.stock).toLocaleString("id-ID")} nomor` : "tersedia"}
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
-                                  <div className="flex shrink-0 items-center gap-2">
-                                    <span className="text-sm font-semibold text-ink">
+
+                                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                                    <span className="text-sm font-black tabular-nums text-ink">
                                       Rp{Number(p.sell_price ?? p.price ?? 0).toLocaleString("id-ID")}
                                     </span>
                                     <button
                                       onClick={() => handleOrderClick(c, p)}
-                                      disabled={disabled || buyingKey === p.provider_id}
-                                      className="btn-3d rounded-lg border border-amber px-3 py-1.5 text-xs font-medium text-amber-bright transition-colors hover:bg-amber-soft disabled:cursor-not-allowed disabled:opacity-40"
+                                      disabled={disabled || busy}
+                                      className="shine press rounded-lg border-2 border-ink/15 bg-amber px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wide text-white transition-colors hover:bg-amber-bright disabled:cursor-not-allowed disabled:opacity-40"
+                                      style={{ boxShadow: "2px 2px 0 rgb(var(--c-ink) / 0.18)" }}
                                     >
-                                      {buyingKey === p.provider_id ? "..." : "Order"}
+                                      {busy ? "..." : "Order"}
                                     </button>
                                   </div>
                                 </div>

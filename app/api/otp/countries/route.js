@@ -46,23 +46,35 @@ export async function GET(req) {
       results.forEach((r, i) => {
         if (r.status !== "fulfilled") return;
         const c = DIBANANA_COUNTRIES[i];
-        const pricelist = r.value
-          .filter((p) => Number(p.stock) !== 0)
-          .map((p, idx) => ({
-            // Index dipakai saat order untuk mengambil ulang id produk yang segar,
-            // karena id dari dibanana bersifat opaque dan bisa kedaluwarsa.
-            provider_id: `bn:${c.code}:${idx}`,
-            provider_name: `Stok ${p.stock ?? "-"}`,
-            price: Number(p.price_idr || 0),
-            sell_price: markup(p.price_idr),
-            success_rate: null,
-            stock: p.stock ?? null,
-            server,
-            country_id: c.code,
-            providerIndex: idx
-          }));
+        // dibanana mengurutkan dari termurah; tier pertama ditandai supaya UI bisa
+        // menyorotnya, dan stok dipakai untuk bar ketersediaan.
+        const rows = r.value.filter((p) => Number(p.stock) !== 0);
+        const maxStock = Math.max(1, ...rows.map((p) => Number(p.stock) || 0));
+        const pricelist = rows.map((p, idx) => ({
+          // Index dipakai saat order untuk mengambil ulang id produk yang segar,
+          // karena id dari dibanana bersifat opaque dan bisa kedaluwarsa.
+          provider_id: `bn:${c.code}:${idx}`,
+          provider_name: idx === 0 ? "Paket Termurah" : `Paket ${idx + 1}`,
+          price: Number(p.price_idr || 0),
+          sell_price: markup(p.price_idr),
+          success_rate: null,
+          stock: p.stock ?? null,
+          stockRatio: Math.min(1, (Number(p.stock) || 0) / maxStock),
+          cheapest: idx === 0,
+          server,
+          country_id: c.code,
+          providerIndex: idx
+        }));
         if (pricelist.length) {
-          items.push({ number_id: `bn:${c.code}`, name: c.name, img: null, iso: c.code.toUpperCase(), pricelist });
+          items.push({
+            number_id: `bn:${c.code}`,
+            name: c.name,
+            img: null,
+            flag: c.flag,
+            dial_code: c.dial,
+            iso: c.code.toUpperCase(),
+            pricelist
+          });
         }
       });
       return NextResponse.json({ items });

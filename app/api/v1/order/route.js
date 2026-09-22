@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { resolveApiKey } from "@/lib/apiKeyAuth";
 import { usersCol, otpOrdersCol } from "@/lib/db";
 import { createOrder, getCountries, toEpochMs } from "@/lib/rumahotp";
-import { getSettings } from "@/lib/settings";
+import { getSettings, markupForServer } from "@/lib/settings";
 import { logBalance } from "@/lib/ledger";
 
 export const dynamic = "force-dynamic";
@@ -40,8 +40,8 @@ export async function POST(req) {
     if (!resolved) return NextResponse.json({ error: "Server/country not available." }, { status: 400 });
     if (resolved.outOfStock) return NextResponse.json({ error: "Server stock empty, try another." }, { status: 400 });
 
-    const { markupPercent } = await getSettings();
-    sellPrice = Math.ceil(resolved.price * (1 + (Number(markupPercent) || 0) / 100));
+    const settings = await getSettings();
+    sellPrice = Math.ceil(resolved.price * (1 + markupForServer(settings, "rumahotp") / 100));
 
     const afterDebit = await users.findOneAndUpdate(
       { token: user.token, balance: { $gte: sellPrice } },
