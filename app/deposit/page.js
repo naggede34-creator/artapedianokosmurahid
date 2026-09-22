@@ -18,6 +18,11 @@ function countdown(ms) {
 export default function DepositPage() {
   const { token, balance, refreshBalance } = useUser();
 
+  // Nama, label, keterangan, dan estimasi waktu metode deposit datang dari
+  // pengaturan admin. DEPOSIT_PROVIDERS hanya cadangan sebelum API menjawab.
+  const [methods, setMethods] = useState(() =>
+    DEPOSIT_PROVIDERS.map((p) => ({ key: p.key, name: p.name, badge: "", desc: p.desc, speed: p.speed }))
+  );
   const [cfg, setCfg] = useState({
     providers: { warungnokos: false, pakasir: true, rumahotp: false },
     fees: { warungnokos: 0, pakasir: 0, rumahotp: 0.7 },
@@ -56,6 +61,7 @@ export default function DepositPage() {
           min: d.depositMin || 2000,
           max: d.depositMax || 1000000
         });
+        if (Array.isArray(d.depositMethods) && d.depositMethods.length) setMethods(d.depositMethods);
         const first = DEPOSIT_PROVIDERS.find((p) => providers[p.key]);
         setProvider(first ? first.key : null);
       })
@@ -127,6 +133,8 @@ export default function DepositPage() {
   }, [step, status]);
 
   const amt = Math.floor(Number(amount) || 0);
+  // Nama metode yang dipakai di ringkasan & layar sukses — ikut nama dari admin.
+  const methodName = (key) => methods.find((m) => m.key === key)?.name || providerName(key);
   const enabled = DEPOSIT_PROVIDERS.filter((p) => cfg.providers?.[p.key]);
 
   // Tanya biaya pasti ke Pakasir begitu user berhenti mengetik nominal.
@@ -368,7 +376,7 @@ export default function DepositPage() {
 
               <p className="label mt-5">Bayar pakai QRIS mana?</p>
               <div className="space-y-2" role="radiogroup">
-                {DEPOSIT_PROVIDERS.map((p) => {
+                {methods.map((p) => {
                   const on = !!cfg.providers?.[p.key];
                   const selected = provider === p.key && on;
                   return (
@@ -392,10 +400,17 @@ export default function DepositPage() {
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-center gap-1.5">
                           <span className="text-sm font-bold text-ink">{p.name}</span>
-                          {on ? <Badge tone="gray">{p.speed}</Badge> : <Badge tone="red">nonaktif</Badge>}
+                          {/* Label bebas dari admin, mis. "TERCEPAT" atau "PALING LARIS". */}
+                          {on && p.badge ? <span className="comic-burst">{p.badge}</span> : null}
+                          {on ? (
+                            p.speed ? <Badge tone="gray">{p.speed}</Badge> : null
+                          ) : (
+                            <Badge tone="red">nonaktif</Badge>
+                          )}
                         </span>
                         <span className="mt-0.5 block text-xs text-muted">
-                          {p.desc} Biaya admin {Number(cfg.fees?.[p.key] || 0)}%.
+                          {p.desc}
+                          {Number(cfg.fees?.[p.key] || 0) > 0 ? ` Biaya admin ${Number(cfg.fees[p.key])}%.` : ""}
                         </span>
                       </span>
                       <span
@@ -409,7 +424,7 @@ export default function DepositPage() {
               </div>
 
               <div className="panel-3d mt-5 divide-y divide-line px-4">
-                <Row label="Metode">{providerName(provider)}</Row>
+                <Row label="Metode">{methodName(provider)}</Row>
                 <Row label="Saldo masuk">{rupiah(amt)}</Row>
                 <Row label={feeIsExact ? "Biaya admin" : "Perkiraan biaya admin"}>{rupiah(estFee)}</Row>
                 <Row label={feeIsExact ? "Total bayar" : "Perkiraan total bayar"} strong>
@@ -448,7 +463,7 @@ export default function DepositPage() {
                   </span>
                   <h2 className="mt-4 text-xl font-extrabold text-ink">Saldo masuk {rupiah(order.amount)}</h2>
                   {cashback > 0 && <p className="mt-1 text-sm font-semibold text-success">+ cashback {rupiah(cashback)}</p>}
-                  <p className="mt-2 text-sm text-muted">Pembayaran via {providerName(order.provider)} sudah terkonfirmasi.</p>
+                  <p className="mt-2 text-sm text-muted">Pembayaran via {methodName(order.provider)} sudah terkonfirmasi.</p>
                   <button onClick={() => setScratchOpen(true)} className="mt-4 flex items-center gap-2 mx-auto rounded-2xl border-2 border-amber/60 bg-amber/10 px-5 py-2.5 text-sm font-extrabold text-amber-bright press animate-pulse hover:animate-none hover:bg-amber/20">
                     🎫 Buka Kartu Gores Kamu!
                   </button>
@@ -540,7 +555,7 @@ export default function DepositPage() {
                   </p>
 
                   <div className="mt-5 divide-y divide-line rounded-2xl border border-line px-4">
-                    <Row label="Metode">{providerName(order.provider)}</Row>
+                    <Row label="Metode">{methodName(order.provider)}</Row>
                     <Row label="ID deposit">
                       <span className="inline-flex items-center gap-1 font-mono text-xs">
                         {order.orderId}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSettings, depositLimits } from "@/lib/settings";
+import { getSettings, depositLimits, depositDisplay } from "@/lib/settings";
+import { PROVIDER_KEYS, DEPOSIT_PROVIDERS } from "@/lib/paymentProviders";
 import { warungNokosConfigured } from "@/lib/warungnokos";
 import { rumahOtpConfigured } from "@/lib/rumahotp";
 
@@ -12,7 +13,8 @@ const CHANNELS = () => ({
 export async function GET() {
   const limits = depositLimits();
   try {
-    const { maintenance, maintenanceMsg, maintenanceTitle, maintenanceButtonLabel, maintenanceButtonUrl, depositProviders, depositFeePercent, heroChars } = await getSettings();
+    const settings = await getSettings();
+    const { maintenance, maintenanceMsg, maintenanceTitle, maintenanceButtonLabel, maintenanceButtonUrl, depositProviders, depositFeePercent, heroChars } = settings;
     const providers = { ...depositProviders };
     if (!warungNokosConfigured()) providers.warungnokos = false;
     if (rumahOtpConfigured()) {
@@ -28,6 +30,8 @@ export async function GET() {
       maintenanceButtonUrl: maintenanceButtonUrl || "",
       depositProviders: providers,
       depositFeePercent,
+      // Nama & label metode deposit yang diatur admin.
+      depositMethods: PROVIDER_KEYS.map((k) => depositDisplay(settings, k)),
       depositMin: limits.min,
       depositMax: limits.max,
       heroChars: heroChars || [],
@@ -43,6 +47,7 @@ export async function GET() {
         rumahotp: rumahOtpConfigured()
       },
       depositFeePercent: { warungnokos: 0, pakasir: 0, rumahotp: 0.7 },
+      depositMethods: DEPOSIT_PROVIDERS.map((p) => ({ key: p.key, name: p.name, badge: "", desc: p.desc, speed: p.speed })),
       depositMin: limits.min,
       depositMax: limits.max,
       ...CHANNELS()

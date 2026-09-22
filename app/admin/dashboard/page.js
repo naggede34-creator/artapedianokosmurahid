@@ -104,6 +104,10 @@ export default function AdminDashboardPage() {
   const [maintenanceTextMsg, setMaintenanceTextMsg] = useState("");
   // Nama, label, keterangan, dan pesan offline tiap server nokos.
   const [serverForms, setServerForms] = useState({});
+  // Nama, label, keterangan, dan estimasi waktu tiap metode deposit.
+  const [depositForms, setDepositForms] = useState({});
+  const [savingDepositMethod, setSavingDepositMethod] = useState(false);
+  const [depositMethodMsg, setDepositMethodMsg] = useState("");
   const [savingMaintenanceBtn, setSavingMaintenanceBtn] = useState(false);
   const [maintenanceBtnMsg, setMaintenanceBtnMsg] = useState("");
 
@@ -472,6 +476,33 @@ export default function AdminDashboardPage() {
     }
   }
 
+  // Simpan nama, label, keterangan, dan estimasi waktu satu metode deposit.
+  async function saveDepositMethod(key) {
+    if (!settings) return;
+    const form = depositForms[key];
+    if (!form) return;
+    setSavingDepositMethod(true);
+    setDepositMethodMsg("");
+    try {
+      const base = Array.isArray(settings.depositMethods) ? settings.depositMethods : [];
+      const updated = base.map((m) => (m.key === key ? { ...m, ...form } : m));
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ depositMethods: updated })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSettings(data);
+      setDepositMethodMsg("Tampilan metode deposit tersimpan.");
+    } catch (err) {
+      setDepositMethodMsg(err.message || "Gagal menyimpan.");
+    } finally {
+      setSavingDepositMethod(false);
+      setTimeout(() => setDepositMethodMsg(""), 3000);
+    }
+  }
+
   async function saveMaintenanceText() {
     setSavingMaintenanceText(true);
     setMaintenanceTextMsg("");
@@ -591,6 +622,14 @@ export default function AdminDashboardPage() {
       title: data.maintenanceTitle || "",
       msg: data.maintenanceMsg || "",
     });
+    setDepositForms(
+      Object.fromEntries(
+        (Array.isArray(data.depositMethods) ? data.depositMethods : []).map((m) => [
+          m.key,
+          { name: m.name || "", badge: m.badge || "", desc: m.desc || "", speed: m.speed || "" }
+        ])
+      )
+    );
     setServerForms(
       Object.fromEntries(
         (Array.isArray(data.otpServers) ? data.otpServers : []).map((s) => [
@@ -2604,28 +2643,102 @@ export default function AdminDashboardPage() {
                 <p className="mt-1 text-[11px] text-muted">Kosongkan label untuk menyembunyikan tombol.</p>
               </div>
               <div className="sm:col-span-2">
-                <label className="text-xs font-medium text-muted">Metode deposit QRIS aktif</label>
-                <div className="mt-1.5 space-y-2">
-                  {[
-                    { key: "warungnokos", label: "QRIS WarungNokos" },
-                    { key: "pakasir", label: "QRIS Pakasir" },
-                    { key: "rumahotp", label: "QRIS RumahOTP" },
-                  ].map((p) => (
-                    <div key={p.key} className="rounded-lg border border-line bg-surface px-3.5 py-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-ink">{p.label}</span>
-                        <button onClick={() => toggleDepositProvider(p.key)} disabled={!settings || savingProviders} className={`btn-3d relative h-7 w-12 shrink-0 rounded-full transition-colors ${settings?.depositProviders?.[p.key] ? "bg-teal" : "bg-line"}`} aria-label={`Toggle ${p.label}`}>
-                          <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings?.depositProviders?.[p.key] ? "translate-x-6" : "translate-x-1"}`} />
-                        </button>
+                <label className="text-xs font-medium text-muted">Metode deposit QRIS</label>
+                <p className="mt-1 text-[11px] text-muted">
+                  Nama, label, dan keterangan di bawah ini yang dilihat user saat memilih metode pembayaran.
+                </p>
+                <div className="mt-2 space-y-2">
+                  {(settings?.depositMethods || []).map((p) => {
+                    const on = !!settings?.depositProviders?.[p.key];
+                    const form = depositForms[p.key] || {};
+                    const set = (field) => (e) =>
+                      setDepositForms((f) => ({ ...f, [p.key]: { ...f[p.key], [field]: e.target.value } }));
+                    return (
+                      <div key={p.key} className="rounded-lg border border-line bg-surface px-3.5 py-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <span className="text-sm font-medium text-ink">{form.name || p.name}</span>
+                            <span className="ml-2 text-[11px] text-muted">{on ? "Aktif" : "Nonaktif"}</span>
+                          </div>
+                          <button
+                            onClick={() => toggleDepositProvider(p.key)}
+                            disabled={!settings || savingProviders}
+                            className={`btn-3d relative h-7 w-12 shrink-0 rounded-full transition-colors ${on ? "bg-teal" : "bg-line"}`}
+                            aria-label={`Toggle ${p.name}`}
+                          >
+                            <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${on ? "translate-x-6" : "translate-x-1"}`} />
+                          </button>
+                        </div>
+
+                        <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
+                          <div>
+                            <label className="text-[11px] font-medium text-muted">Nama metode</label>
+                            <input
+                              value={form.name ?? ""}
+                              onChange={set("name")}
+                              placeholder={p.key}
+                              className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-muted">Label (kosong = tanpa label)</label>
+                            <input
+                              value={form.badge ?? ""}
+                              onChange={set("badge")}
+                              placeholder="mis: TERCEPAT, RESMI, PALING LARIS"
+                              className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-muted">Estimasi waktu</label>
+                            <input
+                              value={form.speed ?? ""}
+                              onChange={set("speed")}
+                              placeholder="mis: ± 30 detik"
+                              className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-muted">Biaya admin (%)</label>
+                            <input
+                              key={`${p.key}-${settings?.depositFeePercent?.[p.key] ?? 0}`}
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              max="100"
+                              defaultValue={settings?.depositFeePercent?.[p.key] ?? 0}
+                              onBlur={(e) => saveFeePercent(p.key, e.target.value)}
+                              disabled={!settings || savingProviders}
+                              className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                            />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="text-[11px] font-medium text-muted">Keterangan singkat</label>
+                            <textarea
+                              rows={2}
+                              value={form.desc ?? ""}
+                              onChange={set("desc")}
+                              placeholder="mis: Semua e-wallet & m-banking, otomatis 24 jam"
+                              className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                            />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <button
+                              onClick={() => saveDepositMethod(p.key)}
+                              disabled={savingDepositMethod}
+                              className="btn-3d rounded-lg border border-line bg-surface px-3.5 py-1.5 text-xs font-semibold text-ink disabled:opacity-60"
+                            >
+                              Simpan tampilan metode
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <div className="mt-2 flex items-center gap-2">
-                        <span className="text-[11px] text-muted">Biaya admin (%)</span>
-                        <input key={`${p.key}-${settings?.depositFeePercent?.[p.key] ?? 0}`} type="number" step="0.1" min="0" max="100" defaultValue={settings?.depositFeePercent?.[p.key] ?? 0} onBlur={(e) => saveFeePercent(p.key, e.target.value)} disabled={!settings || savingProviders} className="w-16 rounded-md border border-line bg-bg px-2 py-1 text-xs text-ink outline-none focus:border-amber" />
-                        <span className="text-[11px] text-muted">%</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
+                {depositMethodMsg && (
+                  <p className="mt-2 text-xs font-medium text-teal-bright">{depositMethodMsg}</p>
+                )}
               </div>
             </div>
             {settingsMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{settingsMsg}</p>}
