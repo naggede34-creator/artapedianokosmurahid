@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { onOpenersFree } from "@/lib/introGate";
 import { useUser } from "@/app/providers";
 
 const DISMISSED_KEY = "artapedia_welcome_dismissed";
@@ -31,7 +32,9 @@ export default function WelcomeBonusPopup() {
         if (d.ok) {
           setClaimed(true);
           setBalance?.((b) => b + d.bonus);
-          setOpen(true);
+          // Bonusnya tetap masuk sekarang; popupnya menunggu sapaan maskot
+          // ditutup supaya tidak tertimbun.
+          onOpenersFree(() => setOpen(true));
         }
       })
       .catch(() => {});

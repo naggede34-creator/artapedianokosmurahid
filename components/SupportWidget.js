@@ -90,9 +90,12 @@ export default function SupportWidget({
         <div className="animate-scale-in flex h-[70vh] max-h-[520px] w-[92vw] max-w-[360px] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-lift">
           <div className="flex items-center justify-between bg-teal-bright px-4 py-3 text-white">
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-base">🤖</span>
+              <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white/20">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/maskot-sm.webp" alt="" className="h-full w-full object-contain object-bottom p-0.5" />
+              </span>
               <div>
-                <p className="text-sm font-semibold leading-tight">Arta · CS AI</p>
+                <p className="text-sm font-semibold leading-tight">ARTA PEDIA SUPPORT</p>
                 <p className="text-[11px] text-white/80">Biasanya balas dalam beberapa detik</p>
               </div>
             </div>
@@ -173,27 +176,20 @@ export default function SupportWidget({
       {!chatOpen && (
         <button
           onClick={() => setMenuOpen((v) => !v)}
-          className="btn-3d press flex h-14 w-14 items-center justify-center rounded-full bg-teal-bright text-white shadow-glow"
-          aria-label="Bantuan"
+          className="mascot-fab press"
+          aria-label={menuOpen ? "Tutup menu bantuan" : "Bantuan — ARTA PEDIA SUPPORT"}
         >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            className={`transition-transform duration-200 ${menuOpen ? "rotate-45" : ""}`}
-          >
-            {menuOpen ? (
-              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-            ) : (
-              <path
-                d="M12 3C7 3 3 6.6 3 11c0 2.2 1 4.2 2.7 5.7L5 21l4.4-1.6c.8.2 1.7.3 2.6.3 5 0 9-3.6 9-8S17 3 12 3Z"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-              />
-            )}
-          </svg>
+          {menuOpen ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="mascot-fab-x">
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+            </svg>
+          ) : (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/maskot-sm.webp" alt="" className="mascot-fab-img" />
+              <span className="mascot-fab-dot" aria-hidden="true" />
+            </>
+          )}
         </button>
       )}
     </div>

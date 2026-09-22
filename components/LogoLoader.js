@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { markIntroDone } from "@/lib/introGate";
 
 // Durasi intro penuh (detik pertama kali dibuka) dan versi singkat untuk
 // kunjungan berikutnya dalam sesi yang sama. Ubah angka ini kalau mau.
@@ -56,7 +57,11 @@ export default function LogoLoader() {
       cancelAnimationFrame(rafRef.current);
       setPercent(100);
       setLeaving(true);
-      setTimeout(() => setGone(true), 560);
+      setTimeout(() => {
+        setGone(true);
+        // Beri aba-aba ke sapaan maskot & popup lain bahwa layar sudah bebas.
+        markIntroDone();
+      }, 560);
     }
 
     finishRef.current = finish;
@@ -65,6 +70,7 @@ export default function LogoLoader() {
       cancelAnimationFrame(rafRef.current);
       clearTimeout(skipTimer);
       document.body.style.overflow = prevOverflow;
+      markIntroDone();
     };
   }, []);
 

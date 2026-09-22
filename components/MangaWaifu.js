@@ -2,28 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 
-// Pose config — expressions mapped to states
+// Semua pose memakai satu gambar maskot; suasananya dibedakan lewat efek CSS
+// supaya tidak perlu empat file gambar terpisah.
+const MASCOT_SRC = "/maskot.webp";
 const POSES = {
-  idle: {
-    src: "/chars/char-idle.jpg",
-    alt: "Karakter anime idle",
-    label: "😊"
-  },
-  angel: {
-    src: "/chars/char-angel.jpg",
-    alt: "Karakter anime senang",
-    label: "😇"
-  },
-  suit: {
-    src: "/chars/char-suit.jpg",
-    alt: "Karakter anime serius",
-    label: "😤"
-  },
-  surprised: {
-    src: "/chars/char-surprised.jpg",
-    alt: "Karakter anime kaget",
-    label: "😳"
-  }
+  idle:      { label: "🦅", alt: "ARTA PEDIA SUPPORT",          fx: "mw-idle" },
+  angel:     { label: "🎉", alt: "ARTA PEDIA SUPPORT senang",   fx: "mw-happy" },
+  suit:      { label: "⚡", alt: "ARTA PEDIA SUPPORT serius",   fx: "mw-serious" },
+  surprised: { label: "❗", alt: "ARTA PEDIA SUPPORT kaget",    fx: "mw-alert" }
 };
 
 // Dialogues per state
@@ -202,27 +188,21 @@ export default function MangaWaifu({ balance, hasRecentOrder }) {
         />
       </div>
 
-      {/* ── Character image (right side) ── */}
+      {/* ── Maskot (kanan) ── */}
       <div
         className={`shrink-0 relative transition-all duration-200 ${transitioning ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
         style={{ width: 130, height: 180, marginLeft: 8 }}
       >
-        {/* White base to support multiply blend */}
-        <div className="absolute inset-0 rounded-t-2xl bg-white" />
+        <span className="mw-halo" aria-hidden="true" />
+        <span className="mw-shadow" aria-hidden="true" />
+        {/* PNG transparan, jadi tidak perlu alas putih atau blend multiply. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          key={pose.src}
-          src={pose.src}
+          src={MASCOT_SRC}
           alt={pose.alt}
-          className="relative w-full h-full object-cover object-top rounded-t-2xl"
-          style={{
-            mixBlendMode: "multiply",
-            filter: "contrast(1.05) saturate(1.1)",
-          }}
+          className={`mw-img ${pose.fx}`}
           draggable={false}
         />
-        {/* Bottom fade to blend with page */}
-        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/80 dark:from-slate-950/80 to-transparent pointer-events-none rounded-b-2xl" />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { onOpenersFree } from "@/lib/introGate";
 
 // Sudah menekan "Selesai" (permanen) vs cuma "Tutup" (muncul lagi kunjungan berikutnya).
 const READ_KEY = "artapedia_info_read";
@@ -63,8 +64,16 @@ export default function InfoModal() {
     } catch {
       // Storage diblokir (mode privat) — tetap tampilkan, tidak apa-apa.
     }
-    const t = setTimeout(() => setOpen(true), 600);
-    return () => clearTimeout(t);
+    // Menunggu animasi loading DAN sapaan maskot ditutup, supaya popup tidak
+    // menumpuk di layar yang sama.
+    let t;
+    const off = onOpenersFree(() => {
+      t = setTimeout(() => setOpen(true), 500);
+    });
+    return () => {
+      off();
+      clearTimeout(t);
+    };
   }, []);
 
   function close() {

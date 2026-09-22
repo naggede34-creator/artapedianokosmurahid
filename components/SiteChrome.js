@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
 import SupportWidget from "@/components/SupportWidget";
 import BroadcastBar from "@/components/BroadcastBar";
-import WelcomeIntro from "@/components/WelcomeIntro";
+import MascotGreeting from "@/components/MascotGreeting";
 import WelcomeBonusPopup from "@/components/WelcomeBonusPopup";
 import InfoModal from "@/components/InfoModal";
 import LogoLoader from "@/components/LogoLoader";
@@ -51,7 +51,9 @@ export default function SiteChrome({ children }) {
   return (
     <>
       <LogoLoader />
-      <WelcomeIntro />
+      {/* Sapaan maskot & popup pembuka menunggu animasi loading selesai
+          (lihat lib/introGate.js) supaya tidak tertimbun di belakangnya. */}
+      <MascotGreeting />
       <InfoModal />
       <WelcomeBonusPopup />
       <BroadcastBar />

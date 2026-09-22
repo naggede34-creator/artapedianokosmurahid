@@ -6,7 +6,7 @@ const DEFAULT_CHARS = [
   { emoji: "🥷", name: "Gojo",   accent: "#818cf8", glow: "#6366f1", sub: "Infinite Nokos ✨",             line: "Dengan mata tak terbatas... aku melihat nokos paling murah!" },
   { emoji: "⚡", name: "Shadow", accent: "#fcd34d", glow: "#f59e0b", sub: "Shadow Clone OTP 🌀",           line: "Seribu bayangan... semua beli OTP di Artapedia!" },
   { emoji: "🤖", name: "Cyber",  accent: "#2dd4bf", glow: "#14b8a6", sub: 'System.execute("buy_nokos") 💻', line: "Sistem optimal: nokos cepat, harga minimal, proses instan!" },
-  { emoji: "🦅", name: "ARTA PEDIA SUPPORT", accent: "#FF6B1A", glow: "#2E86FF", sub: "Siap Bantu 24 Jam ✦", line: "Halo! Aku elang penjaga Arta Pedia. Ada kendala nokos atau deposit? Panggil aku~" },
+  { emoji: "🦅", imageSrc: "/maskot.webp", name: "ARTA PEDIA SUPPORT", accent: "#FF6B1A", glow: "#2E86FF", sub: "Maskot Resmi ✦ Siap Bantu 24 Jam", line: "Halo! Aku ARTA PEDIA SUPPORT, elang penjaga web ini. Ada kendala nokos atau deposit? Panggil aku~" },
 ];
 
 export default function AnimeHero() {
@@ -102,9 +102,11 @@ export default function AnimeHero() {
             }}>
             {char.imageSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
+              // object-contain, bukan cover: maskot berbentuk tinggi dan akan
+              // terpotong kepalanya kalau dipaksa memenuhi kotak persegi.
               <img src={char.imageSrc} alt={char.name || "character"}
-                className="w-full h-full object-cover select-none"
-                style={{ mixBlendMode: "normal" }} />
+                className="h-full w-full select-none object-contain object-bottom p-1"
+                style={{ filter: "drop-shadow(0 3px 5px rgba(0,0,0,.45))" }} />
             ) : (
               <span className="text-4xl select-none">{char.emoji}</span>
             )}

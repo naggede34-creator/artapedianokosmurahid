@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useUser } from "@/app/providers";
+import { onOpenersFree } from "@/lib/introGate";
 
 const TOUR_KEY = "artapedia_tour_done";
 
@@ -188,9 +189,11 @@ export function useShouldShowTour() {
       if (localStorage.getItem(TOUR_KEY)) return;
     } catch {}
     // Show for new accounts (created within last 30 days) or accounts with no joinedAt
-    if (!joinedAt) { setShow(true); return; }
-    const age = Date.now() - new Date(joinedAt).getTime();
-    if (age < 30 * 24 * 60 * 60 * 1000) setShow(true);
+    const isNew = !joinedAt || Date.now() - new Date(joinedAt).getTime() < 30 * 24 * 60 * 60 * 1000;
+    if (!isNew) return;
+    // Menunggu animasi loading & sapaan maskot selesai supaya tur tidak
+    // menumpuk di layar yang sama (lihat lib/introGate.js).
+    return onOpenersFree(() => setShow(true));
   }, [ready, tourDone, joinedAt]);
 
   return [show, () => setShow(false)];

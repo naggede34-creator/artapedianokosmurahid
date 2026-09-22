@@ -1431,3 +1431,384 @@ input[type="number"] { -moz-appearance: textfield; }
   .chip-3d:hover, .pick-3d:hover { transform: none; }
   .glow-3d { animation: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Sapaan maskot ARTA PEDIA SUPPORT setelah animasi loading.
+   Warnanya mengikuti token oranye & biru yang sama dengan logo.
+   ═══════════════════════════════════════════════════════════════════ */
+.mg-root {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  animation: mgIn .28s ease-out both;
+}
+@media (min-width: 640px) { .mg-root { align-items: center; } }
+.mg-root.mg-out { animation: mgOut .26s ease-in both; }
+@keyframes mgIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mgOut { from { opacity: 1; } to { opacity: 0; } }
+
+.mg-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  cursor: pointer;
+  background: rgb(4 10 26 / 0.62);
+  backdrop-filter: blur(6px);
+}
+
+.mg-card {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  overflow: hidden;
+  border: 1px solid rgb(var(--c-line));
+  border-radius: 24px;
+  padding: 20px 20px 22px;
+  background:
+    radial-gradient(120% 90% at 12% 0%, rgb(var(--c-orange) / 0.16) 0%, transparent 60%),
+    linear-gradient(180deg, rgb(var(--c-surface)) 0%, rgb(var(--c-surface2)) 100%);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.5) inset,
+    0 26px 60px -28px rgb(var(--c-blue) / 0.7),
+    0 6px 0 rgb(var(--c-line) / 0.7);
+  animation: mgPop .42s cubic-bezier(.2, 1.3, .5, 1) both;
+}
+:root[data-theme="dark"] .mg-card,
+:root:not([data-theme="light"]) .mg-card {
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.07) inset,
+    0 26px 60px -26px rgb(0 0 0 / 0.85),
+    0 6px 0 rgb(var(--c-line) / 0.5);
+}
+@keyframes mgPop {
+  from { transform: translateY(26px) scale(.94); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Sinar komik di belakang maskot — sengaja tipis supaya tidak menelan maskot.
+   Tepinya dilembutkan dengan mask agar menyatu ke badan kartu. */
+.mg-rays {
+  position: absolute;
+  left: -14%;
+  top: -60%;
+  width: 66%;
+  height: 200%;
+  pointer-events: none;
+  opacity: .09;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    rgb(var(--c-orange)) 0deg 6deg,
+    transparent 6deg 20deg
+  );
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 35%, transparent 72%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 35%, transparent 72%);
+  animation: mgSpin 26s linear infinite;
+}
+:root[data-theme="dark"] .mg-rays,
+:root:not([data-theme="light"]) .mg-rays { opacity: .06; }
+@keyframes mgSpin { to { transform: rotate(360deg); } }
+
+.mg-body { position: relative; display: flex; align-items: flex-end; gap: 14px; }
+@media (max-width: 479px) { .mg-body { gap: 8px; } }
+@media (min-width: 480px) { .mg-name { font-size: 17px; } }
+
+.mg-figure { position: relative; flex: 0 0 auto; width: 132px; }
+@media (min-width: 480px) { .mg-figure { width: 172px; } }
+
+.mg-img {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  filter:
+    drop-shadow(0 1px 0 rgb(255 255 255 / 0.45))
+    drop-shadow(0 -1px 0 rgb(255 255 255 / 0.3))
+    drop-shadow(0 14px 18px rgb(0 0 0 / 0.5));
+  animation: mgFloat 3.6s ease-in-out infinite;
+}
+@keyframes mgFloat {
+  0%, 100% { transform: translateY(0) rotate(-1.2deg); }
+  50%      { transform: translateY(-9px) rotate(1.2deg); }
+}
+
+.mg-halo {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 165%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgb(255 255 255 / 0.5) 0%, rgb(255 255 255 / 0.18) 34%, transparent 60%),
+    radial-gradient(circle, rgb(var(--c-orange) / 0.45) 0%, transparent 66%);
+  filter: blur(16px);
+}
+:root[data-theme="dark"] .mg-halo,
+:root:not([data-theme="light"]) .mg-halo {
+  background:
+    radial-gradient(circle, rgb(190 214 255 / 0.4) 0%, rgb(140 180 255 / 0.16) 36%, transparent 62%),
+    radial-gradient(circle, rgb(var(--c-orange) / 0.5) 0%, transparent 68%);
+}
+
+.mg-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 72%;
+  height: 12px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgb(var(--c-blue) / 0.35);
+  filter: blur(7px);
+  animation: mgShadow 3.6s ease-in-out infinite;
+}
+@keyframes mgShadow {
+  0%, 100% { transform: translateX(-50%) scaleX(1); opacity: .5; }
+  50%      { transform: translateX(-50%) scaleX(.82); opacity: .32; }
+}
+
+.mg-text { min-width: 0; flex: 1; padding-bottom: 4px; }
+
+.mg-hi {
+  /* Ruang untuk tombol tutup di pojok kanan atas kartu. */
+  padding-right: 40px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: rgb(var(--c-orange-bright));
+}
+.mg-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-top: 2px;
+  padding-right: 40px;
+  font-size: 15.5px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  color: rgb(var(--c-ink));
+  text-shadow: 1px 1px 0 rgb(var(--c-blue) / 0.18);
+}
+.mg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(var(--c-success-soft));
+  color: rgb(var(--c-success));
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.mg-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgb(var(--c-success));
+  animation: mgBlink 1.6s ease-in-out infinite;
+}
+@keyframes mgBlink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+
+/* Balon dialog dengan ekor ke arah maskot */
+.mg-bubble {
+  position: relative;
+  margin-top: 10px;
+  min-height: 74px;
+  border: 1px solid rgb(var(--c-line));
+  border-radius: 14px;
+  padding: 11px 13px;
+  background: rgb(var(--c-surface));
+  box-shadow: 0 3px 0 rgb(var(--c-line));
+}
+.mg-bubble::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  bottom: 18px;
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+  border-left: 1px solid rgb(var(--c-line));
+  border-bottom: 1px solid rgb(var(--c-line));
+  background: rgb(var(--c-surface));
+}
+.mg-bubble p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgb(var(--c-ink));
+}
+.mg-caret {
+  display: inline-block;
+  width: 2px;
+  height: 13px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: rgb(var(--c-orange));
+  animation: mgBlink 1s steps(1) infinite;
+}
+
+.mg-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.mg-btn {
+  flex: 1 1 auto;
+  text-align: center;
+  white-space: nowrap;
+  border: 1px solid rgb(var(--c-line));
+  border-radius: 11px;
+  padding: 8px 13px;
+  font-size: 12.5px;
+  font-weight: 800;
+  transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+}
+.mg-btn:active { transform: translateY(3px); box-shadow: none !important; }
+.mg-btn-main {
+  border-color: transparent;
+  background: linear-gradient(160deg, rgb(var(--c-orange)) 0%, rgb(var(--c-orange-bright)) 100%);
+  color: #fff;
+  box-shadow: 0 4px 0 rgb(var(--c-orange-bright));
+}
+.mg-btn-alt {
+  background: rgb(var(--c-blue-soft));
+  color: rgb(var(--c-blue-bright));
+  border-color: rgb(var(--c-blue) / 0.35);
+  box-shadow: 0 4px 0 rgb(var(--c-blue) / 0.3);
+}
+.mg-btn-ghost { background: rgb(var(--c-surface)); color: rgb(var(--c-muted)); box-shadow: 0 3px 0 rgb(var(--c-line)); }
+
+.mg-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgb(var(--c-line));
+  border-radius: 9px;
+  background: rgb(var(--c-surface));
+  color: rgb(var(--c-muted));
+  font-size: 12px;
+  line-height: 1;
+}
+.mg-close:hover { color: rgb(var(--c-ink)); border-color: rgb(var(--c-orange) / 0.5); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mg-root, .mg-card { animation: none; }
+  .mg-img, .mg-shadow, .mg-rays { animation: none; }
+}
+
+/* ── Maskot di panel ARTA PEDIA SUPPORT (dashboard) ── */
+.mw-img {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom;
+  filter: drop-shadow(0 8px 12px rgb(var(--c-blue) / 0.45));
+}
+.mw-halo {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 135%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(var(--c-orange) / 0.3) 0%, transparent 62%);
+  filter: blur(12px);
+  pointer-events: none;
+}
+.mw-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 68%;
+  height: 10px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgb(var(--c-blue) / 0.32);
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+/* Satu gambar, empat suasana — dibedakan lewat gerak & warna. */
+.mw-idle    { animation: mgFloat 3.6s ease-in-out infinite; }
+.mw-happy   { animation: mwBounce 1.1s ease-in-out infinite; filter: drop-shadow(0 8px 12px rgb(var(--c-orange) / 0.55)) saturate(1.15) brightness(1.06); }
+.mw-serious { animation: mgFloat 5s ease-in-out infinite; filter: drop-shadow(0 8px 12px rgb(var(--c-blue) / 0.6)) contrast(1.12); transform: rotate(-2deg); }
+.mw-alert   { animation: mwShake .5s ease-in-out infinite; filter: drop-shadow(0 8px 12px rgb(var(--c-danger) / 0.5)) saturate(1.25); }
+
+@keyframes mwBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-10px) scale(1.03); }
+}
+@keyframes mwShake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25%      { transform: translateX(-3px) rotate(-2deg); }
+  75%      { transform: translateX(3px) rotate(2deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mw-idle, .mw-happy, .mw-serious, .mw-alert { animation: none; }
+}
+
+/* ── Tombol bantuan mengambang berwajah maskot ── */
+.mascot-fab {
+  position: relative;
+  display: flex;
+  height: 62px;
+  width: 62px;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: visible;
+  border: 2px solid rgb(var(--c-orange));
+  border-radius: 50%;
+  color: #fff;
+  background:
+    radial-gradient(circle at 50% 30%, rgb(var(--c-blue) / 0.55) 0%, transparent 70%),
+    linear-gradient(160deg, rgb(var(--c-blue-bright)) 0%, rgb(var(--c-blue)) 100%);
+  box-shadow: 0 4px 0 rgb(var(--c-orange-bright)), 0 12px 24px -10px rgb(var(--c-blue) / 0.8);
+  transition: transform .14s ease, box-shadow .14s ease;
+}
+.mascot-fab:hover { transform: translateY(-2px); box-shadow: 0 6px 0 rgb(var(--c-orange-bright)), 0 16px 28px -10px rgb(var(--c-orange) / 0.7); }
+.mascot-fab:active { transform: translateY(3px); box-shadow: 0 1px 0 rgb(var(--c-orange-bright)); }
+
+.mascot-fab-img {
+  width: 104%;
+  height: 104%;
+  object-fit: contain;
+  object-position: bottom;
+  transform: translateY(-2px);
+  filter: drop-shadow(0 3px 4px rgb(0 0 0 / 0.45));
+  animation: mascotFabBob 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes mascotFabBob {
+  0%, 100% { transform: translateY(-2px) rotate(-2deg); }
+  50%      { transform: translateY(-6px) rotate(2deg); }
+}
+
+.mascot-fab-x { margin-bottom: 18px; }
+
+/* Titik "online" kecil di pojok */
+.mascot-fab-dot {
+  position: absolute;
+  right: 2px;
+  bottom: 4px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgb(var(--c-surface));
+  border-radius: 50%;
+  background: rgb(var(--c-success));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot-fab-img { animation: none; }
+}
