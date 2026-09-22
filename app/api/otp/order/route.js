@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { usersCol, otpOrdersCol } from "@/lib/db";
 import { createOrder, getCountries, toEpochMs } from "@/lib/rumahotp";
-import { createSimuruOtpOrder, getSimuruCountries } from "@/lib/simuru";
+import { createSimuruOtpOrder, getSimuruCountries, getSimuruPricelist } from "@/lib/simuru";
 import { sendTelegramNotif, otpPurchaseNotif } from "@/lib/telegram";
 import { getSettings } from "@/lib/settings";
 import { logBalance } from "@/lib/ledger";
@@ -21,15 +21,23 @@ async function resolveRumahOTPPrice(serviceId, numberId, providerId) {
   return { price, outOfStock: false, country };
 }
 
-async function resolveSimuruPrice(simuruServiceId, countryId, operator) {
-  const list = await getSimuruCountries(simuruServiceId);
-  const entry = list.find(
-    (c) => String(c.country_id) === String(countryId) && (c.operator || "any") === (operator || "any")
-  ) || list.find((c) => String(c.country_id) === String(countryId));
-  if (!entry) return null;
+// Harga Simuru selalu diambil ulang dari provider saat order supaya harga yang
+// ditagih tidak bisa dimanipulasi dari sisi browser.
+async function resolveSimuruPrice(serviceId, countryId, operator) {
+  let list = [];
+  try {
+    list = await getSimuruCountries(serviceId);
+  } catch (err) {
+    console.error("[otp/order] simuru per-service gagal, pakai pricelist:", err?.message || err);
+  }
+  if (!list.length) list = await getSimuruPricelist({ serviceId });
+
+  const sameCountry = list.filter((c) => String(c.country_id) === String(countryId));
+  if (!sameCountry.length) return null;
+  const entry = sameCountry.find((c) => (c.operator || "random") === (operator || "random")) || sameCountry[0];
   const price = Number(entry.price || 0);
   if (!Number.isFinite(price) || price <= 0) return null;
-  return { price, outOfStock: false, country: entry };
+  return { price, outOfStock: false, country: entry, operator: entry.operator || "random" };
 }
 
 export async function POST(req) {
@@ -43,8 +51,8 @@ export async function POST(req) {
     const {
       serviceId, numberId, providerId, operatorId, operatorName,
       serviceName, countryName, server,
-      // Simuru-specific
-      countryId, operator, simuruServiceId
+      // Khusus Server OTP Fast (Simuru)
+      countryId, operator
     } = body;
 
     const isSimuru = server === "simuru";
@@ -55,8 +63,8 @@ export async function POST(req) {
     if (!isSimuru && (!numberId || !providerId)) {
       return NextResponse.json({ error: "Parameter kurang. Muat ulang halaman lalu coba lagi." }, { status: 400 });
     }
-    if (isSimuru && (!countryId || !simuruServiceId)) {
-      return NextResponse.json({ error: "Parameter kurang (Simuru). Muat ulang halaman lalu coba lagi." }, { status: 400 });
+    if (isSimuru && countryId === undefined) {
+      return NextResponse.json({ error: "Negara belum dipilih. Muat ulang halaman lalu coba lagi." }, { status: 400 });
     }
 
     const user = await users.findOne({ token });
@@ -70,7 +78,7 @@ export async function POST(req) {
 
     let resolved;
     if (isSimuru) {
-      resolved = await resolveSimuruPrice(simuruServiceId, countryId, operator);
+      resolved = await resolveSimuruPrice(serviceId, countryId, operator);
     } else {
       resolved = await resolveRumahOTPPrice(serviceId, numberId, providerId);
     }
@@ -98,22 +106,24 @@ export async function POST(req) {
 
     if (isSimuru) {
       let data;
+      let failMsg = null;
       try {
         data = await createSimuruOtpOrder({
-          serviceId: simuruServiceId,
+          serviceId,
           countryId: Number(countryId),
-          operator: operator || "any"
+          operator: resolved.operator || operator || "random"
         });
       } catch (e) {
         data = null;
-        console.error("[otp/order] Simuru createOrder gagal:", e?.message);
+        failMsg = e?.message || null;
+        console.error("[otp/order] Simuru createOrder gagal:", failMsg);
       }
 
       if (!data || !data.id) {
         await users.updateOne({ token }, { $inc: { balance: sellPrice } });
         debited = false;
         return NextResponse.json(
-          { error: "Nomor tidak tersedia saat ini. Saldo tidak terpotong, coba server/negara lain." },
+          { error: `${failMsg || "Nomor tidak tersedia saat ini"}. Saldo tidak terpotong, coba negara lain.` },
           { status: 400 }
         );
       }
@@ -164,7 +174,7 @@ export async function POST(req) {
       otpMsg: null,
       refunded: false,
       ...(isSimuru
-        ? { simuruServiceId, countryId: Number(countryId), operator: operator || "any" }
+        ? { countryId: Number(countryId), operator: resolved.operator || operator || "random" }
         : { numberId, providerId, operatorId: operatorId || null, operatorName: operatorName || null }),
       createdAt: new Date(),
       expiredAt: expiredMs ? new Date(expiredMs) : null
@@ -187,7 +197,7 @@ export async function POST(req) {
       price: sellPrice,
       token,
       name: user.name,
-      operator: isSimuru ? (operator || "any") : operatorName,
+      operator: isSimuru ? (resolved.operator || operator || "random") : operatorName,
       balance: afterDebit.balance
     });
     sendTelegramNotif(purchaseText);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { OTP_SERVERS } from "@/lib/otpServers";
+import { OTP_SERVERS, serverLabel } from "@/lib/otpServers";
 
 // Ambil field yang mungkin berbeda nama antar respons API, tanpa merusak tampilan kalau tidak ada.
 function pick(obj, keys, fallback) {
@@ -12,15 +12,15 @@ function pick(obj, keys, fallback) {
 }
 
 export default function BuySheet({ open, onClose, services, servicesLoading, token, balance, onOrderCreated, initialQuery = "" }) {
-  // server -> (murah: apps -> countries -> operators) | (fast: vs)
-  const [screen, setScreen] = useState("server"); // server | apps | countries | operators | vs
-  const [server, setServer] = useState(null); // rumahotp | virtusim
-  const [available, setAvailable] = useState({ rumahotp: true, virtusim: false });
-  const [vsServices, setVsServices] = useState([]);
-  const [vsLoading, setVsLoading] = useState(false);
-  const [vsError, setVsError] = useState("");
-  const [vsCountry, setVsCountry] = useState("Indonesia");
-  const [vsSearch, setVsSearch] = useState("");
+  // Kedua server memakai alur yang sama: pilih server -> aplikasi -> negara -> order.
+  const [screen, setScreen] = useState("server"); // server | apps | countries | operators
+  const [server, setServer] = useState(null); // rumahotp | simuru
+  const [available, setAvailable] = useState({ rumahotp: true, simuru: false });
+  // Daftar aplikasi Server OTP Fast diambil saat server itu dipilih; daftar Server
+  // Murah sudah dikirim halaman induk lewat prop `services`.
+  const [simuruServices, setSimuruServices] = useState([]);
+  const [simuruLoading, setSimuruLoading] = useState(false);
+  const [simuruError, setSimuruError] = useState("");
   const [appSearch, setAppSearch] = useState("");
   const [countrySearch, setCountrySearch] = useState("");
   const [sortMode, setSortMode] = useState("rate"); // rate | harga
@@ -34,13 +34,16 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   const [buyingKey, setBuyingKey] = useState(null);
   const [buyError, setBuyError] = useState("");
 
+  // Daftar aplikasi & status loading milik server yang sedang dipilih.
+  const activeServices = server === "simuru" ? simuruServices : services;
+  const activeLoading = server === "simuru" ? simuruLoading : servicesLoading;
+
   useEffect(() => {
     if (!open) return;
     fetch("/api/otp/servers")
       .then((r) => r.json())
       .then((d) => {
         if (d?.available) setAvailable(d.available);
-        if (d?.virtusimCountry) setVsCountry(d.virtusimCountry);
       })
       .catch(() => {});
   }, [open]);
@@ -60,9 +63,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
       const t = setTimeout(() => {
         setScreen("server");
         setServer(null);
-        setVsServices([]);
-        setVsError("");
-        setVsSearch("");
+        setSimuruError("");
         setAppSearch("");
         setCountrySearch("");
         setSelectedService(null);
@@ -75,12 +76,12 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
     }
   }, [open]);
 
-  const popular = useMemo(() => services.slice(0, 6), [services]);
+  const popular = useMemo(() => activeServices.slice(0, 6), [activeServices]);
   const filteredApps = useMemo(() => {
     const q = appSearch.trim().toLowerCase();
-    if (!q) return services;
-    return services.filter((s) => (s.service_name || "").toLowerCase().includes(q));
-  }, [services, appSearch]);
+    if (!q) return activeServices;
+    return activeServices.filter((s) => (s.service_name || "").toLowerCase().includes(q));
+  }, [activeServices, appSearch]);
 
   const filteredCountries = useMemo(() => {
     const q = countrySearch.trim().toLowerCase();
@@ -97,69 +98,28 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
 
   function chooseServer(key) {
     setBuyError("");
+    setSimuruError("");
+    setAppSearch("");
     setServer(key);
-    if (key === "virtusim") {
-      setScreen("vs");
-      loadVsServices();
-    } else {
-      setScreen("apps");
-    }
+    setScreen("apps");
+    if (key === "simuru" && simuruServices.length === 0) loadSimuruServices();
   }
 
-  async function loadVsServices() {
-    setVsLoading(true);
-    setVsError("");
+  async function loadSimuruServices() {
+    setSimuruLoading(true);
+    setSimuruError("");
     try {
-      const res = await fetch("/api/otp/vs/services");
+      const res = await fetch("/api/otp/services?server=simuru");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal memuat layanan.");
-      setVsServices(Array.isArray(data.items) ? data.items : []);
-      if (data.country) setVsCountry(data.country);
+      setSimuruServices(Array.isArray(data.items) ? data.items : []);
     } catch (err) {
-      setVsServices([]);
-      setVsError(err.message || "Gagal memuat layanan.");
+      setSimuruServices([]);
+      setSimuruError(err.message || "Gagal memuat layanan.");
     } finally {
-      setVsLoading(false);
+      setSimuruLoading(false);
     }
   }
-
-  async function orderVirtusim(svc) {
-    setBuyError("");
-    setBuyingKey(`vs-${svc.id}`);
-    try {
-      const res = await fetch("/api/otp/vs-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, serviceId: svc.id })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal membeli nomor.");
-      const created = new Date(data.createdAt).getTime();
-      onOrderCreated({
-        orderId: data.orderId,
-        phoneNumber: data.phoneNumber,
-        price: data.price,
-        createdAt: data.createdAt,
-        serviceName: svc.name,
-        countryName: vsCountry,
-        status: "pending",
-        otpCode: null,
-        otpMsg: null,
-        expiredAt: data.expiredAt || null,
-        ttlMs: data.expiredAt && created ? data.expiredAt - created : null,
-        server: "virtusim"
-      });
-    } catch (err) {
-      setBuyError(err.message);
-    } finally {
-      setBuyingKey(null);
-    }
-  }
-
-  const filteredVs = useMemo(() => {
-    const q = vsSearch.trim().toLowerCase();
-    return q ? vsServices.filter((s) => (s.name || "").toLowerCase().includes(q)) : vsServices;
-  }, [vsServices, vsSearch]);
 
   async function chooseService(svc) {
     setSelectedService(svc);
@@ -167,14 +127,16 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
     setCountries([]);
     setExpandedCountry(null);
     setCountriesLoading(true);
+    setBuyError("");
     try {
-      const params = new URLSearchParams({ service_id: svc.service_code });
-      if (svc.simuru_code) params.set("simuru_code", svc.simuru_code);
+      const params = new URLSearchParams({ service_id: svc.service_code, server: server || "rumahotp" });
       const res = await fetch(`/api/otp/countries?${params}`);
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memuat negara.");
       setCountries(Array.isArray(data.items) ? data.items : []);
     } catch (e) {
       setCountries([]);
+      setBuyError(e.message || "Gagal memuat negara.");
     } finally {
       setCountriesLoading(false);
     }
@@ -220,13 +182,12 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
         operatorName: operatorName || null,
         serviceName: selectedService.service_name,
         countryName: country.name,
-        server: provider.server || "rumahotp"
+        server: provider.server || server || "rumahotp"
       };
-      // Parameter khusus Server OTO Fast (Simuru)
-      if (provider.server === "simuru") {
+      // Parameter khusus Server OTP Fast (Simuru): kunci order = service_id + country_id.
+      if (body.server === "simuru") {
         body.countryId = provider.country_id;
-        body.operator = provider.operator || "any";
-        body.simuruServiceId = selectedService.simuru_code || selectedService.service_code.replace(/^simuru:/, "");
+        body.operator = provider.operator || "random";
       }
       const res = await fetch("/api/otp/order", {
         method: "POST",
@@ -245,7 +206,8 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
         status: "pending",
         otpCode: null,
         otpMsg: null,
-        expiredAt: data.expiredAt || null
+        expiredAt: data.expiredAt || null,
+        server: body.server
       });
     } catch (err) {
       setBuyError(err.message);
@@ -271,11 +233,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
               <p className="text-xs text-muted">
                 {screen === "server"
                   ? "Langkah 1 · pilih server"
-                  : screen === "vs"
-                  ? `Server OTP Fast · ${vsCountry}`
-                  : screen === "apps"
-                  ? "Server Murah · pilih aplikasi"
-                  : "Server Murah · pilih negara & server"}
+                  : `${serverLabel(server)} · ${screen === "apps" ? "pilih aplikasi" : "pilih negara"}`}
               </p>
             </div>
             <div className="text-right">
@@ -290,8 +248,8 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
             <div className="fade-up space-y-3">
               <p className="text-sm text-muted">Mau pakai server yang mana?</p>
               {OTP_SERVERS.map((sv) => {
-                const on = available[sv.key] !== false && (sv.key !== "virtusim" || available.virtusim);
-                const fast = sv.key === "virtusim";
+                const on = available[sv.key] !== false;
+                const fast = sv.key === "simuru";
                 return (
                   <button
                     key={sv.key}
@@ -331,86 +289,6 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
             </div>
           )}
 
-          {screen === "vs" && (
-            <div className="fade-up">
-              <button onClick={() => { setScreen("server"); setBuyError(""); }} className="underline-grow text-xs text-muted hover:text-ink">
-                ← Ganti server
-              </button>
-
-              <div className="mt-3 flex items-center gap-2 rounded-2xl border border-line bg-surface2/60 px-4 py-3">
-                <span className="text-lg">🇮🇩</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-ink">{vsCountry}</span>
-                  <span className="block text-xs text-muted">Server Nokos OTP Fast · nomor langsung tampil</span>
-                </span>
-                <span className="rounded-full bg-amber-soft px-2 py-0.5 text-[10px] font-semibold text-amber-bright">Fast</span>
-              </div>
-
-              <input
-                value={vsSearch}
-                onChange={(e) => setVsSearch(e.target.value)}
-                placeholder="Cari nama aplikasi..."
-                className="field mt-3"
-              />
-
-              {buyError && <p className="mt-3 rounded-xl bg-rose-soft px-3 py-2 text-sm text-rose">{buyError}</p>}
-
-              {vsLoading ? (
-                <div className="mt-4 space-y-3">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="skeleton h-[64px] rounded-2xl border border-line" />
-                  ))}
-                </div>
-              ) : vsError ? (
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-rose">{vsError}</p>
-                  <button onClick={loadVsServices} className="btn-ghost mt-3">Coba lagi</button>
-                </div>
-              ) : filteredVs.length === 0 ? (
-                <p className="mt-6 text-sm text-muted">Layanan tidak ditemukan.</p>
-              ) : (
-                <div className="mt-4 space-y-2">
-                  {filteredVs.map((s, i) => {
-                    const top = i === 0 && !vsSearch.trim() && /whats\s*app|^wa\b/i.test(s.name || "");
-                    const out = s.stock === 0;
-                    return (
-                      <div
-                        key={s.id}
-                        className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${
-                          top ? "border-amber/50 bg-amber-soft/40" : "border-line bg-surface"
-                        }`}
-                      >
-                        {s.img ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={s.img} alt="" className="h-9 w-9 shrink-0 rounded object-contain" />
-                        ) : (
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-surface2 text-sm text-muted">
-                            {(s.name || "?")[0]}
-                          </span>
-                        )}
-                        <span className="min-w-0 flex-1">
-                          <span className="flex flex-wrap items-center gap-1.5">
-                            <span className="truncate text-sm font-semibold text-ink">{s.name}</span>
-                            {top && <span className="rounded-full bg-amber-soft px-1.5 py-0.5 text-[10px] font-semibold text-amber-bright">Teratas</span>}
-                          </span>
-                          <span className="block text-[11px] text-muted">{out ? "stok habis" : `stok ${s.stock ?? "-"}`}</span>
-                        </span>
-                        <span className="shrink-0 text-sm font-semibold text-ink">Rp{Number(s.sell_price || 0).toLocaleString("id-ID")}</span>
-                        <button
-                          onClick={() => orderVirtusim(s)}
-                          disabled={out || buyingKey !== null}
-                          className="btn-3d shrink-0 rounded-lg border border-amber px-3 py-1.5 text-xs font-medium text-amber-bright transition-colors hover:bg-amber-soft disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          {buyingKey === `vs-${s.id}` ? "..." : "Order"}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
           {screen === "apps" && (
             <div className="fade-up">
               <button onClick={() => setScreen("server")} className="underline-grow mb-3 text-xs text-muted hover:text-ink">
@@ -423,12 +301,19 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                 className="field"
               />
 
-              {servicesLoading ? (
+              {activeLoading ? (
                 <div className="mt-5 grid grid-cols-2 gap-3">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="skeleton h-[84px] rounded-2xl border border-line" />
                   ))}
                 </div>
+              ) : simuruError ? (
+                <div className="mt-6 text-center">
+                  <p className="text-sm text-rose">{simuruError}</p>
+                  <button onClick={loadSimuruServices} className="btn-ghost mt-3">Coba lagi</button>
+                </div>
+              ) : activeServices.length === 0 ? (
+                <p className="mt-6 text-sm text-muted">Belum ada layanan di server ini.</p>
               ) : appSearch.trim() ? (
                 <div className="mt-4 divide-y divide-line">
                   {filteredApps.length === 0 && <p className="py-6 text-sm text-muted">Aplikasi tidak ditemukan.</p>}
@@ -461,7 +346,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
 
                   <p className="mt-6 text-sm font-semibold text-ink">Semua Aplikasi</p>
                   <div className="mt-3 divide-y divide-line">
-                    {services.slice(6).map((s) => (
+                    {activeServices.slice(6).map((s) => (
                       <AppRow key={s.service_code} s={s} onClick={() => chooseService(s)} />
                     ))}
                   </div>
@@ -587,7 +472,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                                         </span>
                                       )}
                                     </div>
-                                    <p className="mt-0.5 text-[11px] text-muted">stok {p.stock ?? "-"}</p>
+                                    {p.stock != null && <p className="mt-0.5 text-[11px] text-muted">stok {p.stock}</p>}
                                   </div>
                                   <div className="flex shrink-0 items-center gap-2">
                                     <span className="text-sm font-semibold text-ink">

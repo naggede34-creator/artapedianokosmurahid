@@ -1,78 +1,81 @@
 import { NextResponse } from "next/server";
 import { getCountries } from "@/lib/rumahotp";
-import { getSimuruCountries } from "@/lib/simuru";
+import { getSimuruCountries, getSimuruPricelist } from "@/lib/simuru";
 import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req) {
+// Ambil daftar negara+harga Simuru untuk satu layanan. Endpoint per-layanan dipakai
+// lebih dulu karena membawa success_rate & harga paling segar; kalau gagal, pricelist
+// (kunci service_id + country_id yang sama dengan Buat Order) dipakai sebagai cadangan.
+async function simuruRowsFor(serviceId) {
   try {
-    const { searchParams } = new URL(req.url);
-    const serviceId = searchParams.get("service_id");
-    const simuruCode = searchParams.get("simuru_code");
-    if (!serviceId) return NextResponse.json({ error: "service_id wajib diisi." }, { status: 400 });
+    const rows = await getSimuruCountries(serviceId);
+    if (rows.length) return rows;
+  } catch (err) {
+    console.error("[otp/countries] simuru per-service gagal, pakai pricelist:", err?.message || err);
+  }
+  return getSimuruPricelist({ serviceId });
+}
 
+export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  const serviceId = searchParams.get("service_id");
+  const server = searchParams.get("server") || "rumahotp";
+  if (!serviceId) return NextResponse.json({ error: "service_id wajib diisi." }, { status: 400 });
+
+  try {
     const { markupPercent } = await getSettings();
+    const markup = (n) => Math.ceil(Number(n || 0) * (1 + (Number(markupPercent) || 0) / 100));
 
-    const isSimuruOnly = serviceId.startsWith("simuru:");
-    const rumahotpCode = isSimuruOnly ? null : serviceId;
-    const simCode = simuruCode || (isSimuruOnly ? serviceId.slice(7) : null);
-
-    const [rumahotpResult, simuruResult] = await Promise.allSettled([
-      rumahotpCode ? getCountries(process.env.RUMAHOTP_APIKEY, rumahotpCode) : Promise.resolve(null),
-      simCode ? getSimuruCountries(simCode) : Promise.resolve(null)
-    ]);
-
-    const items = [];
-
-    if (rumahotpCode && rumahotpResult.status === "fulfilled" && rumahotpResult.value) {
-      const list = rumahotpResult.value.data || rumahotpResult.value || [];
-      for (const c of Array.isArray(list) ? list : []) {
-        items.push({
-          ...c,
-          pricelist: (c.pricelist || []).map((p) => ({
-            ...p,
-            server: "rumahotp",
-            sell_price: Math.ceil(Number(p.price || 0) * (1 + markupPercent / 100))
-          }))
-        });
-      }
-    }
-
-    if (simCode && simuruResult.status === "fulfilled" && Array.isArray(simuruResult.value)) {
-      // Group by country_id (one row per country, one pricelist item per operator)
-      const countryMap = new Map();
-      for (const c of simuruResult.value) {
-        const cid = c.country_id;
-        const priceRaw = Number(c.price || 0);
-        const sellPrice = Math.ceil(priceRaw * (1 + markupPercent / 100));
-        const providerItem = {
-          provider_id: `s:${cid}:${c.operator || "any"}`,
-          provider_name: "Server OTO Fast",
-          price: priceRaw,
-          sell_price: sellPrice,
-          success_rate: c.success_rate ?? null,
+    if (server === "simuru") {
+      const rows = await simuruRowsFor(serviceId);
+      // Satu kartu per negara; tiap operator jadi satu baris pilihan di dalamnya.
+      const byCountry = new Map();
+      for (const r of rows) {
+        const cid = r.country_id;
+        if (cid === undefined || cid === null) continue;
+        const operator = r.operator || "random";
+        const entry = {
+          provider_id: `s:${cid}:${operator}`,
+          provider_name: operator === "any" || operator === "random" ? "Otomatis" : `Operator ${operator}`,
+          price: Number(r.price || 0),
+          sell_price: markup(r.price),
+          success_rate: r.success_rate ?? null,
           stock: null,
           server: "simuru",
           country_id: cid,
-          operator: c.operator || "any"
+          operator
         };
-        if (countryMap.has(cid)) {
-          countryMap.get(cid).pricelist.push(providerItem);
+        if (byCountry.has(cid)) {
+          byCountry.get(cid).pricelist.push(entry);
         } else {
-          countryMap.set(cid, {
+          byCountry.set(cid, {
             number_id: `s:${cid}`,
-            name: c.country_name,
-            pricelist: [providerItem]
+            name: r.country_name || `Negara ${cid}`,
+            iso: r.country_iso || null,
+            img: null,
+            pricelist: [entry]
           });
         }
       }
-      items.push(...countryMap.values());
+      return NextResponse.json({ items: Array.from(byCountry.values()) });
     }
 
+    const result = await getCountries(process.env.RUMAHOTP_APIKEY, serviceId);
+    const list = result?.data || result || [];
+    const items = (Array.isArray(list) ? list : []).map((c) => ({
+      ...c,
+      pricelist: (c.pricelist || []).map((p) => ({
+        ...p,
+        server: "rumahotp",
+        sell_price: markup(p.price)
+      }))
+    }));
     return NextResponse.json({ items });
   } catch (err) {
-    console.error(err?.response?.data || err);
-    return NextResponse.json({ error: "Gagal mengambil daftar negara." }, { status: 500 });
+    console.error("[otp/countries]", err?.response?.data || err?.message || err);
+    const msg = server === "simuru" ? err?.message : null;
+    return NextResponse.json({ error: msg || "Gagal mengambil daftar negara." }, { status: 502 });
   }
 }

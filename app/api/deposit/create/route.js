@@ -4,7 +4,6 @@ import { usersCol, depositsCol } from "@/lib/db";
 import { createTransaction } from "@/lib/pakasir";
 import { createDeposit as createRumahOtpDeposit, toEpochMs, rumahOtpConfigured } from "@/lib/rumahotp";
 import { createSimuruDeposit, simuruConfigured } from "@/lib/simuru";
-import { createVirtusimDeposit, virtusimConfigured } from "@/lib/virtusim";
 import { getSettings, depositLimits } from "@/lib/settings";
 import { PROVIDER_KEYS } from "@/lib/paymentProviders";
 import { sendTelegramNotif, depositPendingNotif, providerAlertNotif } from "@/lib/telegram";
@@ -74,9 +73,6 @@ export async function POST(req) {
       return NextResponse.json({ error: "QRIS RumahOTP belum dikonfigurasi. Pilih metode lain." }, { status: 400 });
     }
 
-    if (chosen === "virtusim" && !virtusimConfigured()) {
-      return NextResponse.json({ error: "QRIS VirtuSIM belum dikonfigurasi. Pilih metode lain." }, { status: 400 });
-    }
 
     const users = await usersCol();
     const user = await users.findOne({ token });
@@ -136,41 +132,6 @@ export async function POST(req) {
       paymentMethod = pickField(data, ["method"]) || "qris";
       if (!qrisString && !qrImage) {
         return NextResponse.json({ error: "QRIS Simuru tidak tersedia, coba lagi." }, { status: 502 });
-      }
-    } else if (chosen === "virtusim") {
-      let dep;
-      try {
-        dep = await createVirtusimDeposit({ amount: amt });
-      } catch (err) {
-        console.error("[deposit/create] virtusim:", err?.message);
-        if (err?.status === 401 || err?.status >= 500) {
-          sendTelegramNotif(providerAlertNotif({ provider: "VirtuSIM", action: "Buat deposit QRIS", message: err.message }));
-        }
-        return NextResponse.json(
-          { error: toErrStr(err?.message, "Gagal membuat QRIS VirtuSIM, coba metode lain.") },
-          { status: 400 }
-        );
-      }
-      if (!dep.id) {
-        return NextResponse.json({ error: "Respons VirtuSIM tidak lengkap, coba lagi." }, { status: 502 });
-      }
-      providerRef = dep.id;
-      qrisString = dep.qrString ? String(dep.qrString) : null;
-      qrImage = asImageSrc(dep.qrImage);
-      paymentUrl = dep.paymentUrl || null;
-      expiredAt = dep.expiredAt;
-      adminFee = dep.fee;
-      totalAmount = dep.total ?? amt;
-      if (qrisString) {
-        try {
-          qrImage = await QRCode.toDataURL(qrisString, { margin: 1, scale: 8, errorCorrectionLevel: "M" });
-        } catch {
-          /* pakai gambar dari VirtuSIM kalau ada */
-        }
-      }
-      if (!qrisString && !qrImage && !paymentUrl) {
-        console.error("[deposit/create] virtusim tanpa data QRIS");
-        return NextResponse.json({ error: "QRIS VirtuSIM tidak tersedia, coba metode lain." }, { status: 502 });
       }
     } else if (chosen === "pakasir") {
       const result = await createTransaction(process.env.PAKASIR_PROJECT, process.env.PAKASIR_APIKEY, orderId, amt, "qris");

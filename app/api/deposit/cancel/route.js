@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { depositsCol, usersCol } from "@/lib/db";
 import { cancelTransaction } from "@/lib/pakasir";
 import { cancelDeposit } from "@/lib/rumahotp";
-import { cancelVirtusimDeposit } from "@/lib/virtusim";
 import { fetchProviderStatus, creditDeposit } from "@/lib/depositService";
 import { sendTelegramNotif, depositCanceledNotif } from "@/lib/telegram";
 
@@ -43,8 +42,6 @@ export async function POST(req) {
       cancelTransaction(process.env.PAKASIR_PROJECT, process.env.PAKASIR_APIKEY, orderId, deposit.amount).catch(() => {});
     } else if (deposit.provider === "rumahotp") {
       cancelDeposit(process.env.RUMAHOTP_APIKEY, deposit.providerRef || orderId).catch(() => {});
-    } else if (deposit.provider === "virtusim") {
-      cancelVirtusimDeposit(deposit.providerRef || orderId).catch(() => {});
     }
 
     const u = await (await usersCol()).findOne({ token }, { projection: { name: 1 } });

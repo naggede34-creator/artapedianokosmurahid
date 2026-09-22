@@ -2309,7 +2309,7 @@ export default function AdminDashboardPage() {
                   <input type="number" value={markupInput} onChange={(e) => setMarkupInput(e.target.value)} className="w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
                   <button onClick={saveMarkup} disabled={savingMarkup} className="btn-3d shrink-0 rounded-lg bg-amber hover:bg-amber-bright px-4 py-2.5 text-sm font-medium text-white shadow-3d disabled:opacity-60">{savingMarkup ? "..." : "Simpan"}</button>
                 </div>
-                <p className="mt-1.5 text-[11px] text-muted">Harga jual = harga dasar (RumahOTP / VirtuSIM) × (1 + markup%).</p>
+                <p className="mt-1.5 text-[11px] text-muted">Harga jual = harga dasar (RumahOTP / Simuru) × (1 + markup%).</p>
               </div>
               <div>
                 <label className="text-xs font-medium text-muted">Mode maintenance</label>
@@ -2349,7 +2349,6 @@ export default function AdminDashboardPage() {
                     { key: "simuru", label: "QRIS Simuru" },
                     { key: "pakasir", label: "QRIS Pakasir" },
                     { key: "rumahotp", label: "QRIS RumahOTP" },
-                    { key: "virtusim", label: "QRIS VirtuSIM" }
                   ].map((p) => (
                     <div key={p.key} className="rounded-lg border border-line bg-surface px-3.5 py-2.5">
                       <div className="flex items-center justify-between">

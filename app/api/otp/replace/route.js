@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
 import { createOrder, toEpochMs } from "@/lib/rumahotp";
-import { createVirtusimOrder, virtusimTtlMs } from "@/lib/virtusim";
+import { createSimuruOtpOrder } from "@/lib/simuru";
 import { sendTelegramNotif, otpPurchaseNotif, otpAutoRefundNotif } from "@/lib/telegram";
 import { logBalance } from "@/lib/ledger";
 
 // Dipakai saat nomor yang dibeli kedaluwarsa tanpa kode OTP masuk. User bisa minta
 // nomor pengganti tanpa membayar lagi (memakai saldo yang sudah terpotong di order lama).
 // Kalau provider juga gagal menyediakan nomor baru, saldo otomatis dikembalikan penuh.
-// Berlaku untuk kedua server: RumahOTP (murah) dan VirtuSIM (OTP fast).
+// Berlaku untuk kedua server: RumahOTP (murah) dan Simuru (OTP fast).
 export async function POST(req) {
   try {
     const { token, orderId } = await req.json();
@@ -27,8 +27,8 @@ export async function POST(req) {
       return NextResponse.json({ error: "Ganti nomor hanya bisa dipakai untuk pesanan yang sudah kedaluwarsa." }, { status: 400 });
     }
 
-    const isVirtusim = oldOrder.provider === "virtusim";
-    if (isVirtusim ? !oldOrder.serviceId : !oldOrder.numberId || !oldOrder.providerId) {
+    const isSimuru = oldOrder.server === "simuru";
+    if (isSimuru ? !oldOrder.serviceId || oldOrder.countryId == null : !oldOrder.numberId || !oldOrder.providerId) {
       return NextResponse.json({ error: "Data pesanan lama tidak lengkap, tidak bisa diganti otomatis." }, { status: 400 });
     }
 
@@ -47,15 +47,18 @@ export async function POST(req) {
     // Pesan nomor pengganti ke provider yang sama. Hasilnya diseragamkan ke `fresh`.
     let fresh = null;
     try {
-      if (isVirtusim) {
-        const vs = await createVirtusimOrder({ serviceId: oldOrder.serviceId, operator: oldOrder.operatorId || "any" });
-        if (vs?.id && vs.number) {
-          const now = Date.now();
+      if (isSimuru) {
+        const sim = await createSimuruOtpOrder({
+          serviceId: oldOrder.serviceId,
+          countryId: Number(oldOrder.countryId),
+          operator: oldOrder.operator || "random"
+        });
+        if (sim?.id) {
           fresh = {
-            orderId: `VS${vs.id}`,
-            phoneNumber: vs.number,
-            expiredMs: vs.expiredAt && vs.expiredAt > now ? vs.expiredAt : now + virtusimTtlMs(),
-            extra: { provider: "virtusim", providerRef: vs.id }
+            orderId: String(sim.id),
+            phoneNumber: sim.phone_number || "-",
+            expiredMs: sim.remaining_seconds ? Date.now() + sim.remaining_seconds * 1000 : null,
+            extra: { server: "simuru", countryId: Number(oldOrder.countryId), operator: oldOrder.operator || "random" }
           };
         }
       } else {
@@ -70,7 +73,7 @@ export async function POST(req) {
             orderId: String(data.order_id),
             phoneNumber: data.phone_number || "-",
             expiredMs: toEpochMs(data.expired_at),
-            extra: {}
+            extra: { server: "rumahotp" }
           };
         }
       }
