@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
 import { setOrderStatus } from "@/lib/rumahotp";
-import { cancelVirtusimOrder } from "@/lib/virtusim";
+import { cancelSimuruOtpOrder } from "@/lib/simuru";
 import { reconcileOtpOrder } from "@/lib/orderReconcile";
 import { logBalance } from "@/lib/ledger";
 
@@ -60,34 +60,19 @@ export async function POST(req) {
     }
 
     let providerMessage;
-    if (order.provider === "virtusim") {
-      // Server OTP Fast (VirtuSIM): nomor HARUS berhasil dilepas di provider dulu.
-      // Kalau gagal, saldo tidak dikembalikan supaya nomor yang masih aktif tidak
-      // terbayar dua kali — pesanan tetap refund otomatis begitu kedaluwarsa.
-      try {
-        const msg = await cancelVirtusimOrder(order.providerRef || String(orderId).replace(/^VS/, ""));
-        providerMessage = msg || undefined;
-      } catch (e) {
-        console.error("[otp/cancel] VirtuSIM cancel gagal:", e?.message || e);
-        if (/otp|sms|received|diterima|kode|code/i.test(String(e?.message || ""))) {
-          return NextResponse.json({ error: "Server menolak pembatalan karena kode sudah masuk. Muat ulang pesanan." }, { status: 409 });
-        }
-        return NextResponse.json(
-          { error: "Pesanan belum bisa dibatalkan di server OTP Fast. Coba lagi sebentar, atau tunggu kedaluwarsa — saldo kembali otomatis." },
-          { status: 502 }
-        );
-      }
-    } else {
-      try {
+    try {
+      if (order.server === "simuru") {
+        await cancelSimuruOtpOrder(orderId);
+      } else {
         const result = await setOrderStatus(process.env.RUMAHOTP_APIKEY, orderId, "cancel");
         const d = result?.data || result;
         providerMessage = d?.message;
         if (result?.success === false && /otp|sms|received|diterima/i.test(String(providerMessage || ""))) {
           return NextResponse.json({ error: "Provider menolak pembatalan karena kode sudah masuk. Muat ulang pesanan." }, { status: 409 });
         }
-      } catch (e) {
-        console.error("[otp/cancel] setOrderStatus gagal, lanjut refund lokal:", e?.response?.data || e?.message || e);
       }
+    } catch (e) {
+      console.error("[otp/cancel] cancel gagal, lanjut refund lokal:", e?.response?.data || e?.message || e);
     }
 
     const claimed = await orders.findOneAndUpdate(

@@ -78,6 +78,13 @@ export default function AdminDashboardPage() {
   const [smmMarkupInput, setSmmMarkupInput] = useState("");
   const [savingSmm, setSavingSmm] = useState(false);
 
+  const [savingOtpServers, setSavingOtpServers] = useState(false);
+  const [otpServersMsg, setOtpServersMsg] = useState("");
+
+  const [maintenanceBtnForm, setMaintenanceBtnForm] = useState({ label: "", url: "" });
+  const [savingMaintenanceBtn, setSavingMaintenanceBtn] = useState(false);
+  const [maintenanceBtnMsg, setMaintenanceBtnMsg] = useState("");
+
   const [warrantyClaims, setWarrantyClaims] = useState([]);
   const [warrantyLoading, setWarrantyLoading] = useState(true);
   const [warrantyMsg, setWarrantyMsg] = useState("");
@@ -418,6 +425,45 @@ export default function AdminDashboardPage() {
     }
   }
 
+  async function toggleOtpServer(id) {
+    if (!settings) return;
+    setSavingOtpServers(true);
+    try {
+      const current = Array.isArray(settings.otpServers) ? settings.otpServers : [];
+      const updated = current.map((s) => s.id === id ? { ...s, enabled: !s.enabled } : s);
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ otpServers: updated })
+      });
+      const data = await res.json();
+      if (res.ok) { setSettings(data); setOtpServersMsg("Tersimpan."); }
+      else setOtpServersMsg(data.error || "Gagal.");
+    } finally {
+      setSavingOtpServers(false);
+      setTimeout(() => setOtpServersMsg(""), 2500);
+    }
+  }
+
+  async function saveMaintenanceBtn() {
+    setSavingMaintenanceBtn(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          maintenanceButtonLabel: maintenanceBtnForm.label,
+          maintenanceButtonUrl: maintenanceBtnForm.url
+        })
+      });
+      const data = await res.json();
+      if (res.ok) { setSettings(data); setMaintenanceBtnMsg("Tersimpan."); }
+      else setMaintenanceBtnMsg(data.error || "Gagal.");
+    } finally {
+      setSavingMaintenanceBtn(false);
+      setTimeout(() => setMaintenanceBtnMsg(""), 2500);
+    }
+  }
 
   const loadSettings = useCallback(async () => {
     const res = await fetch("/api/admin/settings");
@@ -434,6 +480,10 @@ export default function AdminDashboardPage() {
       telegramChannelId: data.telegramChannelId || "",
       depositMin: String(data.depositMin || ""),
       depositMax: String(data.depositMax || ""),
+    });
+    setMaintenanceBtnForm({
+      label: data.maintenanceButtonLabel || "",
+      url: data.maintenanceButtonUrl || "",
     });
     if (Array.isArray(data.heroChars) && data.heroChars.length > 0) {
       setHeroCharsForm(data.heroChars);
@@ -2271,6 +2321,28 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
               <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-muted">Tombol di halaman maintenance (opsional)</label>
+                <div className="mt-1.5 flex flex-col gap-2 sm:flex-row sm:items-end">
+                  <input
+                    value={maintenanceBtnForm.label}
+                    onChange={(e) => setMaintenanceBtnForm((f) => ({ ...f, label: e.target.value }))}
+                    placeholder="Label tombol, mis: Hubungi Admin"
+                    className="flex-1 rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+                  />
+                  <input
+                    value={maintenanceBtnForm.url}
+                    onChange={(e) => setMaintenanceBtnForm((f) => ({ ...f, url: e.target.value }))}
+                    placeholder="URL tombol, mis: https://t.me/admin"
+                    className="flex-1 rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+                  />
+                  <button onClick={saveMaintenanceBtn} disabled={savingMaintenanceBtn} className="btn-3d shrink-0 rounded-lg bg-amber px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60">
+                    {savingMaintenanceBtn ? "..." : "Simpan"}
+                  </button>
+                </div>
+                {maintenanceBtnMsg && <p className="mt-1.5 text-xs font-medium text-teal-bright">{maintenanceBtnMsg}</p>}
+                <p className="mt-1 text-[11px] text-muted">Kosongkan label untuk menyembunyikan tombol.</p>
+              </div>
+              <div className="sm:col-span-2">
                 <label className="text-xs font-medium text-muted">Metode deposit QRIS aktif</label>
                 <div className="mt-1.5 space-y-2">
                   {[
@@ -2334,6 +2406,31 @@ export default function AdminDashboardPage() {
               </div>
             </div>
             {loyaltyMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{loyaltyMsg}</p>}
+          </div>
+
+          {/* Server OTP */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">Server OTP</h2>
+            <p className="mt-1 text-xs text-muted">Aktifkan atau nonaktifkan server yang muncul saat user beli nomor virtual.</p>
+            <div className="mt-4 space-y-2">
+              {(settings?.otpServers || []).map((srv) => (
+                <div key={srv.id} className="flex items-center justify-between rounded-lg border border-line bg-surface px-3.5 py-2.5">
+                  <div>
+                    <span className="text-sm font-medium text-ink">{srv.name}</span>
+                    <span className="ml-2 text-[11px] text-muted">{srv.enabled ? "Aktif" : "Nonaktif"}</span>
+                  </div>
+                  <button
+                    onClick={() => toggleOtpServer(srv.id)}
+                    disabled={!settings || savingOtpServers}
+                    className={`btn-3d relative h-7 w-12 shrink-0 rounded-full transition-colors ${srv.enabled ? "bg-teal" : "bg-line"}`}
+                    aria-label={`Toggle ${srv.name}`}
+                  >
+                    <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${srv.enabled ? "translate-x-6" : "translate-x-1"}`} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            {otpServersMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{otpServersMsg}</p>}
           </div>
 
           {/* Suntik Sosmed */}

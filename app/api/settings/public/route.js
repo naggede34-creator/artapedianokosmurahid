@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getSettings, depositLimits } from "@/lib/settings";
 import { simuruConfigured } from "@/lib/simuru";
 import { rumahOtpConfigured } from "@/lib/rumahotp";
-import { virtusimConfigured } from "@/lib/virtusim";
 
 export const dynamic = "force-dynamic";
 
@@ -14,11 +13,9 @@ const CHANNELS = () => ({
 export async function GET() {
   const limits = depositLimits();
   try {
-    const { maintenance, maintenanceMsg, depositProviders, depositFeePercent, smm, heroChars } = await getSettings();
+    const { maintenance, maintenanceMsg, maintenanceButtonLabel, maintenanceButtonUrl, depositProviders, depositFeePercent, smm, heroChars } = await getSettings();
     const providers = { ...depositProviders };
     if (!simuruConfigured()) providers.simuru = false;
-    if (!virtusimConfigured()) providers.virtusim = false;
-    // Aktifkan rumahotp jika API key tersedia; nonaktifkan jika tidak ada key
     if (rumahOtpConfigured()) {
       if (providers.rumahotp === undefined || providers.rumahotp === null) providers.rumahotp = true;
     } else {
@@ -27,6 +24,8 @@ export async function GET() {
     return NextResponse.json({
       maintenance: !!maintenance,
       maintenanceMsg,
+      maintenanceButtonLabel: maintenanceButtonLabel || "",
+      maintenanceButtonUrl: maintenanceButtonUrl || "",
       depositProviders: providers,
       depositFeePercent,
       depositMin: limits.min,
@@ -42,10 +41,9 @@ export async function GET() {
       depositProviders: {
         simuru: simuruConfigured(),
         pakasir: true,
-        rumahotp: rumahOtpConfigured(),
-        virtusim: virtusimConfigured()
+        rumahotp: rumahOtpConfigured()
       },
-      depositFeePercent: { simuru: 0, pakasir: 0, rumahotp: 0.7, virtusim: 0 },
+      depositFeePercent: { simuru: 0, pakasir: 0, rumahotp: 0.7 },
       depositMin: limits.min,
       depositMax: limits.max,
       smmEnabled: false,
