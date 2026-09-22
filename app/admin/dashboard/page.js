@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { OTP_SERVERS } from "@/lib/otpServers";
 
 function fmtDate(d) {
   if (!d) return "-";
@@ -74,6 +75,11 @@ export default function AdminDashboardPage() {
   const [stockMsg, setStockMsg] = useState("");
   const [stockPreview, setStockPreview] = useState(null);
   const [stockTarget, setStockTarget] = useState(null);
+  // Katalog kode layanan asli dari tiap provider. Kodenya beda-beda per server,
+  // jadi tidak bisa ditebak — harus diambil langsung dari providernya.
+  const [stockCatalog, setStockCatalog] = useState(null);
+  const [stockCatalogBusy, setStockCatalogBusy] = useState(false);
+  const [stockCatalogQuery, setStockCatalogQuery] = useState("");
 
   const [announcements, setAnnouncements] = useState([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(true);
@@ -992,6 +998,53 @@ export default function AdminDashboardPage() {
       setSavingTransfer(false);
       setTimeout(() => setTransferMsg(""), 2500);
     }
+  }
+
+  async function loadStockCatalog() {
+    setStockCatalogBusy(true);
+    setStockMsg("");
+    try {
+      const enabledServers = OTP_SERVERS.filter(
+        (sv) => (settings?.otpServers || []).find((x) => x.id === sv.key)?.enabled !== false
+      );
+      const results = await Promise.all(
+        enabledServers.map(async (sv) => {
+          try {
+            const res = await fetch(`/api/otp/services?server=${encodeURIComponent(sv.key)}`);
+            const d = await res.json();
+            if (!res.ok) return { server: sv.key, name: sv.name, error: d.error || "gagal", items: [] };
+            const items = (d.items || [])
+              .map((it) => ({
+                code: String(it.service_code ?? it.service_id ?? "").trim(),
+                name: String(it.service_name ?? it.name ?? "").trim()
+              }))
+              .filter((it) => it.code);
+            return { server: sv.key, name: sv.name, items };
+          } catch {
+            return { server: sv.key, name: sv.name, error: "tidak bisa dihubungi", items: [] };
+          }
+        })
+      );
+      setStockCatalog(results);
+      const total = results.reduce((a, r) => a + r.items.length, 0);
+      if (total === 0) setStockMsg("Tidak ada kode layanan yang bisa diambil dari provider.");
+    } finally {
+      setStockCatalogBusy(false);
+    }
+  }
+
+  // Klik kode = masukkan/keluarkan dari daftar yang akan dilaporkan.
+  function toggleStockService(code) {
+    setStockServices((prev) => {
+      const list = prev.split(",").map((x) => x.trim()).filter(Boolean);
+      const i = list.indexOf(code);
+      if (i >= 0) list.splice(i, 1);
+      else {
+        if (list.length >= 12) return prev; // server membatasi 12 layanan per laporan
+        list.push(code);
+      }
+      return list.join(",");
+    });
   }
 
   async function previewStockReport() {
@@ -2528,6 +2581,13 @@ export default function AdminDashboardPage() {
 
             <div className="mt-3 flex flex-wrap gap-2">
               <button
+                onClick={loadStockCatalog}
+                disabled={stockCatalogBusy}
+                className="btn-3d rounded-lg border border-line bg-surface px-3.5 py-2 text-xs font-semibold text-ink disabled:opacity-60"
+              >
+                {stockCatalogBusy ? "Mengambil..." : "Lihat semua kode layanan"}
+              </button>
+              <button
                 onClick={previewStockReport}
                 disabled={!!stockBusy}
                 className="btn-3d rounded-lg border border-line bg-surface px-3.5 py-2 text-xs font-semibold text-ink disabled:opacity-60"
@@ -2542,6 +2602,75 @@ export default function AdminDashboardPage() {
                 {stockBusy === "send" ? "Mengirim..." : "Kirim ke Channel"}
               </button>
             </div>
+
+            {stockCatalog && (
+              <div className="mt-4 rounded-lg border border-line bg-surface p-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-bold text-ink">
+                    Kode layanan dari provider ({stockCatalog.reduce((a, r) => a + r.items.length, 0)} total)
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={stockCatalogQuery}
+                      onChange={(e) => setStockCatalogQuery(e.target.value)}
+                      placeholder="Cari: whatsapp, shopee…"
+                      className="w-44 rounded-lg border border-line bg-bg px-2.5 py-1.5 text-xs text-ink outline-none focus:border-amber"
+                    />
+                    <button
+                      onClick={() => setStockCatalog(null)}
+                      className="rounded-lg border border-line px-2.5 py-1.5 text-[11px] font-semibold text-muted"
+                    >
+                      Tutup
+                    </button>
+                  </div>
+                </div>
+                <p className="mt-1.5 text-[11px] leading-relaxed text-muted">
+                  Klik kode untuk memasukkannya ke daftar laporan (maksimal 12). Tiap provider punya
+                  kode sendiri, jadi kode yang sama belum tentu ada di semua server.
+                </p>
+
+                {stockCatalog.map((grp) => {
+                  const q = stockCatalogQuery.trim().toLowerCase();
+                  const items = q
+                    ? grp.items.filter((it) => it.code.toLowerCase().includes(q) || it.name.toLowerCase().includes(q))
+                    : grp.items;
+                  return (
+                    <div key={grp.server} className="mt-3">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-muted">
+                        {grp.name}
+                        <span className="ml-1.5 font-normal normal-case opacity-70">
+                          {grp.error ? `— ${grp.error}` : `— ${items.length} layanan`}
+                        </span>
+                      </p>
+                      {items.length > 0 && (
+                        <div className="mt-1.5 flex max-h-44 flex-wrap gap-1.5 overflow-y-auto">
+                          {items.map((it) => {
+                            const on = stockServices
+                              .split(",")
+                              .map((x) => x.trim())
+                              .includes(it.code);
+                            return (
+                              <button
+                                key={`${grp.server}-${it.code}`}
+                                onClick={() => toggleStockService(it.code)}
+                                title={it.name}
+                                className={`rounded-lg border px-2 py-1 font-mono text-[11px] transition-colors ${
+                                  on
+                                    ? "border-amber bg-amber-soft font-bold text-amber-bright"
+                                    : "border-line bg-bg text-ink hover:border-amber/50"
+                                }`}
+                              >
+                                {it.code}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {stockPreview && stockPreview.length > 0 && (
               <div className="mt-3 space-y-2">
