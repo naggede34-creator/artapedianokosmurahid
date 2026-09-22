@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSettings } from "@/lib/settings";
+import { getSettings, serverOfflineMessage } from "@/lib/settings";
 import { listServices, serverEnabled } from "@/lib/otpCatalog";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +9,7 @@ export async function GET(req) {
   try {
     const settings = await getSettings();
     if (!serverEnabled(settings, server)) {
-      return NextResponse.json({ error: "Server ini sedang dinonaktifkan admin." }, { status: 503 });
+      return NextResponse.json({ error: serverOfflineMessage(settings, server) }, { status: 503 });
     }
     return NextResponse.json({ items: await listServices(server) });
   } catch (err) {

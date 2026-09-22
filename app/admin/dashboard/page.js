@@ -98,6 +98,12 @@ export default function AdminDashboardPage() {
   const [providerDiagLoading, setProviderDiagLoading] = useState(false);
 
   const [maintenanceBtnForm, setMaintenanceBtnForm] = useState({ label: "", url: "" });
+  // Judul + isi pesan yang tampil di halaman maintenance.
+  const [maintenanceTextForm, setMaintenanceTextForm] = useState({ title: "", msg: "" });
+  const [savingMaintenanceText, setSavingMaintenanceText] = useState(false);
+  const [maintenanceTextMsg, setMaintenanceTextMsg] = useState("");
+  // Nama, label, keterangan, dan pesan offline tiap server nokos.
+  const [serverForms, setServerForms] = useState({});
   const [savingMaintenanceBtn, setSavingMaintenanceBtn] = useState(false);
   const [maintenanceBtnMsg, setMaintenanceBtnMsg] = useState("");
 
@@ -466,6 +472,59 @@ export default function AdminDashboardPage() {
     }
   }
 
+  async function saveMaintenanceText() {
+    setSavingMaintenanceText(true);
+    setMaintenanceTextMsg("");
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          maintenanceTitle: maintenanceTextForm.title,
+          maintenanceMsg: maintenanceTextForm.msg
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSettings(data);
+      setMaintenanceTextMsg("Pesan maintenance tersimpan.");
+    } catch (err) {
+      setMaintenanceTextMsg(err.message || "Gagal menyimpan.");
+    } finally {
+      setSavingMaintenanceText(false);
+      setTimeout(() => setMaintenanceTextMsg(""), 3000);
+    }
+  }
+
+  // Simpan nama, label, keterangan, dan pesan offline satu server.
+  async function saveServerIdentity(id) {
+    if (!settings) return;
+    const form = serverForms[id];
+    if (!form) return;
+    setSavingOtpServers(true);
+    setOtpServersMsg("");
+    try {
+      const updated = (settings.otpServers || []).map((s) =>
+        s.id === id
+          ? { ...s, name: form.name, badge: form.badge, desc: form.desc, offlineMsg: form.offlineMsg }
+          : s
+      );
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ otpServers: updated })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSettings(data);
+        setOtpServersMsg("Tampilan server tersimpan.");
+      } else setOtpServersMsg(data.error || "Gagal.");
+    } finally {
+      setSavingOtpServers(false);
+      setTimeout(() => setOtpServersMsg(""), 2500);
+    }
+  }
+
   async function saveServerMarkup(id) {
     if (!settings) return;
     setSavingOtpServers(true);
@@ -528,6 +587,23 @@ export default function AdminDashboardPage() {
       label: data.maintenanceButtonLabel || "",
       url: data.maintenanceButtonUrl || "",
     });
+    setMaintenanceTextForm({
+      title: data.maintenanceTitle || "",
+      msg: data.maintenanceMsg || "",
+    });
+    setServerForms(
+      Object.fromEntries(
+        (Array.isArray(data.otpServers) ? data.otpServers : []).map((s) => [
+          s.id,
+          {
+            name: s.name || "",
+            badge: s.badge || "",
+            desc: s.desc || "",
+            offlineMsg: s.offlineMsg || ""
+          }
+        ])
+      )
+    );
     setServerMarkups(
       Object.fromEntries(
         (Array.isArray(data.otpServers) ? data.otpServers : []).map((s) => [
@@ -2478,6 +2554,34 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
               <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-muted">Judul &amp; pesan halaman maintenance</label>
+                <input
+                  value={maintenanceTextForm.title}
+                  onChange={(e) => setMaintenanceTextForm((f) => ({ ...f, title: e.target.value }))}
+                  placeholder="Judul, mis: Sedang Maintenance"
+                  className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+                />
+                <textarea
+                  rows={3}
+                  value={maintenanceTextForm.msg}
+                  onChange={(e) => setMaintenanceTextForm((f) => ({ ...f, msg: e.target.value }))}
+                  placeholder="Pesan yang dibaca user saat web ditutup. Boleh beberapa baris."
+                  className="mt-2 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+                />
+                <button
+                  onClick={saveMaintenanceText}
+                  disabled={savingMaintenanceText}
+                  className="btn-3d mt-2 rounded-lg bg-amber px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                >
+                  {savingMaintenanceText ? "..." : "Simpan pesan"}
+                </button>
+                {maintenanceTextMsg && <p className="mt-1.5 text-xs font-medium text-teal-bright">{maintenanceTextMsg}</p>}
+                <p className="mt-1 text-[11px] text-muted">
+                  Pesan ini tampil saat mode maintenance dinyalakan. Baris baru ikut terlihat apa adanya.
+                </p>
+              </div>
+
+              <div className="sm:col-span-2">
                 <label className="text-xs font-medium text-muted">Tombol di halaman maintenance (opsional)</label>
                 <div className="mt-1.5 flex flex-col gap-2 sm:flex-row sm:items-end">
                   <input
@@ -2811,6 +2915,67 @@ export default function AdminDashboardPage() {
                       <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${srv.enabled ? "translate-x-6" : "translate-x-1"}`} />
                     </button>
                   </div>
+                  {/* Nama, label, dan keterangan yang dilihat user saat memilih server. */}
+                  <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <label className="text-[11px] font-medium text-muted">Nama server</label>
+                      <input
+                        value={serverForms[srv.id]?.name ?? ""}
+                        onChange={(e) =>
+                          setServerForms((f) => ({ ...f, [srv.id]: { ...f[srv.id], name: e.target.value } }))
+                        }
+                        placeholder={srv.id}
+                        className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-muted">Label (kosong = tanpa label)</label>
+                      <input
+                        value={serverForms[srv.id]?.badge ?? ""}
+                        onChange={(e) =>
+                          setServerForms((f) => ({ ...f, [srv.id]: { ...f[srv.id], badge: e.target.value } }))
+                        }
+                        placeholder="mis: Utama, Murah, Fast"
+                        className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-[11px] font-medium text-muted">Keterangan singkat</label>
+                      <textarea
+                        rows={2}
+                        value={serverForms[srv.id]?.desc ?? ""}
+                        onChange={(e) =>
+                          setServerForms((f) => ({ ...f, [srv.id]: { ...f[srv.id], desc: e.target.value } }))
+                        }
+                        placeholder="Kalimat yang tampil di bawah nama server"
+                        className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-[11px] font-medium text-muted">
+                        Pesan saat server ini dimatikan (kosong = pesan bawaan)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={serverForms[srv.id]?.offlineMsg ?? ""}
+                        onChange={(e) =>
+                          setServerForms((f) => ({ ...f, [srv.id]: { ...f[srv.id], offlineMsg: e.target.value } }))
+                        }
+                        placeholder="mis: Server sedang perbaikan, pakai Server Plus dulu ya"
+                        className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <button
+                        onClick={() => saveServerIdentity(srv.id)}
+                        disabled={savingOtpServers}
+                        className="btn-3d rounded-lg border border-line bg-surface px-3.5 py-1.5 text-xs font-semibold text-ink disabled:opacity-60"
+                      >
+                        Simpan tampilan server
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="mt-2.5 flex flex-wrap items-center gap-2">
                     <input
                       type="number"

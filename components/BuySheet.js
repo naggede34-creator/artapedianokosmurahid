@@ -16,6 +16,11 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   const [screen, setScreen] = useState("server"); // server | apps | countries | operators
   const [server, setServer] = useState(null); // rumahotp | warungnokos_s1 | warungnokos_s2 | dibanana
   const [available, setAvailable] = useState({ rumahotp: true });
+  // Nama, label, dan keterangan server datang dari pengaturan admin. OTP_SERVERS
+  // hanya dipakai sebagai cadangan kalau API-nya belum sempat menjawab.
+  const [serverList, setServerList] = useState(() =>
+    OTP_SERVERS.map((s) => ({ key: s.key, name: s.name, badge: s.badge, desc: s.desc, provider: s.provider, offlineMsg: "" }))
+  );
   // Daftar aplikasi tiap server WarungNokos diambil saat server itu dipilih; daftar
   // Server Murah sudah dikirim halaman induk lewat prop `services`.
   const [remoteServices, setRemoteServices] = useState({});
@@ -45,6 +50,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
       .then((r) => r.json())
       .then((d) => {
         if (d?.available) setAvailable(d.available);
+        if (Array.isArray(d?.items) && d.items.length) setServerList(d.items);
       })
       .catch(() => {});
   }, [open]);
@@ -245,7 +251,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
           {screen === "server" && (
             <div className="fade-up space-y-3">
               <p className="text-sm text-muted">Mau pakai server yang mana?</p>
-              {OTP_SERVERS.map((sv, i) => {
+              {serverList.map((sv, i) => {
                 const on = available[sv.key] !== false;
                 // Tiap provider punya warna & ikonnya sendiri supaya mudah dibedakan sekilas.
                 const look =
@@ -277,17 +283,23 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-2">
                         <span className="text-[15px] font-extrabold tracking-tight text-ink">{sv.name}</span>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${look.soft} ${look.text}`}>
-                          {sv.badge}
-                        </span>
+                        {sv.badge ? (
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${look.soft} ${look.text}`}>
+                            {sv.badge}
+                          </span>
+                        ) : null}
                         {!on && (
                           <span className="rounded-full bg-rose-soft px-2 py-0.5 text-[10px] font-bold text-rose">nonaktif</span>
                         )}
                       </span>
-                      <span className="mt-1 block text-xs leading-relaxed text-muted">{sv.desc}</span>
-                      <span className="mt-1.5 block font-mono text-[10px] uppercase tracking-wider text-muted opacity-60">
-                        via {sv.provider}
+                      <span className="mt-1 block text-xs leading-relaxed text-muted">
+                        {!on && sv.offlineMsg ? sv.offlineMsg : sv.desc}
                       </span>
+                      {sv.provider ? (
+                        <span className="mt-1.5 block font-mono text-[10px] uppercase tracking-wider text-muted opacity-60">
+                          via {sv.provider}
+                        </span>
+                      ) : null}
                     </span>
 
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="mt-1 shrink-0 text-muted">

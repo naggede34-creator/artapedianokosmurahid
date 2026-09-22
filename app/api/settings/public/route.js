@@ -12,7 +12,7 @@ const CHANNELS = () => ({
 export async function GET() {
   const limits = depositLimits();
   try {
-    const { maintenance, maintenanceMsg, maintenanceButtonLabel, maintenanceButtonUrl, depositProviders, depositFeePercent, heroChars } = await getSettings();
+    const { maintenance, maintenanceMsg, maintenanceTitle, maintenanceButtonLabel, maintenanceButtonUrl, depositProviders, depositFeePercent, heroChars } = await getSettings();
     const providers = { ...depositProviders };
     if (!warungNokosConfigured()) providers.warungnokos = false;
     if (rumahOtpConfigured()) {
@@ -23,6 +23,7 @@ export async function GET() {
     return NextResponse.json({
       maintenance: !!maintenance,
       maintenanceMsg,
+      maintenanceTitle: maintenanceTitle || "Sedang Maintenance",
       maintenanceButtonLabel: maintenanceButtonLabel || "",
       maintenanceButtonUrl: maintenanceButtonUrl || "",
       depositProviders: providers,

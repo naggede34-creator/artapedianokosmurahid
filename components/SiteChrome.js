@@ -19,6 +19,7 @@ export default function SiteChrome({ children }) {
   const [checked, setChecked] = useState(false);
   const [maintenance, setMaintenance] = useState(false);
   const [maintenanceMsg, setMaintenanceMsg] = useState("");
+  const [maintenanceTitle, setMaintenanceTitle] = useState("Sedang Maintenance");
   const [maintenanceBtnLabel, setMaintenanceBtnLabel] = useState("");
   const [maintenanceBtnUrl, setMaintenanceBtnUrl] = useState("");
   const [channelInfo, setChannelInfo] = useState("https://t.me/kkaelnokosmurah");
@@ -33,6 +34,7 @@ export default function SiteChrome({ children }) {
       .then((d) => {
         setMaintenance(!!d.maintenance);
         setMaintenanceMsg(d.maintenanceMsg || "");
+        if (d.maintenanceTitle) setMaintenanceTitle(d.maintenanceTitle);
         setMaintenanceBtnLabel(d.maintenanceButtonLabel || "");
         setMaintenanceBtnUrl(d.maintenanceButtonUrl || "");
         if (d.channelInfo) setChannelInfo(d.channelInfo);
@@ -45,7 +47,14 @@ export default function SiteChrome({ children }) {
   if (isAdmin) return <>{children}</>;
 
   if (checked && maintenance) {
-    return <MaintenanceScreen message={maintenanceMsg} buttonLabel={maintenanceBtnLabel} buttonUrl={maintenanceBtnUrl} />;
+    return (
+      <MaintenanceScreen
+        title={maintenanceTitle}
+        message={maintenanceMsg}
+        buttonLabel={maintenanceBtnLabel}
+        buttonUrl={maintenanceBtnUrl}
+      />
+    );
   }
 
   return (
@@ -66,7 +75,7 @@ export default function SiteChrome({ children }) {
   );
 }
 
-function MaintenanceScreen({ message, buttonLabel, buttonUrl }) {
+function MaintenanceScreen({ title, message, buttonLabel, buttonUrl }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
       <div className="glow-ring rounded-3xl">
@@ -75,8 +84,8 @@ function MaintenanceScreen({ message, buttonLabel, buttonUrl }) {
           <span className="float-slow relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber text-3xl shadow-3d">
             🛠️
           </span>
-          <h1 className="mt-5 font-display text-xl font-semibold text-ink">Sedang Maintenance</h1>
-          <p className="mt-2 text-sm leading-relaxed text-muted">
+          <h1 className="comic-head mt-5 font-display text-xl text-ink">{title || "Sedang Maintenance"}</h1>
+          <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted">
             {message || "Website sedang maintenance. Kami akan segera kembali, mohon coba lagi beberapa saat lagi."}
           </p>
           <div className="mt-6 flex flex-col gap-2">
