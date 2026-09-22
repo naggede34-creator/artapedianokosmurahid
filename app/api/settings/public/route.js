@@ -13,7 +13,7 @@ const CHANNELS = () => ({
 export async function GET() {
   const limits = depositLimits();
   try {
-    const { maintenance, maintenanceMsg, depositProviders, depositFeePercent, smm } = await getSettings();
+    const { maintenance, maintenanceMsg, maintenanceButtonLabel, maintenanceButtonUrl, depositProviders, depositFeePercent, smm, heroChars } = await getSettings();
     const providers = { ...depositProviders };
     if (!simuruConfigured()) providers.simuru = false;
     // Aktifkan rumahotp otomatis jika API key tersedia dan admin belum set eksplisit
@@ -21,6 +21,8 @@ export async function GET() {
     return NextResponse.json({
       maintenance: !!maintenance,
       maintenanceMsg,
+      maintenanceButtonLabel: maintenanceButtonLabel || "",
+      maintenanceButtonUrl: maintenanceButtonUrl || "",
       depositProviders: providers,
       depositFeePercent,
       depositMin: limits.min,

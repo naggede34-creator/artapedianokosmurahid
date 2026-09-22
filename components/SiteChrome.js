@@ -17,6 +17,8 @@ export default function SiteChrome({ children }) {
   const [checked, setChecked] = useState(false);
   const [maintenance, setMaintenance] = useState(false);
   const [maintenanceMsg, setMaintenanceMsg] = useState("");
+  const [maintenanceBtnLabel, setMaintenanceBtnLabel] = useState("");
+  const [maintenanceBtnUrl, setMaintenanceBtnUrl] = useState("");
   const [channelInfo, setChannelInfo] = useState("https://t.me/kkaelnokosmurah");
   const [channelGroup, setChannelGroup] = useState("https://t.me/diskusiduniotp");
 
@@ -30,6 +32,8 @@ export default function SiteChrome({ children }) {
       .then((d) => {
         setMaintenance(!!d.maintenance);
         setMaintenanceMsg(d.maintenanceMsg || "");
+        setMaintenanceBtnLabel(d.maintenanceButtonLabel || "");
+        setMaintenanceBtnUrl(d.maintenanceButtonUrl || "");
         if (d.channelInfo) setChannelInfo(d.channelInfo);
         if (d.channelGroup) setChannelGroup(d.channelGroup);
       })
@@ -41,7 +45,7 @@ export default function SiteChrome({ children }) {
   if (isAdmin) return <>{children}</>;
 
   if (checked && maintenance) {
-    return <MaintenanceScreen message={maintenanceMsg} />;
+    return <MaintenanceScreen message={maintenanceMsg} buttonLabel={maintenanceBtnLabel} buttonUrl={maintenanceBtnUrl} />;
   }
 
   return (
@@ -58,7 +62,7 @@ export default function SiteChrome({ children }) {
   );
 }
 
-function MaintenanceScreen({ message }) {
+function MaintenanceScreen({ message, buttonLabel, buttonUrl }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
       <div className="glow-ring rounded-3xl">
@@ -72,13 +76,23 @@ function MaintenanceScreen({ message }) {
             {message || "Website sedang maintenance. Kami akan segera kembali, mohon coba lagi beberapa saat lagi."}
           </p>
           <div className="mt-6 flex flex-col gap-2">
+            {buttonLabel && buttonUrl && (
+              <a
+                href={buttonUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-3d rounded-lg border border-amber bg-amber-soft px-4 py-2.5 text-sm font-semibold text-amber-bright transition-colors hover:bg-amber hover:text-white"
+              >
+                {buttonLabel}
+              </a>
+            )}
             <a
               href="https://t.me/kkaelnokosmurah"
               target="_blank"
               rel="noreferrer"
               className="btn-3d rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-amber/40 hover:text-amber-bright"
             >
-              📢 Info & Promo Terbaru
+              📢 Info &amp; Promo Terbaru
             </a>
             <a
               href="https://t.me/diskusiduniotp"

@@ -73,7 +73,9 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
     setExpandedCountry(null);
     setCountriesLoading(true);
     try {
-      const res = await fetch(`/api/otp/countries?service_id=${encodeURIComponent(svc.service_code)}`);
+      const params = new URLSearchParams({ service_id: svc.service_code });
+      if (svc.simuru_code) params.set("simuru_code", svc.simuru_code);
+      const res = await fetch(`/api/otp/countries?${params}`);
       const data = await res.json();
       setCountries(Array.isArray(data.items) ? data.items : []);
     } catch (e) {
@@ -86,6 +88,11 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   async function handleOrderClick(country, provider) {
     setBuyError("");
     setBuyingKey(provider.provider_id);
+    // Server OTO Fast (Simuru) tidak membutuhkan pemilihan operator — langsung order.
+    if (provider.server === "simuru") {
+      await submitOrder(country, provider, null, null);
+      return;
+    }
     try {
       const res = await fetch(
         `/api/otp/operators?country=${encodeURIComponent(country.name)}&provider_id=${encodeURIComponent(provider.provider_id)}`
@@ -109,19 +116,27 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
     setBuyError("");
     setBuyingKey(provider.provider_id);
     try {
+      const body = {
+        token,
+        serviceId: selectedService.service_code,
+        numberId: country.number_id,
+        providerId: provider.provider_id,
+        operatorId: operatorId || null,
+        operatorName: operatorName || null,
+        serviceName: selectedService.service_name,
+        countryName: country.name,
+        server: provider.server || "rumahotp"
+      };
+      // Parameter khusus Server OTO Fast (Simuru)
+      if (provider.server === "simuru") {
+        body.countryId = provider.country_id;
+        body.operator = provider.operator || "any";
+        body.simuruServiceId = selectedService.simuru_code || selectedService.service_code.replace(/^simuru:/, "");
+      }
       const res = await fetch("/api/otp/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token,
-          serviceId: selectedService.service_code,
-          numberId: country.number_id,
-          providerId: provider.provider_id,
-          operatorId: operatorId || null,
-          operatorName: operatorName || null,
-          serviceName: selectedService.service_name,
-          countryName: country.name
-        })
+        body: JSON.stringify(body)
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal membeli nomor.");

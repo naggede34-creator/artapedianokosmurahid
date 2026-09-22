@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
 import { setOrderStatus } from "@/lib/rumahotp";
+import { cancelSimuruOtpOrder } from "@/lib/simuru";
 import { reconcileOtpOrder } from "@/lib/orderReconcile";
 import { logBalance } from "@/lib/ledger";
 
@@ -60,14 +61,18 @@ export async function POST(req) {
 
     let providerMessage;
     try {
-      const result = await setOrderStatus(process.env.RUMAHOTP_APIKEY, orderId, "cancel");
-      const d = result?.data || result;
-      providerMessage = d?.message;
-      if (result?.success === false && /otp|sms|received|diterima/i.test(String(providerMessage || ""))) {
-        return NextResponse.json({ error: "Provider menolak pembatalan karena kode sudah masuk. Muat ulang pesanan." }, { status: 409 });
+      if (order.server === "simuru") {
+        await cancelSimuruOtpOrder(orderId);
+      } else {
+        const result = await setOrderStatus(process.env.RUMAHOTP_APIKEY, orderId, "cancel");
+        const d = result?.data || result;
+        providerMessage = d?.message;
+        if (result?.success === false && /otp|sms|received|diterima/i.test(String(providerMessage || ""))) {
+          return NextResponse.json({ error: "Provider menolak pembatalan karena kode sudah masuk. Muat ulang pesanan." }, { status: 409 });
+        }
       }
     } catch (e) {
-      console.error("[otp/cancel] setOrderStatus gagal, lanjut refund lokal:", e?.response?.data || e?.message || e);
+      console.error("[otp/cancel] cancel gagal, lanjut refund lokal:", e?.response?.data || e?.message || e);
     }
 
     const claimed = await orders.findOneAndUpdate(
