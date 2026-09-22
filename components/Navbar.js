@@ -13,6 +13,7 @@ const links = [
   { href: "/dashboard", label: "Beranda" },
   { href: "/otp", label: "Nokos" },
   { href: "/deposit", label: "Deposit" },
+  { href: "/produk", label: "Produk" },
   { href: "/riwayat", label: "Riwayat" },
   { href: "/chat", label: "Room Chat" },
   { href: "/harga", label: "Harga" }

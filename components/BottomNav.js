@@ -8,7 +8,7 @@ const tabs = [
   { href: "/dashboard", label: "Beranda", icon: Icon.home, match: ["/dashboard", "/"] },
   { href: "/otp", label: "Nokos", icon: Icon.phone },
   { href: "/deposit", label: "Deposit", icon: Icon.qris, primary: true },
-  { href: "/produk", label: "Produk", icon: Icon.shop },
+  { href: "/bonus", label: "Bonus", icon: Icon.gift },
   { href: "/saldo-gratis", label: "Gratis", icon: Icon.coin }
 ];
 
