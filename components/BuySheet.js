@@ -339,13 +339,13 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                       <button
                         key={s.service_code}
                         onClick={() => chooseService(s)}
-                        className="btn-3d flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface2/50 px-3 py-4 hover:border-amber/40"
+                        className="pick-3d flex flex-col items-center gap-2 px-3 py-4"
                       >
                         {s.service_img ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={s.service_img} alt="" className="h-9 w-9 rounded object-contain" />
+                          <img src={s.service_img} alt="" className="h-10 w-10 rounded-xl object-contain shadow-[0_3px_0_rgb(var(--c-line))]" />
                         ) : (
-                          <span className="flex h-9 w-9 items-center justify-center rounded bg-surface2 text-sm text-muted">
+                          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-soft text-base font-extrabold text-amber-bright shadow-[0_3px_0_rgb(var(--c-orange)/0.3)]">
                             {(s.service_name || "?")[0]}
                           </span>
                         )}
@@ -369,7 +369,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
             <div className="fade-up">
               <button
                 onClick={() => setScreen("apps")}
-                className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface2/60 px-4 py-3 text-left"
+                className="panel-3d flex w-full items-center gap-3 px-4 py-3 text-left"
               >
                 {selectedService.service_img ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -403,8 +403,9 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                   <button
                     key={tab.id}
                     onClick={() => setSortMode(tab.id)}
-                    className={`btn-3d rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
-                      sortMode === tab.id ? "border-amber bg-amber-soft text-amber-bright" : "border-line text-muted"
+                    data-on={sortMode === tab.id}
+                    className={`chip-3d px-3 py-2.5 text-sm font-bold ${
+                      sortMode === tab.id ? "text-amber-bright" : "text-muted"
                     }`}
                   >
                     {tab.icon} {tab.label}

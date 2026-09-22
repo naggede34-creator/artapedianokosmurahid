@@ -1314,3 +1314,120 @@ input[type="number"] { -moz-appearance: textfield; }
   .apl-bar-fill { animation: none; }
   .apl-text { animation: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Lapisan 3D bersama — warnanya sengaja memakai token oranye & biru
+   yang sama dengan logo dan animasi loading, supaya seluruh halaman
+   terasa satu kesatuan. Dipakai di menu deposit & beli nokos.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Panel utama: kedalaman lembut + garis cahaya tipis di tepi atas. */
+.panel-3d {
+  position: relative;
+  border: 1px solid rgb(var(--c-line));
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(180deg, rgb(var(--c-surface)) 0%, rgb(var(--c-surface2)) 100%);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.55) inset,
+    0 10px 24px -14px rgb(var(--c-blue) / 0.35),
+    0 2px 0 rgb(var(--c-line) / 0.6);
+}
+:root[data-theme="dark"] .panel-3d,
+:root:not([data-theme="light"]) .panel-3d {
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.06) inset,
+    0 12px 28px -16px rgb(0 0 0 / 0.75),
+    0 2px 0 rgb(var(--c-line) / 0.5);
+}
+
+/* Chip nominal / pilihan cepat — terasa bisa ditekan. */
+.chip-3d {
+  position: relative;
+  border: 1px solid rgb(var(--c-line));
+  border-radius: 0.85rem;
+  background: rgb(var(--c-surface));
+  box-shadow: 0 3px 0 rgb(var(--c-line));
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease, background-color .12s ease;
+}
+.chip-3d:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgb(var(--c-orange) / 0.55);
+  box-shadow: 0 4px 0 rgb(var(--c-orange) / 0.35);
+}
+.chip-3d:active:not(:disabled) { transform: translateY(3px); box-shadow: none; }
+.chip-3d[data-on="true"] {
+  border-color: rgb(var(--c-orange));
+  background: rgb(var(--c-orange-soft));
+  box-shadow: 0 3px 0 rgb(var(--c-orange) / 0.55), 0 0 0 3px rgb(var(--c-orange) / 0.14);
+}
+.chip-3d:disabled { opacity: .5; box-shadow: none; }
+
+/* Kartu pilihan besar (metode bayar, server nokos). */
+.pick-3d {
+  border: 1px solid rgb(var(--c-line));
+  border-radius: 1.1rem;
+  background: rgb(var(--c-surface));
+  box-shadow: 0 4px 0 rgb(var(--c-line) / 0.85), 0 14px 26px -20px rgb(var(--c-blue) / 0.5);
+  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background-color .14s ease;
+}
+.pick-3d:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: rgb(var(--c-orange) / 0.5);
+  box-shadow: 0 6px 0 rgb(var(--c-orange) / 0.3), 0 18px 30px -20px rgb(var(--c-orange) / 0.55);
+}
+.pick-3d:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 rgb(var(--c-line)); }
+.pick-3d[data-on="true"] {
+  border-color: rgb(var(--c-orange));
+  background: linear-gradient(135deg, rgb(var(--c-orange-soft)) 0%, rgb(var(--c-surface)) 70%);
+  box-shadow: 0 4px 0 rgb(var(--c-orange) / 0.5), 0 0 0 3px rgb(var(--c-orange) / 0.13);
+}
+.pick-3d:disabled { opacity: .5; box-shadow: none; cursor: not-allowed; }
+
+/* Kolom input nominal yang menonjol. */
+.field-3d {
+  border: 1px solid rgb(var(--c-line));
+  border-radius: 1.15rem;
+  background: rgb(var(--c-surface));
+  box-shadow: 0 2px 0 rgb(var(--c-line)), 0 1px 0 rgb(255 255 255 / 0.5) inset;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.field-3d:focus-within {
+  border-color: rgb(var(--c-orange));
+  box-shadow: 0 2px 0 rgb(var(--c-orange) / 0.5), 0 0 0 4px rgb(var(--c-orange) / 0.13);
+}
+
+/* Rail langkah 1-2-3 dengan bulatan timbul. */
+.step-dot-3d {
+  box-shadow: 0 2px 0 rgb(var(--c-line));
+  transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+.step-dot-3d[data-state="now"] {
+  background: linear-gradient(160deg, rgb(var(--c-orange)) 0%, rgb(var(--c-orange-bright)) 100%);
+  box-shadow: 0 2px 0 rgb(var(--c-orange-bright)), 0 0 0 4px rgb(var(--c-orange) / 0.16);
+  transform: scale(1.08);
+}
+.step-dot-3d[data-state="done"] {
+  background: rgb(var(--c-success));
+  box-shadow: 0 2px 0 rgb(var(--c-success) / 0.6);
+}
+
+/* Aksen judul bergaya komik, seperti di logo. */
+.title-3d {
+  text-shadow:
+    1px 1px 0 rgb(var(--c-blue) / 0.22),
+    2px 2px 0 rgb(var(--c-blue) / 0.10);
+}
+
+/* Kilau pelan untuk elemen yang perlu diperhatikan (QR aktif, tombol utama). */
+@keyframes glow3d {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(var(--c-orange) / 0.35); }
+  50%      { box-shadow: 0 0 0 10px rgb(var(--c-orange) / 0); }
+}
+.glow-3d { animation: glow3d 2.4s ease-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .chip-3d, .pick-3d, .step-dot-3d { transition: none; }
+  .chip-3d:hover, .pick-3d:hover { transform: none; }
+  .glow-3d { animation: none; }
+}

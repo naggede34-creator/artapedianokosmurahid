@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import QRCode from "qrcode";
 import { usersCol, depositsCol } from "@/lib/db";
-import { createTransaction } from "@/lib/pakasir";
+import { createTransaction, normalizePakasirTransaction } from "@/lib/pakasir";
 import { createDeposit as createRumahOtpDeposit, toEpochMs, rumahOtpConfigured } from "@/lib/rumahotp";
 import { createOtpmaniaDeposit, otpmaniaConfigured } from "@/lib/otpmania";
 import { getSettings, depositLimits } from "@/lib/settings";
@@ -129,14 +129,23 @@ export async function POST(req) {
         return NextResponse.json({ error: "QRIS OTPMANIA tidak tersedia, coba metode lain." }, { status: 502 });
       }
     } else if (chosen === "pakasir") {
-      const result = await createTransaction(process.env.PAKASIR_PROJECT, process.env.PAKASIR_APIKEY, orderId, amt, "qris");
-      const payment = result?.payment || result;
-      qrisString = payment?.payment_number || payment?.qr_string || null;
-      expiredAt = toEpochMs(payment?.expired_at || null);
-      paymentUrl = payment?.payment_url || null;
-      adminFee = toNumberOrNull(pickField(payment, ["fee", "admin_fee", "total_fee"]));
-      totalAmount = toNumberOrNull(pickField(payment, ["total_payment", "total_amount", "amount_total", "total"])) ?? amt;
+      let result;
+      try {
+        result = await createTransaction(process.env.PAKASIR_PROJECT, process.env.PAKASIR_APIKEY, orderId, amt, "qris");
+      } catch (err) {
+        console.error("[deposit/create] pakasir error:", err?.message || err);
+        sendTelegramNotif(providerAlertNotif({ provider: "Pakasir", action: "Buat transaksi QRIS", message: err?.message || "gagal" }));
+        return NextResponse.json({ error: "Gagal membuat QRIS Pakasir, coba metode lain." }, { status: 400 });
+      }
+      // Bentuk respons v1 & v2 berbeda; normalizer-nya yang menangani itu.
+      const payment = normalizePakasirTransaction(result);
+      qrisString = payment.qrString ? String(payment.qrString) : null;
+      expiredAt = toEpochMs(payment.expiredAt);
+      paymentUrl = payment.paymentUrl || null;
+      adminFee = toNumberOrNull(payment.fee);
+      totalAmount = toNumberOrNull(payment.total) ?? amt;
       if (!qrisString && !paymentUrl) {
+        console.error("[deposit/create] pakasir respons tanpa QRIS:", JSON.stringify(result).slice(0, 500));
         return NextResponse.json({ error: "Gagal membuat QRIS Pakasir, coba metode lain." }, { status: 400 });
       }
     } else {

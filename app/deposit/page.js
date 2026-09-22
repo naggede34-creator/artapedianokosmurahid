@@ -261,19 +261,24 @@ export default function DepositPage() {
       />
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="card p-5 sm:p-6">
+        <div className="panel-3d p-5 sm:p-6">
           <ol className="mb-6 flex items-center gap-2 text-xs font-semibold" aria-label="Langkah deposit">
             {["Nominal", "Metode", "Bayar"].map((label, i) => (
               <li key={label} className="flex flex-1 items-center gap-2">
                 <span
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] ${
-                    i < stepIndex ? "bg-success text-white" : i === stepIndex ? "bg-amber text-white" : "bg-surface2 text-muted"
+                  data-state={i < stepIndex ? "done" : i === stepIndex ? "now" : "next"}
+                  className={`step-dot-3d flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold ${
+                    i <= stepIndex ? "text-white" : "bg-surface2 text-muted"
                   }`}
                 >
                   {i < stepIndex ? "✓" : i + 1}
                 </span>
                 <span className={i === stepIndex ? "text-ink" : "text-muted"}>{label}</span>
-                {i < 2 && <span className={`h-px flex-1 ${i < stepIndex ? "bg-success" : "bg-line"}`} />}
+                {i < 2 && (
+                  <span
+                    className={`h-1 flex-1 rounded-full ${i < stepIndex ? "bg-success" : "bg-line"}`}
+                  />
+                )}
               </li>
             ))}
           </ol>
@@ -283,8 +288,8 @@ export default function DepositPage() {
               <label className="label" htmlFor="amount">
                 Mau isi berapa?
               </label>
-              <div className="flex items-center rounded-2xl border border-line bg-surface px-4 transition-colors focus-within:border-amber focus-within:ring-4 focus-within:ring-amber/10">
-                <span className="text-lg font-bold text-muted">Rp</span>
+              <div className="field-3d flex items-center px-4">
+                <span className="text-lg font-extrabold text-amber-bright">Rp</span>
                 <input
                   id="amount"
                   inputMode="numeric"
@@ -301,8 +306,9 @@ export default function DepositPage() {
                     key={v}
                     type="button"
                     onClick={() => setAmount(String(v))}
-                    className={`rounded-xl border px-2 py-2.5 text-sm font-bold tabular-nums transition-colors ${
-                      amt === v ? "border-amber bg-amber-soft text-amber-bright" : "border-line text-ink hover:border-amber/40"
+                    data-on={amt === v}
+                    className={`chip-3d px-2 py-2.5 text-sm font-extrabold tabular-nums ${
+                      amt === v ? "text-amber-bright" : "text-ink"
                     }`}
                   >
                     {rupiah(v)}
@@ -323,7 +329,7 @@ export default function DepositPage() {
 
           {step === "method" && (
             <div>
-              <div className="flex items-center justify-between rounded-2xl bg-surface2 px-4 py-3">
+              <div className="panel-3d flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-muted">Nominal deposit</span>
                 <button type="button" onClick={() => setStep("amount")} className="text-right">
                   <span className="block text-lg font-extrabold tabular-nums text-ink">{rupiah(amt)}</span>
@@ -344,15 +350,14 @@ export default function DepositPage() {
                       aria-checked={selected}
                       disabled={!on}
                       onClick={() => setProvider(p.key)}
-                      className={`flex w-full items-center gap-3 rounded-2xl border p-3.5 text-left transition-colors ${
-                        !on
-                          ? "cursor-not-allowed border-line opacity-50"
-                          : selected
-                          ? "border-amber bg-amber-soft/60 ring-4 ring-amber/10"
-                          : "border-line hover:border-amber/40"
-                      }`}
+                      data-on={selected}
+                      className="pick-3d flex w-full items-center gap-3 p-3.5 text-left"
                     >
-                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${selected ? "bg-amber text-white" : "bg-surface2 text-ink"}`}>
+                      <span
+                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform ${
+                          selected ? "scale-105 bg-amber text-white shadow-[0_3px_0_rgb(var(--c-orange-bright))]" : "bg-surface2 text-ink"
+                        }`}
+                      >
                         <Icon.qris />
                       </span>
                       <span className="min-w-0 flex-1">
@@ -374,7 +379,7 @@ export default function DepositPage() {
                 })}
               </div>
 
-              <div className="mt-5 divide-y divide-line rounded-2xl border border-line px-4">
+              <div className="panel-3d mt-5 divide-y divide-line px-4">
                 <Row label="Metode">{providerName(provider)}</Row>
                 <Row label="Saldo masuk">{rupiah(amt)}</Row>
                 <Row label="Perkiraan biaya admin">{rupiah(estFee)}</Row>
@@ -405,7 +410,7 @@ export default function DepositPage() {
                   {scratchOpen && token && (
                     <ScratchCard token={token} onClose={() => setScratchOpen(false)} onClaimed={() => refreshBalance()} />
                   )}
-                  <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-soft text-success">
+                  <span className="bounce-in mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-soft text-success shadow-[0_4px_0_rgb(var(--c-success)/0.35)]">
                     <Icon.check width={30} height={30} />
                   </span>
                   <h2 className="mt-4 text-xl font-extrabold text-ink">Saldo masuk {rupiah(order.amount)}</h2>
@@ -425,7 +430,7 @@ export default function DepositPage() {
                 </div>
               ) : FINAL.includes(status) || timeUp ? (
                 <div className="py-6 text-center">
-                  <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-rose-soft text-rose">
+                  <span className="bounce-in mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-rose-soft text-rose shadow-[0_4px_0_rgb(var(--c-danger)/0.3)]">
                     <Icon.x width={28} height={28} />
                   </span>
                   <h2 className="mt-4 text-xl font-extrabold text-ink">
@@ -451,7 +456,7 @@ export default function DepositPage() {
                     )}
                   </div>
 
-                  <div className="mt-4 rounded-3xl border border-line bg-surface2/50 p-5 text-center">
+                  <div className="panel-3d glow-3d mt-4 p-5 text-center">
                     <p className="text-xs font-semibold text-muted">Total yang harus dibayar</p>
                     <div className="mt-1 flex items-center justify-center gap-1">
                       <p className="text-3xl font-extrabold tabular-nums tracking-tight text-ink">{rupiah(payTotal)}</p>
@@ -527,8 +532,8 @@ export default function DepositPage() {
         </div>
 
         <aside className="space-y-4">
-          <div className="card p-5">
-            <h2 className="text-base font-bold text-ink">Punya kode voucher?</h2>
+          <div className="panel-3d p-5">
+            <h2 className="title-3d text-base font-extrabold text-ink">Punya kode voucher?</h2>
             <p className="mt-1 text-xs text-muted">Tukar kode voucher jadi saldo gratis.</p>
             <form onSubmit={redeemVoucher} className="mt-3 flex gap-2">
               <input
@@ -549,8 +554,8 @@ export default function DepositPage() {
             )}
           </div>
 
-          <div className="card p-5">
-            <h2 className="text-base font-bold text-ink">🎁 Bonus Deposit</h2>
+          <div className="panel-3d p-5">
+            <h2 className="title-3d text-base font-extrabold text-ink">🎁 Bonus Deposit</h2>
             <p className="mt-1 text-xs text-muted">Semakin besar deposit, semakin besar bonusnya!</p>
             <div className="mt-3 space-y-2">
               {[
@@ -563,8 +568,10 @@ export default function DepositPage() {
                 return (
                   <div
                     key={tier.min}
-                    className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
-                      active ? `${tier.color} ring-2 ring-offset-1 ring-amber/50 scale-[1.02]` : "bg-surface2 text-muted opacity-70"
+                    className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                      active
+                        ? `${tier.color} scale-[1.03] shadow-[0_3px_0_rgb(var(--c-orange)/0.35)] ring-2 ring-amber/50 ring-offset-1`
+                        : "bg-surface2 text-muted opacity-70"
                     }`}
                   >
                     <span>

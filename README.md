@@ -100,6 +100,29 @@ source bot lama SENGAJA TIDAK dipindahkan ke web ini.
    `https://domain-kamu.vercel.app/api/deposit/webhook`
    (isi setelah web sudah live di Vercel, lalu update lagi kalau domain berubah)
 
+### Catatan Pakasir API v2
+
+Pakasir menghentikan API v1 pada **20 Oktober 2026**. Pembuatan transaksi di web
+ini sudah memakai v2 (`POST /api/v2/create-transaction/{slug}/{order_id}`, API key
+lewat header `X-Api-Key`, dibatasi 2 request/detik — sudah di-throttle otomatis).
+
+Dua hal berikut **masih memakai endpoint v1** karena bentuk endpoint v2-nya belum
+tersedia di dokumentasi yang kami pegang, dan menebak path di jalur uang terlalu
+berisiko:
+
+- cek status transaksi (`/api/transactiondetail`)
+- pembatalan transaksi (`/api/transactioncancel`)
+
+Kalau kamu sudah punya halaman dokumentasi v2 untuk keduanya, kirimkan isinya —
+tinggal dipasang di `lib/pakasir.js`. Sampai 20 Oktober 2026 endpoint v1 masih jalan.
+
+Env terkait:
+
+| Variabel | Default | Fungsi |
+| --- | --- | --- |
+| `PAKASIR_API_VERSION` | `v2` | Set `v1` untuk sementara kembali ke endpoint lama |
+| `PAKASIR_BASE_URL` | `https://app.pakasir.com` | Ganti host kalau Pakasir memindahkannya |
+
 ## 3. Siapkan akun RumahOTP
 
 1. Daftar/login di https://www.rumahotp.io
