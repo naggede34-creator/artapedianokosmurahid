@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
 import { setOrderStatus } from "@/lib/rumahotp";
-import { cancelRuangOtpOrder, isRuangOtpServer } from "@/lib/ruangotp";
+import { cancelWarungNokosOrder, isWarungNokosServer } from "@/lib/warungnokos";
 import { cancelDibananaOrder } from "@/lib/dibanana";
 import { reconcileOtpOrder } from "@/lib/orderReconcile";
 import { logBalance } from "@/lib/ledger";
@@ -65,9 +65,9 @@ export async function POST(req) {
       if (order.server === "dibanana") {
         // dibanana mengembalikan saldonya sendiri saat cancel.
         await cancelDibananaOrder(orderId);
-      } else if (isRuangOtpServer(order.server)) {
-        // Endpoint cancel RuangOTP sekaligus mengembalikan saldo di sisi mereka.
-        await cancelRuangOtpOrder(order.server, orderId);
+      } else if (isWarungNokosServer(order.server)) {
+        // Endpoint cancel WarungNokos sekaligus mengembalikan saldo di sisi mereka.
+        await cancelWarungNokosOrder(order.server, orderId);
       } else {
         const result = await setOrderStatus(process.env.RUMAHOTP_APIKEY, orderId, "cancel");
         const d = result?.data || result;

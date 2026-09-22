@@ -3,7 +3,7 @@ import { usersCol } from "@/lib/db";
 import { sendMessage, isOwner, rupiah, HELP_TEXT } from "@/lib/telegramBot";
 import { logBalance } from "@/lib/ledger";
 import { esc } from "@/lib/telegram";
-import { diagnoseRuangOtp, ruangOtpConfigured } from "@/lib/ruangotp";
+import { diagnoseWarungNokos, warungNokosConfigured } from "@/lib/warungnokos";
 
 // Set URL ini sebagai webhook bot di BotFather / API Telegram:
 // https://domainkamu.vercel.app/api/telegram/webhook
@@ -54,26 +54,29 @@ export async function POST(req) {
       await handleListUser(chatId, args, users);
     } else if (cmd === "/statistik") {
       await handleStatistik(chatId, users);
-    } else if (cmd === "/statusruangotp") {
-      if (!ruangOtpConfigured()) {
-        await sendMessage(chatId, "RUANGOTP_USER_ID belum diisi di environment.");
+    } else if (cmd === "/statuswarungnokos") {
+      if (!warungNokosConfigured()) {
+        await sendMessage(chatId, "WARUNGNOKOS_APIKEY belum diisi di environment.");
       } else {
         try {
-          const d = await diagnoseRuangOtp();
+          const d = await diagnoseWarungNokos();
           const line = (id, label) => {
             const r = d[id] || {};
-            if (r.ok) return `\u2705 ${label}: ${r.services} layanan`;
-            return `\u274C ${label}: ${esc(r.error || "gagal")}${r.ipBlocked ? " (IP belum di-whitelist)" : ""}`;
+            return r.ok ? `\u2705 ${label}: ${r.services} layanan` : `\u274C ${label}: ${esc(r.error || "gagal")}`;
           };
+          const saldo =
+            d.profile?.balance != null
+              ? rupiah(d.profile.balance)
+              : esc(d.profile?.error || "tidak diketahui");
           await sendMessage(
             chatId,
-            `\u{1F50C} <b>Status RuangOTP</b>\n` +
-              `${line("ruangotp_s1", "Server Plus (S1)")}\n` +
-              `${line("ruangotp_s2", "Server Express (S2)")}\n` +
-              `Proxy IP statis: ${d.proxy ? "aktif" : "tidak dipakai"}`
+            `\u{1F50C} <b>Status WarungNokos</b>\n` +
+              `\u{1F4BC} Saldo akun: <b>${saldo}</b>\n` +
+              `${line("warungnokos_s1", "Server Plus")}\n` +
+              `${line("warungnokos_s2", "Server Express")}`
           );
         } catch (e) {
-          await sendMessage(chatId, `Gagal cek RuangOTP: ${esc(e.message)}`);
+          await sendMessage(chatId, `Gagal cek WarungNokos: ${esc(e.message)}`);
         }
       }
     } else {

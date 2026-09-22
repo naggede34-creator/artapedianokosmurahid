@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { rumahOtpConfigured } from "@/lib/rumahotp";
-import { ruangOtpConfigured, RUANGOTP_SERVERS } from "@/lib/ruangotp";
+import { warungNokosConfigured, WARUNGNOKOS_SERVERS } from "@/lib/warungnokos";
 import { dibananaConfigured } from "@/lib/dibanana";
 import { getSettings } from "@/lib/settings";
 
@@ -17,8 +17,8 @@ export async function GET() {
   }
 
   const available = { rumahotp: rumahOtpConfigured() && toggles.rumahotp !== false };
-  for (const s of RUANGOTP_SERVERS) {
-    available[s.id] = ruangOtpConfigured() && toggles[s.id] !== false;
+  for (const s of WARUNGNOKOS_SERVERS) {
+    available[s.id] = warungNokosConfigured() && toggles[s.id] !== false;
   }
   available.dibanana = dibananaConfigured() && toggles.dibanana !== false;
   return NextResponse.json({ available });

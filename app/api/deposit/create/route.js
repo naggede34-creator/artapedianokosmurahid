@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import { usersCol, depositsCol } from "@/lib/db";
 import { createTransaction, normalizePakasirTransaction } from "@/lib/pakasir";
 import { createDeposit as createRumahOtpDeposit, toEpochMs, rumahOtpConfigured } from "@/lib/rumahotp";
-import { createRuangOtpDeposit, isRuangOtpDeposit, ruangOtpConfigured } from "@/lib/ruangotp";
+import { createWarungNokosDeposit, warungNokosConfigured, WARUNGNOKOS_DEPOSIT_KEY } from "@/lib/warungnokos";
 import { getSettings, depositLimits } from "@/lib/settings";
 import { PROVIDER_KEYS } from "@/lib/paymentProviders";
 import { sendTelegramNotif, depositPendingNotif, providerAlertNotif } from "@/lib/telegram";
@@ -66,8 +66,8 @@ export async function POST(req) {
     if (!chosen || !depositProviders?.[chosen]) {
       return NextResponse.json({ error: "Metode pembayaran ini sedang tidak tersedia." }, { status: 400 });
     }
-    if (isRuangOtpDeposit(chosen) && !ruangOtpConfigured()) {
-      return NextResponse.json({ error: "QRIS RuangOTP belum dikonfigurasi admin. Pilih metode lain." }, { status: 400 });
+    if (chosen === WARUNGNOKOS_DEPOSIT_KEY && !warungNokosConfigured()) {
+      return NextResponse.json({ error: "QRIS WarungNokos belum dikonfigurasi admin. Pilih metode lain." }, { status: 400 });
     }
     if (chosen === "rumahotp" && !rumahOtpConfigured()) {
       return NextResponse.json({ error: "QRIS RumahOTP belum dikonfigurasi. Pilih metode lain." }, { status: 400 });
@@ -103,38 +103,34 @@ export async function POST(req) {
     let pakasirTxnId = null;
     let paymentMethod = "qris";
 
-    if (isRuangOtpDeposit(chosen)) {
+    if (chosen === WARUNGNOKOS_DEPOSIT_KEY) {
       let dep;
       try {
-        dep = await createRuangOtpDeposit(chosen, amt);
+        dep = await createWarungNokosDeposit(amt, "qris");
       } catch (err) {
-        console.error("[deposit/create] ruangotp:", err?.message);
-        if (err?.ipBlocked || err?.status === 401 || err?.status >= 500) {
+        console.error("[deposit/create] warungnokos:", err?.message);
+        if (err?.status === 401 || err?.status >= 500) {
           sendTelegramNotif(
-            providerAlertNotif({ provider: "RuangOTP", action: "Buat deposit QRIS", message: err.message })
+            providerAlertNotif({ provider: "WarungNokos", action: "Buat deposit QRIS", message: err.message })
           );
         }
         return NextResponse.json(
-          {
-            error: err?.ipBlocked
-              ? "Deposit RuangOTP ditolak: IP server belum di-whitelist. Hubungi admin."
-              : err?.message || "Gagal membuat QRIS RuangOTP, coba metode lain."
-          },
+          { error: err?.message || "Gagal membuat QRIS WarungNokos, coba metode lain." },
           { status: 400 }
         );
       }
       providerRef = String(dep.id || "");
       if (!providerRef) {
-        return NextResponse.json({ error: "Respons RuangOTP tidak lengkap, coba lagi." }, { status: 502 });
+        return NextResponse.json({ error: "Respons WarungNokos tidak lengkap, coba lagi." }, { status: 502 });
       }
       qrisString = dep.qrString ? String(dep.qrString) : null;
       qrImage = asImageSrc(dep.qrImage);
       expiredAt = dep.expiredAt;
-      // total_pay sudah termasuk biaya; selisihnya yang jadi biaya admin.
-      totalAmount = dep.totalPay ?? amt;
-      adminFee = dep.totalPay != null ? Math.max(0, dep.totalPay - (dep.amountReceived ?? amt)) : null;
+      // WarungNokos mengirim `total` yang sudah termasuk biaya; selisihnya biaya admin.
+      totalAmount = dep.total ?? amt;
+      adminFee = dep.total != null ? Math.max(0, dep.total - amt) : null;
       if (!qrisString && !qrImage) {
-        return NextResponse.json({ error: "QRIS RuangOTP tidak tersedia, coba metode lain." }, { status: 502 });
+        return NextResponse.json({ error: "QRIS WarungNokos tidak tersedia, coba metode lain." }, { status: 502 });
       }
     } else if (chosen === "pakasir") {
       let result;

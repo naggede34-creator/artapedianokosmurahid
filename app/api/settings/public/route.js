@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSettings, depositLimits } from "@/lib/settings";
-import { ruangOtpConfigured } from "@/lib/ruangotp";
+import { warungNokosConfigured } from "@/lib/warungnokos";
 import { rumahOtpConfigured } from "@/lib/rumahotp";
 
 export const dynamic = "force-dynamic";
@@ -14,10 +14,7 @@ export async function GET() {
   try {
     const { maintenance, maintenanceMsg, maintenanceButtonLabel, maintenanceButtonUrl, depositProviders, depositFeePercent, heroChars } = await getSettings();
     const providers = { ...depositProviders };
-    if (!ruangOtpConfigured()) {
-      providers.ruangotp_s1 = false;
-      providers.ruangotp_s2 = false;
-    }
+    if (!warungNokosConfigured()) providers.warungnokos = false;
     if (rumahOtpConfigured()) {
       if (providers.rumahotp === undefined || providers.rumahotp === null) providers.rumahotp = true;
     } else {
@@ -40,12 +37,11 @@ export async function GET() {
     return NextResponse.json({
       maintenance: false,
       depositProviders: {
-        ruangotp_s1: ruangOtpConfigured(),
-        ruangotp_s2: ruangOtpConfigured(),
+        warungnokos: warungNokosConfigured(),
         pakasir: true,
         rumahotp: rumahOtpConfigured()
       },
-      depositFeePercent: { ruangotp_s1: 0, ruangotp_s2: 0, pakasir: 0, rumahotp: 0.7 },
+      depositFeePercent: { warungnokos: 0, pakasir: 0, rumahotp: 0.7 },
       depositMin: limits.min,
       depositMax: limits.max,
       ...CHANNELS()

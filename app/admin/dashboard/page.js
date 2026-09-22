@@ -87,7 +87,7 @@ export default function AdminDashboardPage() {
   const [announcementSubmitting, setAnnouncementSubmitting] = useState(false);
   const [announcementMsg, setAnnouncementMsg] = useState("");
 
-  const [ruangotp, setRuangotp] = useState(null);
+  const [warungnokos, setWarungnokos] = useState(null);
 
   const [savingOtpServers, setSavingOtpServers] = useState(false);
   const [serverMarkups, setServerMarkups] = useState({});
@@ -422,23 +422,23 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
-  const loadRuangotp = useCallback(async () => {
+  const loadWarungnokos = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/ruangotp");
-      if (res.ok) setRuangotp(await res.json());
+      const res = await fetch("/api/admin/warungnokos");
+      if (res.ok) setWarungnokos(await res.json());
     } catch {
-      setRuangotp({ configured: false, error: "Gagal memuat." });
+      setWarungnokos({ configured: false, error: "Gagal memuat." });
     }
   }, []);
 
-  async function runProviderDiagnose(provider = "ruangotp") {
+  async function runProviderDiagnose(provider = "warungnokos") {
     setProviderDiagLoading(true);
     setProviderDiag(null);
     try {
-      const res = await fetch(`/api/admin/ruangotp?provider=${provider}`);
+      const res = await fetch(`/api/admin/warungnokos?provider=${provider}`);
       const d = await res.json();
       setProviderDiag(d);
-      if (provider === "ruangotp") setRuangotp(d);
+      if (provider === "warungnokos") setWarungnokos(d);
     } catch {
       setProviderDiag({ error: "Gagal menjalankan diagnosa." });
     } finally {
@@ -759,7 +759,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     loadSettings();
-    loadRuangotp();
+    loadWarungnokos();
     loadDibanana();
     loadUsers("");
     loadStats();
@@ -2503,8 +2503,7 @@ export default function AdminDashboardPage() {
                 <label className="text-xs font-medium text-muted">Metode deposit QRIS aktif</label>
                 <div className="mt-1.5 space-y-2">
                   {[
-                    { key: "ruangotp_s1", label: "QRIS RuangOTP S1" },
-                    { key: "ruangotp_s2", label: "QRIS RuangOTP S2" },
+                    { key: "warungnokos", label: "QRIS WarungNokos" },
                     { key: "pakasir", label: "QRIS Pakasir" },
                     { key: "rumahotp", label: "QRIS RumahOTP" },
                   ].map((p) => (
@@ -2850,20 +2849,18 @@ export default function AdminDashboardPage() {
             <div className="mt-4 rounded-lg border border-line bg-surface px-3.5 py-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <span className="text-sm font-medium text-ink">Koneksi RuangOTP</span>
+                  <span className="text-sm font-medium text-ink">Koneksi WarungNokos</span>
                   <span className="ml-2 text-[11px] text-muted">
-                    {ruangotp == null
+                    {warungnokos == null
                       ? "memuat..."
-                      : ruangotp.configured === false
-                      ? "RUANGOTP_USER_ID belum diisi"
-                      : ruangotp.ruangotp_s1?.ok && ruangotp.ruangotp_s2?.ok
-                      ? "S1 & S2 terhubung"
-                      : [ruangotp.ruangotp_s1, ruangotp.ruangotp_s2].some((r) => r?.ipBlocked)
-                      ? "IP belum di-whitelist"
-                      : ruangotp.error || "sebagian server gagal"}
+                      : warungnokos.configured === false
+                      ? "WARUNGNOKOS_APIKEY belum diisi"
+                      : warungnokos.profile?.balance != null
+                      ? `saldo Rp${Number(warungnokos.profile.balance).toLocaleString("id-ID")}`
+                      : warungnokos.profile?.error || warungnokos.error || "gagal cek"}
                   </span>
                 </div>
-                <button onClick={() => runProviderDiagnose("ruangotp")} disabled={providerDiagLoading} className="btn-ghost text-xs">
+                <button onClick={() => runProviderDiagnose("warungnokos")} disabled={providerDiagLoading} className="btn-ghost text-xs">
                   {providerDiagLoading ? "Mengecek..." : "Diagnosa koneksi"}
                 </button>
               </div>

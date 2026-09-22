@@ -1920,3 +1920,111 @@ input[type="number"] { -moz-appearance: textfield; }
   .comic-panel, .comic-badge { transition: none; }
   .comic-panel:hover, .comic-badge:hover { transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Lapisan manga — garis kecepatan, raster titik, dan kedalaman 3D
+   yang lebih tegas. Dibangun di atas gaya komik yang sudah ada.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Latar ledakan garis di belakang judul halaman. */
+.manga-head {
+  position: relative;
+  isolation: isolate;
+}
+.manga-head::before {
+  content: "";
+  position: absolute;
+  left: -28px;
+  top: 50%;
+  width: 260px;
+  height: 260px;
+  transform: translateY(-50%);
+  z-index: -1;
+  pointer-events: none;
+  opacity: .11;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    rgb(var(--c-orange)) 0deg 5deg,
+    transparent 5deg 17deg
+  );
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 12%, transparent 66%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 12%, transparent 66%);
+}
+:root[data-theme="dark"] .manga-head::before,
+:root:not([data-theme="light"]) .manga-head::before { opacity: .09; }
+
+/* Kartu manga: garis tinta tebal, bayangan keras, dan miring sedikit saat disentuh. */
+.manga-card {
+  position: relative;
+  border: 3px solid rgb(var(--c-ink));
+  border-radius: 20px;
+  background: rgb(var(--c-surface));
+  box-shadow: 7px 7px 0 rgb(var(--c-ink)), 0 20px 40px -26px rgb(var(--c-blue) / 0.65);
+  transition: transform .16s cubic-bezier(.2, .9, .3, 1.2), box-shadow .16s ease;
+}
+:root[data-theme="dark"] .manga-card,
+:root:not([data-theme="light"]) .manga-card {
+  border-color: rgb(var(--c-blue) / 0.65);
+  box-shadow: 7px 7px 0 rgb(var(--c-blue) / 0.35), 0 20px 42px -24px rgb(0 0 0 / 0.85);
+}
+.manga-card:hover {
+  transform: perspective(900px) rotateX(-2.5deg) rotateY(3deg) translate(-3px, -3px);
+  box-shadow: 10px 10px 0 rgb(var(--c-orange) / 0.7), 0 26px 50px -24px rgb(var(--c-orange) / 0.5);
+}
+.manga-card:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 rgb(var(--c-ink)); }
+
+/* Bingkai panel manga dengan sudut terpotong, seperti panel yang dipotong miring. */
+.manga-cut {
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+}
+
+/* Teks berteriak khas manga. */
+.manga-shout {
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  -webkit-text-stroke: 1px rgb(var(--c-ink) / 0.9);
+  text-shadow:
+    3px 3px 0 rgb(var(--c-orange)),
+    6px 6px 0 rgb(var(--c-blue) / 0.5);
+}
+:root[data-theme="dark"] .manga-shout,
+:root:not([data-theme="light"]) .manga-shout {
+  -webkit-text-stroke: 1px rgb(var(--c-blue) / 0.7);
+}
+
+/* Garis kecepatan horizontal, untuk bagian yang perlu terasa bergerak cepat. */
+.manga-rush::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: .08;
+  background: repeating-linear-gradient(
+    90deg,
+    rgb(var(--c-ink)) 0 1.5px,
+    transparent 1.5px 9px
+  );
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, transparent 38%);
+  mask-image: linear-gradient(90deg, #000 0%, transparent 38%);
+}
+:root[data-theme="dark"] .manga-rush::after,
+:root:not([data-theme="light"]) .manga-rush::after {
+  background: repeating-linear-gradient(90deg, rgb(var(--c-blue-bright)) 0 1.5px, transparent 1.5px 9px);
+  opacity: .12;
+}
+
+/* Kedalaman ekstra untuk kartu biasa — dipakai lewat kelas tambahan saja. */
+.depth-pop {
+  transition: transform .16s cubic-bezier(.2, .9, .3, 1.2), box-shadow .16s ease;
+}
+.depth-pop:hover {
+  transform: perspective(900px) rotateX(-2deg) rotateY(2.5deg) translateY(-3px);
+  box-shadow: 9px 9px 0 rgb(var(--c-orange) / 0.5), 0 24px 44px -26px rgb(var(--c-orange) / 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .manga-card, .depth-pop { transition: none; }
+  .manga-card:hover, .depth-pop:hover { transform: none; }
+}

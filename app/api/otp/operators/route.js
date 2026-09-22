@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOperators } from "@/lib/rumahotp";
-import { isRuangOtpServer } from "@/lib/ruangotp";
+import { isWarungNokosServer } from "@/lib/warungnokos";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,7 @@ export async function GET(req) {
   const server = searchParams.get("server") || "rumahotp";
 
   // Selain RumahOTP tidak ada pemilihan operator; ordernya memakai operator "any".
-  if (isRuangOtpServer(server) || server === "dibanana") return NextResponse.json({ items: [] });
+  if (isWarungNokosServer(server) || server === "dibanana") return NextResponse.json({ items: [] });
 
   try {
     const country = searchParams.get("country");

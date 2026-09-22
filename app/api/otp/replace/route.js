@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
 import { createOrder, toEpochMs } from "@/lib/rumahotp";
-import { createRuangOtpOrder, getRuangOtpCountries, isRuangOtpServer } from "@/lib/ruangotp";
+import { createWarungNokosOrder, getWarungNokosCountries, isWarungNokosServer } from "@/lib/warungnokos";
 import { createDibananaOrder, getDibananaPrices } from "@/lib/dibanana";
 import { sendTelegramNotif, otpPurchaseNotif, otpAutoRefundNotif } from "@/lib/telegram";
 import { logBalance } from "@/lib/ledger";
@@ -9,7 +9,7 @@ import { logBalance } from "@/lib/ledger";
 // Dipakai saat nomor yang dibeli kedaluwarsa tanpa kode OTP masuk. User bisa minta
 // nomor pengganti tanpa membayar lagi (memakai saldo yang sudah terpotong di order lama).
 // Kalau provider juga gagal menyediakan nomor baru, saldo otomatis dikembalikan penuh.
-// Berlaku untuk semua server: RumahOTP, RuangOTP, maupun dibanana.
+// Berlaku untuk semua server: RumahOTP, WarungNokos, maupun dibanana.
 export async function POST(req) {
   try {
     const { token, orderId } = await req.json();
@@ -28,9 +28,9 @@ export async function POST(req) {
       return NextResponse.json({ error: "Ganti nomor hanya bisa dipakai untuk pesanan yang sudah kedaluwarsa." }, { status: 400 });
     }
 
-    const isRo = isRuangOtpServer(oldOrder.server);
+    const isWn = isWarungNokosServer(oldOrder.server);
     const isBn = oldOrder.server === "dibanana";
-    if ((isRo || isBn) ? !oldOrder.serviceId || oldOrder.countryId == null : !oldOrder.numberId || !oldOrder.providerId) {
+    if ((isWn || isBn) ? !oldOrder.serviceId || oldOrder.countryId == null : !oldOrder.numberId || !oldOrder.providerId) {
       return NextResponse.json({ error: "Data pesanan lama tidak lengkap, tidak bisa diganti otomatis." }, { status: 400 });
     }
 
@@ -62,19 +62,20 @@ export async function POST(req) {
             extra: { server: "dibanana", countryId: oldOrder.countryId, providerIndex: oldOrder.providerIndex || 0 }
           };
         }
-      } else if (isRo) {
-        // Harga & kunci produk diambil ulang: expected_price wajib sama persis
-        // dengan pricelist RuangOTP saat ini.
-        const rows = await getRuangOtpCountries(oldOrder.server, oldOrder.serviceId);
+      } else if (isWn) {
+        // Harga & kunci produk diambil ulang supaya harga modal yang dikirim
+        // selalu yang berlaku saat ini.
+        const rows = await getWarungNokosCountries(oldOrder.server, oldOrder.serviceId);
         const country = rows.find((c) => String(c.countryId) === String(oldOrder.countryId));
         const entry =
           country?.pricelist.find((p) => String(p.key) === String(oldOrder.providerKey)) ||
           country?.pricelist[0];
         const made = entry
-          ? await createRuangOtpOrder(oldOrder.server, {
+          ? await createWarungNokosOrder(oldOrder.server, {
               key: entry.key,
               operator: oldOrder.operator || "any",
-              expectedPrice: entry.price
+              modalPrice: entry.price,
+              serviceName: oldOrder.serviceName || undefined
             })
           : null;
         if (made?.id) {

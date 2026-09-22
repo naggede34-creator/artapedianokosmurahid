@@ -32,7 +32,7 @@ export function timeAgo(d) {
 
 export function PageHeader({ title, desc, action, icon }) {
   return (
-    <div className="fade-up flex flex-wrap items-end justify-between gap-4">
+    <div className="manga-head fade-up flex flex-wrap items-end justify-between gap-4">
       <div className="max-w-xl">
         <div className="flex items-center gap-3">
           {icon && (

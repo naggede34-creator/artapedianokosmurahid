@@ -1,21 +1,21 @@
 # Artapedia Web
 
-Website nokos (nomor OTP via **RumahOTP**, **RuangOTP S1/S2**, dan **dibanana**) dengan deposit saldo
-otomatis via **QRIS RuangOTP S1 / RuangOTP S2 / Pakasir / RumahOTP**. Dibangun dengan Next.js, siap deploy ke Vercel.
+Website nokos (nomor OTP via **RumahOTP**, **WarungNokos S1/S2**, dan **dibanana**) dengan deposit
+saldo otomatis via **QRIS WarungNokos / Pakasir / RumahOTP**. Dibangun dengan Next.js, siap deploy ke Vercel.
 
 ## Pembaruan terbaru
 
 ### Fitur baru
-- **Deposit QRIS RuangOTP** (`lib/ruangotp.js`, `app/api/deposit/*`). Admin bisa menyalakan/mematikan
-  RuangOTP S1, RuangOTP S2, Pakasir, dan RumahOTP satu per satu dari Dashboard Admin. RuangOTP tidak punya webhook
+- **Deposit QRIS WarungNokos** (`lib/warungnokos.js`, `app/api/deposit/*`). Admin bisa menyalakan/mematikan
+  WarungNokos, Pakasir, dan RumahOTP satu per satu dari Dashboard Admin. WarungNokos tidak punya webhook
   deposit, jadi statusnya dicek lewat polling halaman deposit + cron.
 - **Mutasi saldo lengkap** lewat koleksi `balance_logs` (`lib/ledger.js`): deposit, cashback, bonus
   referral, voucher, tukar poin, transfer, beli OTP, refund, dan koreksi admin.
 - **Notifikasi Telegram lebih detail**: deposit menampilkan QRIS yang dipakai
-  (RuangOTP/Pakasir/RumahOTP), ID & ref provider, biaya admin, total bayar, saldo sebelum/sesudah,
+  (WarungNokos/Pakasir/RumahOTP), ID & ref provider, biaya admin, total bayar, saldo sebelum/sesudah,
   deposit ke-berapa, dan lama pembayaran. Notif baru: transfer, deposit batal/kedaluwarsa,
   peringatan provider (mis. saldo provider kurang).
-- Bot owner: perintah `/statusruangotp`.
+- Bot owner: perintah `/statuswarungnokos`.
 
 ### Perbaikan bug
 - **Celah harga OTP**: dulu harga dasar dikirim dari browser (bisa diubah jadi 0). Sekarang harga
@@ -37,80 +37,49 @@ Desain ulang: font Plus Jakarta Sans + JetBrains Mono (untuk kode OTP/akun), kar
 kartu SIM, navigasi bawah (Beranda, Nokos, Deposit, Produk, Gratis), halaman Beranda,
 Dashboard, Deposit, Riwayat (tab Nokos/Deposit), dan Mutasi yang baru.
 
-## Setup RuangOTP
+## Setup WarungNokos
 
-RuangOTP dipakai untuk **dua server nokos** sekaligus **dua gateway deposit QRIS**:
+WarungNokos dipakai untuk **dua server nokos** sekaligus **deposit QRIS**. Dua
+servernya adalah dua sistem API yang berbeda, bukan sekadar dua gateway:
 
-| Di web | API RuangOTP | Dipakai untuk |
+| Di web | API WarungNokos | Bentuk order |
 | --- | --- | --- |
-| Server Plus | V1 (`/api/v1`) | Beli nokos, 190+ negara |
-| Server Express | V2 (`/api/v2`) | Beli nokos, cakupan global |
-| QRIS RuangOTP S1 | V1 (`/api/v1/deposit`) | Deposit saldo user |
-| QRIS RuangOTP S2 | V2 (`/api/v2/deposit`) | Deposit saldo user |
+| Server Plus | `/api/otp/*` (H2H utama) | `number_id` + `provider_id` + `operator_id` |
+| Server Express | `/api/smscode/*` (Server2) | `product_id` + `app_id` + `country_id` |
+| QRIS WarungNokos | `/api/deposit/*` | `amount` + `method` |
 
-1. Login ke https://ruangotp.io, buka menu **Profil** dan ambil **User ID**-mu.
-2. Isi `RUANGOTP_USER_ID` di Vercel → Project Settings → Environment Variables
+1. Login ke https://warungnokos.web.id, ambil **API Key** di menu Profil (formatnya `wn-...`).
+2. Isi `WARUNGNOKOS_APIKEY` di Vercel → Project Settings → Environment Variables
    (untuk lokal ada di `.env.local`). **Jangan** ditulis di kode atau di-commit.
-3. **Daftarkan IP server di menu Profil RuangOTP** — tanpa ini semua endpoint ditolak.
-   Baca bagian di bawah, karena Vercel tidak punya IP tetap.
-4. Isi saldo akun RuangOTP — deposit user dan pembelian nomor memakai saldo ini.
-5. Cek koneksinya dari Dashboard Admin → Server OTP → **Diagnosa koneksi**, atau
-   kirim `/statusruangotp` ke bot owner.
+3. Isi saldo akun WarungNokos — deposit user dan pembelian nomor memakai saldo ini.
+4. Cek koneksinya dari Dashboard Admin → Server OTP → **Diagnosa koneksi**
+   (menampilkan saldo akun), atau kirim `/statuswarungnokos` ke bot owner.
 
-### Kalau muncul ENOTFOUND (bukan masalah whitelist)
+Tidak ada whitelist IP, jadi aman dipakai langsung dari Vercel.
 
-`ENOTFOUND` artinya **DNS gagal**, bukan IP ditolak. Saat tulisan ini dibuat,
-`api.ruangotp.io` yang tertulis di dokumentasi RuangOTP **belum punya catatan DNS**,
-sementara `ruangotp.io` resolve normal. Jadi request tidak pernah sampai ke mana pun.
+### Catatan soal `price_jual`
 
-Karena itu `lib/ruangotp.js` mencoba beberapa host berurutan:
+Endpoint order server utama meminta `price_jual` yang dokumentasinya disebut
+"harga modal + markup Anda", sementara responsnya mengembalikan `amount` yang
+sama persis dengan nilai yang dikirim. Karena tidak jelas apakah nilai itu yang
+dipotong dari saldo WarungNokos, `lib/warungnokos.js` **selalu mengirim harga
+modal dari pricelist**, bukan harga jual kita.
 
-1. `RUANGOTP_BASE_URL` (kalau diisi)
-2. `https://api.ruangotp.io/api`
-3. `https://ruangotp.io/api`
+Markup ke user tetap dihitung sendiri di `lib/otpOrderService.js` memakai
+pengaturan markup per server, jadi keuntungan tidak berkurang sama sekali —
+yang dihindari adalah risiko saldo provider terpotong lebih besar dari semestinya.
 
-Host pertama yang berhasil akan diingat. Percobaan ulang hanya dilakukan untuk
-kegagalan DNS — saat itu tidak ada request yang benar-benar terkirim, jadi tidak
-mungkin ada order atau deposit yang terproses dua kali. Kegagalan HTTP tidak
-pernah dicoba ke host lain.
+### Batas yang perlu diingat
 
-Kalau dua-duanya tetap gagal, tanyakan base URL yang benar ke CS RuangOTP lalu isi
-`RUANGOTP_BASE_URL` di Environment Variables Vercel.
+- Deposit: maksimal **3 transaksi pending** di sisi WarungNokos. Web ini juga
+  membatasi 3 deposit pending per user, tapi batas WarungNokos berlaku untuk
+  seluruh akun — kalau mentok, deposit user berikutnya akan ditolak.
+- Cek status OTP: polling tiap 4–5 detik sesuai anjuran mereka.
+- Deposit minimal Rp2.000.
 
-### Whitelist IP di Vercel — baca ini dulu
-
-**Vercel Serverless/Edge tidak punya IP keluar yang tetap.** IP-nya berubah-ubah
-mengikuti server yang kebetulan menjalankan fungsimu, dan Vercel tidak
-mengumumkan daftar IP-nya untuk paket Hobby/Pro. Jadi tidak ada satu IP yang
-bisa kamu daftarkan di RuangOTP. Kalau dipaksa, kadang jalan kadang ditolak —
-dan itu akan terlihat seperti error acak.
-
-Tiga jalan keluar, urut dari yang paling praktis:
-
-**1. Proxy ber-IP statis (paling gampang, bisa gratis/murah).**
-Sewa proxy HTTP yang IP-nya tetap, daftarkan IP itu di RuangOTP, lalu setel:
-
-```
-RUANGOTP_PROXY=http://user:password@ip-proxy:port
-```
-
-Semua panggilan ke RuangOTP otomatis lewat proxy itu (lihat `lib/ruangotp.js`),
-jadi RuangOTP selalu melihat satu IP yang sama. Layanan yang umum dipakai:
-QuotaGuard Static, Fixie, atau proxy Squid yang kamu pasang sendiri di VPS
-paling murah (Rp20–30rb/bulan sudah cukup, karena cuma meneruskan request).
-
-**2. Pindahkan pemanggilan RuangOTP ke VPS sendiri.**
-Sewa VPS kecil, jalankan reverse proxy kecil di sana, dan arahkan
-`RUANGOTP_PROXY` ke VPS itu. Sama seperti opsi 1, cuma proxy-nya milik sendiri.
-
-**3. Vercel Secure Compute.**
-Vercel menyediakan IP keluar tetap lewat fitur Secure Compute, tapi hanya di
-paket **Enterprise**. Untuk toko nokos, opsi 1 jauh lebih masuk akal.
-
-Setelah proxy aktif, cara tahu IP yang harus didaftarkan: buka proxy-nya lalu
-cek IP keluarnya (mis. `curl -x http://user:pass@ip-proxy:port https://api.ipify.org`),
-lalu masukkan IP itu ke menu Profil RuangOTP. Dashboard Admin → **Diagnosa
-koneksi** akan langsung memberi tahu kalau IP-nya masih ditolak.
+Metode deposit `usdt-trc-20` juga tersedia di API mereka, tapi bentuk responsnya
+tidak ada di dokumentasi yang dipegang, jadi belum dipasang. Kalau kamu punya
+contoh responsnya, tinggal ditambahkan di `lib/warungnokos.js`.
 
 ## Catatan redesain sebelumnya
 
@@ -382,34 +351,36 @@ body `{ token: "AP-...." }`.
 - Semua API key (Pakasir, RumahOTP) hanya dipakai di server (API routes), tidak
   pernah dikirim ke browser.
 
-## Server nokos: RumahOTP + RuangOTP + dibanana
+## Server nokos: RumahOTP + WarungNokos + dibanana
 
 Tombol "Pesan nomor" membuka pilihan server, dan **semua server memakai alur yang sama**:
 pilih aplikasi → pilih negara → order.
 
 - **Server Nokos Murah** → RumahOTP.
-- **Server Plus** → RuangOTP API V1 (jalur utama, 190+ negara).
-- **Server Express** → RuangOTP API V2 (jalur global, untuk negara langka atau saat S1 kosong).
+- **Server Plus** → WarungNokos H2H utama (`/api/otp/*`).
+- **Server Express** → WarungNokos Server2 (`/api/smscode/*`).
 - **OTP Fast Murah** → dibanana.
 
 Admin bisa menyalakan/mematikan tiap server dari Dashboard Admin → Pengaturan → Server OTP,
 tanpa deploy ulang.
 
-Pesanan RuangOTP disimpan dengan `server: "ruangotp_s1"` / `"ruangotp_s2"` plus `countryId`
-dan `providerKey`, sehingga status, pembatalan, dan ganti nomor tahu harus menembak versi API
-yang mana. Dua versi RuangOTP memakai kunci order yang berbeda — V1 pakai
-`number_id` + `provider_id`, V2 pakai `product_code` — dan `lib/ruangotp.js` menyeragamkannya
-jadi satu field `key` supaya sisa aplikasi tidak perlu tahu bedanya.
+Dua API WarungNokos memakai kunci order yang sama sekali berbeda, dan Server2
+bahkan memisahkan daftar negara dari daftar produk. `lib/warungnokos.js`
+menyeragamkan keduanya jadi satu field `key` per pilihan harga, sehingga alur
+order, cek status, batal, dan ganti nomor tidak perlu tahu API mana yang dipakai.
 
-RuangOTP juga menolak order kalau `expected_price` tidak sama persis dengan pricelist mereka
-saat itu, jadi harga selalu diambil ulang tepat sebelum order — sekaligus mencegah harga
-dimanipulasi dari browser.
+Untuk Server2, daftar produk diambil sekali untuk seluruh negara
+(`/products?platform_id=...` tanpa `country_id`) lalu dikelompokkan per negara —
+dua panggilan, bukan satu panggilan per negara.
 
-File utama: `lib/ruangotp.js` (client API V1 & V2), `lib/otpServers.js` (daftar server),
+Pesanan WarungNokos disimpan dengan `server: "warungnokos_s1"` / `"warungnokos_s2"`
+plus `countryId` dan `providerKey`.
+
+File utama: `lib/warungnokos.js` (client dua API), `lib/otpServers.js` (daftar server),
 `app/api/otp/services` & `app/api/otp/countries` (menerima `?server=`), `app/api/otp/order`
 (routing per server), `lib/orderReconcile.js` (status/refund untuk semua provider).
 
 Kalau ada yang gagal, buka Dashboard Admin → Server OTP → **Diagnosa koneksi**: tombol itu
-menembak kedua server RuangOTP lalu melaporkan hasilnya, termasuk kalau penyebabnya IP yang
-belum di-whitelist.
+menembak kedua server WarungNokos plus endpoint profil, lalu melaporkan saldo akun dan
+penyebab kegagalannya.
 

@@ -14,9 +14,9 @@ function pick(obj, keys, fallback) {
 export default function BuySheet({ open, onClose, services, servicesLoading, token, balance, onOrderCreated, initialQuery = "" }) {
   // Kedua server memakai alur yang sama: pilih server -> aplikasi -> negara -> order.
   const [screen, setScreen] = useState("server"); // server | apps | countries | operators
-  const [server, setServer] = useState(null); // rumahotp | ruangotp_s1 | ruangotp_s2 | dibanana
+  const [server, setServer] = useState(null); // rumahotp | warungnokos_s1 | warungnokos_s2 | dibanana
   const [available, setAvailable] = useState({ rumahotp: true });
-  // Daftar aplikasi tiap server RuangOTP diambil saat server itu dipilih; daftar
+  // Daftar aplikasi tiap server WarungNokos diambil saat server itu dipilih; daftar
   // Server Murah sudah dikirim halaman induk lewat prop `services`.
   const [remoteServices, setRemoteServices] = useState({});
   const [remoteLoading, setRemoteLoading] = useState(false);
@@ -339,7 +339,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                       <button
                         key={s.service_code}
                         onClick={() => chooseService(s)}
-                        className="pick-3d flex flex-col items-center gap-2 px-3 py-4"
+                        className="pick-3d depth-pop flex flex-col items-center gap-2 px-3 py-4"
                       >
                         {s.service_img ? (
                           // eslint-disable-next-line @next/next/no-img-element
