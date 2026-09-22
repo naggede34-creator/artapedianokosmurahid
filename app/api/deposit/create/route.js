@@ -99,6 +99,8 @@ export async function POST(req) {
     let providerRef = orderId;
     let adminFee = null;
     let totalAmount = null;
+    // txn_id dari Pakasir v2 — kunci untuk cek status & pembatalan.
+    let pakasirTxnId = null;
     let paymentMethod = "qris";
 
     if (chosen === "otpmania") {
@@ -137,13 +139,19 @@ export async function POST(req) {
         sendTelegramNotif(providerAlertNotif({ provider: "Pakasir", action: "Buat transaksi QRIS", message: err?.message || "gagal" }));
         return NextResponse.json({ error: "Gagal membuat QRIS Pakasir, coba metode lain." }, { status: 400 });
       }
-      // Bentuk respons v1 & v2 berbeda; normalizer-nya yang menangani itu.
       const payment = normalizePakasirTransaction(result);
       qrisString = payment.qrString ? String(payment.qrString) : null;
       expiredAt = toEpochMs(payment.expiredAt);
       paymentUrl = payment.paymentUrl || null;
       adminFee = toNumberOrNull(payment.fee);
       totalAmount = toNumberOrNull(payment.total) ?? amt;
+      // txn_id WAJIB disimpan: cek status & pembatalan di API v2 memakai itu,
+      // bukan order_id + amount seperti v1.
+      pakasirTxnId = payment.txnId ? String(payment.txnId) : null;
+      if (!pakasirTxnId) {
+        console.error("[deposit/create] pakasir respons tanpa txn_id:", JSON.stringify(result).slice(0, 500));
+        return NextResponse.json({ error: "Respons Pakasir tidak lengkap, coba metode lain." }, { status: 502 });
+      }
       if (!qrisString && !paymentUrl) {
         console.error("[deposit/create] pakasir respons tanpa QRIS:", JSON.stringify(result).slice(0, 500));
         return NextResponse.json({ error: "Gagal membuat QRIS Pakasir, coba metode lain." }, { status: 400 });
@@ -230,6 +238,7 @@ export async function POST(req) {
       totalAmount,
       method: paymentMethod,
       provider: chosen,
+      ...(pakasirTxnId ? { pakasirTxnId } : {}),
       // QR disimpan supaya halaman deposit bisa menampilkan lagi QR yang sama setelah
       // di-refresh. Dihapus otomatis oleh cron setelah deposit lewat 24 jam.
       qrImage,

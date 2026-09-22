@@ -5,6 +5,11 @@
 //
 // Vercel Cron mengirim header Authorization: Bearer <CRON_SECRET>, jadi dua-duanya
 // diterima. Daftar layanan bisa diubah lewat ?services=wa,tg,shopee
+//
+// PENTING: di vercel.json jadwalnya HARUS 1x sehari. Paket Vercel Hobby menolak
+// cron yang lebih sering dari itu dan seluruh DEPLOYMENT jadi gagal. Kalau mau
+// kirim beberapa kali sehari, pakai cron eksternal (cron-job.org / UptimeRobot)
+// yang memanggil URL di atas, jangan tambah jadwal di vercel.json.
 import { NextResponse } from "next/server";
 import { getSettings } from "@/lib/settings";
 import { buildStockReport, DEFAULT_REPORT_SERVICES } from "@/lib/stockReport";

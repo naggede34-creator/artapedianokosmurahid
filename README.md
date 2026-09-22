@@ -102,26 +102,51 @@ source bot lama SENGAJA TIDAK dipindahkan ke web ini.
 
 ### Catatan Pakasir API v2
 
-Pakasir menghentikan API v1 pada **20 Oktober 2026**. Pembuatan transaksi di web
-ini sudah memakai v2 (`POST /api/v2/create-transaction/{slug}/{order_id}`, API key
-lewat header `X-Api-Key`, dibatasi 2 request/detik — sudah di-throttle otomatis).
+Pakasir menghentikan API v1 pada **20 Oktober 2026**. Web ini sudah sepenuhnya
+memakai v2:
 
-Dua hal berikut **masih memakai endpoint v1** karena bentuk endpoint v2-nya belum
-tersedia di dokumentasi yang kami pegang, dan menebak path di jalur uang terlalu
-berisiko:
+| Fungsi | Endpoint v2 | Batas |
+| --- | --- | --- |
+| Buat transaksi | `POST /api/v2/create-transaction/{slug}/{order_id}` | 2 req/detik |
+| Cek status | `GET /api/v2/transaction-status/{slug}/{txn_id}` | 1x / 4 detik per transaksi |
+| Batalkan | `POST /api/v2/cancel-transaction/{slug}/{txn_id}` | 2 req/detik |
+| Hitung biaya | `GET /api/v2/payment-fee/{amount}` | publik, tanpa API key |
 
-- cek status transaksi (`/api/transactiondetail`)
-- pembatalan transaksi (`/api/transactioncancel`)
+API key dikirim lewat header `X-Api-Key`, bukan di body seperti v1. Semua batas
+rate limit di atas sudah ditangani otomatis di `lib/pakasir.js` (antrean untuk
+create/cancel, cache 4 detik untuk cek status).
 
-Kalau kamu sudah punya halaman dokumentasi v2 untuk keduanya, kirimkan isinya —
-tinggal dipasang di `lib/pakasir.js`. Sampai 20 Oktober 2026 endpoint v1 masih jalan.
+Cek status dan pembatalan v2 memakai **`txn_id`**, bukan `order_id` + `amount`.
+`txn_id` itu disimpan di dokumen deposit sebagai `pakasirTxnId` saat transaksi
+dibuat. Deposit lama yang terlanjur dibuat sebelum migrasi tidak punya field itu,
+jadi khusus deposit tersebut kode masih memakai endpoint v1 — aman sampai
+20 Oktober 2026, dan setelah itu deposit lama pasti sudah tidak ada yang pending.
+
+Halaman `/deposit` memakai `GET /api/v2/payment-fee/{amount}` supaya angka biaya
+admin yang dilihat user adalah angka pasti, bukan estimasi persen. Kalau Pakasir
+tidak bisa dihubungi, tampilannya otomatis kembali ke estimasi persen dari
+pengaturan admin.
 
 Env terkait:
 
 | Variabel | Default | Fungsi |
 | --- | --- | --- |
-| `PAKASIR_API_VERSION` | `v2` | Set `v1` untuk sementara kembali ke endpoint lama |
 | `PAKASIR_BASE_URL` | `https://app.pakasir.com` | Ganti host kalau Pakasir memindahkannya |
+
+## Catatan penting soal Vercel Cron
+
+Paket **Vercel Hobby hanya mengizinkan cron 1x sehari**. Kalau `vercel.json`
+diisi jadwal yang lebih sering dari itu (mis. `0 1,5,9,13 * * *`), **seluruh
+deployment akan GAGAL** dan web tidak akan pernah ter-update — tampilannya
+terlihat seperti tidak berubah sama sekali.
+
+Jadi jadwal di `vercel.json` harus tetap 1x sehari. Kalau mau `/api/cron/cleanup`
+atau `/api/cron/stock-report` jalan lebih sering, pakai cron eksternal gratis
+(cron-job.org, UptimeRobot) yang memanggil:
+
+```
+https://domain-kamu.vercel.app/api/cron/stock-report?secret=ISI_CRON_SECRET
+```
 
 ## 3. Siapkan akun RumahOTP
 

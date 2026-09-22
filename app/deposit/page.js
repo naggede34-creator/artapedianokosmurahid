@@ -38,6 +38,9 @@ export default function DepositPage() {
   const [now, setNow] = useState(Date.now());
   const pollRef = useRef(null);
 
+  // Biaya pasti dari Pakasir untuk nominal yang sedang dipilih; null = belum/gagal.
+  const [exactFee, setExactFee] = useState(null);
+
   const [voucher, setVoucher] = useState("");
   const [voucherBusy, setVoucherBusy] = useState(false);
   const [voucherMsg, setVoucherMsg] = useState(null);
@@ -125,6 +128,29 @@ export default function DepositPage() {
 
   const amt = Math.floor(Number(amount) || 0);
   const enabled = DEPOSIT_PROVIDERS.filter((p) => cfg.providers?.[p.key]);
+
+  // Tanya biaya pasti ke Pakasir begitu user berhenti mengetik nominal.
+  useEffect(() => {
+    if (provider !== "pakasir" || !amt || amt < cfg.min) {
+      setExactFee(null);
+      return undefined;
+    }
+    let alive = true;
+    const t = setTimeout(() => {
+      fetch(`/api/deposit/fee?amount=${amt}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (alive) setExactFee(Number.isFinite(Number(d?.pakasir)) ? Number(d.pakasir) : null);
+        })
+        .catch(() => {
+          if (alive) setExactFee(null);
+        });
+    }, 400);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [provider, amt, cfg.min]);
 
   function toMethod(e) {
     e.preventDefault();
@@ -246,7 +272,10 @@ export default function DepositPage() {
   }
 
   const feePct = provider ? Number(cfg.fees?.[provider] || 0) : 0;
-  const estFee = Math.ceil((amt * feePct) / 100);
+  // Untuk Pakasir, biaya pastinya bisa ditanya langsung ke API penghitung biaya
+  // mereka. Kalau gagal, jatuh ke estimasi persen dari pengaturan admin.
+  const estFee = provider === "pakasir" && exactFee != null ? exactFee : Math.ceil((amt * feePct) / 100);
+  const feeIsExact = provider === "pakasir" && exactFee != null;
   const expiresIn = order?.expiredAt ? new Date(order.expiredAt).getTime() - now : null;
   const timeUp = status === "pending" && expiresIn !== null && expiresIn <= 0;
   const payTotal = order ? Number(order.totalAmount || order.amount) : 0;
@@ -382,12 +411,16 @@ export default function DepositPage() {
               <div className="panel-3d mt-5 divide-y divide-line px-4">
                 <Row label="Metode">{providerName(provider)}</Row>
                 <Row label="Saldo masuk">{rupiah(amt)}</Row>
-                <Row label="Perkiraan biaya admin">{rupiah(estFee)}</Row>
-                <Row label="Perkiraan total bayar" strong>
+                <Row label={feeIsExact ? "Biaya admin" : "Perkiraan biaya admin"}>{rupiah(estFee)}</Row>
+                <Row label={feeIsExact ? "Total bayar" : "Perkiraan total bayar"} strong>
                   {rupiah(amt + estFee)}
                 </Row>
               </div>
-              <p className="mt-2 text-[11px] text-muted">Total pasti tampil di layar pembayaran setelah QRIS dibuat.</p>
+              <p className="mt-2 text-[11px] text-muted">
+                {feeIsExact
+                  ? "Biaya ini diambil langsung dari Pakasir, jadi sudah angka pasti."
+                  : "Total pasti tampil di layar pembayaran setelah QRIS dibuat."}
+              </p>
 
               {error && <Alert className="mt-4">{error}</Alert>}
 

@@ -18,11 +18,19 @@ export async function POST(req) {
   try {
     const body = await req.json().catch(() => ({}));
     const payload = body?.data || body;
+    // Pakasir v2 mengirim txn_id; v1 dan RumahOTP mengirim order_id. Dicari
+    // dengan semua kemungkinan itu sekaligus. Isi body-nya tetap tidak dipercaya
+    // — statusnya dicek ulang ke provider di bawah.
     const ref = pickField(payload, ["order_id", "orderId", "id", "reference", "trx_id", "trxId"]);
-    if (!ref) return NextResponse.json({ error: "order_id kosong." }, { status: 400 });
+    const txn = pickField(payload, ["txn_id", "txnId"]);
+    if (!ref && !txn) return NextResponse.json({ error: "order_id kosong." }, { status: 400 });
+
+    const or = [];
+    if (ref) or.push({ orderId: String(ref) }, { providerRef: String(ref) });
+    if (txn) or.push({ pakasirTxnId: String(txn) });
 
     const deposits = await depositsCol();
-    const deposit = await deposits.findOne({ $or: [{ orderId: String(ref) }, { providerRef: String(ref) }] });
+    const deposit = await deposits.findOne({ $or: or });
     if (!deposit) return NextResponse.json({ error: "Order tidak ditemukan." }, { status: 404 });
 
     const result = await syncDeposit(deposit);
