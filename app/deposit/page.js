@@ -19,8 +19,8 @@ export default function DepositPage() {
   const { token, balance, refreshBalance } = useUser();
 
   const [cfg, setCfg] = useState({
-    providers: { otpmania: false, pakasir: true, rumahotp: false },
-    fees: { otpmania: 0, pakasir: 0, rumahotp: 0.7 },
+    providers: { ruangotp_s1: false, ruangotp_s2: false, pakasir: true, rumahotp: false },
+    fees: { ruangotp_s1: 0, ruangotp_s2: 0, pakasir: 0, rumahotp: 0.7 },
     min: 2000,
     max: 1000000
   });
@@ -290,7 +290,7 @@ export default function DepositPage() {
       />
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="panel-3d p-5 sm:p-6">
+        <div className="panel-3d comic-speed halftone p-5 sm:p-6">
           <ol className="mb-6 flex items-center gap-2 text-xs font-semibold" aria-label="Langkah deposit">
             {["Nominal", "Metode", "Bayar"].map((label, i) => (
               <li key={label} className="flex flex-1 items-center gap-2">

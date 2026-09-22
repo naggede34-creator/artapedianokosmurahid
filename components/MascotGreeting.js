@@ -100,7 +100,7 @@ export default function MascotGreeting() {
     >
       <button className="mg-backdrop" onClick={close} aria-label="Tutup sapaan" />
 
-      <div className="mg-card">
+      <div className="mg-card halftone">
         <span className="mg-rays" aria-hidden="true" />
 
         <div className="mg-body">
@@ -119,6 +119,7 @@ export default function MascotGreeting() {
             <p className="mg-name">
               ARTA PEDIA SUPPORT
               <span className="mg-badge">online</span>
+              <span className="comic-burst">maskot</span>
             </p>
 
             <div className="mg-bubble">

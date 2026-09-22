@@ -1,21 +1,21 @@
 # Artapedia Web
 
-Website nokos (nomor OTP via **RumahOTP** dan **OTPMANIA**) dengan deposit saldo otomatis via
-**QRIS OTPMANIA / Pakasir / RumahOTP**. Dibangun dengan Next.js, siap deploy ke Vercel.
+Website nokos (nomor OTP via **RumahOTP**, **RuangOTP S1/S2**, dan **dibanana**) dengan deposit saldo
+otomatis via **QRIS RuangOTP S1 / RuangOTP S2 / Pakasir / RumahOTP**. Dibangun dengan Next.js, siap deploy ke Vercel.
 
 ## Pembaruan terbaru
 
 ### Fitur baru
-- **Deposit QRIS OTPMANIA** (`lib/otpmania.js`, `app/api/deposit/*`). Admin bisa menyalakan/mematikan
-  OTPMANIA, Pakasir, dan RumahOTP satu per satu dari Dashboard Admin. OTPMANIA tidak punya webhook
+- **Deposit QRIS RuangOTP** (`lib/ruangotp.js`, `app/api/deposit/*`). Admin bisa menyalakan/mematikan
+  RuangOTP S1, RuangOTP S2, Pakasir, dan RumahOTP satu per satu dari Dashboard Admin. RuangOTP tidak punya webhook
   deposit, jadi statusnya dicek lewat polling halaman deposit + cron.
 - **Mutasi saldo lengkap** lewat koleksi `balance_logs` (`lib/ledger.js`): deposit, cashback, bonus
   referral, voucher, tukar poin, transfer, beli OTP, refund, dan koreksi admin.
 - **Notifikasi Telegram lebih detail**: deposit menampilkan QRIS yang dipakai
-  (OTPMANIA/Pakasir/RumahOTP), ID & ref provider, biaya admin, total bayar, saldo sebelum/sesudah,
+  (RuangOTP/Pakasir/RumahOTP), ID & ref provider, biaya admin, total bayar, saldo sebelum/sesudah,
   deposit ke-berapa, dan lama pembayaran. Notif baru: transfer, deposit batal/kedaluwarsa,
   peringatan provider (mis. saldo provider kurang).
-- Bot owner: perintah `/saldootpmania`.
+- Bot owner: perintah `/statusruangotp`.
 
 ### Perbaikan bug
 - **Celah harga OTP**: dulu harga dasar dikirim dari browser (bisa diubah jadi 0). Sekarang harga
@@ -37,19 +37,60 @@ Desain ulang: font Plus Jakarta Sans + JetBrains Mono (untuk kode OTP/akun), kar
 kartu SIM, navigasi bawah (Beranda, Nokos, Deposit, Produk, Gratis), halaman Beranda,
 Dashboard, Deposit, Riwayat (tab Nokos/Deposit), dan Mutasi yang baru.
 
-## Setup OTPMANIA
+## Setup RuangOTP
 
-1. Login ke https://otpmania.biz.id, ambil API key di halaman API Docs.
-2. Pastikan **Scope** API key disetel ke `Full` (bukan Read-only), kalau tidak order nomor &
-   deposit akan ditolak dengan HTTP 403.
-3. Kalau kamu mengisi **IP Whitelist** di profil OTPMANIA, daftarkan juga IP server Vercel —
-   atau kosongkan supaya semua IP diizinkan.
-4. Isi `OTPMANIA_APIKEY` di Vercel → Project Settings → Environment Variables (untuk lokal ada di
-   `.env.local`). **Jangan** menulis API key di kode atau meng-commit-nya.
-5. Isi saldo akun OTPMANIA — deposit user dan pembelian nomor memakai saldo ini. Pantau lewat
-   Dashboard Admin → Server OTP → Koneksi OTPMANIA, atau `/saldootpmania` di bot owner.
+RuangOTP dipakai untuk **dua server nokos** sekaligus **dua gateway deposit QRIS**:
 
-Batas dari OTPMANIA: 60 request baca per menit, dan jeda minimal 3 detik antar pemesanan nomor.
+| Di web | API RuangOTP | Dipakai untuk |
+| --- | --- | --- |
+| Server Plus | V1 (`/api/v1`) | Beli nokos, 190+ negara |
+| Server Express | V2 (`/api/v2`) | Beli nokos, cakupan global |
+| QRIS RuangOTP S1 | V1 (`/api/v1/deposit`) | Deposit saldo user |
+| QRIS RuangOTP S2 | V2 (`/api/v2/deposit`) | Deposit saldo user |
+
+1. Login ke https://ruangotp.io, buka menu **Profil** dan ambil **User ID**-mu.
+2. Isi `RUANGOTP_USER_ID` di Vercel → Project Settings → Environment Variables
+   (untuk lokal ada di `.env.local`). **Jangan** ditulis di kode atau di-commit.
+3. **Daftarkan IP server di menu Profil RuangOTP** — tanpa ini semua endpoint ditolak.
+   Baca bagian di bawah, karena Vercel tidak punya IP tetap.
+4. Isi saldo akun RuangOTP — deposit user dan pembelian nomor memakai saldo ini.
+5. Cek koneksinya dari Dashboard Admin → Server OTP → **Diagnosa koneksi**, atau
+   kirim `/statusruangotp` ke bot owner.
+
+### Whitelist IP di Vercel — baca ini dulu
+
+**Vercel Serverless/Edge tidak punya IP keluar yang tetap.** IP-nya berubah-ubah
+mengikuti server yang kebetulan menjalankan fungsimu, dan Vercel tidak
+mengumumkan daftar IP-nya untuk paket Hobby/Pro. Jadi tidak ada satu IP yang
+bisa kamu daftarkan di RuangOTP. Kalau dipaksa, kadang jalan kadang ditolak —
+dan itu akan terlihat seperti error acak.
+
+Tiga jalan keluar, urut dari yang paling praktis:
+
+**1. Proxy ber-IP statis (paling gampang, bisa gratis/murah).**
+Sewa proxy HTTP yang IP-nya tetap, daftarkan IP itu di RuangOTP, lalu setel:
+
+```
+RUANGOTP_PROXY=http://user:password@ip-proxy:port
+```
+
+Semua panggilan ke RuangOTP otomatis lewat proxy itu (lihat `lib/ruangotp.js`),
+jadi RuangOTP selalu melihat satu IP yang sama. Layanan yang umum dipakai:
+QuotaGuard Static, Fixie, atau proxy Squid yang kamu pasang sendiri di VPS
+paling murah (Rp20–30rb/bulan sudah cukup, karena cuma meneruskan request).
+
+**2. Pindahkan pemanggilan RuangOTP ke VPS sendiri.**
+Sewa VPS kecil, jalankan reverse proxy kecil di sana, dan arahkan
+`RUANGOTP_PROXY` ke VPS itu. Sama seperti opsi 1, cuma proxy-nya milik sendiri.
+
+**3. Vercel Secure Compute.**
+Vercel menyediakan IP keluar tetap lewat fitur Secure Compute, tapi hanya di
+paket **Enterprise**. Untuk toko nokos, opsi 1 jauh lebih masuk akal.
+
+Setelah proxy aktif, cara tahu IP yang harus didaftarkan: buka proxy-nya lalu
+cek IP keluarnya (mis. `curl -x http://user:pass@ip-proxy:port https://api.ipify.org`),
+lalu masukkan IP itu ke menu Profil RuangOTP. Dashboard Admin → **Diagnosa
+koneksi** akan langsung memberi tahu kalau IP-nya masih ditolak.
 
 ## Catatan redesain sebelumnya
 
@@ -321,26 +362,34 @@ body `{ token: "AP-...." }`.
 - Semua API key (Pakasir, RumahOTP) hanya dipakai di server (API routes), tidak
   pernah dikirim ke browser.
 
-## Server nokos: RumahOTP + OTPMANIA
+## Server nokos: RumahOTP + RuangOTP + dibanana
 
 Tombol "Pesan nomor" membuka pilihan server, dan **semua server memakai alur yang sama**:
 pilih aplikasi → pilih negara → order.
 
 - **Server Nokos Murah** → RumahOTP.
-- **Server Plus** → OTPMANIA gateway `s2` (jalur utama, stok paling melimpah).
-- **Server Express** → OTPMANIA gateway `s1` (jalur cadangan saat stok utama kosong).
+- **Server Plus** → RuangOTP API V1 (jalur utama, 190+ negara).
+- **Server Express** → RuangOTP API V2 (jalur global, untuk negara langka atau saat S1 kosong).
+- **OTP Fast Murah** → dibanana.
 
 Admin bisa menyalakan/mematikan tiap server dari Dashboard Admin → Pengaturan → Server OTP,
 tanpa deploy ulang.
 
-Pesanan OTPMANIA disimpan dengan `server: "otpmania_s2"` / `"otpmania_s1"` plus `countryId`,
-sehingga status, pembatalan, dan ganti nomor tahu harus menembak gateway yang mana.
+Pesanan RuangOTP disimpan dengan `server: "ruangotp_s1"` / `"ruangotp_s2"` plus `countryId`
+dan `providerKey`, sehingga status, pembatalan, dan ganti nomor tahu harus menembak versi API
+yang mana. Dua versi RuangOTP memakai kunci order yang berbeda — V1 pakai
+`number_id` + `provider_id`, V2 pakai `product_code` — dan `lib/ruangotp.js` menyeragamkannya
+jadi satu field `key` supaya sisa aplikasi tidak perlu tahu bedanya.
 
-File utama: `lib/otpmania.js` (client API), `lib/otpServers.js` (daftar server),
+RuangOTP juga menolak order kalau `expected_price` tidak sama persis dengan pricelist mereka
+saat itu, jadi harga selalu diambil ulang tepat sebelum order — sekaligus mencegah harga
+dimanipulasi dari browser.
+
+File utama: `lib/ruangotp.js` (client API V1 & V2), `lib/otpServers.js` (daftar server),
 `app/api/otp/services` & `app/api/otp/countries` (menerima `?server=`), `app/api/otp/order`
 (routing per server), `lib/orderReconcile.js` (status/refund untuk semua provider).
 
 Kalau ada yang gagal, buka Dashboard Admin → Server OTP → **Diagnosa koneksi**: tombol itu
-menembak beberapa endpoint OTPMANIA lalu melaporkan status, isi respons, dan apakah yang
-menolak OTPMANIA sendiri atau CDN di depannya.
+menembak kedua server RuangOTP lalu melaporkan hasilnya, termasuk kalau penyebabnya IP yang
+belum di-whitelist.
 

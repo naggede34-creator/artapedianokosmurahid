@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { depositsCol, usersCol } from "@/lib/db";
 import { cancelTransactionV2, cancelTransactionV1 } from "@/lib/pakasir";
 import { cancelDeposit } from "@/lib/rumahotp";
+import { cancelRuangOtpDeposit, isRuangOtpDeposit } from "@/lib/ruangotp";
 import { fetchProviderStatus, creditDeposit } from "@/lib/depositService";
 import { sendTelegramNotif, depositCanceledNotif } from "@/lib/telegram";
 
@@ -36,9 +37,12 @@ export async function POST(req) {
     );
     if (!claimed) return NextResponse.json({ ok: true, message: "Transaksi ini sudah tidak aktif." });
 
-    // OTPMANIA tidak menyediakan endpoint batal — QRIS-nya kedaluwarsa sendiri.
     // Kalau user tetap membayar setelah membatalkan, cron tetap mengkreditkan saldonya.
-    if (deposit.provider === "pakasir") {
+    if (isRuangOtpDeposit(deposit.provider)) {
+      cancelRuangOtpDeposit(deposit.provider, deposit.providerRef || orderId).catch((e) =>
+        console.error("[deposit/cancel] ruangotp:", e?.message || e)
+      );
+    } else if (deposit.provider === "pakasir") {
       // v2 membatalkan lewat txn_id; deposit lama tanpa txn_id tetap lewat v1.
       const p = deposit.pakasirTxnId
         ? cancelTransactionV2(process.env.PAKASIR_PROJECT, process.env.PAKASIR_APIKEY, deposit.pakasirTxnId)

@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import { usersCol, depositsCol } from "@/lib/db";
 import { createTransaction, normalizePakasirTransaction } from "@/lib/pakasir";
 import { createDeposit as createRumahOtpDeposit, toEpochMs, rumahOtpConfigured } from "@/lib/rumahotp";
-import { createOtpmaniaDeposit, otpmaniaConfigured } from "@/lib/otpmania";
+import { createRuangOtpDeposit, isRuangOtpDeposit, ruangOtpConfigured } from "@/lib/ruangotp";
 import { getSettings, depositLimits } from "@/lib/settings";
 import { PROVIDER_KEYS } from "@/lib/paymentProviders";
 import { sendTelegramNotif, depositPendingNotif, providerAlertNotif } from "@/lib/telegram";
@@ -66,8 +66,8 @@ export async function POST(req) {
     if (!chosen || !depositProviders?.[chosen]) {
       return NextResponse.json({ error: "Metode pembayaran ini sedang tidak tersedia." }, { status: 400 });
     }
-    if (chosen === "otpmania" && !otpmaniaConfigured()) {
-      return NextResponse.json({ error: "QRIS OTPMANIA belum dikonfigurasi admin. Pilih metode lain." }, { status: 400 });
+    if (isRuangOtpDeposit(chosen) && !ruangOtpConfigured()) {
+      return NextResponse.json({ error: "QRIS RuangOTP belum dikonfigurasi admin. Pilih metode lain." }, { status: 400 });
     }
     if (chosen === "rumahotp" && !rumahOtpConfigured()) {
       return NextResponse.json({ error: "QRIS RumahOTP belum dikonfigurasi. Pilih metode lain." }, { status: 400 });
@@ -103,32 +103,38 @@ export async function POST(req) {
     let pakasirTxnId = null;
     let paymentMethod = "qris";
 
-    if (chosen === "otpmania") {
+    if (isRuangOtpDeposit(chosen)) {
       let dep;
       try {
-        dep = await createOtpmaniaDeposit({ amount: amt });
+        dep = await createRuangOtpDeposit(chosen, amt);
       } catch (err) {
-        console.error("[deposit/create] otpmania:", err?.message);
-        if (err?.status === 401 || err?.status >= 500) {
-          sendTelegramNotif(providerAlertNotif({ provider: "OTPMANIA", action: "Buat deposit QRIS", message: err.message }));
+        console.error("[deposit/create] ruangotp:", err?.message);
+        if (err?.ipBlocked || err?.status === 401 || err?.status >= 500) {
+          sendTelegramNotif(
+            providerAlertNotif({ provider: "RuangOTP", action: "Buat deposit QRIS", message: err.message })
+          );
         }
         return NextResponse.json(
-          { error: err?.message || "Gagal membuat QRIS OTPMANIA, coba metode lain." },
+          {
+            error: err?.ipBlocked
+              ? "Deposit RuangOTP ditolak: IP server belum di-whitelist. Hubungi admin."
+              : err?.message || "Gagal membuat QRIS RuangOTP, coba metode lain."
+          },
           { status: 400 }
         );
       }
       providerRef = String(dep.id || "");
       if (!providerRef) {
-        return NextResponse.json({ error: "Respons OTPMANIA tidak lengkap, coba lagi." }, { status: 502 });
+        return NextResponse.json({ error: "Respons RuangOTP tidak lengkap, coba lagi." }, { status: 502 });
       }
       qrisString = dep.qrString ? String(dep.qrString) : null;
       qrImage = asImageSrc(dep.qrImage);
-      paymentUrl = dep.paymentUrl || null;
-      expiredAt = toEpochMs(dep.expiredAt);
-      adminFee = dep.fee;
-      totalAmount = dep.total ?? amt;
-      if (!qrisString && !qrImage && !paymentUrl) {
-        return NextResponse.json({ error: "QRIS OTPMANIA tidak tersedia, coba metode lain." }, { status: 502 });
+      expiredAt = dep.expiredAt;
+      // total_pay sudah termasuk biaya; selisihnya yang jadi biaya admin.
+      totalAmount = dep.totalPay ?? amt;
+      adminFee = dep.totalPay != null ? Math.max(0, dep.totalPay - (dep.amountReceived ?? amt)) : null;
+      if (!qrisString && !qrImage) {
+        return NextResponse.json({ error: "QRIS RuangOTP tidak tersedia, coba metode lain." }, { status: 502 });
       }
     } else if (chosen === "pakasir") {
       let result;

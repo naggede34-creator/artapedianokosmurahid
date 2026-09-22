@@ -36,11 +36,11 @@ export function PageHeader({ title, desc, action, icon }) {
       <div className="max-w-xl">
         <div className="flex items-center gap-3">
           {icon && (
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-soft text-amber-bright">
+            <span className="comic-badge flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-soft text-amber-bright">
               {icon}
             </span>
           )}
-          <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-ink sm:text-[32px]">{title}</h1>
+          <h1 className="comic-head text-[26px] leading-tight text-ink sm:text-[32px]">{title}</h1>
         </div>
         {desc && <p className="mt-2 text-sm leading-relaxed text-muted">{desc}</p>}
       </div>

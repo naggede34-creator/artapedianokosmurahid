@@ -87,15 +87,15 @@ export default function AdminDashboardPage() {
   const [announcementSubmitting, setAnnouncementSubmitting] = useState(false);
   const [announcementMsg, setAnnouncementMsg] = useState("");
 
-  const [otpmania, setOtpmania] = useState(null);
+  const [ruangotp, setRuangotp] = useState(null);
 
   const [savingOtpServers, setSavingOtpServers] = useState(false);
   const [serverMarkups, setServerMarkups] = useState({});
   const [otpServersMsg, setOtpServersMsg] = useState("");
 
-  const [otpmaniaDiag, setOtpmaniaDiag] = useState(null);
+  const [providerDiag, setProviderDiag] = useState(null);
   const [dibanana, setDibanana] = useState(null);
-  const [otpmaniaDiagLoading, setOtpmaniaDiagLoading] = useState(false);
+  const [providerDiagLoading, setProviderDiagLoading] = useState(false);
 
   const [maintenanceBtnForm, setMaintenanceBtnForm] = useState({ label: "", url: "" });
   const [savingMaintenanceBtn, setSavingMaintenanceBtn] = useState(false);
@@ -422,25 +422,27 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
-  const loadOtpmania = useCallback(async () => {
+  const loadRuangotp = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/otpmania");
-      if (res.ok) setOtpmania(await res.json());
+      const res = await fetch("/api/admin/ruangotp");
+      if (res.ok) setRuangotp(await res.json());
     } catch {
-      setOtpmania({ configured: false, balance: null, error: "Gagal memuat." });
+      setRuangotp({ configured: false, error: "Gagal memuat." });
     }
   }, []);
 
-  async function runOtpmaniaDiagnose(provider = "otpmania") {
-    setOtpmaniaDiagLoading(true);
-    setOtpmaniaDiag(null);
+  async function runProviderDiagnose(provider = "ruangotp") {
+    setProviderDiagLoading(true);
+    setProviderDiag(null);
     try {
-      const res = await fetch(`/api/admin/${provider}?diagnose=1`);
-      setOtpmaniaDiag(await res.json());
+      const res = await fetch(`/api/admin/ruangotp?provider=${provider}`);
+      const d = await res.json();
+      setProviderDiag(d);
+      if (provider === "ruangotp") setRuangotp(d);
     } catch {
-      setOtpmaniaDiag({ error: "Gagal menjalankan diagnosa." });
+      setProviderDiag({ error: "Gagal menjalankan diagnosa." });
     } finally {
-      setOtpmaniaDiagLoading(false);
+      setProviderDiagLoading(false);
     }
   }
 
@@ -757,7 +759,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     loadSettings();
-    loadOtpmania();
+    loadRuangotp();
     loadDibanana();
     loadUsers("");
     loadStats();
@@ -2501,7 +2503,8 @@ export default function AdminDashboardPage() {
                 <label className="text-xs font-medium text-muted">Metode deposit QRIS aktif</label>
                 <div className="mt-1.5 space-y-2">
                   {[
-                    { key: "otpmania", label: "QRIS OTPMANIA" },
+                    { key: "ruangotp_s1", label: "QRIS RuangOTP S1" },
+                    { key: "ruangotp_s2", label: "QRIS RuangOTP S2" },
                     { key: "pakasir", label: "QRIS Pakasir" },
                     { key: "rumahotp", label: "QRIS RumahOTP" },
                   ].map((p) => (
@@ -2847,19 +2850,21 @@ export default function AdminDashboardPage() {
             <div className="mt-4 rounded-lg border border-line bg-surface px-3.5 py-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <span className="text-sm font-medium text-ink">Koneksi OTPMANIA</span>
+                  <span className="text-sm font-medium text-ink">Koneksi RuangOTP</span>
                   <span className="ml-2 text-[11px] text-muted">
-                    {otpmania == null
+                    {ruangotp == null
                       ? "memuat..."
-                      : otpmania.configured === false
-                      ? "API key belum diisi"
-                      : otpmania.balance != null
-                      ? `saldo Rp${Number(otpmania.balance).toLocaleString("id-ID")}`
-                      : otpmania.error || "gagal cek"}
+                      : ruangotp.configured === false
+                      ? "RUANGOTP_USER_ID belum diisi"
+                      : ruangotp.ruangotp_s1?.ok && ruangotp.ruangotp_s2?.ok
+                      ? "S1 & S2 terhubung"
+                      : [ruangotp.ruangotp_s1, ruangotp.ruangotp_s2].some((r) => r?.ipBlocked)
+                      ? "IP belum di-whitelist"
+                      : ruangotp.error || "sebagian server gagal"}
                   </span>
                 </div>
-                <button onClick={() => runOtpmaniaDiagnose("otpmania")} disabled={otpmaniaDiagLoading} className="btn-ghost text-xs">
-                  {otpmaniaDiagLoading ? "Mengecek..." : "Diagnosa koneksi"}
+                <button onClick={() => runProviderDiagnose("ruangotp")} disabled={providerDiagLoading} className="btn-ghost text-xs">
+                  {providerDiagLoading ? "Mengecek..." : "Diagnosa koneksi"}
                 </button>
               </div>
 
@@ -2876,20 +2881,15 @@ export default function AdminDashboardPage() {
                       : dibanana.error || "gagal cek"}
                   </span>
                 </div>
-                <button onClick={() => runOtpmaniaDiagnose("dibanana")} disabled={otpmaniaDiagLoading} className="btn-ghost text-xs">
-                  {otpmaniaDiagLoading ? "Mengecek..." : "Diagnosa koneksi"}
+                <button onClick={() => runProviderDiagnose("dibanana")} disabled={providerDiagLoading} className="btn-ghost text-xs">
+                  {providerDiagLoading ? "Mengecek..." : "Diagnosa koneksi"}
                 </button>
               </div>
-              {otpmaniaDiag && (
+              {providerDiag && (
                 <div className="mt-3">
-                  <p className="text-xs font-semibold text-ink">{otpmaniaDiag.verdict || otpmaniaDiag.error}</p>
-                  {otpmaniaDiag.keyLength != null && (
-                    <p className="mt-1 text-[11px] text-muted">
-                      API key: {otpmaniaDiag.keyLength} karakter, berakhiran “{otpmaniaDiag.keyTail}”
-                    </p>
-                  )}
+                  <p className="text-xs font-semibold text-ink">{providerDiag.verdict || providerDiag.error}</p>
                   <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-surface2 p-2.5 text-[10px] leading-relaxed text-muted">
-                    {JSON.stringify(otpmaniaDiag.checks ?? otpmaniaDiag, null, 1)}
+                    {JSON.stringify(providerDiag.checks ?? providerDiag, null, 1)}
                   </pre>
                 </div>
               )}

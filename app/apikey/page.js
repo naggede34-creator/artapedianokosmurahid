@@ -7,8 +7,8 @@ import { PageHeader, Icon } from "@/components/ui";
 
 const SERVERS = [
   { id: "rumahotp", name: "Server Nokos Murah", badge: "Murah", desc: "Harga paling hemat, cakupan aplikasi & negara terluas." },
-  { id: "otpmania_s2", name: "Server Plus", badge: "Utama", desc: "Jalur utama OTPMANIA, stok paling melimpah." },
-  { id: "otpmania_s1", name: "Server Express", badge: "Cadangan", desc: "Dipakai saat stok server utama kosong." },
+  { id: "ruangotp_s1", name: "Server Plus", badge: "Utama", desc: "Jalur utama RuangOTP, 190+ negara." },
+  { id: "ruangotp_s2", name: "Server Express", badge: "Global", desc: "Jalur global RuangOTP untuk negara langka." },
   { id: "dibanana", name: "OTP Fast Murah", badge: "Fast", desc: "OTP masuk cepat, harga hemat, 5 negara." }
 ];
 

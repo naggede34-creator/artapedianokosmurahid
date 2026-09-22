@@ -15,7 +15,7 @@ Yang perlu kamu ketahui tentang cara kerja website:
 - Kode OTP yang masuk ditampilkan otomatis di halaman pesanan, tidak perlu refresh manual.
 - Kalau nomor tidak kunjung menerima kode, user bisa membatalkan pesanan untuk refund otomatis
   selama pesanan belum menerima kode.
-- Deposit bisa pakai QRIS OTPMANIA, QRIS Pakasir, atau QRIS RumahOTP (tergantung yang sedang aktif). Kalau
+- Deposit bisa pakai QRIS RuangOTP S1, QRIS RuangOTP S2, QRIS Pakasir, atau QRIS RumahOTP (tergantung yang sedang aktif). Kalau
   QRIS sudah dibayar tapi saldo belum masuk, tunggu beberapa menit — sistem mengecek ulang otomatis.
 - Transfer saldo antar akun ada di halaman /transfer. Riwayat gabungan (mutasi) ada di /mutasi.
   Riwayat transaksi detail ada di /riwayat. Daftar harga per negara ada di /harga.

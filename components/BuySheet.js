@@ -14,9 +14,9 @@ function pick(obj, keys, fallback) {
 export default function BuySheet({ open, onClose, services, servicesLoading, token, balance, onOrderCreated, initialQuery = "" }) {
   // Kedua server memakai alur yang sama: pilih server -> aplikasi -> negara -> order.
   const [screen, setScreen] = useState("server"); // server | apps | countries | operators
-  const [server, setServer] = useState(null); // rumahotp | otpmania_s2 | otpmania_s1
+  const [server, setServer] = useState(null); // rumahotp | ruangotp_s1 | ruangotp_s2 | dibanana
   const [available, setAvailable] = useState({ rumahotp: true });
-  // Daftar aplikasi tiap server OTPMANIA diambil saat server itu dipilih; daftar
+  // Daftar aplikasi tiap server RuangOTP diambil saat server itu dipilih; daftar
   // Server Murah sudah dikirim halaman induk lewat prop `services`.
   const [remoteServices, setRemoteServices] = useState({});
   const [remoteLoading, setRemoteLoading] = useState(false);

@@ -353,8 +353,8 @@ print(r.json())`}
             <div className="rounded-xl border border-line overflow-hidden mb-4">
               {[
                 ["rumahotp", "Server Nokos Murah", "Harga paling hemat, cakupan aplikasi & negara terluas."],
-                ["otpmania_s2", "Server Plus", "Jalur utama OTPMANIA, stok paling melimpah untuk layanan populer."],
-                ["otpmania_s1", "Server Express", "Jalur cadangan OTPMANIA, dipakai saat server utama kosong."],
+                ["ruangotp_s1", "Server Plus", "Jalur utama RuangOTP (API V1), 190+ negara dengan stok paling melimpah."],
+                ["ruangotp_s2", "Server Express", "Jalur global RuangOTP (API V2), untuk negara langka atau saat S1 kosong."],
                 ["dibanana", "OTP Fast Murah", "OTP masuk cepat & murah. Negara: ID, MY, SG, US, UK."]
               ].map(([id, name, desc]) => (
                 <div key={id} className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 px-4 py-3 border-b border-line last:border-0">
@@ -409,8 +409,8 @@ for s in r.json()["items"]:
 {
   "items": [
     { "server": "rumahotp",    "name": "Server Nokos Murah", "badge": "Murah",    "provider": "RumahOTP" },
-    { "server": "otpmania_s2", "name": "Server Plus",        "badge": "Utama",    "provider": "OTPMANIA" },
-    { "server": "otpmania_s1", "name": "Server Express",     "badge": "Cadangan", "provider": "OTPMANIA" },
+    { "server": "ruangotp_s1", "name": "Server Plus",        "badge": "Utama",    "provider": "RuangOTP S1" },
+    { "server": "ruangotp_s2", "name": "Server Express",     "badge": "Global",   "provider": "RuangOTP S2" },
     { "server": "dibanana",    "name": "OTP Fast Murah",     "badge": "Fast",     "provider": "dibanana" }
   ]
 }`} />
@@ -448,7 +448,7 @@ const { items } = await res.json();
 
 r = requests.get(
     "https://artapedianokosmurahid.vercel.app/api/v1/services",
-    params={"server": "otpmania_s2"},
+    params={"server": "ruangotp_s1"},
     headers={"Authorization": "Bearer YOUR_API_KEY"}
 )
 for svc in r.json()["items"]:
@@ -492,7 +492,7 @@ for svc in r.json()["items"]:
                   <ResponseField name="items[].pricelist[].provider_id" type="string">Dipakai sebagai providerId saat order</ResponseField>
                   <ResponseField name="items[].pricelist[].sell_price" type="number">Harga jual final (sudah termasuk markup)</ResponseField>
                   <ResponseField name="items[].pricelist[].stock" type="number">Sisa stok, null kalau provider tidak melaporkannya</ResponseField>
-                  <ResponseField name="items[].pricelist[].country_id" type="string">Dipakai sebagai countryId untuk server OTPMANIA &amp; dibanana</ResponseField>
+                  <ResponseField name="items[].pricelist[].country_id" type="string">Dipakai sebagai countryId untuk server RuangOTP &amp; dibanana</ResponseField>
                   <ResponseField name="items[].pricelist[].providerIndex" type="number">Dipakai sebagai providerIndex untuk server dibanana</ResponseField>
                 </>
               }
@@ -512,7 +512,7 @@ console.log("termurah:", offers[0].sell_price);`}
 
 r = requests.get(
     "https://artapedianokosmurahid.vercel.app/api/v1/countries",
-    params={"server": "otpmania_s2", "service_id": "wa"},
+    params={"server": "ruangotp_s1", "service_id": "13"},
     headers={"Authorization": "Bearer YOUR_API_KEY"}
 )
 for c in r.json()["items"]:
@@ -681,7 +681,7 @@ def wait_for_otp(order_id, api_key):
               </div>
               {[
                 ["rumahotp", "serviceId, numberId, providerId", "operatorId"],
-                ["otpmania_s2 / otpmania_s1", "serviceId, countryId", "operatorId (default: any)"],
+                ["ruangotp_s1 / ruangotp_s2", "serviceId, countryId, providerId", "operatorId (default: any)"],
                 ["dibanana", "serviceId, countryId, providerIndex", "—"]
               ].map(([srv, req, opt]) => (
                 <div key={srv} className="flex flex-col sm:flex-row gap-1 sm:gap-4 px-4 py-3 border-b border-line last:border-0">
@@ -712,9 +712,9 @@ def wait_for_otp(order_id, api_key):
                   <Param name="serviceId" type="string" required>Kode layanan (service_code dari /v1/services)</Param>
                   <Param name="numberId" type="string">Wajib untuk server rumahotp — number_id dari /v1/countries</Param>
                   <Param name="providerId" type="string">Wajib untuk server rumahotp — provider_id dari /v1/countries</Param>
-                  <Param name="countryId" type="string">Wajib untuk otpmania_s1/s2 &amp; dibanana — country_id dari /v1/countries</Param>
+                  <Param name="countryId" type="string">Wajib untuk ruangotp_s2/s2 &amp; dibanana — country_id dari /v1/countries</Param>
                   <Param name="providerIndex" type="number">Wajib untuk dibanana — providerIndex dari /v1/countries (0 = termurah)</Param>
-                  <Param name="operatorId" type="string">ID operator (opsional). OTPMANIA memakai &quot;any&quot; kalau kosong.</Param>
+                  <Param name="operatorId" type="string">ID operator (opsional). RuangOTP memakai &quot;any&quot; kalau kosong.</Param>
                   <Param name="operatorName" type="string">Nama operator (opsional, untuk pencatatan)</Param>
                   <Param name="serviceName" type="string">Nama layanan (opsional, untuk pencatatan)</Param>
                   <Param name="countryName" type="string">Nama negara (opsional, untuk pencatatan)</Param>
@@ -744,8 +744,8 @@ def wait_for_otp(order_id, api_key):
 
 # Server rumahotp memakai numberId + providerId:
 # -d '{"server":"rumahotp","serviceId":"1","numberId":"62","providerId":"5"}'
-# Server OTPMANIA memakai countryId:
-# -d '{"server":"otpmania_s2","serviceId":"wa","countryId":"6"}'`}
+# Server RuangOTP memakai countryId:
+# -d '{"server":"ruangotp_s1","serviceId":"wa","countryId":"6"}'`}
               jsCode={`const res = await fetch("https://artapedianokosmurahid.vercel.app/api/v1/order", {
   method: "POST",
   headers: {
@@ -772,7 +772,7 @@ r = requests.post(
         "Content-Type": "application/json"
     },
     json={
-        "server": "otpmania_s2",   # dari /v1/servers
+        "server": "ruangotp_s1",   # dari /v1/servers
         "serviceId": "wa",         # service_code dari /v1/services
         "countryId": "6",          # country_id dari /v1/countries
         "serviceName": "WhatsApp",

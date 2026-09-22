@@ -3,7 +3,7 @@ import { usersCol } from "@/lib/db";
 import { sendMessage, isOwner, rupiah, HELP_TEXT } from "@/lib/telegramBot";
 import { logBalance } from "@/lib/ledger";
 import { esc } from "@/lib/telegram";
-import { getOtpmaniaBalance, otpmaniaConfigured } from "@/lib/otpmania";
+import { diagnoseRuangOtp, ruangOtpConfigured } from "@/lib/ruangotp";
 
 // Set URL ini sebagai webhook bot di BotFather / API Telegram:
 // https://domainkamu.vercel.app/api/telegram/webhook
@@ -54,15 +54,26 @@ export async function POST(req) {
       await handleListUser(chatId, args, users);
     } else if (cmd === "/statistik") {
       await handleStatistik(chatId, users);
-    } else if (cmd === "/saldootpmania") {
-      if (!otpmaniaConfigured()) {
-        await sendMessage(chatId, "OTPMANIA_APIKEY belum diisi di environment.");
+    } else if (cmd === "/statusruangotp") {
+      if (!ruangOtpConfigured()) {
+        await sendMessage(chatId, "RUANGOTP_USER_ID belum diisi di environment.");
       } else {
         try {
-          const bal = await getOtpmaniaBalance();
-          await sendMessage(chatId, `💼 Saldo akun OTPMANIA: <b>${rupiah(bal)}</b>`);
+          const d = await diagnoseRuangOtp();
+          const line = (id, label) => {
+            const r = d[id] || {};
+            if (r.ok) return `\u2705 ${label}: ${r.services} layanan`;
+            return `\u274C ${label}: ${esc(r.error || "gagal")}${r.ipBlocked ? " (IP belum di-whitelist)" : ""}`;
+          };
+          await sendMessage(
+            chatId,
+            `\u{1F50C} <b>Status RuangOTP</b>\n` +
+              `${line("ruangotp_s1", "Server Plus (S1)")}\n` +
+              `${line("ruangotp_s2", "Server Express (S2)")}\n` +
+              `Proxy IP statis: ${d.proxy ? "aktif" : "tidak dipakai"}`
+          );
         } catch (e) {
-          await sendMessage(chatId, `Gagal cek saldo OTPMANIA: ${esc(e.message)}`);
+          await sendMessage(chatId, `Gagal cek RuangOTP: ${esc(e.message)}`);
         }
       }
     } else {

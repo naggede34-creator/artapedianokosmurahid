@@ -1812,3 +1812,111 @@ input[type="number"] { -moz-appearance: textfield; }
 @media (prefers-reduced-motion: reduce) {
   .mascot-fab-img { animation: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Lapisan komik — garis tinta tebal, bayangan keras, dan raster titik.
+   Dipakai bersama kelas *-3d supaya terasa timbul sekaligus bergaya
+   komik, memakai token oranye & biru yang sama dengan logo.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Panel bergaya panel komik: garis tinta + bayangan keras tanpa blur. */
+.comic-panel {
+  position: relative;
+  border: 2.5px solid rgb(var(--c-ink) / 0.9);
+  border-radius: 18px;
+  background: rgb(var(--c-surface));
+  box-shadow: 6px 6px 0 rgb(var(--c-ink) / 0.85);
+  transition: transform .14s ease, box-shadow .14s ease;
+}
+:root[data-theme="dark"] .comic-panel,
+:root:not([data-theme="light"]) .comic-panel {
+  border-color: rgb(var(--c-blue) / 0.55);
+  box-shadow: 6px 6px 0 rgb(var(--c-blue) / 0.3);
+}
+.comic-panel:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 rgb(var(--c-orange) / 0.55); }
+
+/* Raster titik khas cetakan komik, ditaruh di sudut sebagai tekstur. */
+.halftone::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: .1;
+  background-image: radial-gradient(rgb(var(--c-ink)) 1.1px, transparent 1.2px);
+  background-size: 7px 7px;
+  -webkit-mask-image: linear-gradient(210deg, #000 0%, transparent 42%);
+  mask-image: linear-gradient(210deg, #000 0%, transparent 42%);
+}
+:root[data-theme="dark"] .halftone::after,
+:root:not([data-theme="light"]) .halftone::after {
+  background-image: radial-gradient(rgb(var(--c-blue-bright)) 1.1px, transparent 1.2px);
+  opacity: .14;
+}
+
+/* Judul bergaya komik — tebal dengan garis tinta di belakangnya. */
+.comic-head {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-shadow:
+    2px 2px 0 rgb(var(--c-orange) / 0.28),
+    4px 4px 0 rgb(var(--c-blue) / 0.16);
+}
+
+/* Ikon judul halaman: kotak miring dengan garis tinta, seperti stiker. */
+.comic-badge {
+  border: 2.5px solid rgb(var(--c-ink) / 0.9);
+  box-shadow: 3px 3px 0 rgb(var(--c-ink) / 0.85);
+  transform: rotate(-4deg);
+  transition: transform .16s ease;
+}
+:root[data-theme="dark"] .comic-badge,
+:root:not([data-theme="light"]) .comic-badge {
+  border-color: rgb(var(--c-blue) / 0.6);
+  box-shadow: 3px 3px 0 rgb(var(--c-blue) / 0.35);
+}
+.comic-badge:hover { transform: rotate(3deg) scale(1.06); }
+
+/* Ledakan bintang untuk label "baru"/"hot". */
+.comic-burst {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 11px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(160deg, rgb(var(--c-orange)) 0%, rgb(var(--c-orange-bright)) 100%);
+  border: 2px solid rgb(var(--c-ink) / 0.85);
+  clip-path: polygon(
+    50% 0%, 61% 12%, 76% 6%, 79% 22%, 95% 25%, 88% 39%, 100% 50%,
+    88% 61%, 95% 75%, 79% 78%, 76% 94%, 61% 88%, 50% 100%, 39% 88%,
+    24% 94%, 21% 78%, 5% 75%, 12% 61%, 0% 50%, 12% 39%, 5% 25%,
+    21% 22%, 24% 6%, 39% 12%
+  );
+}
+
+/* Garis aksi diagonal di latar bagian penting. */
+.comic-speed {
+  position: relative;
+  overflow: hidden;
+}
+.comic-speed::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  opacity: .07;
+  background: repeating-linear-gradient(
+    115deg,
+    rgb(var(--c-blue)) 0 2px,
+    transparent 2px 14px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comic-panel, .comic-badge { transition: none; }
+  .comic-panel:hover, .comic-badge:hover { transform: none; }
+}

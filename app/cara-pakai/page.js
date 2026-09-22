@@ -7,7 +7,7 @@ const steps = [
   {
     title: "Deposit saldo lewat QRIS",
     desc:
-      "Buka halaman Deposit, masukkan nominal, pilih QRIS yang mau dipakai (OTPMANIA, Pakasir, atau RumahOTP — tergantung yang aktif), lalu scan kode QRIS yang muncul pakai e-wallet atau m-banking apa saja. Bayar persis sesuai total yang tertera. Saldo bertambah otomatis begitu pembayaran terkonfirmasi, biasanya dalam hitungan detik."
+      "Buka halaman Deposit, masukkan nominal, pilih QRIS yang mau dipakai (RuangOTP S1, RuangOTP S2, Pakasir, atau RumahOTP — tergantung yang aktif), lalu scan kode QRIS yang muncul pakai e-wallet atau m-banking apa saja. Bayar persis sesuai total yang tertera. Saldo bertambah otomatis begitu pembayaran terkonfirmasi, biasanya dalam hitungan detik."
   },
   {
     title: "Cari layanan yang kamu butuhkan",

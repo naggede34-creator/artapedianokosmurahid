@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
 import { createOrder, toEpochMs } from "@/lib/rumahotp";
-import { createOtpmaniaOrder, isOtpmaniaServer, otpmaniaServerCode } from "@/lib/otpmania";
+import { createRuangOtpOrder, getRuangOtpCountries, isRuangOtpServer } from "@/lib/ruangotp";
 import { createDibananaOrder, getDibananaPrices } from "@/lib/dibanana";
 import { sendTelegramNotif, otpPurchaseNotif, otpAutoRefundNotif } from "@/lib/telegram";
 import { logBalance } from "@/lib/ledger";
@@ -9,7 +9,7 @@ import { logBalance } from "@/lib/ledger";
 // Dipakai saat nomor yang dibeli kedaluwarsa tanpa kode OTP masuk. User bisa minta
 // nomor pengganti tanpa membayar lagi (memakai saldo yang sudah terpotong di order lama).
 // Kalau provider juga gagal menyediakan nomor baru, saldo otomatis dikembalikan penuh.
-// Berlaku untuk semua server: RumahOTP maupun OTPMANIA.
+// Berlaku untuk semua server: RumahOTP, RuangOTP, maupun dibanana.
 export async function POST(req) {
   try {
     const { token, orderId } = await req.json();
@@ -28,9 +28,9 @@ export async function POST(req) {
       return NextResponse.json({ error: "Ganti nomor hanya bisa dipakai untuk pesanan yang sudah kedaluwarsa." }, { status: 400 });
     }
 
-    const isOm = isOtpmaniaServer(oldOrder.server);
+    const isRo = isRuangOtpServer(oldOrder.server);
     const isBn = oldOrder.server === "dibanana";
-    if ((isOm || isBn) ? !oldOrder.serviceId || oldOrder.countryId == null : !oldOrder.numberId || !oldOrder.providerId) {
+    if ((isRo || isBn) ? !oldOrder.serviceId || oldOrder.countryId == null : !oldOrder.numberId || !oldOrder.providerId) {
       return NextResponse.json({ error: "Data pesanan lama tidak lengkap, tidak bisa diganti otomatis." }, { status: 400 });
     }
 
@@ -62,19 +62,32 @@ export async function POST(req) {
             extra: { server: "dibanana", countryId: oldOrder.countryId, providerIndex: oldOrder.providerIndex || 0 }
           };
         }
-      } else if (isOm) {
-        const fresh2 = await createOtpmaniaOrder({
-          service: oldOrder.serviceId,
-          country: oldOrder.countryId,
-          operator: oldOrder.operator || "any",
-          server: otpmaniaServerCode(oldOrder.server)
-        });
-        if (fresh2?.id) {
+      } else if (isRo) {
+        // Harga & kunci produk diambil ulang: expected_price wajib sama persis
+        // dengan pricelist RuangOTP saat ini.
+        const rows = await getRuangOtpCountries(oldOrder.server, oldOrder.serviceId);
+        const country = rows.find((c) => String(c.countryId) === String(oldOrder.countryId));
+        const entry =
+          country?.pricelist.find((p) => String(p.key) === String(oldOrder.providerKey)) ||
+          country?.pricelist[0];
+        const made = entry
+          ? await createRuangOtpOrder(oldOrder.server, {
+              key: entry.key,
+              operator: oldOrder.operator || "any",
+              expectedPrice: entry.price
+            })
+          : null;
+        if (made?.id) {
           fresh = {
-            orderId: fresh2.id,
-            phoneNumber: fresh2.number || "-",
-            expiredMs: toEpochMs(fresh2.expiredAt),
-            extra: { server: oldOrder.server, countryId: String(oldOrder.countryId), operator: oldOrder.operator || "any" }
+            orderId: made.id,
+            phoneNumber: made.number || "-",
+            expiredMs: Date.now() + 20 * 60 * 1000,
+            extra: {
+              server: oldOrder.server,
+              countryId: String(oldOrder.countryId),
+              providerKey: entry.key,
+              operator: oldOrder.operator || "any"
+            }
           };
         }
       } else {
