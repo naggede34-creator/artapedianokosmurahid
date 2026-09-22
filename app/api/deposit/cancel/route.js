@@ -36,7 +36,7 @@ export async function POST(req) {
     );
     if (!claimed) return NextResponse.json({ ok: true, message: "Transaksi ini sudah tidak aktif." });
 
-    // Simuru tidak menyediakan endpoint batal — QRIS-nya kedaluwarsa sendiri.
+    // OTPMANIA tidak menyediakan endpoint batal — QRIS-nya kedaluwarsa sendiri.
     // Kalau user tetap membayar setelah membatalkan, cron tetap mengkreditkan saldonya.
     if (deposit.provider === "pakasir") {
       cancelTransaction(process.env.PAKASIR_PROJECT, process.env.PAKASIR_APIKEY, orderId, deposit.amount).catch(() => {});

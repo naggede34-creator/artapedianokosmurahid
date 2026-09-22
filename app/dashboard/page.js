@@ -655,7 +655,6 @@ export default function DashboardPage() {
         {[
           ["Total transaksi", stats?.totalTransaksi],
           ["OTP berhasil", stats?.otpBerhasil],
-          ["Suntik selesai", stats?.smmSelesai],
           ["Deposit sukses", stats?.depositSukses]
         ].map(([label, v]) => (
           <div key={label} className="card p-4">
@@ -859,7 +858,7 @@ export default function DashboardPage() {
         <div className="card p-5">
           <div className="flex items-baseline justify-between">
             <h2 className="text-base font-bold text-ink">Pesanan 30 hari</h2>
-            <span className="text-xs text-muted">nokos + suntik</span>
+            <span className="text-xs text-muted">total nokos</span>
           </div>
           {!stats ? (
             <div className="skeleton mt-4 h-28 rounded-xl" />

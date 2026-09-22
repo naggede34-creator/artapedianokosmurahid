@@ -3,7 +3,7 @@ import { usersCol } from "@/lib/db";
 import { sendMessage, isOwner, rupiah, HELP_TEXT } from "@/lib/telegramBot";
 import { logBalance } from "@/lib/ledger";
 import { esc } from "@/lib/telegram";
-import { getSimuruBalance, simuruConfigured } from "@/lib/simuru";
+import { getOtpmaniaBalance, otpmaniaConfigured } from "@/lib/otpmania";
 
 // Set URL ini sebagai webhook bot di BotFather / API Telegram:
 // https://domainkamu.vercel.app/api/telegram/webhook
@@ -54,15 +54,15 @@ export async function POST(req) {
       await handleListUser(chatId, args, users);
     } else if (cmd === "/statistik") {
       await handleStatistik(chatId, users);
-    } else if (cmd === "/saldosimuru") {
-      if (!simuruConfigured()) {
-        await sendMessage(chatId, "SIMURU_APIKEY belum diisi di environment.");
+    } else if (cmd === "/saldootpmania") {
+      if (!otpmaniaConfigured()) {
+        await sendMessage(chatId, "OTPMANIA_APIKEY belum diisi di environment.");
       } else {
         try {
-          const bal = await getSimuruBalance();
-          await sendMessage(chatId, `💼 Saldo akun Simuru: <b>${rupiah(bal)}</b>`);
+          const bal = await getOtpmaniaBalance();
+          await sendMessage(chatId, `💼 Saldo akun OTPMANIA: <b>${rupiah(bal)}</b>`);
         } catch (e) {
-          await sendMessage(chatId, `Gagal cek saldo Simuru: ${esc(e.message)}`);
+          await sendMessage(chatId, `Gagal cek saldo OTPMANIA: ${esc(e.message)}`);
         }
       }
     } else {

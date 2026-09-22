@@ -61,7 +61,7 @@ export default function TransactionTicker() {
       </span>
       <p key={`${current.token}-${current.createdAt}`} className="animate-fade-in min-w-0 flex-1 truncate text-xs text-ink sm:text-sm">
         <code className="font-mono font-semibold text-amber-bright">{current.token}</code>{" "}
-        {current.kind === "smm" ? "memesan suntik" : "berhasil dapat kode"}{" "}
+        {"berhasil dapat kode"}{" "}
         <span className="font-semibold">{current.serviceName}</span>
         {current.countryName ? ` · ${current.countryName}` : ""} <span className="text-muted">· {timeAgo(current.createdAt)}</span>
       </p>

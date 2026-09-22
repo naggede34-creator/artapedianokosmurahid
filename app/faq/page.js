@@ -27,14 +27,6 @@ const ORDER_STEPS = [
 
 const FAQ_ITEMS = [
   {
-    q: "Apa itu suntik sosmed dan apakah aman?",
-    a: "Suntik sosmed adalah layanan menambah followers, likes, views, atau komentar di Instagram, TikTok, YouTube, Telegram, dan platform lain. Kami tidak pernah meminta password — cukup link atau username yang publik. Pilih layanan berlabel Rekomendasi atau Garansi refill untuk hasil paling stabil."
-  },
-  {
-    q: "Pesanan suntik batal atau cuma masuk sebagian, saldonya bagaimana?",
-    a: "Kalau pesanan dibatalkan provider, saldo dikembalikan penuh. Kalau selesai sebagian, saldo untuk jumlah yang tidak masuk dikembalikan otomatis. Semua tercatat di Mutasi Saldo."
-  },
-  {
     q: "Saya sudah bayar QRIS tapi saldo belum masuk?",
     a: "Tekan tombol \"Saya sudah bayar\" di halaman deposit. Sistem juga mengecek ulang otomatis setiap beberapa menit selama 3 jam, termasuk kalau QRIS terlanjur kamu batalkan setelah membayar. Kalau tetap belum masuk, hubungi CS dengan ID deposit dari halaman Riwayat."
   },

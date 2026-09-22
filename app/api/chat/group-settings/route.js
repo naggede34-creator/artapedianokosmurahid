@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 const DEFAULTS = {
   _id: "config",
   name: "Artapedia Community",
-  desc: "Komunitas deposit saldo, OTP, dan suntik sosmed 🚀",
+  desc: "Komunitas deposit saldo & beli nomor OTP 🚀",
   photo: null,
   closed: false,
   pinnedMsgId: null,

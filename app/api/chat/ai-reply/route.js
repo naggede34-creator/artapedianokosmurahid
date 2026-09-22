@@ -13,12 +13,11 @@ const AI_PERSONAS = [
   { name: "Zall", style: "humor ringan, santai, jawab dengan bercanda tapi tetap helpful" },
 ];
 
-const GROUP_CONTEXT = `Kamu adalah anggota grup chat komunitas Artapedia — platform deposit saldo QRIS, beli nomor OTP, dan suntik sosmed.
+const GROUP_CONTEXT = `Kamu adalah anggota grup chat komunitas Artapedia — platform deposit saldo QRIS dan beli nomor OTP.
 
 Info singkat Artapedia:
 - Deposit lewat QRIS, saldo masuk otomatis
 - Beli nomor OTP: pilih layanan, negara, operator
-- Suntik followers/likes/views media sosial
 - Kode akun format AP-XXXX-XXXX adalah kunci akun, simpan baik-baik
 
 Aturan menjawab:

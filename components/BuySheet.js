@@ -14,13 +14,13 @@ function pick(obj, keys, fallback) {
 export default function BuySheet({ open, onClose, services, servicesLoading, token, balance, onOrderCreated, initialQuery = "" }) {
   // Kedua server memakai alur yang sama: pilih server -> aplikasi -> negara -> order.
   const [screen, setScreen] = useState("server"); // server | apps | countries | operators
-  const [server, setServer] = useState(null); // rumahotp | simuru
-  const [available, setAvailable] = useState({ rumahotp: true, simuru: false });
-  // Daftar aplikasi Server OTP Fast diambil saat server itu dipilih; daftar Server
-  // Murah sudah dikirim halaman induk lewat prop `services`.
-  const [simuruServices, setSimuruServices] = useState([]);
-  const [simuruLoading, setSimuruLoading] = useState(false);
-  const [simuruError, setSimuruError] = useState("");
+  const [server, setServer] = useState(null); // rumahotp | otpmania_s2 | otpmania_s1
+  const [available, setAvailable] = useState({ rumahotp: true });
+  // Daftar aplikasi tiap server OTPMANIA diambil saat server itu dipilih; daftar
+  // Server Murah sudah dikirim halaman induk lewat prop `services`.
+  const [remoteServices, setRemoteServices] = useState({});
+  const [remoteLoading, setRemoteLoading] = useState(false);
+  const [remoteError, setRemoteError] = useState("");
   const [appSearch, setAppSearch] = useState("");
   const [countrySearch, setCountrySearch] = useState("");
   const [sortMode, setSortMode] = useState("rate"); // rate | harga
@@ -35,8 +35,9 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   const [buyError, setBuyError] = useState("");
 
   // Daftar aplikasi & status loading milik server yang sedang dipilih.
-  const activeServices = server === "simuru" ? simuruServices : services;
-  const activeLoading = server === "simuru" ? simuruLoading : servicesLoading;
+  const isRemote = server !== null && server !== "rumahotp";
+  const activeServices = isRemote ? remoteServices[server] || [] : services;
+  const activeLoading = isRemote ? remoteLoading : servicesLoading;
 
   useEffect(() => {
     if (!open) return;
@@ -63,7 +64,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
       const t = setTimeout(() => {
         setScreen("server");
         setServer(null);
-        setSimuruError("");
+        setRemoteError("");
         setAppSearch("");
         setCountrySearch("");
         setSelectedService(null);
@@ -98,26 +99,25 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
 
   function chooseServer(key) {
     setBuyError("");
-    setSimuruError("");
+    setRemoteError("");
     setAppSearch("");
     setServer(key);
     setScreen("apps");
-    if (key === "simuru" && simuruServices.length === 0) loadSimuruServices();
+    if (key !== "rumahotp" && !remoteServices[key]) loadRemoteServices(key);
   }
 
-  async function loadSimuruServices() {
-    setSimuruLoading(true);
-    setSimuruError("");
+  async function loadRemoteServices(key) {
+    setRemoteLoading(true);
+    setRemoteError("");
     try {
-      const res = await fetch("/api/otp/services?server=simuru");
+      const res = await fetch(`/api/otp/services?server=${encodeURIComponent(key)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal memuat layanan.");
-      setSimuruServices(Array.isArray(data.items) ? data.items : []);
+      setRemoteServices((prev) => ({ ...prev, [key]: Array.isArray(data.items) ? data.items : [] }));
     } catch (err) {
-      setSimuruServices([]);
-      setSimuruError(err.message || "Gagal memuat layanan.");
+      setRemoteError(err.message || "Gagal memuat layanan.");
     } finally {
-      setSimuruLoading(false);
+      setRemoteLoading(false);
     }
   }
 
@@ -147,12 +147,8 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
     setBuyingKey(provider.provider_id);
     try {
       const params =
-        provider.server === "simuru"
-          ? new URLSearchParams({
-              server: "simuru",
-              service_id: selectedService.service_code,
-              country_id: String(provider.country_id)
-            })
+        provider.server && provider.server !== "rumahotp"
+          ? new URLSearchParams({ server: provider.server })
           : new URLSearchParams({ country: country.name, provider_id: provider.provider_id });
       const res = await fetch(`/api/otp/operators?${params}`);
       const data = await res.json();
@@ -185,11 +181,8 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
         countryName: country.name,
         server: provider.server || server || "rumahotp"
       };
-      // Parameter khusus Server OTP Fast (Simuru): kunci order = service_id + country_id.
-      if (body.server === "simuru") {
-        body.countryId = provider.country_id;
-        body.operator = operatorId || provider.operator || "random";
-      }
+      // Kunci order OTPMANIA = service (slug) + country_id + server gateway.
+      if (body.server !== "rumahotp") body.countryId = provider.country_id;
       const res = await fetch("/api/otp/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -250,7 +243,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
               <p className="text-sm text-muted">Mau pakai server yang mana?</p>
               {OTP_SERVERS.map((sv) => {
                 const on = available[sv.key] !== false;
-                const fast = sv.key === "simuru";
+                const fast = sv.key !== "rumahotp";
                 return (
                   <button
                     key={sv.key}
@@ -308,10 +301,10 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                     <div key={i} className="skeleton h-[84px] rounded-2xl border border-line" />
                   ))}
                 </div>
-              ) : simuruError ? (
+              ) : remoteError ? (
                 <div className="mt-6 text-center">
-                  <p className="text-sm text-rose">{simuruError}</p>
-                  <button onClick={loadSimuruServices} className="btn-ghost mt-3">Coba lagi</button>
+                  <p className="text-sm text-rose">{remoteError}</p>
+                  <button onClick={() => loadRemoteServices(server)} className="btn-ghost mt-3">Coba lagi</button>
                 </div>
               ) : activeServices.length === 0 ? (
                 <p className="mt-6 text-sm text-muted">Belum ada layanan di server ini.</p>

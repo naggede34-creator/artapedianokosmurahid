@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import { usersCol, depositsCol } from "@/lib/db";
 import { createTransaction } from "@/lib/pakasir";
 import { createDeposit as createRumahOtpDeposit, toEpochMs, rumahOtpConfigured } from "@/lib/rumahotp";
-import { createSimuruDeposit, simuruConfigured } from "@/lib/simuru";
+import { createOtpmaniaDeposit, otpmaniaConfigured } from "@/lib/otpmania";
 import { getSettings, depositLimits } from "@/lib/settings";
 import { PROVIDER_KEYS } from "@/lib/paymentProviders";
 import { sendTelegramNotif, depositPendingNotif, providerAlertNotif } from "@/lib/telegram";
@@ -66,8 +66,8 @@ export async function POST(req) {
     if (!chosen || !depositProviders?.[chosen]) {
       return NextResponse.json({ error: "Metode pembayaran ini sedang tidak tersedia." }, { status: 400 });
     }
-    if (chosen === "simuru" && !simuruConfigured()) {
-      return NextResponse.json({ error: "QRIS Simuru belum dikonfigurasi admin. Pilih metode lain." }, { status: 400 });
+    if (chosen === "otpmania" && !otpmaniaConfigured()) {
+      return NextResponse.json({ error: "QRIS OTPMANIA belum dikonfigurasi admin. Pilih metode lain." }, { status: 400 });
     }
     if (chosen === "rumahotp" && !rumahOtpConfigured()) {
       return NextResponse.json({ error: "QRIS RumahOTP belum dikonfigurasi. Pilih metode lain." }, { status: 400 });
@@ -101,37 +101,32 @@ export async function POST(req) {
     let totalAmount = null;
     let paymentMethod = "qris";
 
-    if (chosen === "simuru") {
-      let data;
+    if (chosen === "otpmania") {
+      let dep;
       try {
-        data = await createSimuruDeposit({ amount: amt, note: `${orderId} ${token}` });
+        dep = await createOtpmaniaDeposit({ amount: amt });
       } catch (err) {
-        console.error("[deposit/create] simuru:", err?.message);
+        console.error("[deposit/create] otpmania:", err?.message);
         if (err?.status === 401 || err?.status >= 500) {
-          sendTelegramNotif(providerAlertNotif({ provider: "Simuru", action: "Buat deposit QRIS", message: err.message }));
+          sendTelegramNotif(providerAlertNotif({ provider: "OTPMANIA", action: "Buat deposit QRIS", message: err.message }));
         }
-        const busy = err?.status === 422 && /pending/i.test(err?.message || "");
         return NextResponse.json(
-          {
-            error: busy
-              ? "QRIS Simuru sedang ramai dipakai. Coba lagi 1-2 menit lagi atau pilih metode lain."
-              : err?.message || "Gagal membuat QRIS Simuru, coba metode lain."
-          },
+          { error: err?.message || "Gagal membuat QRIS OTPMANIA, coba metode lain." },
           { status: 400 }
         );
       }
-      providerRef = String(pickField(data, ["id", "deposit_id"]) || "");
+      providerRef = String(dep.id || "");
       if (!providerRef) {
-        return NextResponse.json({ error: "Respons Simuru tidak lengkap, coba lagi." }, { status: 502 });
+        return NextResponse.json({ error: "Respons OTPMANIA tidak lengkap, coba lagi." }, { status: 502 });
       }
-      qrisString = pickField(data, ["qr_string", "qris", "qris_string"]);
-      qrImage = asImageSrc(pickField(data, ["qr_image", "qr_image_base64", "qr_base64", "qris_image", "qr_code_image"]));
-      expiredAt = toEpochMs(pickField(data, ["expired_at", "expires_at"]));
-      adminFee = toNumberOrNull(pickField(data, ["fee", "admin_fee"]));
-      totalAmount = toNumberOrNull(pickField(data, ["total", "total_amount", "amount_total", "pay_amount", "amount_unique"])) ?? amt;
-      paymentMethod = pickField(data, ["method"]) || "qris";
-      if (!qrisString && !qrImage) {
-        return NextResponse.json({ error: "QRIS Simuru tidak tersedia, coba lagi." }, { status: 502 });
+      qrisString = dep.qrString ? String(dep.qrString) : null;
+      qrImage = asImageSrc(dep.qrImage);
+      paymentUrl = dep.paymentUrl || null;
+      expiredAt = toEpochMs(dep.expiredAt);
+      adminFee = dep.fee;
+      totalAmount = dep.total ?? amt;
+      if (!qrisString && !qrImage && !paymentUrl) {
+        return NextResponse.json({ error: "QRIS OTPMANIA tidak tersedia, coba metode lain." }, { status: 502 });
       }
     } else if (chosen === "pakasir") {
       const result = await createTransaction(process.env.PAKASIR_PROJECT, process.env.PAKASIR_APIKEY, orderId, amt, "qris");

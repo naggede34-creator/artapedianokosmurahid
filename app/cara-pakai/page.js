@@ -7,7 +7,7 @@ const steps = [
   {
     title: "Deposit saldo lewat QRIS",
     desc:
-      "Buka halaman Deposit, masukkan nominal, pilih QRIS yang mau dipakai (Simuru, Pakasir, atau RumahOTP — tergantung yang aktif), lalu scan kode QRIS yang muncul pakai e-wallet atau m-banking apa saja. Bayar persis sesuai total yang tertera. Saldo bertambah otomatis begitu pembayaran terkonfirmasi, biasanya dalam hitungan detik."
+      "Buka halaman Deposit, masukkan nominal, pilih QRIS yang mau dipakai (OTPMANIA, Pakasir, atau RumahOTP — tergantung yang aktif), lalu scan kode QRIS yang muncul pakai e-wallet atau m-banking apa saja. Bayar persis sesuai total yang tertera. Saldo bertambah otomatis begitu pembayaran terkonfirmasi, biasanya dalam hitungan detik."
   },
   {
     title: "Cari layanan yang kamu butuhkan",
@@ -30,14 +30,9 @@ const steps = [
       "Gunakan nomor yang diberikan untuk verifikasi di aplikasi/layanan tujuan. Kode OTP yang masuk akan otomatis muncul di halaman ini — tidak perlu refresh manual. Kalau nomor bermasalah dan kode tidak kunjung masuk, kamu bisa menekan tombol Batalkan & Refund selama pesanan belum berhasil menerima kode."
   },
   {
-    title: "Suntik sosmed (opsional)",
-    desc:
-      "Buka halaman Suntik, pilih platform (Instagram, TikTok, YouTube, dll), kategori (followers, likes, views…), lalu layanan yang cocok. Isi link atau username target — pastikan akun/postingan dalam mode publik — dan jumlahnya. Progres tampil di halaman Riwayat. Kalau pesanan dibatalkan atau hanya masuk sebagian, sisa saldo dikembalikan otomatis."
-  },
-  {
     title: "Cek riwayat kapan saja",
     desc:
-      "Semua deposit, pembelian nomor, dan pesanan suntik tercatat di halaman Riwayat; setiap perubahan saldo tercatat di Mutasi Saldo, bisa dibuka lagi kapan saja selama kamu masih menyimpan kode akun yang sama."
+      "Semua deposit dan pembelian nomor tercatat di halaman Riwayat; setiap perubahan saldo tercatat di Mutasi Saldo, bisa dibuka lagi kapan saja selama kamu masih menyimpan kode akun yang sama."
   }
 ];
 
@@ -47,7 +42,7 @@ export default function CaraPakaiPage() {
       <p className="fade-up text-sm font-semibold text-teal-bright">Panduan</p>
       <h1 className="fade-up delay-1 mt-2 text-[26px] font-extrabold tracking-tight text-ink sm:text-[32px]">Cara menggunakan Artapedia</h1>
       <p className="fade-up delay-2 mt-3 max-w-xl text-sm leading-relaxed text-muted">
-        Langkah-langkah ini mencakup seluruh alur, dari menyimpan kode akun sampai menerima kode OTP dan memesan suntik sosmed.
+        Langkah-langkah ini mencakup seluruh alur, dari menyimpan kode akun sampai menerima kode OTP.
       </p>
 
       <ol className="mt-10 space-y-8">

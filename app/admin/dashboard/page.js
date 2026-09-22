@@ -74,15 +74,13 @@ export default function AdminDashboardPage() {
   const [announcementSubmitting, setAnnouncementSubmitting] = useState(false);
   const [announcementMsg, setAnnouncementMsg] = useState("");
 
-  const [simuru, setSimuru] = useState(null);
-  const [smmMarkupInput, setSmmMarkupInput] = useState("");
-  const [savingSmm, setSavingSmm] = useState(false);
+  const [otpmania, setOtpmania] = useState(null);
 
   const [savingOtpServers, setSavingOtpServers] = useState(false);
   const [otpServersMsg, setOtpServersMsg] = useState("");
 
-  const [simuruDiag, setSimuruDiag] = useState(null);
-  const [simuruDiagLoading, setSimuruDiagLoading] = useState(false);
+  const [otpmaniaDiag, setOtpmaniaDiag] = useState(null);
+  const [otpmaniaDiagLoading, setOtpmaniaDiagLoading] = useState(false);
 
   const [maintenanceBtnForm, setMaintenanceBtnForm] = useState({ label: "", url: "" });
   const [savingMaintenanceBtn, setSavingMaintenanceBtn] = useState(false);
@@ -397,47 +395,25 @@ export default function AdminDashboardPage() {
     }
   }, [router]);
 
-  const loadSimuru = useCallback(async () => {
+  const loadOtpmania = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/simuru");
-      if (res.ok) setSimuru(await res.json());
+      const res = await fetch("/api/admin/otpmania");
+      if (res.ok) setOtpmania(await res.json());
     } catch {
-      setSimuru({ configured: false, balance: null, error: "Gagal memuat." });
+      setOtpmania({ configured: false, balance: null, error: "Gagal memuat." });
     }
   }, []);
 
-  async function saveSmm(patch) {
-    setSavingSmm(true);
+  async function runOtpmaniaDiagnose() {
+    setOtpmaniaDiagLoading(true);
+    setOtpmaniaDiag(null);
     try {
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ smm: patch })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setSettings(data);
-        setSmmMarkupInput(String(data.smm?.markupPercent ?? 0));
-        setSettingsMsg("Pengaturan suntik sosmed tersimpan.");
-      } else {
-        setSettingsMsg(data.error || "Gagal menyimpan.");
-      }
-    } finally {
-      setSavingSmm(false);
-      setTimeout(() => setSettingsMsg(""), 2500);
-    }
-  }
-
-  async function runSimuruDiagnose() {
-    setSimuruDiagLoading(true);
-    setSimuruDiag(null);
-    try {
-      const res = await fetch("/api/admin/simuru?diagnose=1");
-      setSimuruDiag(await res.json());
+      const res = await fetch("/api/admin/otpmania?diagnose=1");
+      setOtpmaniaDiag(await res.json());
     } catch {
-      setSimuruDiag({ error: "Gagal menjalankan diagnosa." });
+      setOtpmaniaDiag({ error: "Gagal menjalankan diagnosa." });
     } finally {
-      setSimuruDiagLoading(false);
+      setOtpmaniaDiagLoading(false);
     }
   }
 
@@ -487,7 +463,6 @@ export default function AdminDashboardPage() {
     const data = await res.json();
     setSettings(data);
     setMarkupInput(String(data.markupPercent ?? 0));
-    setSmmMarkupInput(String(data.smm?.markupPercent ?? 0));
     setSiteSettingsForm({
       siteName: data.siteName || "",
       siteUrl: data.siteUrl || "",
@@ -724,7 +699,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     loadSettings();
-    loadSimuru();
+    loadOtpmania();
     loadUsers("");
     loadStats();
     loadVouchers();
@@ -1081,8 +1056,6 @@ export default function AdminDashboardPage() {
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <StatCard label="Order OTP (7 hari)" value={`${stats.totals.orderCount}`} />
                   <StatCard label="Omzet OTP (7 hari)" value={fmtRp(stats.totals.orderRevenue)} accent="text-teal-bright" />
-                  <StatCard label="Order suntik (7 hari)" value={`${stats.totals.smmCount ?? 0}`} />
-                  <StatCard label="Omzet suntik (7 hari)" value={fmtRp(stats.totals.smmRevenue || 0)} accent="text-teal-bright" />
                   <StatCard label="Deposit masuk (7 hari)" value={fmtRp(stats.totals.depositAmount || 0)} accent="text-success" />
                   <StatCard
                     label="Deposit per QRIS"
@@ -2325,7 +2298,7 @@ export default function AdminDashboardPage() {
                   <input type="number" value={markupInput} onChange={(e) => setMarkupInput(e.target.value)} className="w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
                   <button onClick={saveMarkup} disabled={savingMarkup} className="btn-3d shrink-0 rounded-lg bg-amber hover:bg-amber-bright px-4 py-2.5 text-sm font-medium text-white shadow-3d disabled:opacity-60">{savingMarkup ? "..." : "Simpan"}</button>
                 </div>
-                <p className="mt-1.5 text-[11px] text-muted">Harga jual = harga dasar (RumahOTP / Simuru) × (1 + markup%).</p>
+                <p className="mt-1.5 text-[11px] text-muted">Harga jual = harga dasar (RumahOTP / OTPMANIA) × (1 + markup%).</p>
               </div>
               <div>
                 <label className="text-xs font-medium text-muted">Mode maintenance</label>
@@ -2362,7 +2335,7 @@ export default function AdminDashboardPage() {
                 <label className="text-xs font-medium text-muted">Metode deposit QRIS aktif</label>
                 <div className="mt-1.5 space-y-2">
                   {[
-                    { key: "simuru", label: "QRIS Simuru" },
+                    { key: "otpmania", label: "QRIS OTPMANIA" },
                     { key: "pakasir", label: "QRIS Pakasir" },
                     { key: "rumahotp", label: "QRIS RumahOTP" },
                   ].map((p) => (
@@ -2450,54 +2423,34 @@ export default function AdminDashboardPage() {
             <div className="mt-4 rounded-lg border border-line bg-surface px-3.5 py-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <span className="text-sm font-medium text-ink">Koneksi Simuru</span>
+                  <span className="text-sm font-medium text-ink">Koneksi OTPMANIA</span>
                   <span className="ml-2 text-[11px] text-muted">
-                    {simuru == null
+                    {otpmania == null
                       ? "memuat..."
-                      : simuru.configured === false
+                      : otpmania.configured === false
                       ? "API key belum diisi"
-                      : simuru.balance != null
-                      ? `saldo Rp${Number(simuru.balance).toLocaleString("id-ID")}`
-                      : simuru.error || "gagal cek"}
+                      : otpmania.balance != null
+                      ? `saldo Rp${Number(otpmania.balance).toLocaleString("id-ID")}`
+                      : otpmania.error || "gagal cek"}
                   </span>
                 </div>
-                <button onClick={runSimuruDiagnose} disabled={simuruDiagLoading} className="btn-ghost text-xs">
-                  {simuruDiagLoading ? "Mengecek..." : "Diagnosa 403"}
+                <button onClick={runOtpmaniaDiagnose} disabled={otpmaniaDiagLoading} className="btn-ghost text-xs">
+                  {otpmaniaDiagLoading ? "Mengecek..." : "Diagnosa koneksi"}
                 </button>
               </div>
-              {simuruDiag && (
+              {otpmaniaDiag && (
                 <div className="mt-3">
-                  <p className="text-xs font-semibold text-ink">{simuruDiag.verdict || simuruDiag.error}</p>
-                  {simuruDiag.keyLength != null && (
+                  <p className="text-xs font-semibold text-ink">{otpmaniaDiag.verdict || otpmaniaDiag.error}</p>
+                  {otpmaniaDiag.keyLength != null && (
                     <p className="mt-1 text-[11px] text-muted">
-                      API key: {simuruDiag.keyLength} karakter, berakhiran “{simuruDiag.keyTail}”
+                      API key: {otpmaniaDiag.keyLength} karakter, berakhiran “{otpmaniaDiag.keyTail}”
                     </p>
                   )}
                   <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-surface2 p-2.5 text-[10px] leading-relaxed text-muted">
-                    {JSON.stringify(simuruDiag.checks ?? simuruDiag, null, 1)}
+                    {JSON.stringify(otpmaniaDiag.checks ?? otpmaniaDiag, null, 1)}
                   </pre>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Suntik Sosmed */}
-          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
-            <h2 className="font-display text-base font-semibold text-ink">Suntik Sosmed (Simuru)</h2>
-            <div className="mt-4 grid gap-5 sm:grid-cols-2">
-              <div className="flex items-center justify-between rounded-lg border border-line bg-surface px-3.5 py-2.5">
-                <span className="text-sm text-ink">{settings?.smm?.enabled ? "Aktif — user bisa order" : "Nonaktif"}</span>
-                <button onClick={() => saveSmm({ enabled: !settings?.smm?.enabled })} disabled={!settings || savingSmm} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${settings?.smm?.enabled ? "bg-teal" : "bg-line"}`} aria-label="Toggle suntik sosmed">
-                  <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings?.smm?.enabled ? "translate-x-6" : "translate-x-1"}`} />
-                </button>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <input type="number" min="0" step="1" value={smmMarkupInput} onChange={(e) => setSmmMarkupInput(e.target.value)} className="w-24 rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink outline-none focus:border-amber" />
-                  <span className="text-sm text-muted">% markup</span>
-                  <button onClick={() => saveSmm({ markupPercent: Number(smmMarkupInput) || 0 })} disabled={savingSmm} className="rounded-lg bg-amber px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">Simpan</button>
-                </div>
-              </div>
             </div>
           </div>
 

@@ -6,7 +6,6 @@ const cols = [
     title: "Layanan",
     links: [
       { href: "/otp", label: "Beli nokos / OTP" },
-      { href: "/suntik", label: "Suntik sosmed" },
       { href: "/deposit", label: "Isi saldo QRIS" },
       { href: "/harga", label: "Daftar harga" }
     ]
@@ -41,7 +40,7 @@ export default function Footer() {
             <span className="text-base font-extrabold tracking-tight text-ink">Artapedia</span>
           </div>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted">
-            Nomor OTP, suntik sosmed, dan isi saldo QRIS — semuanya diproses otomatis 24 jam.
+            Nomor OTP dan isi saldo QRIS — semuanya diproses otomatis 24 jam.
           </p>
           <div className="mt-4 flex gap-2">
             <a href="https://t.me/kkaelnokosmurah" target="_blank" rel="noreferrer" className="btn-ghost px-3 py-2 text-xs">

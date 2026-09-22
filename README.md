@@ -1,25 +1,21 @@
 # Artapedia Web
 
-Website nokos (nomor OTP via RumahOTP), **suntik sosmed (SMM via Simuru)**, dan deposit saldo
-otomatis via **QRIS Simuru / Pakasir / RumahOTP**. Dibangun dengan Next.js, siap deploy ke Vercel.
+Website nokos (nomor OTP via **RumahOTP** dan **OTPMANIA**) dengan deposit saldo otomatis via
+**QRIS OTPMANIA / Pakasir / RumahOTP**. Dibangun dengan Next.js, siap deploy ke Vercel.
 
 ## Pembaruan terbaru
 
 ### Fitur baru
-- **Deposit QRIS Simuru** (`lib/simuru.js`, `app/api/deposit/*`). Admin bisa menyalakan/mematikan
-  Simuru, Pakasir, dan RumahOTP satu per satu dari Dashboard Admin. Simuru tidak punya webhook deposit,
-  jadi statusnya dicek lewat polling halaman deposit + cron.
-- **Suntik Sosmed** di halaman `/suntik` (`lib/smmService.js`, `app/api/smm/*`): pilih platform →
-  kategori → layanan, isi link target & jumlah (atau daftar komentar untuk layanan custom comments).
-  Harga jual = harga Simuru × (1 + markup%). Refund otomatis untuk pesanan batal (penuh) dan
-  selesai sebagian (proporsional). Tombol refill untuk layanan bergaransi.
+- **Deposit QRIS OTPMANIA** (`lib/otpmania.js`, `app/api/deposit/*`). Admin bisa menyalakan/mematikan
+  OTPMANIA, Pakasir, dan RumahOTP satu per satu dari Dashboard Admin. OTPMANIA tidak punya webhook
+  deposit, jadi statusnya dicek lewat polling halaman deposit + cron.
 - **Mutasi saldo lengkap** lewat koleksi `balance_logs` (`lib/ledger.js`): deposit, cashback, bonus
-  referral, voucher, tukar poin, transfer, beli OTP, refund, suntik, dan koreksi admin.
-- **Notifikasi Telegram lebih detail**: deposit menampilkan QRIS yang dipakai (Simuru/Pakasir/RumahOTP),
-  ID & ref provider, biaya admin, total bayar, saldo sebelum/sesudah, deposit ke-berapa, dan lama
-  pembayaran. Notif baru: order & status suntik sosmed, transfer, deposit batal/kedaluwarsa,
-  peringatan provider (mis. saldo Simuru kurang).
-- Bot owner: perintah baru `/saldosimuru`.
+  referral, voucher, tukar poin, transfer, beli OTP, refund, dan koreksi admin.
+- **Notifikasi Telegram lebih detail**: deposit menampilkan QRIS yang dipakai
+  (OTPMANIA/Pakasir/RumahOTP), ID & ref provider, biaya admin, total bayar, saldo sebelum/sesudah,
+  deposit ke-berapa, dan lama pembayaran. Notif baru: transfer, deposit batal/kedaluwarsa,
+  peringatan provider (mis. saldo provider kurang).
+- Bot owner: perintah `/saldootpmania`.
 
 ### Perbaikan bug
 - **Celah harga OTP**: dulu harga dasar dikirim dari browser (bisa diubah jadi 0). Sekarang harga
@@ -38,18 +34,22 @@ otomatis via **QRIS Simuru / Pakasir / RumahOTP**. Dibangun dengan Next.js, siap
 
 ### Tampilan
 Desain ulang: font Plus Jakarta Sans + JetBrains Mono (untuk kode OTP/akun), kartu saldo bergaya
-kartu SIM, navigasi bawah 5 tab (Beranda, Nokos, Deposit, Suntik, Riwayat), halaman Beranda,
-Dashboard, Deposit, Suntik, Riwayat (tab Nokos/Suntik/Deposit), dan Mutasi yang baru.
+kartu SIM, navigasi bawah (Beranda, Nokos, Deposit, Produk, Gratis), halaman Beranda,
+Dashboard, Deposit, Riwayat (tab Nokos/Deposit), dan Mutasi yang baru.
 
-## Setup Simuru
+## Setup OTPMANIA
 
-1. Login ke https://simuru.com, ambil API key di halaman API.
-2. Isi `SIMURU_APIKEY` di Vercel → Project Settings → Environment Variables (untuk lokal sudah ada
-   di `.env.local`). **Jangan** menulis API key di kode atau meng-commit-nya.
-3. Isi saldo akun Simuru kamu — deposit user masuk ke saldo Simuru ini, dan pesanan suntik memakai
-   saldo yang sama. Pantau saldonya di Dashboard Admin atau lewat `/saldosimuru` di bot owner.
-4. Simuru membatasi 5 QRIS pending per API key. Kalau sedang ramai, user diminta mencoba lagi
-   atau memilih metode lain.
+1. Login ke https://otpmania.biz.id, ambil API key di halaman API Docs.
+2. Pastikan **Scope** API key disetel ke `Full` (bukan Read-only), kalau tidak order nomor &
+   deposit akan ditolak dengan HTTP 403.
+3. Kalau kamu mengisi **IP Whitelist** di profil OTPMANIA, daftarkan juga IP server Vercel —
+   atau kosongkan supaya semua IP diizinkan.
+4. Isi `OTPMANIA_APIKEY` di Vercel → Project Settings → Environment Variables (untuk lokal ada di
+   `.env.local`). **Jangan** menulis API key di kode atau meng-commit-nya.
+5. Isi saldo akun OTPMANIA — deposit user dan pembelian nomor memakai saldo ini. Pantau lewat
+   Dashboard Admin → Server OTP → Koneksi OTPMANIA, atau `/saldootpmania` di bot owner.
+
+Batas dari OTPMANIA: 60 request baca per menit, dan jeda minimal 3 detik antar pemesanan nomor.
 
 ## Catatan redesain sebelumnya
 
@@ -273,32 +273,26 @@ body `{ token: "AP-...." }`.
 - Semua API key (Pakasir, RumahOTP) hanya dipakai di server (API routes), tidak
   pernah dikirim ke browser.
 
-## Server "Nokos OTP Fast" (Simuru)
+## Server nokos: RumahOTP + OTPMANIA
 
-Isi `SIMURU_APIKEY` di environment (lokal: `.env.local`, Vercel: Environment
-Variables), lalu deploy ulang. Satu key dipakai untuk tiga fitur: deposit QRIS,
-Suntik Sosmed (SMM), dan server OTP "Nokos OTP Fast".
-
-Tombol "Pesan nomor" membuka pilihan server, dan **kedua server memakai alur yang
-sama**: pilih aplikasi → pilih negara → order.
+Tombol "Pesan nomor" membuka pilihan server, dan **semua server memakai alur yang sama**:
+pilih aplikasi → pilih negara → order.
 
 - **Server Nokos Murah** → RumahOTP.
-- **Server Nokos OTP Fast** → Simuru.
+- **Server Plus** → OTPMANIA gateway `s2` (jalur utama, stok paling melimpah).
+- **Server Express** → OTPMANIA gateway `s1` (jalur cadangan saat stok utama kosong).
 
-Admin bisa menyalakan/mematikan tiap server dari Dashboard Admin → Pengaturan →
-Server OTP, tanpa deploy ulang.
+Admin bisa menyalakan/mematikan tiap server dari Dashboard Admin → Pengaturan → Server OTP,
+tanpa deploy ulang.
 
-Katalog harga Simuru diambil dari `GET /api/pricelist` — seluruh katalog (±16 ribu
-baris layanan × negara) dalam satu request, di-cache 5 menit per instance. Kunci
-order adalah pasangan `service_id` + `country_id` yang sama persis dengan baris
-pricelist, sehingga tidak ada lagi error "Service not found" akibat slug yang
-tidak cocok.
+Pesanan OTPMANIA disimpan dengan `server: "otpmania_s2"` / `"otpmania_s1"` plus `countryId`,
+sehingga status, pembatalan, dan ganti nomor tahu harus menembak gateway yang mana.
 
-File utama: `lib/simuru.js` (client API), `lib/otpServers.js` (daftar server),
-`app/api/otp/services` & `app/api/otp/countries` (menerima `?server=`),
-`app/api/otp/order` (routing per server), `lib/orderReconcile.js` (status/refund
-untuk kedua provider). Pesanan Simuru disimpan dengan `server: "simuru"`.
+File utama: `lib/otpmania.js` (client API), `lib/otpServers.js` (daftar server),
+`app/api/otp/services` & `app/api/otp/countries` (menerima `?server=`), `app/api/otp/order`
+(routing per server), `lib/orderReconcile.js` (status/refund untuk semua provider).
 
-**Catatan:** request ke Simuru mengirim `User-Agent` browser biasa. Tanpa itu WAF
-Simuru membalas HTTP 403 untuk request dari IP datacenter seperti Vercel.
+Kalau ada yang gagal, buka Dashboard Admin → Server OTP → **Diagnosa koneksi**: tombol itu
+menembak beberapa endpoint OTPMANIA lalu melaporkan status, isi respons, dan apakah yang
+menolak OTPMANIA sendiri atau CDN di depannya.
 

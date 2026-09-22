@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
 import { createOrder, toEpochMs } from "@/lib/rumahotp";
-import { createSimuruOtpOrder } from "@/lib/simuru";
+import { createOtpmaniaOrder, isOtpmaniaServer, otpmaniaServerCode } from "@/lib/otpmania";
 import { sendTelegramNotif, otpPurchaseNotif, otpAutoRefundNotif } from "@/lib/telegram";
 import { logBalance } from "@/lib/ledger";
 
 // Dipakai saat nomor yang dibeli kedaluwarsa tanpa kode OTP masuk. User bisa minta
 // nomor pengganti tanpa membayar lagi (memakai saldo yang sudah terpotong di order lama).
 // Kalau provider juga gagal menyediakan nomor baru, saldo otomatis dikembalikan penuh.
-// Berlaku untuk kedua server: RumahOTP (murah) dan Simuru (OTP fast).
+// Berlaku untuk semua server: RumahOTP maupun OTPMANIA.
 export async function POST(req) {
   try {
     const { token, orderId } = await req.json();
@@ -27,8 +27,8 @@ export async function POST(req) {
       return NextResponse.json({ error: "Ganti nomor hanya bisa dipakai untuk pesanan yang sudah kedaluwarsa." }, { status: 400 });
     }
 
-    const isSimuru = oldOrder.server === "simuru";
-    if (isSimuru ? !oldOrder.serviceId || oldOrder.countryId == null : !oldOrder.numberId || !oldOrder.providerId) {
+    const isOm = isOtpmaniaServer(oldOrder.server);
+    if (isOm ? !oldOrder.serviceId || oldOrder.countryId == null : !oldOrder.numberId || !oldOrder.providerId) {
       return NextResponse.json({ error: "Data pesanan lama tidak lengkap, tidak bisa diganti otomatis." }, { status: 400 });
     }
 
@@ -47,18 +47,19 @@ export async function POST(req) {
     // Pesan nomor pengganti ke provider yang sama. Hasilnya diseragamkan ke `fresh`.
     let fresh = null;
     try {
-      if (isSimuru) {
-        const sim = await createSimuruOtpOrder({
-          serviceId: oldOrder.serviceId,
-          countryId: Number(oldOrder.countryId),
-          operator: oldOrder.operator || "random"
+      if (isOm) {
+        const fresh2 = await createOtpmaniaOrder({
+          service: oldOrder.serviceId,
+          country: oldOrder.countryId,
+          operator: oldOrder.operator || "any",
+          server: otpmaniaServerCode(oldOrder.server)
         });
-        if (sim?.id) {
+        if (fresh2?.id) {
           fresh = {
-            orderId: String(sim.id),
-            phoneNumber: sim.phone_number || "-",
-            expiredMs: toEpochMs(sim.expired_at) || (sim.remaining_seconds ? Date.now() + sim.remaining_seconds * 1000 : null),
-            extra: { server: "simuru", countryId: Number(oldOrder.countryId), operator: oldOrder.operator || "random" }
+            orderId: fresh2.id,
+            phoneNumber: fresh2.number || "-",
+            expiredMs: toEpochMs(fresh2.expiredAt),
+            extra: { server: oldOrder.server, countryId: String(oldOrder.countryId), operator: oldOrder.operator || "any" }
           };
         }
       } else {

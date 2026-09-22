@@ -19,8 +19,8 @@ export default function DepositPage() {
   const { token, balance, refreshBalance } = useUser();
 
   const [cfg, setCfg] = useState({
-    providers: { simuru: false, pakasir: true, rumahotp: false },
-    fees: { simuru: 0, pakasir: 0, rumahotp: 0.7 },
+    providers: { otpmania: false, pakasir: true, rumahotp: false },
+    fees: { otpmania: 0, pakasir: 0, rumahotp: 0.7 },
     min: 2000,
     max: 1000000
   });
@@ -417,9 +417,6 @@ export default function DepositPage() {
                   <div className="mt-6 flex flex-wrap justify-center gap-2">
                     <Link href="/otp" className="btn-primary">
                       Beli nokos
-                    </Link>
-                    <Link href="/suntik" className="btn-ghost">
-                      Suntik sosmed
                     </Link>
                     <button onClick={reset} className="btn-ghost">
                       Isi lagi

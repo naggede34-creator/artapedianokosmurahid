@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSettings, depositLimits } from "@/lib/settings";
-import { simuruConfigured } from "@/lib/simuru";
+import { otpmaniaConfigured } from "@/lib/otpmania";
 import { rumahOtpConfigured } from "@/lib/rumahotp";
 
 export const dynamic = "force-dynamic";
@@ -13,9 +13,9 @@ const CHANNELS = () => ({
 export async function GET() {
   const limits = depositLimits();
   try {
-    const { maintenance, maintenanceMsg, maintenanceButtonLabel, maintenanceButtonUrl, depositProviders, depositFeePercent, smm, heroChars } = await getSettings();
+    const { maintenance, maintenanceMsg, maintenanceButtonLabel, maintenanceButtonUrl, depositProviders, depositFeePercent, heroChars } = await getSettings();
     const providers = { ...depositProviders };
-    if (!simuruConfigured()) providers.simuru = false;
+    if (!otpmaniaConfigured()) providers.otpmania = false;
     if (rumahOtpConfigured()) {
       if (providers.rumahotp === undefined || providers.rumahotp === null) providers.rumahotp = true;
     } else {
@@ -30,7 +30,6 @@ export async function GET() {
       depositFeePercent,
       depositMin: limits.min,
       depositMax: limits.max,
-      smmEnabled: Boolean(smm?.enabled) && simuruConfigured(),
       heroChars: heroChars || [],
       ...CHANNELS()
     });
@@ -39,14 +38,13 @@ export async function GET() {
     return NextResponse.json({
       maintenance: false,
       depositProviders: {
-        simuru: simuruConfigured(),
+        otpmania: otpmaniaConfigured(),
         pakasir: true,
         rumahotp: rumahOtpConfigured()
       },
-      depositFeePercent: { simuru: 0, pakasir: 0, rumahotp: 0.7 },
+      depositFeePercent: { otpmania: 0, pakasir: 0, rumahotp: 0.7 },
       depositMin: limits.min,
       depositMax: limits.max,
-      smmEnabled: false,
       ...CHANNELS()
     });
   }

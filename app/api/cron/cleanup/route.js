@@ -92,7 +92,7 @@ export async function GET(req) {
   const noteworthy =
     health.some((h) => !h.ok || h.error) ||
     cleanup.errors.length > 0 ||
-    cleanup.otpRefunded + cleanup.depositsCredited + cleanup.smmSettled + cleanup.depositsDeleted + cleanup.broadcastsDeleted > 0 ||
+    cleanup.otpRefunded + cleanup.depositsCredited + cleanup.depositsDeleted + cleanup.broadcastsDeleted > 0 ||
     new URL(req.url).searchParams.get("report") === "1";
   if (noteworthy) sendMonitorLog(cronReportLog({ health, cleanup }));
 

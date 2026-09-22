@@ -13,7 +13,7 @@ function pickField(obj, names) {
 //   https://domain-kamu.vercel.app/api/deposit/webhook
 // Isi body webhook TIDAK pernah dipercaya begitu saja — status selalu dicek ulang
 // langsung ke provider (lihat syncDeposit) sebelum saldo dikreditkan.
-// Simuru tidak punya webhook deposit; deposit Simuru dicek lewat polling & cron.
+// OTPMANIA tidak punya webhook deposit; statusnya dicek lewat polling & cron.
 export async function POST(req) {
   try {
     const body = await req.json().catch(() => ({}));

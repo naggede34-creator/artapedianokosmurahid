@@ -5,10 +5,8 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useUser } from "@/app/providers";
 import OtpOrderPanel from "@/components/OtpOrderPanel";
-import SmmOrderCard from "@/components/SmmOrderCard";
-import { platformIcon } from "@/components/PlatformIcon";
 import { PageHeader, Icon, Badge, EmptyState, Segmented, statusTone, rupiah, fmtWIB, Row, CopyButton } from "@/components/ui";
-import { DEPOSIT_STATUS_LABEL, SMM_STATUS_LABEL, providerName } from "@/lib/paymentProviders";
+import { DEPOSIT_STATUS_LABEL, providerName } from "@/lib/paymentProviders";
 
 const OTP_LABEL = {
   pending: "Menunggu kode",
@@ -47,10 +45,9 @@ export default function RiwayatPage() {
 function RiwayatInner() {
   const { token, refreshBalance } = useUser();
   const params = useSearchParams();
-  const initialTab = ["otp", "suntik", "deposit"].includes(params.get("tab")) ? params.get("tab") : "otp";
+  const initialTab = ["otp", "deposit"].includes(params.get("tab")) ? params.get("tab") : "otp";
   const [tab, setTab] = useState(initialTab);
   const [otp, setOtp] = useState([]);
-  const [smm, setSmm] = useState([]);
   const [deposits, setDeposits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -63,12 +60,10 @@ function RiwayatInner() {
     const t = encodeURIComponent(token);
     Promise.all([
       fetch(`/api/otp/history?token=${t}`).then((r) => r.json()).catch(() => ({})),
-      fetch(`/api/smm/orders?token=${t}`).then((r) => r.json()).catch(() => ({})),
       fetch(`/api/deposit/history?token=${t}`).then((r) => r.json()).catch(() => ({}))
     ])
-      .then(([o, s, d]) => {
+      .then(([o, d]) => {
         setOtp(o.items || []);
-        setSmm(s.items || []);
         setDeposits(d.items || []);
       })
       .finally(() => setLoading(false));
@@ -81,10 +76,6 @@ function RiwayatInner() {
   const fOtp = useMemo(
     () => otp.filter((o) => !q || `${o.serviceName} ${o.countryName} ${o.phoneNumber} ${o.orderId}`.toLowerCase().includes(q)),
     [otp, q]
-  );
-  const fSmm = useMemo(
-    () => smm.filter((o) => !q || `${o.serviceTitle} ${o.platform} ${o.target} ${o.id}`.toLowerCase().includes(q)),
-    [smm, q]
   );
   const fDep = useMemo(
     () => deposits.filter((d) => !q || `${d.orderId} ${d.providerRef || ""} ${providerName(d.provider)}`.toLowerCase().includes(q)),
@@ -102,21 +93,6 @@ function RiwayatInner() {
           { key: "phoneNumber", label: "Nomor" },
           { key: "otpCode", label: "Kode OTP" },
           { key: "price", label: "Harga" },
-          { key: "status", label: "Status" },
-          { key: "createdAt", label: "Tanggal" }
-        ])
-      );
-    } else if (tab === "suntik") {
-      downloadCsv(
-        `riwayat-suntik-${Date.now()}.csv`,
-        toCsv(fSmm, [
-          { key: "id", label: "Order" },
-          { key: "platform", label: "Platform" },
-          { key: "serviceTitle", label: "Layanan" },
-          { key: "target", label: "Target" },
-          { key: "quantity", label: "Jumlah" },
-          { key: "charge", label: "Biaya" },
-          { key: "refundedAmount", label: "Refund" },
           { key: "status", label: "Status" },
           { key: "createdAt", label: "Tanggal" }
         ])
@@ -144,7 +120,7 @@ function RiwayatInner() {
       <PageHeader
         icon={<Icon.history />}
         title="Riwayat"
-        desc="Semua pembelian nokos, suntik sosmed, dan deposit kamu."
+        desc="Semua pembelian nokos dan deposit kamu."
         action={
           <Link href="/mutasi" className="btn-ghost px-4 py-2.5">
             Lihat mutasi saldo
@@ -158,7 +134,6 @@ function RiwayatInner() {
           onChange={setTab}
           options={[
             { value: "otp", label: "Nokos", count: otp.length },
-            { value: "suntik", label: "Suntik", count: smm.length },
             { value: "deposit", label: "Deposit", count: deposits.length }
           ]}
         />
@@ -223,42 +198,6 @@ function RiwayatInner() {
               ))
             )}
           </div>
-        ) : tab === "suntik" ? (
-          fSmm.length === 0 ? (
-            <div className="card">
-              <EmptyState
-                icon="🚀"
-                title={smm.length ? "Tidak ada yang cocok" : "Belum pernah suntik sosmed"}
-                action={!smm.length && <Link href="/suntik" className="btn-primary">Mulai suntik</Link>}
-              />
-            </div>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-2">
-              {fSmm.map((o) =>
-                !o.settled && o.status !== "failed" ? (
-                  <SmmOrderCard key={o.id} order={o} token={token} onSettled={refreshBalance} />
-                ) : (
-                  <div key={o.id} className="card flex items-center gap-3 p-4">
-                    {platformIcon(o.platform, 36)}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-ink">{o.serviceTitle}</p>
-                      <p className="truncate text-xs text-muted">
-                        {Number(o.quantity).toLocaleString("id-ID")} · {o.target}
-                      </p>
-                      <p className="text-[11px] text-muted">{fmtWIB(o.createdAt)}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-sm font-bold tabular-nums text-ink">{rupiah(o.charge)}</p>
-                      {o.refundedAmount > 0 && <p className="text-[11px] font-semibold text-success">+{rupiah(o.refundedAmount)} refund</p>}
-                      <Badge tone={statusTone(o.status)} className="mt-1">
-                        {SMM_STATUS_LABEL[o.status] || o.status}
-                      </Badge>
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-          )
         ) : (
           <div className="card divide-y divide-line overflow-hidden">
             {fDep.length === 0 ? (

@@ -5,20 +5,18 @@ import { useEffect, useRef, useState } from "react";
 import SimCard from "@/components/SimCard";
 import TransactionTicker from "@/components/TransactionTicker";
 import LiveTicker from "@/components/LiveTicker";
-import { Icon, rupiah } from "@/components/ui";
-import { platformIcon } from "@/components/PlatformIcon";
+import { Icon } from "@/components/ui";
 
 const products = [
   { href: "/otp",     title: "Beli nokos",   desc: "OTP WhatsApp, Telegram, Google & ratusan aplikasi.", icon: Icon.phone,    tone: "bg-amber text-white",         emoji: "📱" },
-  { href: "/suntik",  title: "Suntik sosmed",desc: "Followers, likes, views IG, TikTok, YouTube dll.",  icon: Icon.rocket,   tone: "bg-teal-bright text-white",   emoji: "🚀" },
   { href: "/deposit", title: "Isi saldo",    desc: "Bayar pakai QRIS dari e-wallet atau m-banking.",   icon: Icon.qris,     tone: "bg-success text-white",       emoji: "💳" },
-  { href: "/riwayat", title: "Riwayat",      desc: "Pantau kode OTP, suntik, dan status deposit.",     icon: Icon.history,  tone: "bg-surface3 text-ink",        emoji: "📋" },
+  { href: "/riwayat", title: "Riwayat",      desc: "Pantau kode OTP dan status deposit.",     icon: Icon.history,  tone: "bg-surface3 text-ink",        emoji: "📋" },
 ];
 
 const steps = [
   { num: "01", title: "Isi saldo lewat QRIS",  desc: "Mulai dari Rp2.000. Saldo masuk otomatis begitu pembayaran terdeteksi.", emoji: "💳", color: "bg-amber text-white" },
-  { num: "02", title: "Pilih layanan",          desc: "Nomor OTP per negara & server, atau paket suntik. Harga tampil di depan.", emoji: "🎯", color: "bg-teal-bright text-white" },
-  { num: "03", title: "Terima hasilnya",        desc: "Kode OTP muncul di halaman pesanan. Suntik berjalan otomatis sampai selesai.", emoji: "⚡", color: "bg-success text-white" },
+  { num: "02", title: "Pilih layanan",          desc: "Nomor OTP per negara & server. Harga tampil di depan.", emoji: "🎯", color: "bg-teal-bright text-white" },
+  { num: "03", title: "Terima hasilnya",        desc: "Kode OTP langsung muncul di halaman pesanan.", emoji: "⚡", color: "bg-success text-white" },
 ];
 
 const TESTIMONIALS = [
@@ -202,7 +200,6 @@ function SectionHeader({ badge, title, sub }) {
 export default function HomePage() {
   const [services, setServices] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(true);
-  const [platforms, setPlatforms] = useState([]);
   const [siteStats, setSiteStats] = useState(null);
 
   useEffect(() => {
@@ -216,10 +213,6 @@ export default function HomePage() {
       })
       .catch(() => setServices([]))
       .finally(() => setServicesLoading(false));
-    fetch("/api/smm/platforms")
-      .then((r) => r.json())
-      .then((d) => setPlatforms(Array.isArray(d.items) ? d.items.slice(0, 8) : []))
-      .catch(() => setPlatforms([]));
     fetch("/api/stats/public")
       .then((r) => r.json())
       .then((d) => setSiteStats(d))
@@ -260,8 +253,8 @@ export default function HomePage() {
 
           {/* headline with glitch */}
           <h1 className="glitch-text text-[34px] font-extrabold leading-[1.04] tracking-tight text-ink sm:text-[50px]"
-            data-text="Nomor OTP &amp; suntik sosmed, semua di sini.">
-            Nomor OTP &amp; suntik sosmed,
+            data-text="Nomor OTP murah, semua di sini.">
+            Nomor OTP murah,
             <br />
             <span className="text-gradient-blue">semua di sini.</span>
           </h1>
@@ -410,41 +403,6 @@ export default function HomePage() {
               ))}
         </div>
       </section>
-
-      {/* ===== SMM PLATFORMS ===== */}
-      {platforms.length > 0 && (
-        <section className="mt-12">
-          <div className="manga-panel overflow-hidden rounded-2xl">
-            <div className="flex flex-wrap items-end justify-between gap-3 border-b-3 border-ink p-5"
-              style={{ borderBottom: "3px solid rgb(var(--c-ink))", background: "rgb(var(--c-surface))" }}>
-              <div>
-                <div className="inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-teal-soft px-3 py-1 text-[11px] font-black uppercase tracking-wider text-teal-bright mb-2"
-                  style={{ boxShadow: "2px 2px 0 rgb(var(--c-ink))" }}>
-                  🚀 SMM Panel
-                </div>
-                <h2 className="text-xl font-extrabold tracking-tight text-ink">Suntik sosmed</h2>
-                <p className="mt-1 text-sm text-muted">Harga mulai per 1.000 — pilih platform.</p>
-              </div>
-              <Link href="/suntik" className="shine rounded-xl border-[3px] border-ink bg-teal-bright px-5 py-2.5 text-sm font-black text-white"
-                style={{ boxShadow: "3px 3px 0 rgb(var(--c-ink))" }}>
-                Mulai Suntik →
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 divide-x-2 divide-y-2 sm:grid-cols-4" style={{ borderColor: "rgb(var(--c-ink))", borderWidth: "2px" }}>
-              {platforms.map((p) => (
-                <Link key={p.platform} href={`/suntik?platform=${encodeURIComponent(p.platform)}`}
-                  className="shine group flex items-center gap-3 p-4 transition-colors hover:bg-amber-soft/40">
-                  {platformIcon(p.platform, 32)}
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-black text-ink">{p.platform}</span>
-                    <span className="block text-xs text-muted font-semibold">mulai {rupiah(p.minPrice)}</span>
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ===== TESTIMONIALS ===== */}
       <section className="mt-14">

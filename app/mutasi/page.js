@@ -19,8 +19,6 @@ const TYPE_ICON = {
   transfer_out: "📤",
   otp: "📱",
   otp_refund: "↩️",
-  smm: "🚀",
-  smm_refund: "↩️",
   admin_add: "🛡️",
   admin_sub: "🛡️"
 };

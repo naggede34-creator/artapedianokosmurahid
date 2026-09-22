@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
 import { setOrderStatus } from "@/lib/rumahotp";
-import { cancelSimuruOtpOrder } from "@/lib/simuru";
+import { cancelOtpmaniaOrder, isOtpmaniaServer } from "@/lib/otpmania";
 import { reconcileOtpOrder } from "@/lib/orderReconcile";
 import { logBalance } from "@/lib/ledger";
 
@@ -61,8 +61,9 @@ export async function POST(req) {
 
     let providerMessage;
     try {
-      if (order.server === "simuru") {
-        await cancelSimuruOtpOrder(orderId);
+      if (isOtpmaniaServer(order.server)) {
+        // cancelActivation sekaligus mengembalikan saldo di sisi OTPMANIA.
+        await cancelOtpmaniaOrder(orderId);
       } else {
         const result = await setOrderStatus(process.env.RUMAHOTP_APIKEY, orderId, "cancel");
         const d = result?.data || result;

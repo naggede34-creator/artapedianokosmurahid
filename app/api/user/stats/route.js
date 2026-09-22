@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { otpOrdersCol, depositsCol, smmOrdersCol } from "@/lib/db";
+import { otpOrdersCol, depositsCol } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -17,15 +17,13 @@ export async function GET(req) {
     const todayKey = dayKey(new Date());
     const since = new Date(Date.now() - days * 24 * 3600 * 1000);
 
-    const [allOrders, allDeposits, allSmm] = await Promise.all([
+    const [allOrders, allDeposits] = await Promise.all([
       (await otpOrdersCol()).find({ token }).project({ createdAt: 1, price: 1, status: 1, refunded: 1 }).toArray(),
-      (await depositsCol()).find({ token }).project({ createdAt: 1, amount: 1, status: 1 }).toArray(),
-      (await smmOrdersCol()).find({ token }).project({ createdAt: 1, charge: 1, status: 1, refundedAmount: 1 }).toArray()
+      (await depositsCol()).find({ token }).project({ createdAt: 1, amount: 1, status: 1 }).toArray()
     ]);
 
     const otpBerhasil = allOrders.filter((o) => o.status === "done").length;
     const depositSukses = allDeposits.filter((d) => d.status === "completed").length;
-    const smmSelesai = allSmm.filter((s) => s.status === "completed" || s.status === "partial").length;
 
     const daily = [];
     const base = new Date(`${todayKey}T00:00:00Z`);
@@ -45,16 +43,6 @@ export async function GET(req) {
         row.keluar += Number(o.price || 0);
       }
     }
-    for (const s of allSmm) {
-      if (new Date(s.createdAt) < since) continue;
-      const row = byDay[dayKey(s.createdAt)];
-      if (!row) continue;
-      row.total += 1;
-      if (s.status === "completed" || s.status === "partial") row.completed += 1;
-      if (!["failed", "canceled", "refunded"].includes(s.status)) {
-        row.keluar += Math.max(0, Number(s.charge || 0) - Number(s.refundedAmount || 0));
-      }
-    }
     for (const d of allDeposits) {
       if (d.status !== "completed" || new Date(d.createdAt) < since) continue;
       const row = byDay[dayKey(d.createdAt)];
@@ -62,9 +50,8 @@ export async function GET(req) {
     }
 
     return NextResponse.json({
-      totalTransaksi: allOrders.length + allSmm.length,
+      totalTransaksi: allOrders.length,
       otpBerhasil,
-      smmSelesai,
       depositSukses,
       daily
     });

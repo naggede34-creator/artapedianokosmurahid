@@ -12,7 +12,6 @@ import NotificationBell from "@/components/NotificationBell";
 const links = [
   { href: "/dashboard", label: "Beranda" },
   { href: "/otp", label: "Nokos" },
-  { href: "/suntik", label: "Suntik Sosmed" },
   { href: "/deposit", label: "Deposit" },
   { href: "/riwayat", label: "Riwayat" },
   { href: "/harga", label: "Harga" }

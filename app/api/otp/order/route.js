@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { usersCol, otpOrdersCol } from "@/lib/db";
 import { createOrder, getCountries, toEpochMs } from "@/lib/rumahotp";
-import { createSimuruOtpOrder, getSimuruCountries, getSimuruPricelist } from "@/lib/simuru";
+import {
+  createOtpmaniaOrder,
+  getOtpmaniaPrices,
+  isOtpmaniaServer,
+  normalizeOtpmaniaPrices,
+  otpmaniaServerCode
+} from "@/lib/otpmania";
 import { sendTelegramNotif, otpPurchaseNotif } from "@/lib/telegram";
 import { getSettings } from "@/lib/settings";
 import { logBalance } from "@/lib/ledger";
@@ -21,23 +27,14 @@ async function resolveRumahOTPPrice(serviceId, numberId, providerId) {
   return { price, outOfStock: false, country };
 }
 
-// Harga Simuru selalu diambil ulang dari provider saat order supaya harga yang
+// Harga OTPMANIA selalu diambil ulang dari provider saat order supaya harga yang
 // ditagih tidak bisa dimanipulasi dari sisi browser.
-async function resolveSimuruPrice(serviceId, countryId, operator) {
-  let list = [];
-  try {
-    list = await getSimuruCountries(serviceId);
-  } catch (err) {
-    console.error("[otp/order] simuru per-service gagal, pakai pricelist:", err?.message || err);
-  }
-  if (!list.length) list = await getSimuruPricelist({ serviceId });
-
-  const sameCountry = list.filter((c) => String(c.country_id) === String(countryId));
-  if (!sameCountry.length) return null;
-  const entry = sameCountry.find((c) => (c.operator || "random") === (operator || "random")) || sameCountry[0];
-  const price = Number(entry.price || 0);
-  if (!Number.isFinite(price) || price <= 0) return null;
-  return { price, outOfStock: false, country: entry, operator: entry.operator || "random" };
+async function resolveOtpmaniaPrice(serviceId, countryId, serverCode) {
+  const raw = await getOtpmaniaPrices({ service: serviceId, country: countryId, server: serverCode });
+  const rows = normalizeOtpmaniaPrices(raw, { countryHint: countryId });
+  const entry = rows.find((r) => String(r.countryId) === String(countryId)) || rows[0];
+  if (!entry) return null;
+  return { price: entry.price, outOfStock: entry.stock === 0, country: null };
 }
 
 export async function POST(req) {
@@ -51,19 +48,20 @@ export async function POST(req) {
     const {
       serviceId, numberId, providerId, operatorId, operatorName,
       serviceName, countryName, server,
-      // Khusus Server OTP Fast (Simuru)
-      countryId, operator
+      // Khusus server OTPMANIA
+      countryId
     } = body;
 
-    const isSimuru = server === "simuru";
+    const isOm = isOtpmaniaServer(server);
+    const serverCode = isOm ? otpmaniaServerCode(server) : null;
 
     if (!token || !serviceId) {
       return NextResponse.json({ error: "Parameter kurang. Muat ulang halaman lalu coba lagi." }, { status: 400 });
     }
-    if (!isSimuru && (!numberId || !providerId)) {
+    if (!isOm && (!numberId || !providerId)) {
       return NextResponse.json({ error: "Parameter kurang. Muat ulang halaman lalu coba lagi." }, { status: 400 });
     }
-    if (isSimuru && countryId === undefined) {
+    if (isOm && (countryId === undefined || countryId === null || countryId === "")) {
       return NextResponse.json({ error: "Negara belum dipilih. Muat ulang halaman lalu coba lagi." }, { status: 400 });
     }
 
@@ -76,12 +74,9 @@ export async function POST(req) {
       );
     }
 
-    let resolved;
-    if (isSimuru) {
-      resolved = await resolveSimuruPrice(serviceId, countryId, operator);
-    } else {
-      resolved = await resolveRumahOTPPrice(serviceId, numberId, providerId);
-    }
+    const resolved = isOm
+      ? await resolveOtpmaniaPrice(serviceId, countryId, serverCode)
+      : await resolveRumahOTPPrice(serviceId, numberId, providerId);
 
     if (!resolved) return NextResponse.json({ error: "Server/negara ini sudah tidak tersedia. Pilih yang lain." }, { status: 400 });
     if (resolved.outOfStock) return NextResponse.json({ error: "Stok server ini sedang habis. Pilih server lain." }, { status: 400 });
@@ -102,39 +97,36 @@ export async function POST(req) {
     }
     debited = true;
 
-    let orderId, phoneNumber, expiredMs, finalCountry, simuruOperator;
+    let orderId, phoneNumber, expiredMs, finalCountry;
 
-    if (isSimuru) {
-      let data;
+    if (isOm) {
+      let data = null;
       let failMsg = null;
-      // Operator pilihan user menang; `resolved.operator` hanya cadangan dari
-      // baris pricelist kalau user tidak memilih apa pun.
-      simuruOperator = operator || resolved.operator || "random";
       try {
-        data = await createSimuruOtpOrder({
-          serviceId,
-          countryId: Number(countryId),
-          operator: simuruOperator
+        data = await createOtpmaniaOrder({
+          service: serviceId,
+          country: countryId,
+          operator: operatorId || "any",
+          server: serverCode
         });
       } catch (e) {
-        data = null;
         failMsg = e?.message || null;
-        console.error("[otp/order] Simuru createOrder gagal:", failMsg);
+        console.error("[otp/order] OTPMANIA getNumber gagal:", failMsg);
       }
 
       if (!data || !data.id) {
         await users.updateOne({ token }, { $inc: { balance: sellPrice } });
         debited = false;
         return NextResponse.json(
-          { error: `${failMsg || "Nomor tidak tersedia saat ini"}. Saldo tidak terpotong, coba negara lain.` },
+          { error: `${failMsg || "Nomor tidak tersedia saat ini"}. Saldo tidak terpotong, coba negara/server lain.` },
           { status: 400 }
         );
       }
 
-      orderId = String(data.id);
-      phoneNumber = data.phone_number || "-";
-      expiredMs = toEpochMs(data.expired_at) || (data.remaining_seconds ? Date.now() + data.remaining_seconds * 1000 : null);
-      finalCountry = countryName || resolved.country?.country_name || "-";
+      orderId = data.id;
+      phoneNumber = data.number || "-";
+      expiredMs = toEpochMs(data.expiredAt);
+      finalCountry = countryName || "-";
     } else {
       let data;
       try {
@@ -165,7 +157,7 @@ export async function POST(req) {
     await orders.insertOne({
       orderId,
       token,
-      server: isSimuru ? "simuru" : "rumahotp",
+      server: isOm ? server : "rumahotp",
       serviceId: String(serviceId),
       serviceName: finalService,
       countryName: finalCountry,
@@ -176,8 +168,8 @@ export async function POST(req) {
       otpCode: null,
       otpMsg: null,
       refunded: false,
-      ...(isSimuru
-        ? { countryId: Number(countryId), operator: simuruOperator }
+      ...(isOm
+        ? { countryId: String(countryId), operator: operatorId || "any" }
         : { numberId, providerId, operatorId: operatorId || null, operatorName: operatorName || null }),
       createdAt: new Date(),
       expiredAt: expiredMs ? new Date(expiredMs) : null
@@ -192,18 +184,19 @@ export async function POST(req) {
       ref: orderId
     });
 
-    const purchaseText = otpPurchaseNotif({
-      orderId,
-      serviceName: finalService,
-      countryName: finalCountry,
-      phoneNumber,
-      price: sellPrice,
-      token,
-      name: user.name,
-      operator: isSimuru ? simuruOperator : operatorName,
-      balance: afterDebit.balance
-    });
-    sendTelegramNotif(purchaseText);
+    sendTelegramNotif(
+      otpPurchaseNotif({
+        orderId,
+        serviceName: finalService,
+        countryName: finalCountry,
+        phoneNumber,
+        price: sellPrice,
+        token,
+        name: user.name,
+        operator: isOm ? operatorId || "any" : operatorName,
+        balance: afterDebit.balance
+      })
+    );
 
     return NextResponse.json({
       orderId,
