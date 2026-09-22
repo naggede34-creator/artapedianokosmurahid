@@ -81,6 +81,9 @@ export default function AdminDashboardPage() {
   const [savingOtpServers, setSavingOtpServers] = useState(false);
   const [otpServersMsg, setOtpServersMsg] = useState("");
 
+  const [simuruDiag, setSimuruDiag] = useState(null);
+  const [simuruDiagLoading, setSimuruDiagLoading] = useState(false);
+
   const [maintenanceBtnForm, setMaintenanceBtnForm] = useState({ label: "", url: "" });
   const [savingMaintenanceBtn, setSavingMaintenanceBtn] = useState(false);
   const [maintenanceBtnMsg, setMaintenanceBtnMsg] = useState("");
@@ -422,6 +425,19 @@ export default function AdminDashboardPage() {
     } finally {
       setSavingSmm(false);
       setTimeout(() => setSettingsMsg(""), 2500);
+    }
+  }
+
+  async function runSimuruDiagnose() {
+    setSimuruDiagLoading(true);
+    setSimuruDiag(null);
+    try {
+      const res = await fetch("/api/admin/simuru?diagnose=1");
+      setSimuruDiag(await res.json());
+    } catch {
+      setSimuruDiag({ error: "Gagal menjalankan diagnosa." });
+    } finally {
+      setSimuruDiagLoading(false);
     }
   }
 
@@ -2430,6 +2446,39 @@ export default function AdminDashboardPage() {
               ))}
             </div>
             {otpServersMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{otpServersMsg}</p>}
+
+            <div className="mt-4 rounded-lg border border-line bg-surface px-3.5 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <span className="text-sm font-medium text-ink">Koneksi Simuru</span>
+                  <span className="ml-2 text-[11px] text-muted">
+                    {simuru == null
+                      ? "memuat..."
+                      : simuru.configured === false
+                      ? "API key belum diisi"
+                      : simuru.balance != null
+                      ? `saldo Rp${Number(simuru.balance).toLocaleString("id-ID")}`
+                      : simuru.error || "gagal cek"}
+                  </span>
+                </div>
+                <button onClick={runSimuruDiagnose} disabled={simuruDiagLoading} className="btn-ghost text-xs">
+                  {simuruDiagLoading ? "Mengecek..." : "Diagnosa 403"}
+                </button>
+              </div>
+              {simuruDiag && (
+                <div className="mt-3">
+                  <p className="text-xs font-semibold text-ink">{simuruDiag.verdict || simuruDiag.error}</p>
+                  {simuruDiag.keyLength != null && (
+                    <p className="mt-1 text-[11px] text-muted">
+                      API key: {simuruDiag.keyLength} karakter, berakhiran “{simuruDiag.keyTail}”
+                    </p>
+                  )}
+                  <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-surface2 p-2.5 text-[10px] leading-relaxed text-muted">
+                    {JSON.stringify(simuruDiag.checks ?? simuruDiag, null, 1)}
+                  </pre>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Suntik Sosmed */}
