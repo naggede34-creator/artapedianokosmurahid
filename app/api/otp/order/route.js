@@ -9,7 +9,8 @@ import {
   otpmaniaServerCode
 } from "@/lib/otpmania";
 import { sendTelegramNotif, otpPurchaseNotif } from "@/lib/telegram";
-import { getSettings } from "@/lib/settings";
+import { createDibananaOrder, getDibananaPrices } from "@/lib/dibanana";
+import { getSettings, markupForServer } from "@/lib/settings";
 import { logBalance } from "@/lib/ledger";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +38,17 @@ async function resolveOtpmaniaPrice(serviceId, countryId, serverCode) {
   return { price: entry.price, outOfStock: entry.stock === 0, country: null };
 }
 
+// Harga & id produk dibanana selalu diambil ulang saat order: id-nya opaque dan
+// bisa kedaluwarsa, sekaligus mencegah harga dimanipulasi dari sisi browser.
+async function resolveDibanana(serviceId, country, providerIndex) {
+  const providers = await getDibananaPrices({ service: serviceId, country });
+  const p = providers[providerIndex] || providers[0];
+  if (!p) return null;
+  const price = Number(p.price_idr || 0);
+  if (!Number.isFinite(price) || price <= 0) return null;
+  return { price, outOfStock: Number(p.stock) === 0, productId: p.id, country: null };
+}
+
 export async function POST(req) {
   const users = await usersCol();
   let debited = false;
@@ -48,20 +60,21 @@ export async function POST(req) {
     const {
       serviceId, numberId, providerId, operatorId, operatorName,
       serviceName, countryName, server,
-      // Khusus server OTPMANIA
-      countryId
+      // Khusus server OTPMANIA & dibanana
+      countryId, providerIndex
     } = body;
 
     const isOm = isOtpmaniaServer(server);
+    const isBn = server === "dibanana";
     const serverCode = isOm ? otpmaniaServerCode(server) : null;
 
     if (!token || !serviceId) {
       return NextResponse.json({ error: "Parameter kurang. Muat ulang halaman lalu coba lagi." }, { status: 400 });
     }
-    if (!isOm && (!numberId || !providerId)) {
+    if (!isOm && !isBn && (!numberId || !providerId)) {
       return NextResponse.json({ error: "Parameter kurang. Muat ulang halaman lalu coba lagi." }, { status: 400 });
     }
-    if (isOm && (countryId === undefined || countryId === null || countryId === "")) {
+    if ((isOm || isBn) && (countryId === undefined || countryId === null || countryId === "")) {
       return NextResponse.json({ error: "Negara belum dipilih. Muat ulang halaman lalu coba lagi." }, { status: 400 });
     }
 
@@ -74,15 +87,17 @@ export async function POST(req) {
       );
     }
 
-    const resolved = isOm
+    const resolved = isBn
+      ? await resolveDibanana(serviceId, countryId, Number(providerIndex) || 0)
+      : isOm
       ? await resolveOtpmaniaPrice(serviceId, countryId, serverCode)
       : await resolveRumahOTPPrice(serviceId, numberId, providerId);
 
     if (!resolved) return NextResponse.json({ error: "Server/negara ini sudah tidak tersedia. Pilih yang lain." }, { status: 400 });
     if (resolved.outOfStock) return NextResponse.json({ error: "Stok server ini sedang habis. Pilih server lain." }, { status: 400 });
 
-    const { markupPercent } = await getSettings();
-    sellPrice = Math.ceil(resolved.price * (1 + (Number(markupPercent) || 0) / 100));
+    const settings = await getSettings();
+    sellPrice = Math.ceil(resolved.price * (1 + markupForServer(settings, server || "rumahotp") / 100));
 
     const afterDebit = await users.findOneAndUpdate(
       { token, balance: { $gte: sellPrice } },
@@ -99,7 +114,31 @@ export async function POST(req) {
 
     let orderId, phoneNumber, expiredMs, finalCountry;
 
-    if (isOm) {
+    if (isBn) {
+      let data = null;
+      let failMsg = null;
+      try {
+        data = await createDibananaOrder({ id: resolved.productId });
+      } catch (e) {
+        failMsg = e?.message || null;
+        console.error("[otp/order] dibanana order gagal:", failMsg);
+      }
+
+      if (!data || !data.orderId) {
+        await users.updateOne({ token }, { $inc: { balance: sellPrice } });
+        debited = false;
+        return NextResponse.json(
+          { error: `${failMsg || "Nomor tidak tersedia saat ini"}. Saldo tidak terpotong, coba negara/server lain.` },
+          { status: 400 }
+        );
+      }
+
+      orderId = data.orderId;
+      phoneNumber = data.phoneNumber || "-";
+      // dibanana memberi masa aktif sekitar 19 menit sejak order.
+      expiredMs = Date.now() + 19 * 60 * 1000;
+      finalCountry = countryName || "-";
+    } else if (isOm) {
       let data = null;
       let failMsg = null;
       try {
@@ -157,7 +196,7 @@ export async function POST(req) {
     await orders.insertOne({
       orderId,
       token,
-      server: isOm ? server : "rumahotp",
+      server: isOm || isBn ? server : "rumahotp",
       serviceId: String(serviceId),
       serviceName: finalService,
       countryName: finalCountry,
@@ -168,7 +207,9 @@ export async function POST(req) {
       otpCode: null,
       otpMsg: null,
       refunded: false,
-      ...(isOm
+      ...(isBn
+        ? { countryId: String(countryId), providerIndex: Number(providerIndex) || 0 }
+        : isOm
         ? { countryId: String(countryId), operator: operatorId || "any" }
         : { numberId, providerId, operatorId: operatorId || null, operatorName: operatorName || null }),
       createdAt: new Date(),
@@ -193,7 +234,7 @@ export async function POST(req) {
         price: sellPrice,
         token,
         name: user.name,
-        operator: isOm ? operatorId || "any" : operatorName,
+        operator: isOm || isBn ? operatorId || "any" : operatorName,
         balance: afterDebit.balance
       })
     );

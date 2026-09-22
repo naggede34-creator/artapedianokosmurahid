@@ -77,9 +77,11 @@ export default function AdminDashboardPage() {
   const [otpmania, setOtpmania] = useState(null);
 
   const [savingOtpServers, setSavingOtpServers] = useState(false);
+  const [serverMarkups, setServerMarkups] = useState({});
   const [otpServersMsg, setOtpServersMsg] = useState("");
 
   const [otpmaniaDiag, setOtpmaniaDiag] = useState(null);
+  const [dibanana, setDibanana] = useState(null);
   const [otpmaniaDiagLoading, setOtpmaniaDiagLoading] = useState(false);
 
   const [maintenanceBtnForm, setMaintenanceBtnForm] = useState({ label: "", url: "" });
@@ -395,6 +397,15 @@ export default function AdminDashboardPage() {
     }
   }, [router]);
 
+  const loadDibanana = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/dibanana");
+      if (res.ok) setDibanana(await res.json());
+    } catch {
+      setDibanana({ configured: false, balance: null, error: "Gagal memuat." });
+    }
+  }, []);
+
   const loadOtpmania = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/otpmania");
@@ -404,11 +415,11 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
-  async function runOtpmaniaDiagnose() {
+  async function runOtpmaniaDiagnose(provider = "otpmania") {
     setOtpmaniaDiagLoading(true);
     setOtpmaniaDiag(null);
     try {
-      const res = await fetch("/api/admin/otpmania?diagnose=1");
+      const res = await fetch(`/api/admin/${provider}?diagnose=1`);
       setOtpmaniaDiag(await res.json());
     } catch {
       setOtpmaniaDiag({ error: "Gagal menjalankan diagnosa." });
@@ -430,6 +441,29 @@ export default function AdminDashboardPage() {
       });
       const data = await res.json();
       if (res.ok) { setSettings(data); setOtpServersMsg("Tersimpan."); }
+      else setOtpServersMsg(data.error || "Gagal.");
+    } finally {
+      setSavingOtpServers(false);
+      setTimeout(() => setOtpServersMsg(""), 2500);
+    }
+  }
+
+  async function saveServerMarkup(id) {
+    if (!settings) return;
+    setSavingOtpServers(true);
+    try {
+      const raw = serverMarkups[id];
+      const updated = (settings.otpServers || []).map((s) =>
+        // Kosong = ikut markup global, bukan 0%.
+        s.id === id ? { ...s, markupPercent: raw === "" || raw === undefined ? null : Number(raw) } : s
+      );
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ otpServers: updated })
+      });
+      const data = await res.json();
+      if (res.ok) { setSettings(data); setOtpServersMsg("Markup tersimpan."); }
       else setOtpServersMsg(data.error || "Gagal.");
     } finally {
       setSavingOtpServers(false);
@@ -476,6 +510,14 @@ export default function AdminDashboardPage() {
       label: data.maintenanceButtonLabel || "",
       url: data.maintenanceButtonUrl || "",
     });
+    setServerMarkups(
+      Object.fromEntries(
+        (Array.isArray(data.otpServers) ? data.otpServers : []).map((s) => [
+          s.id,
+          s.markupPercent === null || s.markupPercent === undefined ? "" : String(s.markupPercent)
+        ])
+      )
+    );
     if (Array.isArray(data.heroChars) && data.heroChars.length > 0) {
       setHeroCharsForm(data.heroChars);
     }
@@ -700,6 +742,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     loadSettings();
     loadOtpmania();
+    loadDibanana();
     loadUsers("");
     loadStats();
     loadVouchers();
@@ -2298,7 +2341,7 @@ export default function AdminDashboardPage() {
                   <input type="number" value={markupInput} onChange={(e) => setMarkupInput(e.target.value)} className="w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
                   <button onClick={saveMarkup} disabled={savingMarkup} className="btn-3d shrink-0 rounded-lg bg-amber hover:bg-amber-bright px-4 py-2.5 text-sm font-medium text-white shadow-3d disabled:opacity-60">{savingMarkup ? "..." : "Simpan"}</button>
                 </div>
-                <p className="mt-1.5 text-[11px] text-muted">Harga jual = harga dasar (RumahOTP / OTPMANIA) × (1 + markup%).</p>
+                <p className="mt-1.5 text-[11px] text-muted">Markup dasar untuk semua server. Tiap server bisa punya markup sendiri di kartu Server OTP di bawah — kalau dikosongkan, server itu memakai markup ini.</p>
               </div>
               <div>
                 <label className="text-xs font-medium text-muted">Mode maintenance</label>
@@ -2399,22 +2442,43 @@ export default function AdminDashboardPage() {
           {/* Server OTP */}
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
             <h2 className="font-display text-base font-semibold text-ink">Server OTP</h2>
-            <p className="mt-1 text-xs text-muted">Aktifkan atau nonaktifkan server yang muncul saat user beli nomor virtual.</p>
+            <p className="mt-1 text-xs text-muted">Aktifkan/nonaktifkan server yang muncul saat user beli nomor, dan atur markup masing-masing. Kosongkan markup untuk mengikuti markup global.</p>
             <div className="mt-4 space-y-2">
               {(settings?.otpServers || []).map((srv) => (
-                <div key={srv.id} className="flex items-center justify-between rounded-lg border border-line bg-surface px-3.5 py-2.5">
-                  <div>
-                    <span className="text-sm font-medium text-ink">{srv.name}</span>
-                    <span className="ml-2 text-[11px] text-muted">{srv.enabled ? "Aktif" : "Nonaktif"}</span>
+                <div key={srv.id} className="rounded-lg border border-line bg-surface px-3.5 py-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <span className="text-sm font-medium text-ink">{srv.name}</span>
+                      <span className="ml-2 text-[11px] text-muted">{srv.enabled ? "Aktif" : "Nonaktif"}</span>
+                    </div>
+                    <button
+                      onClick={() => toggleOtpServer(srv.id)}
+                      disabled={!settings || savingOtpServers}
+                      className={`btn-3d relative h-7 w-12 shrink-0 rounded-full transition-colors ${srv.enabled ? "bg-teal" : "bg-line"}`}
+                      aria-label={`Toggle ${srv.name}`}
+                    >
+                      <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${srv.enabled ? "translate-x-6" : "translate-x-1"}`} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => toggleOtpServer(srv.id)}
-                    disabled={!settings || savingOtpServers}
-                    className={`btn-3d relative h-7 w-12 shrink-0 rounded-full transition-colors ${srv.enabled ? "bg-teal" : "bg-line"}`}
-                    aria-label={`Toggle ${srv.name}`}
-                  >
-                    <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${srv.enabled ? "translate-x-6" : "translate-x-1"}`} />
-                  </button>
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={serverMarkups[srv.id] ?? ""}
+                      onChange={(e) => setServerMarkups((m) => ({ ...m, [srv.id]: e.target.value }))}
+                      placeholder="ikut global"
+                      className="w-28 rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                    />
+                    <span className="text-xs text-muted">% markup</span>
+                    <button
+                      onClick={() => saveServerMarkup(srv.id)}
+                      disabled={savingOtpServers}
+                      className="rounded-lg bg-amber px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                    >
+                      Simpan
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -2434,7 +2498,25 @@ export default function AdminDashboardPage() {
                       : otpmania.error || "gagal cek"}
                   </span>
                 </div>
-                <button onClick={runOtpmaniaDiagnose} disabled={otpmaniaDiagLoading} className="btn-ghost text-xs">
+                <button onClick={() => runOtpmaniaDiagnose("otpmania")} disabled={otpmaniaDiagLoading} className="btn-ghost text-xs">
+                  {otpmaniaDiagLoading ? "Mengecek..." : "Diagnosa koneksi"}
+                </button>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
+                <div>
+                  <span className="text-sm font-medium text-ink">Koneksi dibanana</span>
+                  <span className="ml-2 text-[11px] text-muted">
+                    {dibanana == null
+                      ? "memuat..."
+                      : dibanana.configured === false
+                      ? "API key belum diisi"
+                      : dibanana.balance != null
+                      ? `saldo Rp${Number(dibanana.balance).toLocaleString("id-ID")}`
+                      : dibanana.error || "gagal cek"}
+                  </span>
+                </div>
+                <button onClick={() => runOtpmaniaDiagnose("dibanana")} disabled={otpmaniaDiagLoading} className="btn-ghost text-xs">
                   {otpmaniaDiagLoading ? "Mengecek..." : "Diagnosa koneksi"}
                 </button>
               </div>

@@ -8,8 +8,8 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const server = searchParams.get("server") || "rumahotp";
 
-  // OTPMANIA tidak menyediakan daftar operator; ordernya memakai operator "any".
-  if (isOtpmaniaServer(server)) return NextResponse.json({ items: [] });
+  // Selain RumahOTP tidak ada pemilihan operator; ordernya memakai operator "any".
+  if (isOtpmaniaServer(server) || server === "dibanana") return NextResponse.json({ items: [] });
 
   try {
     const country = searchParams.get("country");

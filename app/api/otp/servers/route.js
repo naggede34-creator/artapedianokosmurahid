@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { rumahOtpConfigured } from "@/lib/rumahotp";
 import { otpmaniaConfigured, OTPMANIA_SERVERS } from "@/lib/otpmania";
+import { dibananaConfigured } from "@/lib/dibanana";
 import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
@@ -19,5 +20,6 @@ export async function GET() {
   for (const s of OTPMANIA_SERVERS) {
     available[s.id] = otpmaniaConfigured() && toggles[s.id] !== false;
   }
+  available.dibanana = dibananaConfigured() && toggles.dibanana !== false;
   return NextResponse.json({ available });
 }

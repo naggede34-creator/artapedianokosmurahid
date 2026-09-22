@@ -7,7 +7,8 @@ import {
   normalizeOtpmaniaPrices,
   otpmaniaServerCode
 } from "@/lib/otpmania";
-import { getSettings } from "@/lib/settings";
+import { DIBANANA_COUNTRIES, getDibananaPrices } from "@/lib/dibanana";
+import { getSettings, markupForServer } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -31,8 +32,41 @@ export async function GET(req) {
   if (!serviceId) return NextResponse.json({ error: "service_id wajib diisi." }, { status: 400 });
 
   try {
-    const { markupPercent } = await getSettings();
-    const markup = (n) => Math.ceil(Number(n || 0) * (1 + (Number(markupPercent) || 0) / 100));
+    const settings = await getSettings();
+    const pct = markupForServer(settings, server);
+    const markup = (n) => Math.ceil(Number(n || 0) * (1 + pct / 100));
+
+    if (server === "dibanana") {
+      // dibanana tidak punya endpoint daftar negara; harga diambil per negara
+      // (5 negara) lalu digabung jadi satu kartu per negara.
+      const results = await Promise.allSettled(
+        DIBANANA_COUNTRIES.map((c) => getDibananaPrices({ service: serviceId, country: c.code }))
+      );
+      const items = [];
+      results.forEach((r, i) => {
+        if (r.status !== "fulfilled") return;
+        const c = DIBANANA_COUNTRIES[i];
+        const pricelist = r.value
+          .filter((p) => Number(p.stock) !== 0)
+          .map((p, idx) => ({
+            // Index dipakai saat order untuk mengambil ulang id produk yang segar,
+            // karena id dari dibanana bersifat opaque dan bisa kedaluwarsa.
+            provider_id: `bn:${c.code}:${idx}`,
+            provider_name: `Stok ${p.stock ?? "-"}`,
+            price: Number(p.price_idr || 0),
+            sell_price: markup(p.price_idr),
+            success_rate: null,
+            stock: p.stock ?? null,
+            server,
+            country_id: c.code,
+            providerIndex: idx
+          }));
+        if (pricelist.length) {
+          items.push({ number_id: `bn:${c.code}`, name: c.name, img: null, iso: c.code.toUpperCase(), pricelist });
+        }
+      });
+      return NextResponse.json({ items });
+    }
 
     if (isOtpmaniaServer(server)) {
       const code = otpmaniaServerCode(server);

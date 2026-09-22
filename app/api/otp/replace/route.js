@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
 import { createOrder, toEpochMs } from "@/lib/rumahotp";
 import { createOtpmaniaOrder, isOtpmaniaServer, otpmaniaServerCode } from "@/lib/otpmania";
+import { createDibananaOrder, getDibananaPrices } from "@/lib/dibanana";
 import { sendTelegramNotif, otpPurchaseNotif, otpAutoRefundNotif } from "@/lib/telegram";
 import { logBalance } from "@/lib/ledger";
 
@@ -28,7 +29,8 @@ export async function POST(req) {
     }
 
     const isOm = isOtpmaniaServer(oldOrder.server);
-    if (isOm ? !oldOrder.serviceId || oldOrder.countryId == null : !oldOrder.numberId || !oldOrder.providerId) {
+    const isBn = oldOrder.server === "dibanana";
+    if ((isOm || isBn) ? !oldOrder.serviceId || oldOrder.countryId == null : !oldOrder.numberId || !oldOrder.providerId) {
       return NextResponse.json({ error: "Data pesanan lama tidak lengkap, tidak bisa diganti otomatis." }, { status: 400 });
     }
 
@@ -47,7 +49,20 @@ export async function POST(req) {
     // Pesan nomor pengganti ke provider yang sama. Hasilnya diseragamkan ke `fresh`.
     let fresh = null;
     try {
-      if (isOm) {
+      if (isBn) {
+        // Ambil ulang id produk yang segar, lalu pesan nomor pengganti.
+        const providers = await getDibananaPrices({ service: oldOrder.serviceId, country: oldOrder.countryId });
+        const p = providers[oldOrder.providerIndex || 0] || providers[0];
+        const made = p ? await createDibananaOrder({ id: p.id }) : null;
+        if (made?.orderId) {
+          fresh = {
+            orderId: made.orderId,
+            phoneNumber: made.phoneNumber || "-",
+            expiredMs: Date.now() + 19 * 60 * 1000,
+            extra: { server: "dibanana", countryId: oldOrder.countryId, providerIndex: oldOrder.providerIndex || 0 }
+          };
+        }
+      } else if (isOm) {
         const fresh2 = await createOtpmaniaOrder({
           service: oldOrder.serviceId,
           country: oldOrder.countryId,

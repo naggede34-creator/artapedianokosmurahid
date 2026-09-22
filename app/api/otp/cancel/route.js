@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
 import { setOrderStatus } from "@/lib/rumahotp";
 import { cancelOtpmaniaOrder, isOtpmaniaServer } from "@/lib/otpmania";
+import { cancelDibananaOrder } from "@/lib/dibanana";
 import { reconcileOtpOrder } from "@/lib/orderReconcile";
 import { logBalance } from "@/lib/ledger";
 
@@ -61,7 +62,10 @@ export async function POST(req) {
 
     let providerMessage;
     try {
-      if (isOtpmaniaServer(order.server)) {
+      if (order.server === "dibanana") {
+        // dibanana mengembalikan saldonya sendiri saat cancel.
+        await cancelDibananaOrder(orderId);
+      } else if (isOtpmaniaServer(order.server)) {
         // cancelActivation sekaligus mengembalikan saldo di sisi OTPMANIA.
         await cancelOtpmaniaOrder(orderId);
       } else {

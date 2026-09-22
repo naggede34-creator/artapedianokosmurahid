@@ -181,8 +181,12 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
         countryName: country.name,
         server: provider.server || server || "rumahotp"
       };
-      // Kunci order OTPMANIA = service (slug) + country_id + server gateway.
-      if (body.server !== "rumahotp") body.countryId = provider.country_id;
+      // Server non-RumahOTP memakai kunci service + country_id (+ index tier harga
+      // untuk dibanana, karena id produknya diambil ulang di server).
+      if (body.server !== "rumahotp") {
+        body.countryId = provider.country_id;
+        if (provider.providerIndex !== undefined) body.providerIndex = provider.providerIndex;
+      }
       const res = await fetch("/api/otp/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

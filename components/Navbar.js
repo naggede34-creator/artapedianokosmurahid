@@ -14,6 +14,7 @@ const links = [
   { href: "/otp", label: "Nokos" },
   { href: "/deposit", label: "Deposit" },
   { href: "/riwayat", label: "Riwayat" },
+  { href: "/chat", label: "Room Chat" },
   { href: "/harga", label: "Harga" }
 ];
 
