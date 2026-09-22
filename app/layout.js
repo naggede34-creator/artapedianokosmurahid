@@ -23,9 +23,18 @@ const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", weigh
 const bangers = Bangers({ subsets: ["latin"], variable: "--font-display", weight: ["400"], display: "swap" });
 
 export const metadata = {
-  title: "Artapedia — Nokos & Deposit QRIS Otomatis",
+  title: "Arta Pedia ID — Nokos Termurah dan Fast",
   description:
-    "Beli nomor OTP (nokos) untuk WhatsApp, Telegram, Google dan ratusan layanan lain, dan isi saldo otomatis via QRIS. Diproses 24 jam."
+    "Beli nomor OTP (nokos) untuk WhatsApp, Telegram, Google dan ratusan layanan lain, dan isi saldo otomatis via QRIS. Diproses 24 jam.",
+  icons: {
+    icon: [{ url: "/logo-mark.svg", type: "image/svg+xml" }, { url: "/logo-mark.png", sizes: "512x512" }],
+    apple: [{ url: "/logo-mark.png", sizes: "512x512" }]
+  },
+  openGraph: {
+    title: "Arta Pedia ID — Nokos Termurah dan Fast",
+    description: "Nomor OTP murah & cepat, deposit QRIS otomatis 24 jam.",
+    images: [{ url: "/logo.png", width: 1240, height: 780, alt: "Arta Pedia ID" }]
+  }
 };
 
 export const viewport = {

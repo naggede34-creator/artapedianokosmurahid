@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="ARTA PEDIA ID">
+<title>ARTA PEDIA ID</title>
+<defs>
+  <linearGradient id="mBg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#2E86FF"/><stop offset="1" stop-color="#0A1E50"/>
+  </linearGradient>
+  <linearGradient id="mOr" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#FFA83D"/><stop offset="0.5" stop-color="#FF6B1A"/><stop offset="1" stop-color="#C4460A"/>
+  </linearGradient>
+  <linearGradient id="mSheen" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#fff" stop-opacity="0.65"/><stop offset="0.45" stop-color="#fff" stop-opacity="0.05"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </linearGradient>
+  <pattern id="mDots" width="20" height="20" patternUnits="userSpaceOnUse">
+    <circle cx="5" cy="5" r="2.8" fill="#fff" opacity="0.13"/>
+  </pattern>
+  <clipPath id="mClip"><rect x="10" y="10" width="492" height="486" rx="112"/></clipPath>
+  <g id="mA"><path d="M259 2Q261 19 263.0 35.0Q265 51 267 67L273 123Q274 137 275.0 149.0Q276 161 277 171H190L150 27Q128 24 98.0 20.5Q68 17 42 14Q26 12 10.5 10.0Q-5 8 -21 6L58 268Q72 315 90.0 375.0Q108 435 126.5 498.0Q145 561 161.5 616.5Q178 672 188 710Q256 715 326.5 722.0Q397 729 464 741Q459 685 454.5 614.5Q450 544 446.5 469.0Q443 394 439 321Q437 252 434.0 178.5Q431 105 428 28Q413 26 398.0 24.0Q383 22 368 20Q343 16 313.0 11.0Q283 6 259 2ZM214 271Q220 271 236.5 272.0Q253 273 268.0 274.0Q283 275 286 275Q286 288 290.0 328.0Q294 368 298 412Q300 438 302.5 465.5Q305 493 308 522L314 609L299 608L276 522Z" transform="translate(0,0)"/></g>
+</defs>
+<rect x="18" y="26" width="476" height="470" rx="112" fill="#060E1E"/>
+<rect x="10" y="10" width="492" height="486" rx="112" fill="url(#mBg)"/>
+<!-- semua ornamen dikurung di dalam bingkai supaya tidak bocor ke sudut -->
+<g clip-path="url(#mClip)">
+  <rect x="10" y="10" width="492" height="486" fill="url(#mDots)"/>
+  <path d="M326.0,250.0 L674.9,219.2 L674.9,280.8 Z" fill="#FF6B1A" opacity="0.22"/><path d="M321.8,273.9 L660.1,364.4 L639.1,422.2 Z" fill="#FF6B1A" opacity="0.22"/><path d="M309.6,295.0 L596.6,495.7 L557.1,542.8 Z" fill="#FF6B1A" opacity="0.22"/><path d="M291.0,310.6 L492.1,597.4 L438.8,628.1 Z" fill="#FF6B1A" opacity="0.22"/><path d="M268.2,318.9 L359.0,657.2 L298.4,667.8 Z" fill="#FF6B1A" opacity="0.22"/><path d="M243.8,318.9 L213.6,667.8 L153.0,657.2 Z" fill="#FF6B1A" opacity="0.22"/><path d="M221.0,310.6 L73.2,628.1 L19.9,597.4 Z" fill="#FF6B1A" opacity="0.22"/><path d="M202.4,295.0 L-45.1,542.8 L-84.6,495.7 Z" fill="#FF6B1A" opacity="0.22"/><path d="M190.2,273.9 L-127.1,422.2 L-148.1,364.4 Z" fill="#FF6B1A" opacity="0.22"/><path d="M186.0,250.0 L-162.9,280.8 L-162.9,219.2 Z" fill="#FF6B1A" opacity="0.22"/><path d="M190.2,226.1 L-148.1,135.6 L-127.1,77.8 Z" fill="#FF6B1A" opacity="0.22"/><path d="M202.4,205.0 L-84.6,4.3 L-45.1,-42.8 Z" fill="#FF6B1A" opacity="0.22"/><path d="M221.0,189.4 L19.9,-97.4 L73.2,-128.1 Z" fill="#FF6B1A" opacity="0.22"/><path d="M243.8,181.1 L153.0,-157.2 L213.6,-167.8 Z" fill="#FF6B1A" opacity="0.22"/><path d="M268.2,181.1 L298.4,-167.8 L359.0,-157.2 Z" fill="#FF6B1A" opacity="0.22"/><path d="M291.0,189.4 L438.8,-128.1 L492.1,-97.4 Z" fill="#FF6B1A" opacity="0.22"/><path d="M309.6,205.0 L557.1,-42.8 L596.6,4.3 Z" fill="#FF6B1A" opacity="0.22"/><path d="M321.8,226.1 L639.1,77.8 L660.1,135.6 Z" fill="#FF6B1A" opacity="0.22"/>
+</g>
+<rect x="10" y="10" width="492" height="486" rx="112" fill="none" stroke="#060E1E" stroke-width="16"/>
+<g transform="translate(169.4,362) scale(0.4,-0.4)">
+  <g><use href="#mA" x="78.0" y="-78.0" fill="#0A1E50"/><use href="#mA" x="71.5" y="-71.5" fill="#0A1E50"/><use href="#mA" x="65.0" y="-65.0" fill="#0A1E50"/><use href="#mA" x="58.5" y="-58.5" fill="#0A1E50"/><use href="#mA" x="52.0" y="-52.0" fill="#0A1E50"/><use href="#mA" x="45.5" y="-45.5" fill="#0A1E50"/><use href="#mA" x="39.0" y="-39.0" fill="#0A1E50"/><use href="#mA" x="32.5" y="-32.5" fill="#0A1E50"/><use href="#mA" x="26.0" y="-26.0" fill="#0A1E50"/><use href="#mA" x="19.5" y="-19.5" fill="#0A1E50"/><use href="#mA" x="13.0" y="-13.0" fill="#0A1E50"/><use href="#mA" x="6.5" y="-6.5" fill="#0A1E50"/></g>
+  <use href="#mA" fill="none" stroke="#060E1E" stroke-width="65.0" stroke-linejoin="round"/>
+  <use href="#mA" fill="url(#mOr)"/>
+  <use href="#mA" fill="url(#mSheen)"/>
+</g>
+<g transform="translate(366,98) rotate(-12) scale(0.62)">
+  <path d="M52,0 L6,74 h34 L22,140 L84,52 H49 Z" fill="#060E1E" transform="translate(7,8)"/>
+  <path d="M52,0 L6,74 h34 L22,140 L84,52 H49 Z" fill="#FFFFFF" stroke="#060E1E" stroke-width="10" stroke-linejoin="round"/>
+</g>
+<rect x="104" y="416" width="304" height="13" rx="6" fill="#FF6B1A"/>
+</svg>

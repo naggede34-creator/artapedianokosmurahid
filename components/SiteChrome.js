@@ -10,6 +10,7 @@ import BroadcastBar from "@/components/BroadcastBar";
 import WelcomeIntro from "@/components/WelcomeIntro";
 import WelcomeBonusPopup from "@/components/WelcomeBonusPopup";
 import InfoModal from "@/components/InfoModal";
+import LogoLoader from "@/components/LogoLoader";
 
 export default function SiteChrome({ children }) {
   const pathname = usePathname();
@@ -51,6 +52,7 @@ export default function SiteChrome({ children }) {
 
   return (
     <>
+      <LogoLoader />
       <WelcomeIntro />
       <InfoModal />
       <WelcomeBonusPopup />
