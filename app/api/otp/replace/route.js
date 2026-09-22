@@ -57,7 +57,7 @@ export async function POST(req) {
           fresh = {
             orderId: String(sim.id),
             phoneNumber: sim.phone_number || "-",
-            expiredMs: sim.remaining_seconds ? Date.now() + sim.remaining_seconds * 1000 : null,
+            expiredMs: toEpochMs(sim.expired_at) || (sim.remaining_seconds ? Date.now() + sim.remaining_seconds * 1000 : null),
             extra: { server: "simuru", countryId: Number(oldOrder.countryId), operator: oldOrder.operator || "random" }
           };
         }

@@ -102,16 +102,19 @@ export async function POST(req) {
     }
     debited = true;
 
-    let orderId, phoneNumber, expiredMs, finalCountry;
+    let orderId, phoneNumber, expiredMs, finalCountry, simuruOperator;
 
     if (isSimuru) {
       let data;
       let failMsg = null;
+      // Operator pilihan user menang; `resolved.operator` hanya cadangan dari
+      // baris pricelist kalau user tidak memilih apa pun.
+      simuruOperator = operator || resolved.operator || "random";
       try {
         data = await createSimuruOtpOrder({
           serviceId,
           countryId: Number(countryId),
-          operator: resolved.operator || operator || "random"
+          operator: simuruOperator
         });
       } catch (e) {
         data = null;
@@ -130,7 +133,7 @@ export async function POST(req) {
 
       orderId = String(data.id);
       phoneNumber = data.phone_number || "-";
-      expiredMs = data.remaining_seconds ? Date.now() + data.remaining_seconds * 1000 : null;
+      expiredMs = toEpochMs(data.expired_at) || (data.remaining_seconds ? Date.now() + data.remaining_seconds * 1000 : null);
       finalCountry = countryName || resolved.country?.country_name || "-";
     } else {
       let data;
@@ -174,7 +177,7 @@ export async function POST(req) {
       otpMsg: null,
       refunded: false,
       ...(isSimuru
-        ? { countryId: Number(countryId), operator: resolved.operator || operator || "random" }
+        ? { countryId: Number(countryId), operator: simuruOperator }
         : { numberId, providerId, operatorId: operatorId || null, operatorName: operatorName || null }),
       createdAt: new Date(),
       expiredAt: expiredMs ? new Date(expiredMs) : null
@@ -197,7 +200,7 @@ export async function POST(req) {
       price: sellPrice,
       token,
       name: user.name,
-      operator: isSimuru ? (resolved.operator || operator || "random") : operatorName,
+      operator: isSimuru ? simuruOperator : operatorName,
       balance: afterDebit.balance
     });
     sendTelegramNotif(purchaseText);

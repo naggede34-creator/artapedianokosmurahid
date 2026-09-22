@@ -145,15 +145,16 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   async function handleOrderClick(country, provider) {
     setBuyError("");
     setBuyingKey(provider.provider_id);
-    // Server OTO Fast (Simuru) tidak membutuhkan pemilihan operator — langsung order.
-    if (provider.server === "simuru") {
-      await submitOrder(country, provider, null, null);
-      return;
-    }
     try {
-      const res = await fetch(
-        `/api/otp/operators?country=${encodeURIComponent(country.name)}&provider_id=${encodeURIComponent(provider.provider_id)}`
-      );
+      const params =
+        provider.server === "simuru"
+          ? new URLSearchParams({
+              server: "simuru",
+              service_id: selectedService.service_code,
+              country_id: String(provider.country_id)
+            })
+          : new URLSearchParams({ country: country.name, provider_id: provider.provider_id });
+      const res = await fetch(`/api/otp/operators?${params}`);
       const data = await res.json();
       const ops = Array.isArray(data.items) ? data.items : [];
       if (ops.length > 1) {
@@ -187,7 +188,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
       // Parameter khusus Server OTP Fast (Simuru): kunci order = service_id + country_id.
       if (body.server === "simuru") {
         body.countryId = provider.country_id;
-        body.operator = provider.operator || "random";
+        body.operator = operatorId || provider.operator || "random";
       }
       const res = await fetch("/api/otp/order", {
         method: "POST",
