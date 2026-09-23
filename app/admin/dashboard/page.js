@@ -2764,17 +2764,45 @@ export default function AdminDashboardPage() {
               </div>
 
               {atlDiag && (
-                <div
-                  className={`mt-3 rounded-lg border px-3 py-2 text-xs leading-relaxed ${
-                    atlDiag.lolosCloudflare === false
-                      ? "border-rose/40 bg-rose-soft text-rose"
-                      : atlDiag.apiKeyDiterima
-                        ? "border-teal/40 bg-teal-soft text-teal-bright"
-                        : "border-warn/40 bg-warn-soft text-warn"
-                  }`}
-                >
-                  {atlDiag.verdict || atlDiag.error}
-                </div>
+                <>
+                  <div
+                    className={`mt-3 rounded-lg border px-3 py-2 text-xs leading-relaxed ${
+                      atlDiag.lolosCloudflare === false
+                        ? "border-rose/40 bg-rose-soft text-rose"
+                        : atlDiag.apiKeyDiterima
+                          ? "border-teal/40 bg-teal-soft text-teal-bright"
+                          : "border-warn/40 bg-warn-soft text-warn"
+                    }`}
+                  >
+                    {atlDiag.verdict || atlDiag.error}
+                  </div>
+
+                  {/* Laporan siap kirim ke Atlantic. "API saya diblokir" hampir
+                      selalu dijawab "coba lagi"; yang bisa ditindaklanjuti
+                      adalah Ray ID, jam, dan endpoint yang persis. */}
+                  {atlDiag.laporan && (
+                    <div className="mt-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-[11px] font-semibold text-muted">
+                          Salin ini dan kirim ke admin Atlantic:
+                        </p>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard?.writeText(atlDiag.laporan);
+                            setWdMsg("Laporan tersalin — tinggal tempel ke chat Atlantic.");
+                            setTimeout(() => setWdMsg(""), 3000);
+                          }}
+                          className="btn-3d rounded-lg border border-amber/40 px-3 py-1 text-[11px] font-bold text-amber-bright"
+                        >
+                          📋 Salin laporan
+                        </button>
+                      </div>
+                      <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border border-line bg-bg px-3 py-2 text-[11px] leading-relaxed text-ink">
+                        {atlDiag.laporan}
+                      </pre>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
