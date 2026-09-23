@@ -3418,3 +3418,88 @@ a.banner-3d:active {
 @media (prefers-reduced-motion: reduce) {
   .banner-3d, a.banner-3d:hover, a.banner-3d:active { transition: none; transform: none; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DASHBOARD PENGGUNA — panel komik 3D
+   Satu kelas di akar halaman mengangkat seluruh kartunya: bingkai tebal,
+   bayangan padat seperti sisi panel yang tebal, tekstur halftone tipis, dan
+   gerakan terangkat saat disentuh.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Hiasan yang sengaja menjorok keluar kartu (ledakan, cahaya, garis kecepatan)
+   menambah beberapa piksel di kanan halaman, dan di ponsel itu jadi gulir
+   mendatar yang mengganggu. overflow-x: clip memotongnya TANPA membuat
+   wadah gulir baru — berbeda dengan overflow: hidden, yang akan mematikan
+   elemen sticky di dalamnya. */
+.user-dash { overflow-x: clip; }
+
+.user-dash .card,
+.user-dash .card-flat,
+.user-dash .panel-3d,
+.user-dash .glass {
+  position: relative;
+  border: 2.5px solid rgb(var(--c-ink) / .9);
+  border-radius: 20px;
+  /* Bayangan PADAT, bukan kabur: ia harus terbaca sebagai sisi panel yang
+     tebal. Bayangan kabur di bawah kartu terbaca sebagai kabut, dan itu yang
+     membuat kartu terasa melayang tanpa bobot alih-alih tebal. */
+  box-shadow: 5px 5px 0 rgb(var(--c-ink) / .85), 0 18px 30px -22px rgb(var(--c-ink) / .8);
+  transition: transform .2s cubic-bezier(.2, .9, .3, 1.1), box-shadow .2s ease;
+}
+
+/* Halftone tipis di tiap kartu — jejak cetakan komik, bukan gradasi digital. */
+.user-dash .card::after,
+.user-dash .panel-3d::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: .5;
+  background-image: radial-gradient(circle, rgb(var(--c-ink) / .07) 1px, transparent 1.2px);
+  background-size: 10px 10px;
+}
+
+.user-dash .card:hover,
+.user-dash .panel-3d:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 rgb(var(--c-ink) / .85), 0 24px 38px -22px rgb(var(--c-ink) / .85);
+}
+
+/* Pintasan menu: kotak tebal yang benar-benar tertekan saat diketuk. */
+.user-dash a[href^="/"]:has(> svg),
+.user-dash a[href^="/"]:has(> span) {
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+.user-dash a[href^="/"]:active { transform: translate(2px, 2px); }
+
+/* Angka besar (saldo, poin) diberi bayangan huruf supaya ikut timbul, bukan
+   sekadar teks tebal di atas kartu yang timbul. */
+.user-dash .text-2xl,
+.user-dash .text-3xl {
+  text-shadow: 2px 2px 0 rgb(var(--c-ink) / .12);
+}
+
+/* Judul bagian bergaya panel komik: miring sedikit, dengan garis bawah tebal
+   yang ikut miring — bentuk yang sama dengan judul di beranda. */
+.user-dash h2 {
+  position: relative;
+  display: inline-block;
+}
+.user-dash h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 3px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, rgb(var(--c-orange)), rgb(var(--c-orange) / 0));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .user-dash .card, .user-dash .panel-3d,
+  .user-dash .card:hover, .user-dash .panel-3d:hover,
+  .user-dash a[href^="/"] { transition: none; transform: none; }
+}

@@ -476,7 +476,11 @@ export default function DashboardPage() {
   const progress = loyalty?.next ? Math.min(100, Math.round((loyalty.totalSpent / loyalty.next.target) * 100)) : 100;
 
   return (
-    <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
+    // user-dash: satu kelas di akar, dan seluruh kartu di dashboard ikut
+    // mendapat bingkai panel komik serta kedalamannya. Sama seperti panel
+    // admin — menyuntikkan kelas utilitas ke tiap blok satu per satu akan
+    // menghasilkan tampilan yang mirip tapi tidak pernah seragam.
+    <div className="user-dash mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
       <LevelUpModal token={token} onClose={() => {}} />
       {showTour && <OnboardingTour onDone={hideTour} />}
       {showNamePrompt && !showTour && (
