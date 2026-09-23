@@ -3293,3 +3293,103 @@ html.dark .hero-mascot-img,
   .chat-btn3d, .chat-send3d { transition: none; }
   .chat-send3d.is-rec { animation: none; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DASBOR ADMIN
+   Satu kelas di akar halaman (.admin-shell) mengangkat seluruh isinya:
+   kartu, tabel, kolom isian, tombol. Ditulis di sini, bukan disebar sebagai
+   kelas utilitas di empat ribu baris JSX, supaya tab yang ditambahkan nanti
+   ikut rapi tanpa harus diingat-ingat.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Kartu: garis aksen di tepi atas + kedalaman yang konsisten. */
+.admin-shell .glass {
+  position: relative;
+  border: 1px solid rgb(var(--c-line));
+  background: rgb(var(--c-surface));
+  box-shadow: 0 1px 0 rgb(255 255 255 / .5) inset, 0 10px 24px -14px rgb(var(--c-ink) / .35);
+  overflow: hidden;
+  transition: box-shadow .25s ease, transform .25s ease;
+}
+.admin-shell .glass::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, rgb(var(--c-blue)), rgb(var(--c-orange)) 55%, rgb(var(--c-danger)));
+  opacity: .85;
+}
+.admin-shell .glass:hover {
+  box-shadow: 0 1px 0 rgb(255 255 255 / .5) inset, 0 18px 34px -16px rgb(var(--c-ink) / .45);
+  transform: translateY(-1px);
+}
+
+/* Judul bagian: penanda kecil di kirinya supaya mata langsung menemukan
+   tempat tiap bagian dimulai saat menggulir tab yang panjang. */
+/* HANYA judul bagian (h2), bukan semua yang memakai font display. Versi
+   pertamanya memakai .font-display saja, dan garis aksennya ikut menempel di
+   angka-angka kartu statistik — "0", "Rp0" — yang terbaca seperti daftar
+   berpoin, bukan angka. */
+.admin-shell h2.font-display {
+  position: relative;
+  padding-left: 12px;
+}
+.admin-shell h2.font-display::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  translate: 0 -50%;
+  width: 4px;
+  height: 1.1em;
+  border-radius: 99px;
+  background: rgb(var(--c-orange));
+}
+
+/* Tabel: baris bergaris tipis dan kepala tabel yang menempel saat digulir. */
+.admin-shell table { border-collapse: separate; border-spacing: 0; }
+.admin-shell thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgb(var(--c-surface2));
+  backdrop-filter: blur(4px);
+}
+.admin-shell tbody tr { transition: background .15s ease; }
+.admin-shell tbody tr:hover { background: rgb(var(--c-orange) / .05); }
+
+/* Kolom isian: satu bentuk untuk semua, termasuk yang ditulis inline. */
+.admin-shell input:not([type="file"]):not([type="checkbox"]),
+.admin-shell select,
+.admin-shell textarea {
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.admin-shell input:not([type="file"]):not([type="checkbox"]):focus,
+.admin-shell select:focus,
+.admin-shell textarea:focus {
+  border-color: rgb(var(--c-orange)) !important;
+  box-shadow: 0 0 0 3px rgb(var(--c-orange) / .16);
+  outline: none;
+}
+
+/* Tombol: tekanan yang terasa, bukan cuma warna yang berubah. */
+.admin-shell button:not(:disabled):active { transform: translateY(1px); }
+
+/* Bilah tab: tepi kanan memudar supaya jelas masih ada tab lain di sebelahnya.
+   Tanpa tanda ini, tab terakhir yang terpotong terbaca sebagai daftar yang
+   memang berakhir di situ. */
+.admin-shell .sticky.top-2 {
+  position: sticky;
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 26px), transparent 100%);
+  mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 26px), transparent 100%);
+}
+@media (min-width: 900px) {
+  .admin-shell .sticky.top-2 { -webkit-mask-image: none; mask-image: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell .glass,
+  .admin-shell .glass:hover,
+  .admin-shell tbody tr { transition: none; transform: none; }
+}

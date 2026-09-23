@@ -1735,7 +1735,11 @@ export default function AdminDashboardPage() {
 
   // ──────────────────────────────────────────────────────────────────────
   return (
-    <div className="mx-auto max-w-content px-4 pb-16 pt-6 sm:px-5 sm:pt-10">
+    // admin-shell: satu kelas di akar, dan seluruh kartu, tabel, kolom isian
+    // serta tombol di dalamnya ikut gaya dasbor. Menyentuh empat ribu baris
+    // satu per satu akan menghasilkan tampilan yang mirip tapi tidak pernah
+    // benar-benar seragam — dan tiap tab baru harus diseragamkan lagi.
+    <div className="admin-shell mx-auto max-w-content px-4 pb-16 pt-6 sm:px-5 sm:pt-10">
 
       {/* ── Manga Header ── */}
       <div className="manga-panel manga-halftone relative overflow-hidden rounded-2xl bg-ink px-5 py-5 mb-5"
