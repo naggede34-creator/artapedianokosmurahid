@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "@/app/providers";
-import { markOpenersFree, onIntroDone } from "@/lib/introGate";
+import { markOpenersFree, onComicDone } from "@/lib/introGate";
 
 // Sapaan ARTA PEDIA SUPPORT tepat setelah animasi loading selesai.
 // Tampil sekali per sesi supaya tidak mengganggu saat pindah-pindah halaman.
@@ -31,14 +31,14 @@ export default function MascotGreeting() {
     try {
       if (sessionStorage.getItem(SEEN_KEY) === "1") {
         // Sudah menyapa di sesi ini: langsung persilakan popup lain tampil.
-        onIntroDone(markOpenersFree);
+        onComicDone(markOpenersFree);
         return undefined;
       }
     } catch {
       // sessionStorage diblokir (mode privat) — anggap belum pernah menyapa.
     }
     // Menunggu animasi loading selesai supaya sapaannya tidak tertimbun.
-    const off = onIntroDone(() => {
+    const off = onComicDone(() => {
       if (!alive) return;
       try {
         sessionStorage.setItem(SEEN_KEY, "1");
