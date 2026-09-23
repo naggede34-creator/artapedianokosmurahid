@@ -2584,3 +2584,69 @@ html.dark body {
   .value-pop { animation: none; }
   .value-ring::after { animation: none; display: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MASKOT DI HERO
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.hero-mascot { z-index: 1; }
+
+.hero-mascot-img {
+  filter: drop-shadow(0 18px 26px rgb(var(--c-ink) / .32));
+  animation: heroFloat 5.5s ease-in-out infinite;
+}
+@keyframes heroFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-9px); }
+}
+
+/* Condong mengikuti kursor. Nilainya diisi Depth3D; kalau JS tidak jalan
+   keduanya 0 dan maskotnya cuma mengambang pelan. */
+.hero-mascot-lean {
+  --lean-x: 0deg;
+  --lean-y: 0deg;
+  --lean-shift: 0px;
+  display: block;
+  transform: perspective(900px) rotateX(var(--lean-x)) rotateY(var(--lean-y)) translateX(var(--lean-shift));
+  transform-origin: 50% 92%;   /* berporos di kakinya, bukan di tengah badan */
+  transition: transform .5s cubic-bezier(.22, .8, .3, 1);
+  will-change: transform;
+}
+
+.hero-mascot-halo {
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  width: 116%;
+  height: 74%;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgb(var(--c-orange) / .26), transparent 68%);
+  filter: blur(26px);
+  pointer-events: none;
+}
+
+.hero-mascot-floor {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 62%;
+  height: 20px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: radial-gradient(ellipse, rgb(var(--c-ink) / .3), transparent 72%);
+  filter: blur(5px);
+  pointer-events: none;
+  animation: heroFloorPulse 5.5s ease-in-out infinite;
+}
+/* Bayangannya mengecil saat badannya naik — kalau ukurannya tetap, gerak
+   naik-turunnya terbaca sebagai gambar yang digeser, bukan benda melayang. */
+@keyframes heroFloorPulse {
+  0%, 100% { transform: translateX(-50%) scaleX(1);    opacity: .85; }
+  50%      { transform: translateX(-50%) scaleX(.86);  opacity: .55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-mascot-img, .hero-mascot-floor { animation: none; }
+  .hero-mascot-lean { transform: none; transition: none; }
+}

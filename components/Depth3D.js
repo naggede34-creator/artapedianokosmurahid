@@ -16,6 +16,14 @@ import { usePathname } from "next/navigation";
 //     mengikuti gulungan dan posisi kursor. Ini yang membuat mata membacanya
 //     sebagai ruang berkedalaman.
 //
+//  3. [data-lean] — maskot condong ke arah kursor.
+//     Catatan jujur: ini BUKAN mata yang mengikuti kursor. Maskotnya gambar
+//     raster satu keping, jadi bola matanya tidak bisa digerakkan sendiri —
+//     yang digerakkan seluruh badannya, condong sedikit ke arah kursor.
+//     Hasilnya terbaca sebagai karakter yang memperhatikan, dan tidak
+//     berisiko terlihat rusak seperti pupil tempelan yang melesat dari
+//     matanya.
+//
 // Keduanya HANYA untuk penunjuk presisi (mouse/trackpad). Di layar sentuh
 // tidak ada kursor untuk diikuti, dan memaksakannya cuma menghabiskan baterai.
 
@@ -95,6 +103,23 @@ export default function Depth3D() {
       mx = e.clientX / window.innerWidth * 2 - 1;
       my = e.clientY / window.innerHeight * 2 - 1;
       jadwalkan();
+      condong(e.clientX, e.clientY);
+    };
+
+    // Condong dihitung dari posisi kursor relatif terhadap maskotnya sendiri,
+    // bukan terhadap layar: kalau dipakai koordinat layar, maskot di pojok
+    // akan selalu condong ke satu arah walau kursornya tepat di depannya.
+    const condong = (cx, cy) => {
+      for (const el of document.querySelectorAll("[data-lean]")) {
+        const kuat = Number(el.dataset.lean) || 1;
+        const r = el.getBoundingClientRect();
+        if (!r.width) continue;
+        const dx = Math.max(-1, Math.min(1, (cx - (r.left + r.width / 2)) / (window.innerWidth / 2)));
+        const dy = Math.max(-1, Math.min(1, (cy - (r.top + r.height / 2)) / (window.innerHeight / 2)));
+        el.style.setProperty("--lean-y", `${(dx * 7 * kuat).toFixed(2)}deg`);
+        el.style.setProperty("--lean-x", `${(-dy * 4 * kuat).toFixed(2)}deg`);
+        el.style.setProperty("--lean-shift", `${(dx * 8 * kuat).toFixed(1)}px`);
+      }
     };
     const onScroll = () => {
       sy = window.scrollY;
@@ -112,6 +137,11 @@ export default function Depth3D() {
       window.removeEventListener("scroll", onScroll);
       document.documentElement.classList.remove("depth-ready");
       for (const el of document.querySelectorAll("[data-parallax]")) el.style.transform = "";
+      for (const el of document.querySelectorAll("[data-lean]")) {
+        el.style.removeProperty("--lean-x");
+        el.style.removeProperty("--lean-y");
+        el.style.removeProperty("--lean-shift");
+      }
     };
   }, [pathname]);
 

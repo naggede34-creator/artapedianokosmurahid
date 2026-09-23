@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import SimCard from "@/components/SimCard";
+import HeroMascot from "@/components/HeroMascot";
 import TransactionTicker from "@/components/TransactionTicker";
 import LiveTicker from "@/components/LiveTicker";
 import { Icon } from "@/components/ui";
@@ -259,7 +260,7 @@ export default function HomePage() {
           POW!
         </span>
 
-        <div className="relative order-2 lg:order-1">
+        <div className="relative order-2 lg:order-1 lg:pb-2">
           {/* live badge */}
           <div className="inline-flex items-center gap-2 rounded-full border-2 border-ink bg-teal-soft px-3.5 py-1.5 text-xs font-black uppercase tracking-wider text-teal-bright mb-5"
             style={{ boxShadow: "2px 2px 0 rgb(var(--c-ink))" }}>
@@ -305,10 +306,20 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="relative order-1 lg:order-2">
+        {/* lg:self-start — kolom ini sebelumnya ikut rata tengah, jadi kartu
+            saldonya melayang di pertengahan tinggi panel dan maskot di sudut
+            bawah tetap menabraknya. Ditarik ke atas, sudut bawahnya bebas. */}
+        <div className="relative z-10 order-1 lg:order-2 lg:self-start">
           <div className="anime-simcard pointer-events-none absolute -right-4 -top-4 h-32 w-32 rounded-full bg-amber/10 blur-2xl" />
           <SimCard />
         </div>
+
+        {/* Maskot ditaruh di sudut PANEL, bukan di dalam kolom kanan.
+            Di dalam kolom dia akan berdiri tepat di bawah kartu saldo dan
+            menimpanya, karena kolom itu tingginya hanya setinggi kartunya.
+            Ruang kosong yang sebenarnya ada di sudut bawah panel, sisa dari
+            kolom kiri yang lebih panjang. */}
+        <HeroMascot />
       </section>
 
       {/* Live Purchase Ticker */}
