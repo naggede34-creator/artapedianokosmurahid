@@ -383,14 +383,24 @@ export default function DepositPage() {
           mengatakannya adalah sebelum uangnya berpindah. */}
       {manualInfoOpen && (
         <div
-          className="fixed inset-0 z-[120] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
+          // Garis bawah "_" di dalam calc() bukan salah ketik: Tailwind
+          // menerjemahkannya jadi spasi, dan calc() TANPA spasi di sekitar
+          // tanda + adalah CSS tidak sah yang dibuang diam-diam peramban.
+          //
+          // Ruang untuk bilah menu bawah yang menempel di layar. Tanpa ini
+          // lembarnya memanjang sampai dasar layar dan dua tombol terakhirnya
+          // berada TEPAT di bawah bilah menu — terlihat, tapi tidak bisa
+          // ditekan. Menambah padding di dalam lembarnya tidak menyelesaikan
+          // ini: itu cuma menolong kalau orangnya kebetulan menggulir sampai
+          // habis dulu.
+          className="fixed inset-0 z-[120] flex items-end justify-center bg-black/60 p-0 pb-[calc(5.5rem_+_env(safe-area-inset-bottom))] sm:items-center sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-label="Tentang QRIS manual"
           onClick={() => setManualInfoOpen(false)}
         >
           <div
-            className="scale-in max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl border-2 border-line bg-bg p-5 sm:rounded-3xl"
+            className="scale-in max-h-[78vh] w-full max-w-md overflow-y-auto rounded-t-3xl border-2 border-line bg-bg p-5 sm:max-h-[92vh] sm:rounded-3xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-extrabold text-ink">Sebelum lanjut ke QRIS manual</h2>
@@ -426,7 +436,13 @@ export default function DepositPage() {
               Butuh saldo detik ini juga? Pilih QRIS otomatis — ada biaya admin, tapi langsung masuk.
             </p>
 
-            <div className="mt-4 flex gap-2">
+            {/* Menempel di dasar lembarnya. Isi popup ini lebih tinggi daripada
+                layar ponsel, jadi kalau tombolnya ikut mengalir di bawah teks,
+                ia berada di luar bagian yang terlihat sampai orangnya menggulir
+                sampai habis — dan yang tidak sadar harus menggulir akan
+                mengira popupnya buntu. Margin negatifnya supaya latar tombol
+                menutup penuh sampai tepi lembaran. */}
+            <div className="sticky bottom-0 -mx-5 -mb-5 mt-4 flex gap-2 border-t border-line bg-bg px-5 pb-5 pt-3">
               <button type="button" onClick={() => setManualInfoOpen(false)} className="btn-ghost flex-1">
                 Pilih metode lain
               </button>
@@ -525,12 +541,14 @@ export default function DepositPage() {
 
               <p className="label mt-5">Bayar pakai QRIS mana?</p>
               <div className="anim-stagger space-y-2" role="radiogroup">
-                {methods.map((p) => {
+                {/* Hanya metode yang menyala. Metode mati yang tetap terpampang
+                    cuma memanjangkan daftar dengan pilihan yang tidak bisa
+                    dipakai. Yang sedang TUTUP tetap tampil, karena itu keadaan
+                    sementara dan jamnya perlu terbaca. */}
+                {methods.filter((m) => cfg.providers?.[m.key]).map((p) => {
                   const tutup = p.key === "manual" && manualTutup;
-                  // Metode yang sedang tutup tetap bisa dipilih supaya
-                  // keterangan jamnya terbaca; yang ditahan tombol bayarnya.
-                  const on = !!cfg.providers?.[p.key];
-                  const selected = provider === p.key && on;
+                  const on = true;
+                  const selected = provider === p.key;
                   return (
                     <button
                       key={p.key}
