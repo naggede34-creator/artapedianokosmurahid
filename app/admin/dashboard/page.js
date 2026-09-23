@@ -47,6 +47,10 @@ export default function AdminDashboardPage() {
   const [balanceAction, setBalanceAction] = useState("add");
   const [balanceSubmitting, setBalanceSubmitting] = useState(false);
   const [balanceMsg, setBalanceMsg] = useState("");
+  const [pointsForm, setPointsForm] = useState({ token: "", amount: "", note: "" });
+  const [pointsAction, setPointsAction] = useState("add");
+  const [pointsSubmitting, setPointsSubmitting] = useState(false);
+  const [pointsMsg, setPointsMsg] = useState("");
   const formRef = useRef(null);
 
   const [stats, setStats] = useState(null);
@@ -1280,6 +1284,33 @@ export default function AdminDashboardPage() {
     }
   }
 
+  async function submitPoints(e) {
+    e.preventDefault();
+    setPointsMsg("");
+    setPointsSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/users/points", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: pointsForm.token.trim(),
+          amount: Number(pointsForm.amount),
+          action: pointsAction,
+          note: pointsForm.note.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memproses.");
+      setPointsMsg(`Berhasil. Poin terbaru: ${Number(data.points).toLocaleString("id-ID")}`);
+      setPointsForm({ token: "", amount: "", note: "" });
+      loadUsers();
+    } catch (err) {
+      setPointsMsg(err.message);
+    } finally {
+      setPointsSubmitting(false);
+    }
+  }
+
   function quickFill(token, action) {
     setBalanceAction(action);
     setBalanceForm((f) => ({ ...f, token }));
@@ -1517,6 +1548,70 @@ export default function AdminDashboardPage() {
                 {balanceSubmitting ? "Memproses..." : "Proses"}
               </button>
               {balanceMsg && <p className="mt-3 text-sm text-ink">{balanceMsg}</p>}
+            </form>
+
+            {/* Poin dipisah dari saldo, bukan digabung jadi satu form dengan
+                pilihan jenis. Keduanya sering dipakai bersamaan saat menangani
+                komplain, dan satu form yang mode-nya harus digeser dulu adalah
+                cara paling mudah untuk salah menambah saldo padahal maksudnya
+                poin. */}
+            <form onSubmit={submitPoints} className="mt-4 rounded-2xl bg-surface p-5 shadow-card-3d sm:p-6">
+              <h2 className="font-display text-base font-semibold text-ink">Tambah / Kurangi Poin</h2>
+              <p className="mt-1 text-xs text-muted">
+                Poin yang dipakai di Toko Poin dan penukaran hadiah. Tidak mengubah saldo.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-[1.3fr_1fr_1.3fr_auto]">
+                <input
+                  value={pointsForm.token}
+                  onChange={(e) => setPointsForm((f) => ({ ...f, token: e.target.value }))}
+                  placeholder="Kode akun user"
+                  required
+                  className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+                />
+                <input
+                  type="number"
+                  value={pointsForm.amount}
+                  onChange={(e) => setPointsForm((f) => ({ ...f, amount: e.target.value }))}
+                  placeholder="Jumlah poin"
+                  required
+                  min="1"
+                  className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+                />
+                <input
+                  value={pointsForm.note}
+                  onChange={(e) => setPointsForm((f) => ({ ...f, note: e.target.value }))}
+                  placeholder="Catatan (opsional)"
+                  className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPointsAction("add")}
+                    className={`btn-3d flex-1 rounded-lg border px-3 py-2.5 text-sm font-medium sm:flex-none ${
+                      pointsAction === "add" ? "border-teal bg-teal-soft text-teal-bright" : "border-line text-muted"
+                    }`}
+                  >
+                    + Tambah
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPointsAction("sub")}
+                    className={`btn-3d flex-1 rounded-lg border px-3 py-2.5 text-sm font-medium sm:flex-none ${
+                      pointsAction === "sub" ? "border-rose bg-rose-soft text-rose" : "border-line text-muted"
+                    }`}
+                  >
+                    − Kurangi
+                  </button>
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={pointsSubmitting}
+                className="btn-3d mt-4 rounded-lg bg-gradient-to-r from-amber to-amber-bright px-5 py-2.5 text-sm font-medium text-white shadow-3d disabled:opacity-60"
+              >
+                {pointsSubmitting ? "Memproses..." : "Proses Poin"}
+              </button>
+              {pointsMsg && <p className="mt-3 text-sm text-ink">{pointsMsg}</p>}
             </form>
           </div>
 
@@ -3911,7 +4006,19 @@ function ExportSection() {
       {/* Full Backup (JSON) */}
       <div className="glass rounded-2xl p-5 shadow-soft border border-indigo/20">
         <h2 className="text-base font-bold text-ink mb-1">🗄️ Backup Penuh (JSON)</h2>
-        <p className="text-xs text-muted mb-4">Ekspor semua data user lengkap ke file JSON — bisa digunakan untuk restore jika data hilang.</p>
+        <p className="text-xs text-muted mb-3">
+          Seluruh isi database: user (saldo, poin, total belanja, cashback), deposit, pesanan
+          OTP, mutasi saldo, voucher, misi, dan sisanya. Tiap koleksi dibatasi 50.000 baris, dan
+          kalau ada yang kena batas itu, namanya ditulis di dalam berkasnya.
+        </p>
+        {/* Dikatakan apa adanya: tombol Restore di bawah hanya memulihkan user.
+            Koleksi lain ikut tersimpan di berkasnya, tapi memasukkannya kembali
+            masih harus manual. Menyebut ini "restore penuh" akan membuat orang
+            merasa aman padahal belum tentu. */}
+        <p className="text-[11px] text-muted mb-4 leading-relaxed">
+          ⚠️ Tombol Restore memulihkan <b>data user saja</b>. Koleksi lain tetap tersimpan di
+          berkas ini, tapi memasukkannya kembali masih manual.
+        </p>
         <button onClick={doBackup} disabled={backupLoading} className="w-full rounded-xl bg-indigo-500 text-white py-2.5 text-sm font-bold press disabled:opacity-50 border border-indigo-400">
           {backupLoading ? "Menyiapkan backup…" : "📦 Download Backup JSON"}
         </button>

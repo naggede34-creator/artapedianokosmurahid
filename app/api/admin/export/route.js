@@ -4,7 +4,28 @@
 // type=deposits → CSV deposit
 // type=transactions → CSV transaksi OTP
 import { NextResponse } from "next/server";
-import { usersCol, depositsCol, otpOrdersCol } from "@/lib/db";
+import {
+  usersCol,
+  depositsCol,
+  otpOrdersCol,
+  balanceLogsCol,
+  adminBalanceLogsCol,
+  settingsCol,
+  vouchersCol,
+  dailyActivitiesCol,
+  missionsCol,
+  scratchCardsCol,
+  mysteryBoxCol,
+  weeklyChallengesCol,
+  userNotificationsCol,
+  otpFavoritesCol,
+  userTelegramCol,
+  productOrdersCol,
+  jobSubmissionsCol,
+  warrantyClaimsCol,
+  ticketsCol,
+  botSessionsCol
+} from "@/lib/db";
 import { isAdminRequest } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
@@ -40,14 +61,85 @@ export async function GET(req) {
     let filename = "";
 
     if (type === "backup") {
-      const users = await usersCol();
-      const rows = await users.find({}).sort({ createdAt: -1 }).limit(50000).toArray();
-      // Strip MongoDB internal _id, replace with stable string
-      const clean = rows.map((u) => {
-        const { _id, ...rest } = u;
-        return { _id: _id?.toString(), ...rest };
-      });
-      const json = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), count: clean.length, users: clean }, null, 2);
+      // Backup penuh = SEMUA koleksi, bukan cuma user.
+      //
+      // Versi sebelumnya hanya menyalin koleksi users. Dokumen user memang
+      // sudah lengkap di situ (saldo, poin, totalSpent, cashback, semuanya),
+      // tapi kalau datanya benar-benar hilang, yang tidak ikut terselamatkan
+      // adalah riwayat pesanan, deposit, dan mutasi saldo — justru bagian yang
+      // tidak bisa dibangun ulang dari mana pun.
+      //
+      // Tiap koleksi dibatasi jumlahnya, dan kalau kena batas itu DITULIS di
+      // dalam berkasnya. Backup yang diam-diam terpotong lebih berbahaya
+      // daripada backup yang gagal, karena baru ketahuan saat dipakai.
+      const BATAS = 50000;
+
+      const daftar = [
+        ["users", usersCol],
+        ["deposits", depositsCol],
+        ["otp_orders", otpOrdersCol],
+        ["balance_logs", balanceLogsCol],
+        ["admin_balance_logs", adminBalanceLogsCol],
+        ["settings", settingsCol],
+        ["vouchers", vouchersCol],
+        ["daily_activities", dailyActivitiesCol],
+        ["missions", missionsCol],
+        ["scratch_cards", scratchCardsCol],
+        ["mystery_box", mysteryBoxCol],
+        ["weekly_challenges", weeklyChallengesCol],
+        ["user_notifications", userNotificationsCol],
+        ["otp_favorites", otpFavoritesCol],
+        ["user_telegram", userTelegramCol],
+        ["product_orders", productOrdersCol],
+        ["job_submissions", jobSubmissionsCol],
+        ["warranty_claims", warrantyClaimsCol],
+        ["tickets", ticketsCol],
+        ["bot_sessions", botSessionsCol]
+      ];
+
+      const data = {};
+      const ringkasan = {};
+      const terpotong = [];
+      let users = [];
+
+      for (const [nama, ambil] of daftar) {
+        try {
+          const col = await ambil();
+          const total = await col.countDocuments({});
+          const rows = await col.find({}).limit(BATAS).toArray();
+          const bersih = rows.map(({ _id, ...sisa }) => ({ _id: _id?.toString(), ...sisa }));
+          if (nama === "users") users = bersih;
+          else data[nama] = bersih;
+          ringkasan[nama] = { disimpan: rows.length, totalDiDatabase: total };
+          if (total > rows.length) terpotong.push(nama);
+        } catch (e) {
+          // Satu koleksi yang gagal dibaca tidak boleh menggagalkan seluruh
+          // backup — sisanya tetap jauh lebih berharga daripada tidak ada.
+          console.error(`[backup] koleksi ${nama} gagal:`, e?.message || e);
+          if (nama !== "users") data[nama] = [];
+          ringkasan[nama] = { disimpan: 0, totalDiDatabase: null, gagal: String(e?.message || e) };
+        }
+      }
+
+      const json = JSON.stringify(
+        {
+          version: 2,
+          exportedAt: new Date().toISOString(),
+          batasPerKoleksi: BATAS,
+          koleksiTerpotong: terpotong,
+          ringkasan,
+          // users SENGAJA ditaruh di tingkat atas, bukan di dalam `data`:
+          // /api/admin/import membacanya dari sana, jadi berkas versi 2 tetap
+          // bisa di-restore alat yang sudah ada. Dan karena tidak disalin dua
+          // kali, koleksi terbesar tidak menggandakan ukuran berkasnya.
+          count: users.length,
+          users,
+          data
+        },
+        null,
+        2
+      );
+
       return new NextResponse(json, {
         status: 200,
         headers: {
