@@ -2650,3 +2650,152 @@ html.dark body {
   .hero-mascot-img, .hero-mascot-floor { animation: none; }
   .hero-mascot-lean { transform: none; transition: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TRANSISI HALAMAN ALA PERGANTIAN PANEL
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.panel-wipe {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  pointer-events: none;   /* tidak pernah menahan klik, bahkan kalau tersangkut */
+  overflow: hidden;
+}
+
+/* Bidang miring yang menyapu, lalu keluar lewat sisi seberang. Dibuat jauh
+   lebih lebar dari layar supaya sudut miringnya tidak meninggalkan segitiga
+   kosong di pojok saat melintas. */
+.panel-wipe-sheet {
+  position: absolute;
+  top: -20%;
+  left: -60%;
+  width: 90%;
+  height: 140%;
+  transform: skewX(-14deg);
+  background: rgb(var(--c-ink));
+  animation: panelWipe .62s cubic-bezier(.65, 0, .35, 1) forwards;
+}
+
+/* Garis tinta tipis yang berlari mendahului bidangnya — yang membuatnya
+   terbaca sebagai halaman dibalik, bukan kotak hitam lewat. */
+.panel-wipe-edge {
+  position: absolute;
+  top: -20%;
+  left: -60%;
+  width: 6px;
+  height: 140%;
+  margin-left: 90%;
+  transform: skewX(-14deg);
+  background: rgb(var(--c-orange));
+  animation: panelWipe .62s cubic-bezier(.65, 0, .35, 1) forwards;
+}
+
+@keyframes panelWipe {
+  0%   { left: -60%; }
+  100% { left: 160%; }
+}
+
+/* Isi halaman baru naik sedikit setelah sapuannya lewat. */
+main { animation: panelEnter .4s cubic-bezier(.2, .9, .3, 1.05) both; }
+@keyframes panelEnter {
+  from { opacity: .001; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-wipe { display: none; }
+  main { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MODE MALAM
+   ───────────────────────────────────────────────────────────────────────
+   Mode gelap di sini sebelumnya hanya versi redup dari mode terang: warna
+   yang sama, dibalik terangnya. Blok ini memberinya wataknya sendiri —
+   komik malam kota: rasternya membiru, garisnya menyala seperti neon,
+   kertasnya berganti jadi langit.
+
+   Semuanya cuma penyesuaian tampilan. Tidak ada aturan di sini yang
+   mengubah tata letak, jadi mode terang dan gelap tetap satu halaman yang
+   sama dan tidak perlu diuji sebagai dua tampilan berbeda.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Raster kertas jadi taburan biru dingin, bukan bintik tinta hitam. */
+html.dark body,
+:root[data-theme="dark"] body {
+  background-image:
+    radial-gradient(circle at 50% 50%, rgb(110 176 255 / .055) .9px, transparent 1px),
+    radial-gradient(120% 80% at 50% 0%, rgb(46 134 255 / .10), transparent 70%);
+  background-size: 7px 7px, 100% 100%;
+}
+
+/* Garis tinta jadi garis neon: warnanya tetap terang, tapi ditemani halo
+   supaya tepinya menyala alih-alih sekadar putih di atas gelap. */
+html.dark .ink-edge::before,
+:root[data-theme="dark"] .ink-edge::before {
+  border-color: rgb(var(--c-blue-bright) / .85);
+  box-shadow:
+    0 0 10px rgb(var(--c-blue) / .45),
+    inset 0 0 10px rgb(var(--c-blue) / .22);
+}
+
+/* Kartu mendapat pinggiran dingin di atas dan hangat di bawah — kesan cahaya
+   kota yang datang dari bawah. */
+html.dark .card-wow,
+:root[data-theme="dark"] .card-wow {
+  box-shadow:
+    5px 5px 0 rgb(var(--c-ink) / .22),
+    var(--hd-lift),
+    inset 0 1.5px 0 rgb(165 205 255 / .16),
+    inset 0 -1.5px 0 rgb(255 168 110 / .10);
+}
+html.dark .card-wow:hover,
+:root[data-theme="dark"] .card-wow:hover {
+  box-shadow:
+    8px 8px 0 rgb(var(--c-ink) / .26),
+    var(--hd-lift-hi),
+    0 0 26px -6px rgb(var(--c-blue) / .4),
+    inset 0 1.5px 0 rgb(165 205 255 / .22);
+}
+
+/* Judul timbul: pelat oranye diganti neon biru, karena oranye di atas navy
+   gelap kehilangan hampir seluruh kontrasnya. */
+html.dark .hd-title,
+:root[data-theme="dark"] .hd-title {
+  text-shadow:
+    3px 3px 0 rgb(var(--c-blue) / .9),
+    5px 5px 0 rgb(0 0 0 / .5),
+    0 0 22px rgb(var(--c-blue) / .35);
+}
+
+/* Onomatope ikut menyala. */
+html.dark .ono-burst,
+:root[data-theme="dark"] .ono-burst {
+  -webkit-text-stroke-color: rgb(6 12 28);
+  text-shadow: 0 0 18px rgb(var(--ono-c) / .55), 3px 3px 0 rgb(0 0 0 / .5);
+}
+
+/* Sapuan transisi halaman: di mode terang bidangnya tinta gelap, di mode
+   gelap tinta gelap tidak terlihat sama sekali di atas latar gelap. */
+html.dark .panel-wipe-sheet,
+:root[data-theme="dark"] .panel-wipe-sheet {
+  background: rgb(6 12 28);
+  box-shadow: 0 0 40px rgb(var(--c-blue) / .35);
+}
+html.dark .panel-wipe-edge,
+:root[data-theme="dark"] .panel-wipe-edge {
+  background: rgb(var(--c-blue-bright));
+  box-shadow: 0 0 22px rgb(var(--c-blue) / .9);
+}
+
+/* Halo maskot ikut mendingin supaya tidak terlihat seperti lampu sorot
+   oranye yang ketinggalan dari mode terang. */
+html.dark .hero-mascot-halo,
+:root[data-theme="dark"] .hero-mascot-halo {
+  background: radial-gradient(circle, rgb(var(--c-blue) / .3), transparent 68%);
+}
+html.dark .hero-mascot-img,
+:root[data-theme="dark"] .hero-mascot-img {
+  filter: drop-shadow(0 18px 26px rgb(0 0 0 / .55)) drop-shadow(0 0 18px rgb(var(--c-blue) / .25));
+}
