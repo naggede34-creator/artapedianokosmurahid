@@ -19,6 +19,8 @@ const TABS = [
   { id: "konten", label: "Konten", icon: "📝" },
   { id: "banner", label: "Banner", icon: "🖼️" },
   { id: "transaksi", label: "Transaksi", icon: "💳" },
+  { id: "depositmanual", label: "Deposit Manual", icon: "🔎" },
+  { id: "tarik", label: "Tarik Saldo", icon: "🏦" },
   { id: "produk", label: "Produk", icon: "🛍️" },
   { id: "job", label: "Job/Saldo", icon: "💰" },
   { id: "tiket", label: "Tiket", icon: "🎫" },
@@ -116,6 +118,34 @@ export default function AdminDashboardPage() {
   const [serverForms, setServerForms] = useState({});
   // Nama, label, keterangan, dan estimasi waktu tiap metode deposit.
   const [depositForms, setDepositForms] = useState({});
+  // QRIS manual milik admin: gambar, atas nama, cara bayar, batas waktu.
+  const [manualForm, setManualForm] = useState({
+    qrImage: "",
+    accountName: "",
+    accountLabel: "",
+    instructions: "",
+    ttlMinutes: "60"
+  });
+  const [savingManual, setSavingManual] = useState(false);
+  const [manualMsg, setManualMsg] = useState("");
+  // Antrean deposit manual yang menunggu dicek.
+  const [manualDeposits, setManualDeposits] = useState([]);
+  const [manualDepositsLoading, setManualDepositsLoading] = useState(false);
+  const [manualPending, setManualPending] = useState(0);
+  const [manualFilter, setManualFilter] = useState("review");
+  const [proofView, setProofView] = useState(null);
+  const [depositBusy, setDepositBusy] = useState("");
+  const [manualDepositMsg, setManualDepositMsg] = useState("");
+  // Penarikan saldo Atlantic.
+  const [wdData, setWdData] = useState({ configured: false, items: [] });
+  const [wdLoading, setWdLoading] = useState(false);
+  const [banks, setBanks] = useState([]);
+  const [banksLoading, setBanksLoading] = useState(false);
+  const [bankQuery, setBankQuery] = useState("");
+  const [wdForm, setWdForm] = useState({ bankCode: "", bankName: "", accountNumber: "", nominal: "", note: "" });
+  const [wdCheck, setWdCheck] = useState(null);
+  const [wdBusy, setWdBusy] = useState("");
+  const [wdMsg, setWdMsg] = useState("");
   const [savingDepositMethod, setSavingDepositMethod] = useState(false);
   const [depositMethodMsg, setDepositMethodMsg] = useState("");
   const [savingMaintenanceBtn, setSavingMaintenanceBtn] = useState(false);
@@ -174,7 +204,7 @@ export default function AdminDashboardPage() {
   // Banner state
   const [banners, setBanners] = useState([]);
   const [bannersLoading, setBannersLoading] = useState(false);
-  const [bannerForm, setBannerForm] = useState({ title: "", imageUrl: "", linkUrl: "", placement: "homepage", sortOrder: "0" });
+  const [bannerForm, setBannerForm] = useState({ title: "", label: "", imageUrl: "", linkUrl: "", placement: "homepage", sortOrder: "0" });
   const [editingBanner, setEditingBanner] = useState(null);
   const [bannerMsg, setBannerMsg] = useState("");
   const [bannerSubmitting, setBannerSubmitting] = useState(false);
@@ -245,7 +275,7 @@ export default function AdminDashboardPage() {
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Gagal.");
       setBannerMsg(editingBanner ? "Banner diperbarui!" : "Banner dibuat!");
-      setBannerForm({ title: "", imageUrl: "", linkUrl: "", placement: "homepage", sortOrder: "0" });
+      setBannerForm({ title: "", label: "", imageUrl: "", linkUrl: "", placement: "homepage", sortOrder: "0" });
       setEditingBanner(null);
       loadBanners();
     } catch (err) { setBannerMsg(err.message); }
@@ -513,6 +543,200 @@ export default function AdminDashboardPage() {
     }
   }
 
+  // Simpan pengaturan QRIS manual (gambar, atas nama, cara bayar, batas waktu).
+  async function saveManualDeposit() {
+    setSavingManual(true);
+    setManualMsg("");
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ manualDeposit: { ...manualForm, ttlMinutes: Number(manualForm.ttlMinutes) || 60 } })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSettings(data);
+      setManualMsg("QRIS manual tersimpan.");
+    } catch (err) {
+      setManualMsg(err.message || "Gagal menyimpan.");
+    } finally {
+      setSavingManual(false);
+      setTimeout(() => setManualMsg(""), 3000);
+    }
+  }
+
+  // Gambar QRIS dikecilkan dulu di browser. Yang diunggah orang biasanya
+  // tangkapan layar 3–5 MB, dan itu ikut diunduh SETIAP user yang memilih
+  // metode ini — bukan cuma sekali oleh adminnya.
+  function pickImage(file, { maxSide = 900, quality = 0.85, onDone }) {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Ukuran gambar maksimal 10MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const ratio = Math.min(maxSide / img.width, maxSide / img.height, 1);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        onDone(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => alert("Berkas itu bukan gambar yang bisa dibaca.");
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  const loadManualDeposits = useCallback(async (status) => {
+    setManualDepositsLoading(true);
+    try {
+      const res = await fetch(`/api/admin/deposits?status=${encodeURIComponent(status || "review")}`);
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setManualDeposits(Array.isArray(d.items) ? d.items : []);
+      setManualPending(Number(d.pending) || 0);
+    } catch {
+      setManualDeposits([]);
+    } finally {
+      setManualDepositsLoading(false);
+    }
+  }, []);
+
+  async function reviewDeposit(orderId, action) {
+    if (action === "approve" && !confirm("Setujui deposit ini? Saldo user langsung bertambah.")) return;
+    const reason = action === "reject" ? (prompt("Alasan penolakan (dikirim ke notif):") ?? "") : "";
+    if (action === "reject" && reason === null) return;
+    setDepositBusy(orderId);
+    setManualDepositMsg("");
+    try {
+      const res = await fetch("/api/admin/deposits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, orderId, reason })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setManualDepositMsg(action === "approve" ? "Disetujui, saldo sudah masuk." : "Ditolak.");
+      loadManualDeposits(manualFilter);
+    } catch (err) {
+      setManualDepositMsg(err.message || "Gagal memproses.");
+    } finally {
+      setDepositBusy("");
+      setTimeout(() => setManualDepositMsg(""), 4000);
+    }
+  }
+
+  async function openProof(orderId) {
+    setProofView({ orderId, image: null });
+    try {
+      const res = await fetch("/api/admin/deposits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "proof", orderId })
+      });
+      const d = await res.json();
+      setProofView({ orderId, image: d.proofImage || null });
+    } catch {
+      setProofView({ orderId, image: null });
+    }
+  }
+
+  // ── Penarikan saldo ───────────────────────────────────────────────────
+  const loadWithdrawals = useCallback(async () => {
+    setWdLoading(true);
+    try {
+      const res = await fetch("/api/admin/withdraw");
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setWdData({ configured: Boolean(d.configured), items: Array.isArray(d.items) ? d.items : [] });
+    } catch {
+      setWdData({ configured: false, items: [] });
+    } finally {
+      setWdLoading(false);
+    }
+  }, []);
+
+  async function wdPost(action, body) {
+    const res = await fetch("/api/admin/withdraw", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ...body })
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error || "Gagal.");
+    return d;
+  }
+
+  async function loadBanks() {
+    setBanksLoading(true);
+    setWdMsg("");
+    try {
+      const d = await wdPost("banks");
+      setBanks(d.items || []);
+    } catch (err) {
+      setWdMsg(err.message);
+    } finally {
+      setBanksLoading(false);
+    }
+  }
+
+  async function checkAccount() {
+    setWdBusy("check");
+    setWdMsg("");
+    setWdCheck(null);
+    try {
+      const d = await wdPost("check", { bankCode: wdForm.bankCode, accountNumber: wdForm.accountNumber });
+      setWdCheck({ ok: true, ownerName: d.ownerName });
+    } catch (err) {
+      setWdCheck({ ok: false, error: err.message });
+    } finally {
+      setWdBusy("");
+    }
+  }
+
+  async function createWithdraw() {
+    const nominal = Number(wdForm.nominal) || 0;
+    // Konfirmasinya menyebut nominal dan nomor tujuannya: uang yang sudah
+    // pindah ke rekening orang lain tidak bisa ditarik kembali.
+    if (!confirm(`Tarik ${fmtRp(nominal)} ke ${wdForm.bankName || wdForm.bankCode} ${wdForm.accountNumber}?`)) return;
+    setWdBusy("create");
+    setWdMsg("");
+    try {
+      const d = await wdPost("create", {
+        bankCode: wdForm.bankCode,
+        bankName: wdForm.bankName,
+        accountNumber: wdForm.accountNumber,
+        ownerName: wdCheck?.ownerName || "",
+        nominal,
+        note: wdForm.note
+      });
+      setWdMsg(`Penarikan dibuat: ${d.refId} — ${d.ownerName || "(nama tidak terverifikasi)"} — status ${d.status}.`);
+      setWdForm((f) => ({ ...f, nominal: "", note: "" }));
+      setWdCheck(null);
+      loadWithdrawals();
+    } catch (err) {
+      setWdMsg(err.message);
+    } finally {
+      setWdBusy("");
+    }
+  }
+
+  async function refreshWithdraw(refId) {
+    setWdBusy(refId);
+    try {
+      await wdPost("refresh", { refId });
+      loadWithdrawals();
+    } catch (err) {
+      setWdMsg(err.message);
+    } finally {
+      setWdBusy("");
+    }
+  }
+
   // action: info | set | delete
   async function botWebhook(action) {
     setBotBusy(action);
@@ -689,6 +913,13 @@ export default function AdminDashboardPage() {
         ])
       )
     );
+    setManualForm({
+      qrImage: data.manualDeposit?.qrImage || "",
+      accountName: data.manualDeposit?.accountName || "",
+      accountLabel: data.manualDeposit?.accountLabel || "",
+      instructions: data.manualDeposit?.instructions || "",
+      ttlMinutes: String(data.manualDeposit?.ttlMinutes ?? 60)
+    });
     setServerForms(
       Object.fromEntries(
         (Array.isArray(data.otpServers) ? data.otpServers : []).map((s) => [
@@ -947,6 +1178,9 @@ export default function AdminDashboardPage() {
     loadPlatformMarkups();
     loadBanners();
     loadTickets();
+    // Antrean deposit manual ikut dimuat sejak awal supaya lencana jumlahnya
+    // terlihat tanpa harus membuka tabnya dulu.
+    loadManualDeposits("review");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1398,7 +1632,11 @@ export default function AdminDashboardPage() {
         {TABS.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id);
+              if (tab.id === "depositmanual") loadManualDeposits(manualFilter);
+              if (tab.id === "tarik") loadWithdrawals();
+            }}
             className={`relative flex-1 min-w-max rounded-xl px-3 py-2 text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === tab.id
                 ? "bg-ink text-bg shadow-soft scale-[1.02]"
@@ -1407,6 +1645,13 @@ export default function AdminDashboardPage() {
           >
             <span className="mr-1">{tab.icon}</span>
             {tab.label}
+            {/* Deposit manual yang menunggu tidak akan terlihat kalau tabnya
+                tidak dibuka — lencananya yang memanggil. */}
+            {tab.id === "depositmanual" && manualPending > 0 && (
+              <span className="ml-1.5 rounded-full bg-rose px-1.5 py-0.5 text-[10px] font-black text-white">
+                {manualPending}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -2183,6 +2428,329 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
+      {/* TAB: DEPOSIT MANUAL                                           */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === "depositmanual" && (
+        <div className="mt-5 space-y-5">
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="font-display text-base font-semibold text-ink">🔎 Deposit Manual</h2>
+                <p className="mt-1 text-xs text-muted">
+                  User yang sudah bayar ke QRIS-mu dan menunggu dicek. Setujui hanya setelah nominalnya benar-benar
+                  ada di mutasi — saldo yang sudah masuk tidak bisa ditarik balik dari sini.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={manualFilter}
+                  onChange={(e) => {
+                    setManualFilter(e.target.value);
+                    loadManualDeposits(e.target.value);
+                  }}
+                  className="rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink outline-none focus:border-amber"
+                >
+                  <option value="review">Menunggu dicek</option>
+                  <option value="completed">Sudah disetujui</option>
+                  <option value="failed">Ditolak</option>
+                  <option value="pending">Belum dikonfirmasi user</option>
+                  <option value="all">Semua</option>
+                </select>
+                <button
+                  onClick={() => loadManualDeposits(manualFilter)}
+                  className="rounded-lg border border-amber/40 px-3 py-1.5 text-xs text-amber-bright"
+                >
+                  Refresh
+                </button>
+              </div>
+            </div>
+
+            {manualDepositMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{manualDepositMsg}</p>}
+
+            {manualDepositsLoading ? (
+              <p className="py-6 text-center text-sm text-muted">Memuat…</p>
+            ) : manualDeposits.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted">Tidak ada deposit manual di filter ini.</p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {manualDeposits.map((d) => (
+                  <div key={d.orderId} className="rounded-xl border border-line bg-surface p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-mono text-xs text-muted">{d.orderId}</p>
+                        <p className="mt-0.5 text-lg font-black text-ink">{fmtRp(d.amount)}</p>
+                        <p className="mt-0.5 text-xs text-muted">
+                          {d.name || "(tanpa nama)"} · <span className="font-mono">{d.token}</span>
+                          {d.balance !== null && <> · saldo sekarang {fmtRp(d.balance)}</>}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-muted">
+                          Dibuat {fmtDate(d.createdAt)}
+                          {d.confirmedAt ? ` · dikonfirmasi ${fmtDate(d.confirmedAt)}` : ""}
+                        </p>
+                        {d.userNote && <p className="mt-1 text-xs text-ink">📝 {d.userNote}</p>}
+                        {d.adminNote && <p className="mt-1 text-xs text-rose">Catatan admin: {d.adminNote}</p>}
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                          d.status === "review"
+                            ? "bg-amber-soft text-amber-bright"
+                            : d.status === "completed"
+                              ? "bg-teal-soft text-teal-bright"
+                              : "bg-surface2 text-muted"
+                        }`}
+                      >
+                        {d.status}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {d.hasProof ? (
+                        <button
+                          onClick={() => openProof(d.orderId)}
+                          className="btn-3d rounded-md border border-line px-3 py-1.5 text-xs font-semibold text-ink"
+                        >
+                          🧾 Lihat bukti
+                        </button>
+                      ) : (
+                        <span className="rounded-md border border-dashed border-line px-3 py-1.5 text-xs text-muted">
+                          Tanpa bukti
+                        </span>
+                      )}
+                      {d.status === "review" && (
+                        <>
+                          <button
+                            onClick={() => reviewDeposit(d.orderId, "approve")}
+                            disabled={depositBusy === d.orderId}
+                            className="btn-3d rounded-md bg-teal px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
+                          >
+                            {depositBusy === d.orderId ? "…" : "✓ Setujui"}
+                          </button>
+                          <button
+                            onClick={() => reviewDeposit(d.orderId, "reject")}
+                            disabled={depositBusy === d.orderId}
+                            className="btn-3d rounded-md border border-rose/40 px-3 py-1.5 text-xs font-bold text-rose disabled:opacity-60"
+                          >
+                            ✕ Tolak
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Bukti bayar ditampilkan di lapisan terpisah, bukan di dalam daftarnya:
+          gambarnya besar dan cuma dilihat sekali per transaksi. */}
+      {proofView && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setProofView(null)}
+        >
+          <div className="max-h-full w-full max-w-md overflow-auto rounded-2xl bg-surface p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <p className="font-mono text-xs text-muted">{proofView.orderId}</p>
+              <button onClick={() => setProofView(null)} className="rounded-lg border border-line px-2 py-1 text-xs text-ink">
+                Tutup
+              </button>
+            </div>
+            {proofView.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={proofView.image} alt="Bukti bayar" className="mt-3 w-full rounded-xl border border-line" />
+            ) : (
+              <p className="py-8 text-center text-sm text-muted">Memuat bukti…</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* TAB: TARIK SALDO                                              */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === "tarik" && (
+        <div className="mt-5 space-y-5">
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">🏦 Tarik Saldo Atlantic</h2>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Memindahkan uang <b>keluar</b> dari saldo Atlantic ke rekening atau e-wallet. Ini bukan saldo pengguna —
+              yang ditarik adalah uang hasil deposit yang sudah terkumpul di Atlantic. Transfer yang sudah jalan tidak
+              bisa dibatalkan, jadi periksa nomornya sebelum menekan tarik.
+            </p>
+
+            {!wdData.configured && !wdLoading && (
+              <p className="mt-3 rounded-lg border border-rose/40 bg-rose-soft px-3 py-2 text-xs text-rose">
+                ATLANTIC_APIKEY belum diisi di environment variables, jadi penarikan belum bisa dipakai.
+              </p>
+            )}
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-muted">Bank / e-wallet tujuan</label>
+                  <button
+                    onClick={loadBanks}
+                    disabled={banksLoading}
+                    className="rounded-lg border border-amber/40 px-2.5 py-1 text-[11px] text-amber-bright disabled:opacity-60"
+                  >
+                    {banksLoading ? "Memuat…" : banks.length ? "Muat ulang daftar" : "Muat daftar bank"}
+                  </button>
+                </div>
+                {banks.length > 0 ? (
+                  <>
+                    <input
+                      value={bankQuery}
+                      onChange={(e) => setBankQuery(e.target.value)}
+                      placeholder="Cari bank, mis: BCA, DANA…"
+                      className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-amber"
+                    />
+                    <select
+                      value={wdForm.bankCode}
+                      onChange={(e) => {
+                        const b = banks.find((x) => x.code === e.target.value);
+                        setWdForm((f) => ({ ...f, bankCode: e.target.value, bankName: b?.name || "" }));
+                        setWdCheck(null);
+                      }}
+                      className="mt-2 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-amber"
+                    >
+                      <option value="">— pilih bank —</option>
+                      {banks
+                        .filter((b) => b.name.toLowerCase().includes(bankQuery.toLowerCase()))
+                        .map((b) => (
+                          <option key={b.code} value={b.code}>
+                            {b.name} ({b.code})
+                          </option>
+                        ))}
+                    </select>
+                  </>
+                ) : (
+                  <input
+                    value={wdForm.bankCode}
+                    onChange={(e) => setWdForm((f) => ({ ...f, bankCode: e.target.value, bankName: e.target.value }))}
+                    placeholder="Kode bank, mis: BCA / DANA"
+                    className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-amber"
+                  />
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted">Nomor rekening / HP</label>
+                <input
+                  value={wdForm.accountNumber}
+                  onChange={(e) => {
+                    setWdForm((f) => ({ ...f, accountNumber: e.target.value.replace(/\s/g, "") }));
+                    setWdCheck(null);
+                  }}
+                  placeholder="1234567890"
+                  className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-amber"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted">Nominal (Rp)</label>
+                <input
+                  type="number"
+                  min="10000"
+                  value={wdForm.nominal}
+                  onChange={(e) => setWdForm((f) => ({ ...f, nominal: e.target.value }))}
+                  placeholder="100000"
+                  className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-amber"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-muted">Catatan (opsional)</label>
+                <input
+                  value={wdForm.note}
+                  onChange={(e) => setWdForm((f) => ({ ...f, note: e.target.value }))}
+                  placeholder="mis: tarikan mingguan"
+                  className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-amber"
+                />
+              </div>
+
+              <div className="sm:col-span-2 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={checkAccount}
+                  disabled={!wdForm.bankCode || !wdForm.accountNumber || wdBusy === "check"}
+                  className="btn-3d rounded-lg border border-line bg-surface px-4 py-2 text-xs font-bold text-ink disabled:opacity-60"
+                >
+                  {wdBusy === "check" ? "Mengecek…" : "Cek nama pemilik"}
+                </button>
+                <button
+                  onClick={createWithdraw}
+                  disabled={!wdData.configured || !wdForm.bankCode || !wdForm.accountNumber || !wdForm.nominal || wdBusy === "create"}
+                  className="btn-3d rounded-lg bg-rose px-4 py-2 text-xs font-black text-white disabled:opacity-60"
+                >
+                  {wdBusy === "create" ? "Memproses…" : "Tarik sekarang"}
+                </button>
+                {wdCheck?.ok && (
+                  <span className="text-xs font-bold text-teal-bright">✓ a.n. {wdCheck.ownerName || "(kosong)"}</span>
+                )}
+                {wdCheck && !wdCheck.ok && <span className="text-xs text-rose">{wdCheck.error}</span>}
+              </div>
+            </div>
+
+            {wdMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{wdMsg}</p>}
+          </div>
+
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-base font-semibold text-ink">Riwayat penarikan</h2>
+              <button onClick={loadWithdrawals} className="rounded-lg border border-amber/40 px-3 py-1 text-xs text-amber-bright">
+                Refresh
+              </button>
+            </div>
+            {wdLoading ? (
+              <p className="py-6 text-center text-sm text-muted">Memuat…</p>
+            ) : wdData.items.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted">Belum ada penarikan.</p>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {wdData.items.map((w) => (
+                  <div key={w.refId} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-ink">
+                        {fmtRp(w.nominal)} → {w.bankName} {w.accountNumber}
+                      </p>
+                      <p className="text-[11px] text-muted">
+                        {w.ownerName || "(nama tidak diketahui)"}
+                        {!w.nameVerified && <span className="text-rose"> · nama tidak terverifikasi</span>}
+                        {w.fee ? ` · biaya ${fmtRp(w.fee)}` : ""} · {fmtDate(w.createdAt)}
+                      </p>
+                      <p className="font-mono text-[10px] text-muted">{w.refId}</p>
+                      {w.error && <p className="text-[11px] text-rose">{w.error}</p>}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                          w.status === "completed"
+                            ? "bg-teal-soft text-teal-bright"
+                            : ["failed", "canceled"].includes(w.status)
+                              ? "bg-rose-soft text-rose"
+                              : "bg-amber-soft text-amber-bright"
+                        }`}
+                      >
+                        {w.status}
+                      </span>
+                      <button
+                        onClick={() => refreshWithdraw(w.refId)}
+                        disabled={wdBusy === w.refId}
+                        className="rounded-md border border-line px-2 py-1 text-[11px] text-ink disabled:opacity-60"
+                      >
+                        {wdBusy === w.refId ? "…" : "Cek status"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
       {/* TAB: BANNER                                                   */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === "banner" && (
@@ -2198,8 +2766,65 @@ export default function AdminDashboardPage() {
                 <input value={bannerForm.title} onChange={(e) => setBannerForm((f) => ({...f, title: e.target.value}))} placeholder="Judul banner" required className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted">URL Gambar *</label>
-                <input value={bannerForm.imageUrl} onChange={(e) => setBannerForm((f) => ({...f, imageUrl: e.target.value}))} placeholder="https://..." required className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+                <label className="text-xs font-medium text-muted">Label kecil di banner</label>
+                <input value={bannerForm.label} onChange={(e) => setBannerForm((f) => ({...f, label: e.target.value.slice(0, 24)}))} placeholder="mis: PROMO, BARU, DISKON" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+
+              {/* Gambar banner: diunggah, atau ditempel alamatnya kalau
+                  gambarnya sudah ada di tempat lain. Dua-duanya mengisi kolom
+                  yang sama, jadi tidak ada keadaan "terisi dua-duanya" yang
+                  harus ditebak mana yang menang. */}
+              <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-muted">Gambar banner *</label>
+                <div className="mt-1 flex flex-wrap items-start gap-3">
+                  <div className="shrink-0">
+                    {bannerForm.imageUrl ? (
+                      <div className="relative">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={bannerForm.imageUrl} alt="Pratinjau banner" className="h-[72px] w-48 rounded-xl border-2 border-line object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setBannerForm((f) => ({ ...f, imageUrl: "" }))}
+                          className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-rose text-xs font-bold text-white"
+                          aria-label="Hapus gambar"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex h-[72px] w-48 items-center justify-center rounded-xl border-2 border-dashed border-line text-[11px] text-muted">
+                        Rasio 16:6 paling pas
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-[200px] flex-1">
+                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-amber/40 bg-amber/10 px-3 py-2.5 text-xs font-semibold text-amber-bright hover:bg-amber/20">
+                      📁 {bannerForm.imageUrl ? "Ganti foto banner" : "Upload foto banner"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          pickImage(e.target.files?.[0], {
+                            maxSide: 1280,
+                            quality: 0.82,
+                            onDone: (src) => setBannerForm((f) => ({ ...f, imageUrl: src }))
+                          });
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    <input
+                      value={bannerForm.imageUrl.startsWith("data:") ? "" : bannerForm.imageUrl}
+                      onChange={(e) => setBannerForm((f) => ({ ...f, imageUrl: e.target.value }))}
+                      placeholder="…atau tempel alamat gambar https://"
+                      className="mt-2 w-full rounded-xl border border-line bg-surface px-3.5 py-2 text-sm text-ink outline-none focus:border-amber"
+                    />
+                    {bannerForm.imageUrl.startsWith("data:") && (
+                      <p className="mt-1 text-[10px] text-teal-bright">✓ Foto terunggah, otomatis dikecilkan ke lebar 1280px.</p>
+                    )}
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="text-xs font-medium text-muted">URL Link (klik banner)</label>
@@ -2208,8 +2833,9 @@ export default function AdminDashboardPage() {
               <div>
                 <label className="text-xs font-medium text-muted">Penempatan *</label>
                 <select value={bannerForm.placement} onChange={(e) => setBannerForm((f) => ({...f, placement: e.target.value}))} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber">
-                  <option value="homepage">Homepage</option>
-                  <option value="order">Halaman Order</option>
+                  <option value="homepage">Beranda (bawah pembelian terbaru)</option>
+                  <option value="order">Halaman Beli Nokos (atas)</option>
+                  <option value="deposit">Halaman Isi Saldo (samping)</option>
                   <option value="dashboard">Dashboard User</option>
                 </select>
               </div>
@@ -2219,9 +2845,9 @@ export default function AdminDashboardPage() {
               </div>
               <div className="sm:col-span-2 flex gap-2.5 mt-1">
                 {editingBanner && (
-                  <button type="button" onClick={() => { setEditingBanner(null); setBannerForm({ title: "", imageUrl: "", linkUrl: "", placement: "homepage", sortOrder: "0" }); }} className="flex-1 rounded-xl border-2 border-line py-2.5 text-sm font-bold text-ink">Batal</button>
+                  <button type="button" onClick={() => { setEditingBanner(null); setBannerForm({ title: "", label: "", imageUrl: "", linkUrl: "", placement: "homepage", sortOrder: "0" }); }} className="flex-1 rounded-xl border-2 border-line py-2.5 text-sm font-bold text-ink">Batal</button>
                 )}
-                <button type="submit" disabled={bannerSubmitting} className="flex-1 rounded-xl bg-amber py-2.5 text-sm font-black text-white disabled:opacity-50">
+                <button type="submit" disabled={bannerSubmitting || !bannerForm.imageUrl} className="flex-1 rounded-xl bg-amber py-2.5 text-sm font-black text-white disabled:opacity-50">
                   {bannerSubmitting ? "Menyimpan..." : editingBanner ? "Simpan" : "Buat Banner"}
                 </button>
               </div>
@@ -2266,7 +2892,7 @@ export default function AdminDashboardPage() {
                         </td>
                         <td className="px-4 py-2.5 text-right">
                           <div className="flex justify-end gap-1.5">
-                            <button onClick={() => { setEditingBanner(b.id); setBannerForm({ title: b.title, imageUrl: b.imageUrl, linkUrl: b.linkUrl || "", placement: b.placement, sortOrder: String(b.sortOrder || 0) }); }} className="btn-3d rounded-md border border-amber/40 px-2 py-1 text-xs font-medium text-amber-bright hover:bg-amber-soft">Edit</button>
+                            <button onClick={() => { setEditingBanner(b.id); setBannerForm({ title: b.title, label: b.label || "", imageUrl: b.imageUrl, linkUrl: b.linkUrl || "", placement: b.placement, sortOrder: String(b.sortOrder || 0) }); }} className="btn-3d rounded-md border border-amber/40 px-2 py-1 text-xs font-medium text-amber-bright hover:bg-amber-soft">Edit</button>
                             <button onClick={() => toggleBanner(b.id)} className="btn-3d rounded-md border border-line px-2 py-1 text-xs font-medium text-ink hover:border-amber">{b.active ? "Nonaktif" : "Aktif"}</button>
                             <button onClick={() => deleteBanner(b.id)} className="btn-3d rounded-md border border-rose/40 px-2 py-1 text-xs font-medium text-rose hover:bg-rose-soft">Hapus</button>
                           </div>
@@ -2912,6 +3538,108 @@ export default function AdminDashboardPage() {
                 {depositMethodMsg && (
                   <p className="mt-2 text-xs font-medium text-teal-bright">{depositMethodMsg}</p>
                 )}
+
+                {/* ── QRIS manual ────────────────────────────────────── */}
+                <div className="mt-4 rounded-xl border-2 border-dashed border-amber/40 bg-amber/5 p-4">
+                  <h3 className="text-sm font-bold text-ink">🧾 QRIS Manual (dicek admin)</h3>
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                    Metode ini memakai QRIS milikmu sendiri. Saldo user TIDAK masuk otomatis — dia menekan
+                    &ldquo;Saya sudah bayar&rdquo;, lalu kamu menyetujuinya di tab <b>Deposit Manual</b>. Selama
+                    gambar QRIS di bawah masih kosong, metode ini tidak akan muncul di halaman deposit walaupun
+                    tombolnya sudah dinyalakan.
+                  </p>
+
+                  <div className="mt-3 flex flex-wrap items-start gap-4">
+                    <div className="shrink-0">
+                      {manualForm.qrImage ? (
+                        <div className="relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={manualForm.qrImage} alt="QRIS manual" className="h-36 w-36 rounded-xl border-2 border-line bg-white object-contain p-1" />
+                          <button
+                            type="button"
+                            onClick={() => setManualForm((f) => ({ ...f, qrImage: "" }))}
+                            className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-rose text-xs font-bold text-white"
+                            aria-label="Hapus gambar QRIS"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex h-36 w-36 items-center justify-center rounded-xl border-2 border-dashed border-line text-[11px] text-muted">
+                          Belum ada QRIS
+                        </div>
+                      )}
+                      <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-amber/40 bg-amber/10 px-3 py-2 text-xs font-semibold text-amber-bright">
+                        📁 {manualForm.qrImage ? "Ganti" : "Upload"} QRIS
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            pickImage(e.target.files?.[0], {
+                              maxSide: 900,
+                              quality: 0.9,
+                              onDone: (src) => setManualForm((f) => ({ ...f, qrImage: src }))
+                            });
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="grid min-w-[240px] flex-1 gap-2 sm:grid-cols-2">
+                      <div>
+                        <label className="text-[11px] font-medium text-muted">Atas nama</label>
+                        <input
+                          value={manualForm.accountName}
+                          onChange={(e) => setManualForm((f) => ({ ...f, accountName: e.target.value }))}
+                          placeholder="mis: ARTA PEDIA ID"
+                          className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-medium text-muted">Label QRIS</label>
+                        <input
+                          value={manualForm.accountLabel}
+                          onChange={(e) => setManualForm((f) => ({ ...f, accountLabel: e.target.value }))}
+                          placeholder="mis: QRIS DANA / BCA"
+                          className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-medium text-muted">Batas waktu bayar (menit)</label>
+                        <input
+                          type="number"
+                          min="5"
+                          max="1440"
+                          value={manualForm.ttlMinutes}
+                          onChange={(e) => setManualForm((f) => ({ ...f, ttlMinutes: e.target.value }))}
+                          className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="text-[11px] font-medium text-muted">Cara bayar (dilihat user)</label>
+                        <textarea
+                          rows={3}
+                          value={manualForm.instructions}
+                          onChange={(e) => setManualForm((f) => ({ ...f, instructions: e.target.value }))}
+                          placeholder="Scan QRIS, bayar persis sesuai nominal, lalu tekan Saya sudah bayar dan unggah buktinya."
+                          className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <button
+                          onClick={saveManualDeposit}
+                          disabled={savingManual}
+                          className="btn-3d rounded-lg bg-amber px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
+                        >
+                          {savingManual ? "Menyimpan…" : "Simpan QRIS manual"}
+                        </button>
+                        {manualMsg && <span className="ml-2 text-xs font-medium text-teal-bright">{manualMsg}</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             {settingsMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{settingsMsg}</p>}

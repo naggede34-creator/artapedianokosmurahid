@@ -15,6 +15,7 @@ export async function GET(req) {
     items: items.map((b) => ({
       id: b._id.toString(),
       title: b.title,
+      label: b.label || "",
       imageUrl: b.imageUrl,
       linkUrl: b.linkUrl,
       placement: b.placement,

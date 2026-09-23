@@ -12,6 +12,7 @@ import LevelUpModal from "@/components/LevelUpModal";
 import OnboardingTour, { useShouldShowTour } from "@/components/OnboardingTour";
 import NamePromptModal from "@/components/NamePromptModal";
 import WinbackBanner from "@/components/WinbackBanner";
+import BannerRail from "@/components/BannerRail";
 import AnimeHero from "@/components/AnimeHero";
 import MangaWaifu from "@/components/MangaWaifu";
 import { Icon, rupiah, EmptyState } from "@/components/ui";
@@ -359,7 +360,6 @@ export default function DashboardPage() {
   const [modal, setModal] = useState(false);
   const [warrantyModal, setWarrantyModal] = useState(false);
   const [recentOrders, setRecentOrders] = useState(null);
-  const [dashboardBanners, setDashboardBanners] = useState([]);
   const [tickets, setTickets] = useState([]);
   const [ticketsLoaded, setTicketsLoaded] = useState(false);
   const [ticketsLoading, setTicketsLoading] = useState(false);
@@ -386,10 +386,6 @@ export default function DashboardPage() {
       .then((r) => r.json())
       .then((d) => setRecentOrders(Array.isArray(d.items) ? d.items.slice(0, 5) : []))
       .catch(() => setRecentOrders([]));
-    fetch(`/api/banners/public?placement=dashboard`)
-      .then((r) => r.json())
-      .then((d) => setDashboardBanners(Array.isArray(d.items) ? d.items : []))
-      .catch(() => {});
   }, [token]);
 
   // Prompt pengisian nama jika belum ada & tour sudah selesai/tidak tampil
@@ -717,23 +713,11 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Dashboard Banners */}
-      {dashboardBanners.length > 0 && (
-        <div className="mt-5 flex gap-3 overflow-x-auto pb-1 scrollbar-none">
-          {dashboardBanners.map((b) => (
-            b.linkUrl ? (
-              <a key={b._id} href={b.linkUrl} target="_blank" rel="noopener noreferrer"
-                className="shrink-0 rounded-2xl overflow-hidden border border-line hover:border-rose/40 transition-all">
-                <img src={b.imageUrl} alt={b.title || "Banner"} className="h-20 w-auto max-w-xs object-cover" />
-              </a>
-            ) : (
-              <div key={b._id} className="shrink-0 rounded-2xl overflow-hidden border border-line">
-                <img src={b.imageUrl} alt={b.title || "Banner"} className="h-20 w-auto max-w-xs object-cover" />
-              </div>
-            )
-          ))}
-        </div>
-      )}
+      {/* Banner dashboard. Dulu dirender di sini dengan key={b._id}, padahal
+          endpoint publiknya mengirim `id` — jadi setiap banner punya key
+          undefined dan React memakai ulang elemen yang salah saat daftarnya
+          berubah. Sekarang satu komponen yang sama dipakai di semua halaman. */}
+      <BannerRail placement="dashboard" className="mt-5" />
 
 
       {/* Support Tickets */}

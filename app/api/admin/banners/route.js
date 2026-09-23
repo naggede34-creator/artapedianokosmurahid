@@ -5,6 +5,19 @@ import { ObjectId } from "mongodb";
 
 export const dynamic = "force-dynamic";
 
+const PLACEMENTS = ["homepage", "order", "dashboard", "deposit"];
+
+// Gambar banner boleh berupa alamat http ATAU data URL hasil unggahan admin.
+// Batas 500 karakter yang lama membuat unggahan diam-diam terpotong jadi
+// gambar rusak, bukan ditolak — jadi panjangnya dibedakan per bentuk.
+function bersihkanGambar(value) {
+  const src = String(value || "").trim();
+  if (src.startsWith("data:image/")) return src.slice(0, 1_400_000);
+  return src.slice(0, 500);
+}
+
+const pilihPlacement = (p) => (PLACEMENTS.includes(p) ? p : "homepage");
+
 export async function GET(req) {
   if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const col = await bannersCol();
@@ -19,13 +32,14 @@ export async function POST(req) {
   const now = new Date();
 
   if (body.action === "create") {
-    const { title, imageUrl, linkUrl, placement, sortOrder } = body;
+    const { title, imageUrl, linkUrl, placement, sortOrder, label } = body;
     if (!title || !imageUrl || !placement) return NextResponse.json({ error: "title, imageUrl, placement wajib diisi." }, { status: 400 });
     const doc = {
       title: String(title).slice(0, 200),
-      imageUrl: String(imageUrl).slice(0, 500),
+      label: String(label || "").slice(0, 24),
+      imageUrl: bersihkanGambar(imageUrl),
       linkUrl: String(linkUrl || "").slice(0, 500),
-      placement: ["homepage", "order", "dashboard"].includes(placement) ? placement : "homepage",
+      placement: pilihPlacement(placement),
       active: true,
       sortOrder: Number(sortOrder) || 0,
       createdAt: now,
@@ -36,13 +50,14 @@ export async function POST(req) {
   }
 
   if (body.action === "update") {
-    const { id, title, imageUrl, linkUrl, placement, sortOrder } = body;
+    const { id, title, imageUrl, linkUrl, placement, sortOrder, label } = body;
     if (!id) return NextResponse.json({ error: "id wajib." }, { status: 400 });
     const set = { updatedAt: now };
     if (title !== undefined) set.title = String(title).slice(0, 200);
-    if (imageUrl !== undefined) set.imageUrl = String(imageUrl).slice(0, 500);
+    if (label !== undefined) set.label = String(label).slice(0, 24);
+    if (imageUrl !== undefined) set.imageUrl = bersihkanGambar(imageUrl);
     if (linkUrl !== undefined) set.linkUrl = String(linkUrl).slice(0, 500);
-    if (placement !== undefined) set.placement = ["homepage", "order", "dashboard"].includes(placement) ? placement : "homepage";
+    if (placement !== undefined) set.placement = pilihPlacement(placement);
     if (sortOrder !== undefined) set.sortOrder = Number(sortOrder) || 0;
     await col.updateOne({ _id: new ObjectId(id) }, { $set: set });
     return NextResponse.json({ ok: true });

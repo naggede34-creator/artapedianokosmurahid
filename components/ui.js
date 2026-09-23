@@ -71,7 +71,10 @@ export function statusTone(status) {
   const s = String(status || "").toLowerCase();
   if (["completed", "done", "received", "success"].includes(s)) return "green";
   if (["pending", "processing", "in_progress", "submitting"].includes(s)) return "blue";
-  if (["partial"].includes(s)) return "amber";
+  // "review" = deposit manual yang menunggu dicek admin. Tanpa baris ini ia
+  // jatuh ke abu-abu dan terbaca seperti transaksi yang sudah mati, padahal
+  // justru sedang berjalan.
+  if (["partial", "review"].includes(s)) return "amber";
   if (["canceled", "expired", "failed", "error", "refunded"].includes(s)) return "red";
   return "gray";
 }

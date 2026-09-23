@@ -43,6 +43,7 @@ import {
   createDeposit,
   checkDeposit,
   cancelDeposit,
+  confirmDepositManual,
   showAdminPanel,
   askBroadcast,
   doBroadcast
@@ -246,6 +247,8 @@ async function handleCallback(cb) {
       return checkDeposit(chatId, messageId, a);
     case "dcx":
       return cancelDeposit(chatId, messageId, a);
+    case "dok":
+      return confirmDepositManual(chatId, messageId, a);
     case "adm":
       return showAdminPanel(chatId, messageId);
     case "adm_bc":

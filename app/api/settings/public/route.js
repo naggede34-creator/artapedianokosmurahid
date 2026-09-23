@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { getSettings, depositLimits, depositDisplay } from "@/lib/settings";
+import { getSettings, depositLimits, depositDisplay, manualDepositReady } from "@/lib/settings";
 import { PROVIDER_KEYS, DEPOSIT_PROVIDERS } from "@/lib/paymentProviders";
 import { warungNokosConfigured } from "@/lib/warungnokos";
 import { rumahOtpConfigured } from "@/lib/rumahotp";
+import { atlanticConfigured } from "@/lib/atlantic";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,12 @@ export async function GET() {
     } else {
       providers.rumahotp = false;
     }
+    // Metode yang belum siap dipaksa mati di sini, bukan cuma disembunyikan di
+    // halaman: kalau cuma disembunyikan, siapa pun masih bisa memanggil
+    // /api/deposit/create dengan metode itu dan mendapat error yang
+    // membingungkan setelah mengisi nominal.
+    if (!atlanticConfigured()) providers.atlantic = false;
+    if (!manualDepositReady(settings)) providers.manual = false;
     return NextResponse.json({
       maintenance: !!maintenance,
       csUsername: csUsername || "teatlas",
@@ -33,6 +40,15 @@ export async function GET() {
       depositFeePercent,
       // Nama & label metode deposit yang diatur admin.
       depositMethods: PROVIDER_KEYS.map((k) => depositDisplay(settings, k)),
+      // Keterangan singkat QRIS manual untuk ditampilkan sebelum deposit dibuat.
+      // Gambar QRIS-nya sengaja TIDAK ikut: ratusan kilobita yang harus diunduh
+      // semua orang di tiap halaman, padahal cuma dipakai saat benar-benar
+      // memilih metode ini. Gambarnya ikut di respons pembuatan deposit.
+      manualDeposit: {
+        accountName: settings.manualDeposit?.accountName || "",
+        accountLabel: settings.manualDeposit?.accountLabel || "",
+        instructions: settings.manualDeposit?.instructions || ""
+      },
       depositMin: limits.min,
       depositMax: limits.max,
       heroChars: heroChars || [],
@@ -45,9 +61,11 @@ export async function GET() {
       depositProviders: {
         warungnokos: warungNokosConfigured(),
         pakasir: true,
-        rumahotp: rumahOtpConfigured()
+        rumahotp: rumahOtpConfigured(),
+        atlantic: false,
+        manual: false
       },
-      depositFeePercent: { warungnokos: 0, pakasir: 0, rumahotp: 0.7 },
+      depositFeePercent: { warungnokos: 0, pakasir: 0, rumahotp: 0.7, atlantic: 0, manual: 0 },
       depositMethods: DEPOSIT_PROVIDERS.map((p) => ({ key: p.key, name: p.name, badge: "", desc: p.desc, speed: p.speed })),
       csUsername: "teatlas",
       depositMin: limits.min,

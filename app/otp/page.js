@@ -8,6 +8,7 @@ import BuySheet from "@/components/BuySheet";
 import MysteryBoxModal from "@/components/MysteryBoxModal";
 import LuckyHourBanner from "@/components/LuckyHourBanner";
 import FlashSaleTimer from "@/components/FlashSaleTimer";
+import BannerRail from "@/components/BannerRail";
 import { PageHeader, Icon } from "@/components/ui";
 
 // WhatsApp selalu tampil paling atas, sisanya tetap mengikuti urutan asli dari RumahOTP (Server Murah).
@@ -156,6 +157,9 @@ function OtpPageInner() {
           </button>
         }
       />
+
+      {/* Banner admin di halaman yang paling ramai dikunjungi. */}
+      <BannerRail placement="order" className="mt-5" />
 
       {/* Pesanan Pending */}
       <div className="fade-up delay-2 mt-7">

@@ -6,6 +6,7 @@ import SimCard from "@/components/SimCard";
 import HeroMascot from "@/components/HeroMascot";
 import TransactionTicker from "@/components/TransactionTicker";
 import LiveTicker from "@/components/LiveTicker";
+import BannerRail from "@/components/BannerRail";
 import { Icon } from "@/components/ui";
 
 const products = [
@@ -333,6 +334,12 @@ export default function HomePage() {
         </div>
         <LiveTicker />
       </section>
+
+      {/* Banner dari admin. Ditaruh SESUDAH hero dan pembelian terbaru, bukan
+          di paling atas: yang baru datang harus melihat apa yang dijual dan
+          bukti bahwa tokonya hidup dulu. Kalau tidak ada banner aktif,
+          komponennya tidak merender apa pun — tidak ada ruang kosong. */}
+      <BannerRail placement="homepage" className="mt-8" />
 
       {/* ===== TRUST BADGES ===== */}
       <section className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">

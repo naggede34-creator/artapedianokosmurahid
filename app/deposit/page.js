@@ -6,9 +6,13 @@ import { useUser } from "@/app/providers";
 import { DEPOSIT_PROVIDERS, providerName } from "@/lib/paymentProviders";
 import { PageHeader, Icon, Alert, Row, CopyButton, Spinner, Badge, rupiah, fmtWIB } from "@/components/ui";
 import ScratchCard from "@/components/ScratchCard";
+import BannerRail from "@/components/BannerRail";
 
 const QUICK = [10000, 20000, 50000, 100000, 200000, 500000];
 const FINAL = ["completed", "canceled", "expired", "failed"];
+// Bukti bayar dikecilkan di browser dulu. Mengirim foto 4 MB apa adanya lewat
+// koneksi seluler adalah cara paling mudah membuat konfirmasi gagal di tengah.
+const PROOF_MAX_SIDE = 1100;
 
 function countdown(ms) {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -45,6 +49,13 @@ export default function DepositPage() {
 
   // Biaya pasti dari Pakasir untuk nominal yang sedang dipilih; null = belum/gagal.
   const [exactFee, setExactFee] = useState(null);
+
+  // Deposit manual: user sendiri yang bilang sudah bayar, lalu admin yang
+  // memutuskan. Tidak ada provider yang bisa ditanya.
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [proof, setProof] = useState(null);
+  const [proofNote, setProofNote] = useState("");
+  const [confirming, setConfirming] = useState(false);
 
   const [voucher, setVoucher] = useState("");
   const [voucherBusy, setVoucherBusy] = useState(false);
@@ -98,9 +109,12 @@ export default function DepositPage() {
   );
 
   const startPolling = useCallback(
-    (orderId) => {
+    (orderId, { slow = false } = {}) => {
       clearInterval(pollRef.current);
-      pollRef.current = setInterval(() => pollStatus(orderId), 4000);
+      // QRIS otomatis biasanya lunas dalam hitungan detik, jadi dicek sering.
+      // Deposit manual menunggu admin membuka panelnya — mengetuk server tiap
+      // 4 detik selama belasan menit tidak membuatnya lebih cepat.
+      pollRef.current = setInterval(() => pollStatus(orderId), slow ? 12000 : 4000);
     },
     [pollStatus]
   );
@@ -114,11 +128,11 @@ export default function DepositPage() {
     fetch(`/api/deposit/detail?token=${encodeURIComponent(token)}${wanted ? `&order_id=${encodeURIComponent(wanted)}` : ""}`)
       .then((r) => r.json())
       .then((d) => {
-        if (d.item && d.item.status === "pending") {
+        if (d.item && ["pending", "review"].includes(d.item.status)) {
           setOrder(d.item);
-          setStatus("pending");
+          setStatus(d.item.status);
           setStep("payment");
-          startPolling(d.item.orderId);
+          startPolling(d.item.orderId, { slow: Boolean(d.item.manual) });
         }
       })
       .catch(() => {});
@@ -191,7 +205,10 @@ export default function DepositPage() {
       setStatus("pending");
       setCashback(0);
       setStep("payment");
-      startPolling(data.orderId);
+      setConfirmOpen(false);
+      setProof(null);
+      setProofNote("");
+      startPolling(data.orderId, { slow: Boolean(data.manual) });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -237,12 +254,60 @@ export default function DepositPage() {
     }
   }
 
+  function pickProof(file) {
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      setError("Foto bukti terlalu besar. Maksimal 8MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const ratio = Math.min(PROOF_MAX_SIDE / img.width, PROOF_MAX_SIDE / img.height, 1);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        setProof(canvas.toDataURL("image/jpeg", 0.8));
+        setError("");
+      };
+      img.onerror = () => setError("Berkas itu bukan gambar yang bisa dibaca.");
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function confirmManual() {
+    if (!order || !token) return;
+    setConfirming(true);
+    setError("");
+    try {
+      const res = await fetch("/api/deposit/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, orderId: order.orderId, proofImage: proof, note: proofNote })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mengirim konfirmasi.");
+      setStatus(data.status || "review");
+      setConfirmOpen(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setConfirming(false);
+    }
+  }
+
   function reset() {
     clearInterval(pollRef.current);
     setOrder(null);
     setStatus("pending");
     setAmount("");
     setError("");
+    setConfirmOpen(false);
+    setProof(null);
+    setProofNote("");
     setStep("amount");
   }
 
@@ -479,6 +544,40 @@ export default function DepositPage() {
                     </button>
                   </div>
                 </div>
+              ) : status === "review" ? (
+                // Deposit manual yang sudah dikonfirmasi user. Tidak ada yang
+                // bisa dia lakukan lagi selain menunggu, jadi layarnya tidak
+                // memberi tombol yang seolah-olah mempercepat.
+                <div className="py-6 text-center">
+                  <span className="bounce-in mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-soft text-amber-bright shadow-[0_4px_0_rgb(var(--c-orange)/0.3)]">
+                    <span className="text-2xl">🔎</span>
+                  </span>
+                  <h2 className="mt-4 text-xl font-extrabold text-ink">Sedang dicek admin</h2>
+                  <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">
+                    Konfirmasi kamu sudah masuk. Admin mencocokkan pembayaran {rupiah(order.amount)} dengan mutasi QRIS,
+                    biasanya dalam 5–15 menit. Saldo masuk otomatis begitu disetujui — halaman ini ikut berubah sendiri.
+                  </p>
+                  <div className="panel-3d mx-auto mt-5 max-w-sm divide-y divide-line px-4 text-left">
+                    <Row label="ID deposit">
+                      <span className="inline-flex items-center gap-1 font-mono text-xs">
+                        {order.orderId}
+                        <CopyButton value={order.orderId} label="" />
+                      </span>
+                    </Row>
+                    <Row label="Nominal" strong>
+                      {rupiah(order.amount)}
+                    </Row>
+                  </div>
+                  <div className="mt-5 flex flex-wrap justify-center gap-2">
+                    <Link href="/riwayat?tab=deposit" className="btn-ghost">
+                      Lihat di Riwayat
+                    </Link>
+                    <button type="button" onClick={checkNow} disabled={checking} className="btn-primary">
+                      {checking ? <Spinner /> : null}
+                      {checking ? "Mengecek…" : "Cek sekarang"}
+                    </button>
+                  </div>
+                </div>
               ) : FINAL.includes(status) || timeUp ? (
                 <div className="py-6 text-center">
                   <span className="bounce-in mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-rose-soft text-rose shadow-[0_4px_0_rgb(var(--c-danger)/0.3)]">
@@ -533,6 +632,16 @@ export default function DepositPage() {
                     <p className="mt-3 text-xs text-muted">
                       Scan dengan GoPay, OVO, DANA, ShopeePay, LinkAja, atau m-banking. Berlaku sampai {fmtWIB(order.expiredAt)}.
                     </p>
+                    {order.manual && (order.manualInfo?.accountLabel || order.manualInfo?.accountName) && (
+                      <div className="mt-3 rounded-xl border border-line bg-surface2 px-3 py-2 text-left">
+                        {order.manualInfo.accountLabel && (
+                          <p className="text-[11px] font-semibold text-muted">{order.manualInfo.accountLabel}</p>
+                        )}
+                        {order.manualInfo.accountName && (
+                          <p className="text-sm font-extrabold text-ink">a.n. {order.manualInfo.accountName}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {error && (
@@ -541,10 +650,84 @@ export default function DepositPage() {
                     </Alert>
                   )}
 
-                  <button type="button" onClick={checkNow} disabled={checking} className="btn-primary mt-4 w-full">
-                    {checking ? <Spinner /> : null}
-                    {checking ? "Mengecek…" : "Saya sudah bayar"}
-                  </button>
+                  {order.manual ? (
+                    // Metode manual tidak punya provider yang bisa ditanya, jadi
+                    // "Saya sudah bayar" di sini bukan tombol cek — ia mengirim
+                    // kabar ke admin, dan itu harus terasa berbeda.
+                    <>
+                      {order.manualInfo?.instructions && !confirmOpen && (
+                        <div className="panel-3d mt-4 p-4">
+                          <p className="text-xs font-extrabold text-ink">Cara bayar</p>
+                          <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-muted">
+                            {order.manualInfo.instructions}
+                          </p>
+                        </div>
+                      )}
+
+                      {confirmOpen ? (
+                        <div className="panel-3d mt-4 p-4">
+                          <p className="text-sm font-extrabold text-ink">Kirim konfirmasi ke admin</p>
+                          <p className="mt-1 text-xs text-muted">
+                            Lampirkan bukti transfernya kalau ada — pengecekannya jadi jauh lebih cepat.
+                          </p>
+
+                          <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line px-3 py-3 text-xs font-bold text-ink hover:border-amber">
+                            📎 {proof ? "Ganti bukti bayar" : "Unggah bukti bayar (opsional)"}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                pickProof(e.target.files?.[0]);
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
+
+                          {proof && (
+                            <div className="relative mt-3">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={proof} alt="Bukti bayar" className="mx-auto max-h-48 rounded-xl border border-line" />
+                              <button
+                                type="button"
+                                onClick={() => setProof(null)}
+                                className="absolute right-2 top-2 rounded-full bg-rose px-2 py-0.5 text-xs font-bold text-white"
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          )}
+
+                          <input
+                            value={proofNote}
+                            onChange={(e) => setProofNote(e.target.value.slice(0, 200))}
+                            placeholder="Catatan untuk admin (opsional)"
+                            className="field mt-3 w-full"
+                            aria-label="Catatan untuk admin"
+                          />
+
+                          <div className="mt-3 flex gap-2">
+                            <button type="button" onClick={() => setConfirmOpen(false)} className="btn-ghost flex-1">
+                              Batal
+                            </button>
+                            <button type="button" onClick={confirmManual} disabled={confirming} className="btn-primary flex-[2]">
+                              {confirming ? <Spinner /> : null}
+                              {confirming ? "Mengirim…" : "Kirim konfirmasi"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button type="button" onClick={() => setConfirmOpen(true)} className="btn-primary mt-4 w-full">
+                          Saya sudah bayar
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <button type="button" onClick={checkNow} disabled={checking} className="btn-primary mt-4 w-full">
+                      {checking ? <Spinner /> : null}
+                      {checking ? "Mengecek…" : "Saya sudah bayar"}
+                    </button>
+                  )}
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     <button type="button" onClick={downloadQr} disabled={!order.qrImage} className="btn-ghost">
                       Simpan QR
@@ -554,7 +737,9 @@ export default function DepositPage() {
                     </button>
                   </div>
                   <p className="mt-3 text-center text-[11px] leading-relaxed text-muted">
-                    Status dicek otomatis tiap beberapa detik. Jangan membatalkan kalau sudah membayar.
+                    {order.manual
+                      ? "Saldo masuk setelah admin mencocokkan pembayaranmu. Jangan membatalkan kalau sudah membayar."
+                      : "Status dicek otomatis tiap beberapa detik. Jangan membatalkan kalau sudah membayar."}
                   </p>
 
                   <div className="mt-5 divide-y divide-line rounded-2xl border border-line px-4">
@@ -583,6 +768,11 @@ export default function DepositPage() {
         </div>
 
         <aside className="space-y-4">
+          {/* Banner di kolom samping, bukan di atas borangnya: yang membuka
+              halaman ini sedang di tengah membayar, dan menyisipkan iklan di
+              jalur itu membuat orang salah tekan. */}
+          <BannerRail placement="deposit" />
+
           <div className="panel-3d p-5">
             <h2 className="title-3d text-base font-extrabold text-ink">Punya kode voucher?</h2>
             <p className="mt-1 text-xs text-muted">Tukar kode voucher jadi saldo gratis.</p>
