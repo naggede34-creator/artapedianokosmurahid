@@ -3284,6 +3284,11 @@ export default function AdminDashboardPage() {
       {activeTab === "banner" && (
         <div className="mt-5 space-y-5">
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <p className="mb-4 rounded-xl border border-teal/30 bg-teal/5 px-3.5 py-2.5 text-[11px] leading-relaxed text-ink">
+              💡 Sudah ada <b>10 banner bawaan bergambar maskot</b> yang tampil di beranda, halaman beli nokos,
+              halaman isi saldo, dan dashboard. Begitu kamu membuat satu banner aktif untuk sebuah tempat, banner
+              bawaan di tempat itu berhenti tampil dengan sendirinya — tidak ada yang perlu dimatikan dulu.
+            </p>
             <h2 className="font-display text-base font-semibold text-ink mb-4">
               {editingBanner ? "✏️ Edit Banner" : "➕ Buat Banner Baru"}
             </h2>
