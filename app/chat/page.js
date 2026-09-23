@@ -763,12 +763,25 @@ export default function ChatPage() {
   const cmdMatches = isCommandInput ? AI_COMMANDS.filter(c=>c.cmd.startsWith(input.split(" ")[0])) : [];
 
   if (!ready) return (
-    <div style={{ position:"fixed", inset:0, zIndex:9999, background:"#0d1117", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16 }}>
-      <div style={{ width:50, height:50, borderRadius:"50%", background:"linear-gradient(135deg,#128C7E,#25D366)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <div style={{ width:26, height:26, border:"2.5px solid rgba(255,255,255,.3)", borderTopColor:"white", borderRadius:"50%", animation:"spin .8s linear infinite" }} />
+    <div style={{ position:"fixed", inset:0, zIndex:9999, background:"#0d1117", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:18 }}>
+      <div style={{ position:"relative", width:96, height:96, display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <div style={{ position:"absolute", inset:0, borderRadius:"50%", background:"radial-gradient(circle, rgba(247,124,34,.28), transparent 68%)", filter:"blur(10px)" }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/maskot-sm.webp" alt="" style={{ width:76, height:76, objectFit:"contain", animation:"chatBob 1.8s ease-in-out infinite", filter:"drop-shadow(0 8px 14px rgba(0,0,0,.5))" }} />
       </div>
-      <span style={{ color:"rgba(255,255,255,.4)", fontSize:13 }}>Memuat chat...</span>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <div style={{ width:118, height:4, borderRadius:99, background:"rgba(255,255,255,.08)", overflow:"hidden" }}>
+        <div style={{ width:"42%", height:"100%", borderRadius:99, background:"linear-gradient(90deg,#f77c22,#2e86ff)", animation:"chatBar 1.1s ease-in-out infinite" }} />
+      </div>
+      <span style={{ color:"rgba(255,255,255,.45)", fontSize:13, letterSpacing:".2px" }}>Menyiapkan Room Chat…</span>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes chatBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+        @keyframes chatBar{0%{transform:translateX(-120%)}100%{transform:translateX(280%)}}
+        @media (prefers-reduced-motion: reduce){
+          img[alt=""]{animation:none!important}
+          [style*="chatBar"]{animation:none!important}
+        }
+      `}</style>
     </div>
   );
 
@@ -811,7 +824,10 @@ export default function ChatPage() {
       )}
 
       {/* ── Header ── */}
-      <div style={{ background:"linear-gradient(180deg,rgba(7,94,84,.98),rgba(12,110,97,.95))", display:"flex", alignItems:"center", gap:8, padding:"10px 6px 10px 2px", flexShrink:0, boxShadow:"0 2px 20px rgba(0,0,0,.5)", borderBottom:"1px solid rgba(255,255,255,.05)", zIndex:10 }}>
+      {/* env(safe-area-inset-top): di iPhone dan di dalam Telegram, bagian
+          atas layar tertutup poni/bilah aplikasi. Tanpa ini tombol keluar
+          dan nama grup tertimbun di baliknya. */}
+      <div style={{ background:"linear-gradient(180deg,rgba(7,94,84,.98),rgba(12,110,97,.95))", display:"flex", alignItems:"center", gap:8, padding:"calc(10px + env(safe-area-inset-top)) 6px 10px 2px", flexShrink:0, boxShadow:"0 3px 22px rgba(0,0,0,.55)", borderBottom:"2px solid rgba(247,124,34,.55)", zIndex:10 }}>
 
         {/* Exit button */}
         <button onClick={() => router.back()}
@@ -827,7 +843,12 @@ export default function ChatPage() {
           {groupSettings.photo
             /* eslint-disable-next-line @next/next/no-img-element */
             ? <img src={groupSettings.photo} alt="grup" style={{ width:44, height:44, borderRadius:"50%", objectFit:"cover", boxShadow:"0 0 0 2.5px rgba(37,211,102,.4)", border:"none" }} />
-            : <div style={{ width:44, height:44, borderRadius:"50%", background:"linear-gradient(135deg,#25D366,#075E54)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, boxShadow:"0 0 0 2.5px rgba(37,211,102,.35)" }}>🎌</div>}
+            /* Bawaannya dulu emoji 🎌 — dua bendera Jepang, yang tidak ada
+                 hubungannya dengan toko nokos Indonesia. Diganti maskot sendiri. */
+            : <div style={{ width:44, height:44, borderRadius:"50%", background:"linear-gradient(135deg,#f77c22,#0a1e50)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", boxShadow:"0 0 0 2.5px rgba(247,124,34,.45)" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/maskot-sm.webp" alt="" style={{ width:38, height:38, objectFit:"contain", marginTop:4 }} />
+              </div>}
           <div style={{ position:"absolute", bottom:1, right:1, width:12, height:12, borderRadius:"50%", background:"#25D366", border:"2.5px solid #075E54", boxShadow:"0 0 4px rgba(37,211,102,.6)" }} />
         </div>
 
@@ -879,7 +900,16 @@ export default function ChatPage() {
 
       {/* ── Messages ── */}
       <div style={{ flex:1, overflowY:"auto", padding:"10px 10px 4px", position:"relative" }} className="chat-scroll">
-        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle, rgba(37,211,102,.025) 1px, transparent 1px)", backgroundSize:"22px 22px", pointerEvents:"none" }} />
+        {/* Wallpaper: raster halftone dua warna brand + cahaya lembut dari
+            atas. Menggantikan titik hijau samar yang praktis tidak terlihat,
+            jadi latarnya terbaca sebagai kertas komik, bukan bidang kosong. */}
+        <div style={{ position:"absolute", inset:0, pointerEvents:"none",
+          backgroundImage:
+            "radial-gradient(circle at 50% 50%, rgba(247,124,34,.05) 1.1px, transparent 1.3px)," +
+            "radial-gradient(circle at 50% 50%, rgba(46,134,255,.05) 1.1px, transparent 1.3px)," +
+            "radial-gradient(120% 55% at 50% 0%, rgba(46,134,255,.07), transparent 70%)",
+          backgroundSize:"26px 26px, 26px 26px, 100% 100%",
+          backgroundPosition:"0 0, 13px 13px, 0 0" }} />
 
         {grouped.length === 0 && (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:12, padding:"40px 20px" }}>
@@ -957,7 +987,9 @@ export default function ChatPage() {
       )}
 
       {/* ── Input bar ── */}
-      <div style={{ background:"rgba(10,13,20,.98)", padding:"8px 10px 10px", display:"flex", alignItems:"flex-end", gap:8, flexShrink:0, borderTop:"1px solid rgba(255,255,255,.04)" }}>
+      {/* env(safe-area-inset-bottom): di iPhone dan di dalam Telegram, bilah
+          bawah menutupi tombol kirim kalau tidak diberi ruang. */}
+      <div style={{ background:"rgba(10,13,20,.98)", padding:"8px 10px calc(10px + env(safe-area-inset-bottom))", display:"flex", alignItems:"flex-end", gap:8, flexShrink:0, borderTop:"1px solid rgba(247,124,34,.18)", boxShadow:"0 -6px 22px rgba(0,0,0,.35)" }}>
 
         {/* Toolbar */}
         <div style={{ display:"flex", flexDirection:"column", gap:4, flexShrink:0 }}>

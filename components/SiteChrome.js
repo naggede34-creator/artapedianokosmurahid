@@ -18,6 +18,11 @@ import PanelTransition from "@/components/PanelTransition";
 export default function SiteChrome({ children }) {
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith("/admin");
+  // Room Chat itu satu layar penuh ala aplikasi chat: navbar, footer, dan
+  // bottom nav situs tidak ikut ditampilkan. Sebelumnya ketiganya tetap
+  // dirender di belakang overlay-nya — tidak terlihat, tapi ikut menambah
+  // tinggi halaman sehingga muncul gulungan kosong di bawah layar chat.
+  const isChat = pathname === "/chat";
 
   const [checked, setChecked] = useState(false);
   const [maintenance, setMaintenance] = useState(false);
@@ -61,6 +66,14 @@ export default function SiteChrome({ children }) {
       />
     );
   }
+
+  // SESUDAH gerbang maintenance, bukan sebelumnya: Room Chat bukan halaman
+  // admin, jadi saat situs ditutup dia harus ikut tertutup.
+  //
+  // Tanpa RevealOnScroll di sini: halaman ini tidak memakai kelas animasi
+  // masuk apa pun, dan pengamat mutasinya justru akan bekerja terus-menerus
+  // di DOM chat yang isinya berubah setiap pesan datang.
+  if (isChat) return <>{children}</>;
 
   return (
     <>

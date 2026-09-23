@@ -2696,11 +2696,17 @@ html.dark body {
   100% { left: 160%; }
 }
 
-/* Isi halaman baru naik sedikit setelah sapuannya lewat. */
-main { animation: panelEnter .4s cubic-bezier(.2, .9, .3, 1.05) both; }
+/* Isi halaman baru muncul setelah sapuannya lewat.
+   HANYA opacity — JANGAN transform di sini. Elemen yang punya transform
+   menjadi containing block untuk position: fixed di dalamnya, dan dengan
+   animation-fill-mode: both nilainya menetap sesudah animasi selesai. Versi
+   pertama memakai translateY, dan akibatnya halaman Room Chat — yang
+   seluruhnya satu overlay `fixed inset-0` — terkurung di dalam <main>,
+   menciut jadi sepotong strip di antara navbar dan footer. */
+main { animation: panelEnter .4s ease-out both; }
 @keyframes panelEnter {
-  from { opacity: .001; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: .001; }
+  to   { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
