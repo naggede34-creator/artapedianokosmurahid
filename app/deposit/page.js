@@ -297,8 +297,11 @@ export default function DepositPage() {
         desc={`Bayar pakai QRIS dari e-wallet atau m-banking apa pun. Minimal ${rupiah(cfg.min)}, maksimal ${rupiah(cfg.max)} per transaksi.`}
       />
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="manga-card manga-rush halftone anim-drop p-5 sm:p-6">
+      {/* items-start: tanpa ini panel langkah ikut diregangkan setinggi kolom
+          kanan, dan di langkah pertama yang isinya pendek jadi ada ruang
+          kosong sepanjang layar di bawah tombolnya. */}
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="manga-card manga-rush halftone hd-paper anim-drop p-5 sm:p-6">
           <ol className="mb-6 flex items-center gap-2 text-xs font-semibold" aria-label="Langkah deposit">
             {["Nominal", "Metode", "Bayar"].map((label, i) => (
               <li key={label} className="flex flex-1 items-center gap-2">

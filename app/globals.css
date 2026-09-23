@@ -2123,3 +2123,156 @@ input[type="number"] { -moz-appearance: textfield; }
   .anim-sheen::after { animation: none; opacity: 0; }
   .anim-underline::after { animation: none; transform: scaleX(1); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LAPIS HD 3D
+   ───────────────────────────────────────────────────────────────────────
+   Bayangan komik yang keras memang tegas, tapi rata: semua kartu tampak
+   menempel di bidang yang sama. Lapis ini menambah dua hal di atasnya —
+   bayangan ambient yang lembut di bawah bayangan kerasnya, dan garis sorot
+   tipis di tepi atas — sehingga kartunya terbaca benar-benar terangkat,
+   bukan sekadar digeser.
+
+   Ditaruh paling bawah berkas ini supaya menang atas aturan sebelumnya
+   tanpa perlu !important di mana-mana.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --hd-lift: 0 14px 28px -14px rgb(11 22 44 / .38);
+  --hd-lift-hi: 0 22px 40px -16px rgb(11 22 44 / .46);
+  --hd-rim: inset 0 1.5px 0 rgb(255 255 255 / .85);
+}
+
+:root[data-theme="dark"],
+html.dark {
+  /* Di latar gelap bayangan hitam tidak terlihat; yang membentuk kedalaman
+     justru sorot tepi, jadi porsinya dibalik. */
+  --hd-lift: 0 14px 30px -14px rgb(0 0 0 / .72);
+  --hd-lift-hi: 0 24px 44px -16px rgb(0 0 0 / .8);
+  --hd-rim: inset 0 1.5px 0 rgb(255 255 255 / .12);
+}
+
+.card-wow {
+  background-image: linear-gradient(180deg, rgb(255 255 255 / .55), rgb(255 255 255 / 0) 42%);
+  box-shadow: 5px 5px 0 rgb(var(--c-ink)), var(--hd-lift), var(--hd-rim);
+  transition: transform .16s cubic-bezier(.2, .9, .3, 1.2), box-shadow .16s ease;
+}
+.card-wow:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 8px 8px 0 rgb(var(--c-ink)), var(--hd-lift-hi), var(--hd-rim);
+}
+.card-wow:active {
+  transform: translate(5px, 5px);
+  box-shadow: 0 0 0 rgb(var(--c-ink)), 0 2px 6px -3px rgb(11 22 44 / .4);
+}
+
+:root[data-theme="dark"] .card-wow,
+html.dark .card-wow {
+  background-image: linear-gradient(180deg, rgb(255 255 255 / .07), rgb(255 255 255 / 0) 48%);
+}
+
+/* Panel besar (hero, pita statistik) — bayangannya lebih dalam sepadan
+   dengan ukurannya. */
+.hd-panel {
+  box-shadow: 7px 7px 0 rgb(var(--c-ink)), 0 30px 60px -28px rgb(11 22 44 / .55), var(--hd-rim);
+}
+
+/* Judul komik timbul: tumpukan bayangan keras membentuk sisi hurufnya.
+   Dipakai untuk judul bagian, bukan teks panjang — pada ukuran kecil
+   tumpukan ini justru membuat huruf sulit dibaca. */
+/* Judul komik timbul.
+   Penting: bayangannya WARNA AKSEN, bukan tumpukan tinta. Judul di sini
+   tintanya gelap, dan menumpuk bayangan gelap tepat di belakangnya membuat
+   hurufnya lumer jadi gumpalan hitam — bukan terlihat timbul. Oranye di
+   belakang tinta gelap justru memisahkan sisi huruf dari mukanya. */
+.hd-title {
+  text-shadow:
+    3px 3px 0 rgb(var(--c-orange)),
+    5px 5px 0 rgb(var(--c-ink) / .22);
+  letter-spacing: .01em;
+}
+.hd-title-blue {
+  text-shadow:
+    3px 3px 0 rgb(var(--c-blue)),
+    5px 5px 0 rgb(var(--c-ink) / .22);
+}
+/* Di atas panel gelap tintanya terang, jadi tumpukan tinta baru masuk akal. */
+.hd-title-on-dark {
+  text-shadow:
+    2px 2px 0 rgb(var(--c-ink)),
+    4px 4px 0 rgb(var(--c-orange) / .9),
+    6px 6px 0 rgb(0 0 0 / .35);
+}
+
+/* Tekstur kertas cetak: raster halus + sedikit vignette. Sangat tipis —
+   maksudnya menghilangkan kesan "bidang digital yang terlalu bersih",
+   bukan untuk terlihat sebagai pola. */
+.hd-paper { position: relative; isolation: isolate; }
+.hd-paper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  /* z-index negatif, bukan menaikkan seluruh anak ke z-index 1.
+     Versi pertama memakai `.hd-paper > * { position: relative }` untuk itu —
+     dan aturan itu MENIMPA `position: absolute` milik hiasan di dalam hero,
+     sehingga hiasannya berubah jadi item grid dan mendorong teks utama ke
+     kolom sempit 420px. `isolation: isolate` di induknya menahan z-index -1
+     ini supaya tetap di depan latar panel, tapi di belakang seluruh isinya. */
+  z-index: -1;
+  background-image:
+    radial-gradient(circle at 50% 50%, rgb(var(--c-ink) / .05) 1px, transparent 1.2px),
+    radial-gradient(120% 90% at 50% 0%, transparent 55%, rgb(var(--c-ink) / .07) 100%);
+  background-size: 7px 7px, 100% 100%;
+}
+
+/* Angka besar di kartu langkah: dipasang di belakang isinya, bukan
+   mendorongnya. Sebelumnya angka "01 02 03" ikut memakan lebar kartu dan
+   terpotong di tepi. */
+/* Ditahan di dalam kartu, bukan lewat overflow: hidden pada kartunya —
+   kartu itu juga memuat panah penunjuk langkah berikutnya yang memang harus
+   menjorok keluar. */
+.hd-step-num {
+  position: absolute;
+  right: 12px;
+  bottom: 2px;
+  z-index: 0;
+  font-weight: 900;
+  font-size: clamp(64px, 11vw, 104px);
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 3px rgb(var(--c-ink) / .13);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Kilau melintas sekali saat kartu disorot — memberi kesan permukaan
+   mengilap tanpa animasi yang berjalan terus. */
+.hd-gloss { position: relative; overflow: hidden; }
+.hd-gloss::after {
+  content: "";
+  position: absolute;
+  top: -60%;
+  left: -75%;
+  width: 45%;
+  height: 220%;
+  transform: rotate(18deg);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / .38), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+.hd-gloss:hover::after {
+  animation: hdGloss .75s ease-out;
+}
+@keyframes hdGloss {
+  0%   { left: -75%; opacity: 0; }
+  20%  { opacity: 1; }
+  100% { left: 125%; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-wow { transition: none; }
+  .card-wow:hover { transform: none; }
+  .hd-gloss:hover::after { animation: none; }
+}

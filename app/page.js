@@ -97,9 +97,16 @@ function StatCounter({ value, suffix = "", label, accent, big }) {
   const [started, setStarted] = useState(false);
   const elRef = useRef(null);
   useEffect(() => {
+    if (typeof IntersectionObserver !== "function") { setStarted(true); return; }
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setStarted(true); }, { threshold: 0.3 });
     if (elRef.current) obs.observe(elRef.current);
-    return () => obs.disconnect();
+    // Jaring pengaman: kalau pengamatnya tidak pernah terpicu — panelnya
+    // sudah terlihat sejak awal, layarnya sangat tinggi, atau halamannya
+    // dirender jadi gambar — angkanya tetap muncul, bukan diam di 0. Nol
+    // besar di bawah tulisan "dipercaya ribuan pengguna" jauh lebih merugikan
+    // daripada kehilangan animasi hitungnya.
+    const jaring = setTimeout(() => setStarted(true), 1600);
+    return () => { obs.disconnect(); clearTimeout(jaring); };
   }, []);
   const count = useCountUp(started ? value : 0);
   return (
@@ -190,7 +197,7 @@ function SectionHeader({ badge, title, sub }) {
           {badge}
         </div>
       )}
-      <h2 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{title}</h2>
+      <h2 className="hd-title text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{title}</h2>
       {sub && <p className="mt-2 text-sm text-muted">{sub}</p>}
     </div>
   );
@@ -217,7 +224,16 @@ export default function HomePage() {
       .then((r) => r.json())
       .then((d) => setSiteStats(d))
       .catch(() => {});
+    // Panel ini ditampilkan hanya kalau angkanya memang ada isinya. Halaman
+    // depan yang berteriak "Dipercaya ribuan pengguna" tepat di atas deretan
+    // "0+" merugikan lebih daripada tidak ada panelnya sama sekali.
   }, []);
+
+  const statsSiap =
+    siteStats &&
+    [siteStats.users, siteStats.orders, siteStats.services, siteStats.countries].some(
+      (n) => Number(n) > 0
+    );
 
   return (
     <div className="mx-auto max-w-content px-4 pb-12 pt-4 sm:px-5 sm:pt-8">
@@ -226,8 +242,8 @@ export default function HomePage() {
       <FlashSaleBanner />
 
       {/* ===== HERO ===== */}
-      <section className="relative mt-6 overflow-hidden rounded-3xl border-3 border-ink bg-gradient-to-br from-surface via-surface to-amber-soft p-6 sm:p-10 lg:grid lg:grid-cols-[1fr_420px] lg:items-center lg:gap-12"
-        style={{ border: "3px solid rgb(var(--c-ink))", boxShadow: "7px 7px 0 rgb(var(--c-ink))" }}>
+      <section className="hd-panel hd-paper relative mt-6 overflow-hidden rounded-3xl border-3 border-ink bg-gradient-to-br from-surface via-surface to-amber-soft p-6 sm:p-10 lg:grid lg:grid-cols-[1fr_420px] lg:items-center lg:gap-12"
+        style={{ border: "3px solid rgb(var(--c-ink))" }}>
 
         {/* speed-lines bg */}
         <div className="speed-lines pointer-events-none absolute inset-0 opacity-60" />
@@ -325,9 +341,9 @@ export default function HomePage() {
       <TransactionTicker />
 
       {/* ===== STATS ===== */}
-      {siteStats && (
-        <section className="mt-10 relative overflow-hidden rounded-3xl"
-          style={{ border: "3px solid rgb(var(--c-ink))", boxShadow: "7px 7px 0 rgb(var(--c-ink))" }}>
+      {statsSiap && (
+        <section className="hd-panel mt-10 relative overflow-hidden rounded-3xl"
+          style={{ border: "3px solid rgb(var(--c-ink))" }}>
           <div className="action-burst absolute inset-0 opacity-40" />
           <div className="relative bg-gradient-to-br from-[#04091C] via-[#0a1830] to-[#0f2a70] px-6 py-10">
             <div className="text-center mb-8">
@@ -350,7 +366,7 @@ export default function HomePage() {
           const I = p.icon;
           return (
             <Link key={p.href} href={p.href}
-              className="card-wow card-tilt shine group flex flex-col gap-3 p-4 sm:p-5">
+              className="card-wow card-tilt shine hd-gloss group flex flex-col gap-3 p-4 sm:p-5">
               <span className={`flex h-12 w-12 items-center justify-center rounded-xl ${p.tone} border-2 border-ink text-2xl`}
                 style={{ boxShadow: "2px 2px 0 rgb(var(--c-ink))" }}>
                 {p.emoji}
@@ -389,7 +405,7 @@ export default function HomePage() {
             : services.map((s, i) => (
                 <Link key={s.service_code}
                   href={`/otp?q=${encodeURIComponent(s.service_name || "")}`}
-                  className="card-wow shine group flex flex-col items-center gap-2 p-3 text-center">
+                  className="card-wow shine hd-gloss group flex flex-col items-center gap-2 p-3 text-center">
                   {s.service_img ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={s.service_img} alt="" className="h-9 w-9 rounded-lg object-contain transition-transform group-hover:scale-110" loading="lazy" />
@@ -402,6 +418,25 @@ export default function HomePage() {
                 </Link>
               ))}
         </div>
+
+        {/* Daftar layanan gagal dimuat atau memang kosong. Tanpa ini yang
+            terlihat adalah judul menggantung di atas ruang kosong, yang
+            tampak seperti halaman rusak. */}
+        {!servicesLoading && services.length === 0 && (
+          <div className="card-wow flex flex-col items-center gap-3 p-8 text-center">
+            <span className="text-3xl">🛰️</span>
+            <p className="text-sm font-black text-ink">Daftar layanan belum bisa dimuat</p>
+            <p className="max-w-sm text-xs leading-relaxed text-muted">
+              Koneksi ke server nokos sedang tersendat. Daftar lengkapnya tetap bisa dibuka
+              di halaman Beli Nokos.
+            </p>
+            <Link href="/otp"
+              className="mt-1 rounded-xl border-2 border-ink bg-amber-soft px-4 py-2 text-sm font-black text-amber-bright"
+              style={{ boxShadow: "2px 2px 0 rgb(var(--c-ink))" }}>
+              Buka Beli Nokos →
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* ===== TESTIMONIALS ===== */}
@@ -453,12 +488,11 @@ export default function HomePage() {
         <ol className="mt-7 grid gap-4 sm:grid-cols-3">
           {steps.map((s, i) => (
             <li key={s.num}
-              className={`manga-panel relative rounded-[20px] bg-surface p-6 stagger-${i + 1} fade-up`}
-              style={{ animationFillMode: "both" }}>
-              {/* big number bg */}
-              <span className="pointer-events-none absolute -right-2 -top-2 select-none text-[96px] leading-none font-extrabold text-ink/[0.05]" aria-hidden="true">
-                {s.num}
-              </span>
+              className={`manga-panel hd-paper hd-gloss relative rounded-[20px] bg-surface p-6 stagger-${i + 1} fade-up`}
+              style={{ animationFillMode: "both", boxShadow: "5px 5px 0 rgb(var(--c-ink)), var(--hd-lift)" }}>
+              {/* Angka besar sebagai latar. Dulu ditaruh di -right-2 -top-2 dan
+                  terpotong di tepi kartu; sekarang ditahan di dalam panel. */}
+              <span className="hd-step-num" aria-hidden="true">{s.num}</span>
               <span className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl border-[3px] border-ink text-2xl ${s.color} mb-4`}
                 style={{ boxShadow: "3px 3px 0 rgb(var(--c-ink))" }}>
                 {s.emoji}

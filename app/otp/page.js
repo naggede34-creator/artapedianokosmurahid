@@ -145,7 +145,11 @@ function OtpPageInner() {
       <PageHeader
         icon={<Icon.phone />}
         title="Beli nokos"
-        desc="Pilih server (Nokos Murah atau OTP Fast), aplikasi, lalu negara. Nomor langsung tampil, kode OTP muncul sendiri begitu masuk. Tidak ada kode dalam waktu tertentu? Saldo dikembalikan otomatis."
+        // Nama server sengaja tidak disebut di sini: admin bisa mengganti nama
+        // dan menyalakan/mematikan server kapan saja, jadi kalimat yang
+        // menyebut nama tertentu pasti jadi salah suatu saat. Nama yang benar
+        // selalu tampil di kartu pilihan servernya.
+        desc="Pilih server, aplikasi, lalu negara. Nomor langsung tampil, kode OTP muncul sendiri begitu masuk. Tidak ada kode dalam waktu tertentu? Saldo dikembalikan otomatis."
         action={
           <button onClick={() => setSheetOpen(true)} className="btn-primary px-5">
             + Pesan nomor
