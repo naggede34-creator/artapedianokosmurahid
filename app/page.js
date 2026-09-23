@@ -192,12 +192,11 @@ function SectionHeader({ badge, title, sub }) {
   return (
     <div className="text-center">
       {badge && (
-        <div className="inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-amber-soft px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-amber-bright mb-4"
-          style={{ boxShadow: "2px 2px 0 rgb(var(--c-ink))" }}>
+        <div className="sticker inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-amber-soft px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-amber-bright mb-4">
           {badge}
         </div>
       )}
-      <h2 className="hd-title text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{title}</h2>
+      <h2 className="hd-title misprint text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{title}</h2>
       {sub && <p className="mt-2 text-sm text-muted">{sub}</p>}
     </div>
   );
@@ -243,7 +242,7 @@ export default function HomePage() {
 
       {/* ===== HERO ===== */}
       <section data-parallax-root
-        className="hd-panel hd-paper relative mt-6 overflow-hidden rounded-3xl border-3 border-ink bg-gradient-to-br from-surface via-surface to-amber-soft p-6 sm:p-10 lg:grid lg:grid-cols-[1fr_420px] lg:items-center lg:gap-12"
+        className="hd-panel hd-paper ink-edge ink-edge-lg relative mt-6 overflow-hidden rounded-3xl border-3 border-ink bg-gradient-to-br from-surface via-surface to-amber-soft p-6 sm:p-10 lg:grid lg:grid-cols-[1fr_420px] lg:items-center lg:gap-12"
         style={{ border: "3px solid rgb(var(--c-ink))" }}>
 
         {/* Tiga lapisan hiasan dengan kedalaman berbeda. Angka data-parallax
@@ -272,7 +271,7 @@ export default function HomePage() {
           </div>
 
           {/* headline with glitch */}
-          <h1 className="glitch-text text-[34px] font-extrabold leading-[1.04] tracking-tight text-ink sm:text-[50px]"
+          <h1 className="glitch-text misprint text-[34px] font-extrabold leading-[1.04] tracking-tight text-ink sm:text-[50px]"
             data-text="Nomor OTP murah, semua di sini.">
             Nomor OTP murah,
             <br />
@@ -391,8 +390,7 @@ export default function HomePage() {
       <section className="mt-12">
         <div className="flex items-end justify-between gap-3 mb-5">
           <div>
-            <div className="inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-amber-soft px-3 py-1 text-[11px] font-black uppercase tracking-wider text-amber-bright mb-2"
-              style={{ boxShadow: "2px 2px 0 rgb(var(--c-ink))" }}>
+            <div className="sticker inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-amber-soft px-3 py-1 text-[11px] font-black uppercase tracking-wider text-amber-bright mb-2">
               📱 OTP Populer
             </div>
             <h2 className="text-xl font-extrabold tracking-tight text-ink">Aplikasi paling dicari</h2>
@@ -449,7 +447,7 @@ export default function HomePage() {
         <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {TESTIMONIALS.map((t, i) => (
             <div key={t.name}
-              className={`card-wow card-tilt glare manga-panel flex flex-col gap-3 p-5 stagger-${(i % 6) + 1} fade-up`}
+              className={`card-wow card-tilt glare manga-panel ink-edge gutter ${["panel-skew-a","panel-skew-b","panel-skew-c"][i % 3]} flex flex-col gap-3 p-5 stagger-${(i % 6) + 1} fade-up`}
               style={{ animationFillMode: "both" }}>
               {/* stars */}
               <div className="flex items-center justify-between">
@@ -460,7 +458,7 @@ export default function HomePage() {
                     </svg>
                   ))}
                 </div>
-                <span className="inline-flex items-center gap-1 rounded-full border border-ink bg-surface2 px-2 py-0.5 text-[10px] font-black text-muted">
+                <span className="sticker-right sticker inline-flex items-center gap-1 rounded-full border-2 border-ink bg-amber-soft px-2 py-0.5 text-[10px] font-black text-ink">
                   📍 {t.loc}
                 </span>
               </div>
@@ -492,7 +490,7 @@ export default function HomePage() {
         <ol className="mt-7 grid gap-4 sm:grid-cols-3">
           {steps.map((s, i) => (
             <li key={s.num}
-              className={`manga-panel hd-paper hd-gloss relative rounded-[20px] bg-surface p-6 stagger-${i + 1} fade-up`}
+              className={`manga-panel hd-paper hd-gloss ink-edge relative rounded-[20px] bg-surface p-6 ${["panel-skew-b","panel-skew-c","panel-skew-a"][i % 3]} stagger-${i + 1} fade-up`}
               style={{ animationFillMode: "both", boxShadow: "5px 5px 0 rgb(var(--c-ink)), var(--hd-lift)" }}>
               {/* Angka besar sebagai latar. Dulu ditaruh di -right-2 -top-2 dan
                   terpotong di tepi kartu; sekarang ditahan di dalam panel. */}

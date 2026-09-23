@@ -2414,3 +2414,99 @@ html.depth-ready .card-tilt.glare:hover::after { opacity: 1; }
   html.depth-ready .card-tilt:hover { transform: none; transition: none; }
   [data-parallax] { transform: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   RASA KOMIK CETAK
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Garis tepi bergoyang seperti tinta tangan ───────────────────────────
+   Filternya dipasang pada LAPISAN GARIS SAJA (::before), bukan pada
+   kartunya. Kalau filternya dipasang di kartu, isinya ikut tergeser dan
+   tulisannya jadi bergelombang — indah sesaat, tidak terbaca setelahnya.
+   Karena itu bordernya dibuat transparan dan digambar ulang di pseudo. */
+.ink-edge { position: relative; border-color: transparent !important; }
+.ink-edge::before {
+  content: "";
+  position: absolute;
+  /* inset 0, bukan -3px. Di induk yang overflow-hidden (hero salah satunya),
+     lapisan yang menjorok keluar ikut terpotong dan garisnya seolah hilang. */
+  inset: 0;
+  border-radius: inherit;
+  border: 3px solid rgb(var(--c-ink));
+  filter: url(#ink-wobble);
+  pointer-events: none;
+  z-index: 2;
+}
+.ink-edge-lg::before { border-width: 4px; filter: url(#ink-wobble-lg); }
+
+/* Filter SVG mahal kalau dipasang ke puluhan elemen sekaligus, jadi di layar
+   kecil — yang perangkatnya paling lemah — garisnya kembali lurus biasa. */
+@media (max-width: 640px) {
+  .ink-edge::before { filter: none; }
+}
+
+/* ── Tekstur kertas koran menyeluruh ────────────────────────────────────
+   Sangat tipis. Maksudnya menghilangkan kesan "bidang digital yang terlalu
+   bersih", bukan untuk terlihat sebagai pola. Ditaruh fixed di atas latar
+   tapi di bawah seluruh isi, dan tidak menangkap klik. */
+/* Ditaruh sebagai LATAR body, bukan lapisan ::before di atasnya. Lapisan
+   fixed dengan z-index 0 akan menutupi seluruh isi halaman, karena isi yang
+   position: static dilukis di bawah elemen berposisi — tulisannya ikut
+   berbintik. Sebagai latar, rasternya dijamin di belakang semuanya. */
+body {
+  background-image: radial-gradient(circle at 50% 50%, rgb(11 22 44 / .035) .8px, transparent .9px);
+  background-size: 6px 6px;
+  background-attachment: fixed;
+}
+:root[data-theme="dark"] body,
+html.dark body {
+  background-image: radial-gradient(circle at 50% 50%, rgb(255 255 255 / .03) .8px, transparent .9px);
+}
+
+/* ── Panel miring dengan celah putih, seperti halaman manga ──────────────
+   Halaman manga sungguhan tidak menyusun panel kotak lurus sejajar. Sudut
+   kemiringannya sengaja kecil (di bawah 1 derajat): lebih dari itu dan
+   tulisan di dalamnya mulai terasa mabuk, bukan bergaya. */
+.panel-skew-a { transform: rotate(-0.7deg); }
+.panel-skew-b { transform: rotate(0.55deg); }
+.panel-skew-c { transform: rotate(-0.35deg); }
+.panel-skew-a:hover, .panel-skew-b:hover, .panel-skew-c:hover { transform: rotate(0deg) translateY(-3px); }
+.panel-skew-a, .panel-skew-b, .panel-skew-c { transition: transform .2s cubic-bezier(.2,.9,.3,1.15); }
+
+/* Celah putih tegas di antara panel — gutter. Dipakai bersama panel-skew
+   supaya kemiringannya terbaca sebagai panel terpisah, bukan kartu penyok. */
+.gutter {
+  outline: 5px solid rgb(var(--c-bg));
+  outline-offset: 0;
+}
+
+/* ── Stiker yang menempel miring ────────────────────────────────────────
+   Label lurus terbaca sebagai elemen antarmuka. Label miring dengan
+   bayangan kecil terbaca sebagai stiker yang benar-benar ditempel. */
+.sticker {
+  transform: rotate(-7deg);
+  box-shadow: 2px 3px 0 rgb(var(--c-ink) / .9), 0 6px 12px -6px rgb(var(--c-ink) / .5);
+  transition: transform .18s cubic-bezier(.2,.9,.3,1.3);
+}
+.sticker:hover { transform: rotate(-2deg) scale(1.07); }
+.sticker-right { transform: rotate(6deg); }
+.sticker-right:hover { transform: rotate(1deg) scale(1.07); }
+
+/* ── Judul dengan geseran warna seperti cetakan tidak presisi ────────────
+   Efek "misprint": pelat merah dan biru meleset sedikit dari pelat hitam.
+   Hanya saat disorot — kalau permanen, matanya lelah membaca. */
+.misprint { transition: text-shadow .18s ease, transform .18s ease; }
+.misprint:hover {
+  text-shadow:
+    -2px 0 0 rgb(230 40 60 / .75),
+     2px 0 0 rgb(0 160 230 / .75),
+     3px 3px 0 rgb(var(--c-orange));
+  transform: translateX(.5px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-skew-a, .panel-skew-b, .panel-skew-c,
+  .panel-skew-a:hover, .panel-skew-b:hover, .panel-skew-c:hover { transform: none; transition: none; }
+  .sticker, .sticker:hover, .sticker-right, .sticker-right:hover { transform: none; transition: none; }
+  .misprint, .misprint:hover { transition: none; transform: none; }
+}
