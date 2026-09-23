@@ -36,6 +36,21 @@ function authorize(req) {
 // Selalu mengembalikan objek, tidak pernah melempar. Kalau Telegram tidak bisa
 // dihubungi, halaman ini harus tetap memberi jawaban yang bisa dibaca admin —
 // bukan mati tanpa pesan.
+// Dua alamat dianggap sama kalau cuma beda hal sepele: garis miring di ujung,
+// huruf besar/kecil di host, atau "www." di depan. Perbedaan seperti itu tidak
+// membuat webhook gagal, jadi tidak perlu dilaporkan sebagai masalah.
+function sameUrl(a, b) {
+  const norm = (v) => {
+    try {
+      const u = new URL(String(v));
+      return `${u.protocol}//${u.host.toLowerCase().replace(/^www\./, "")}${u.pathname.replace(/\/+$/, "")}`;
+    } catch {
+      return String(v || "").trim().replace(/\/+$/, "").toLowerCase();
+    }
+  };
+  return Boolean(a) && norm(a) === norm(b);
+}
+
 async function tg(method, body) {
   const token = shopBotToken();
   try {
@@ -114,11 +129,27 @@ export async function GET(req) {
   if (action === "info") {
     const info = await tg("getWebhookInfo");
     const r = info.result || {};
+    const expected = `${(
+      (await getSettings().catch(() => ({}))).siteUrl ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      url.origin
+    ).replace(/\/+$/, "")}/api/bot/webhook`;
+
     return NextResponse.json({
       ok: info.ok,
       action: "info",
       bot,
       webhook: r.url || "(belum dipasang)",
+      verifikasi: !r.url
+        ? "belum terpasang"
+        : sameUrl(r.url, expected)
+        ? "terpasang"
+        : "terpasang ke alamat lain",
+      saran: !r.url
+        ? "Tekan Pasang Webhook."
+        : sameUrl(r.url, expected)
+        ? null
+        : `Telegram menyimpan ${r.url}, sedangkan Site URL kamu ${expected}. Kalau yang tersimpan itu domain aktifmu, botnya tetap jalan.`,
       pendingUpdates: r.pending_update_count ?? 0,
       lastError: r.last_error_message || null,
       lastErrorAt: r.last_error_date ? new Date(r.last_error_date * 1000).toISOString() : null,
@@ -163,14 +194,46 @@ export async function GET(req) {
     );
   }
 
-  const info = await tg("getWebhookInfo");
+  // Telegram kadang belum langsung melaporkan webhook yang baru dipasang, jadi
+  // verifikasinya diberi satu kesempatan kedua sebelum dinyatakan tidak cocok.
+  let info = await tg("getWebhookInfo");
+  let reported = info.result?.url || "";
+  if (info.ok && !sameUrl(reported, target)) {
+    await new Promise((r) => setTimeout(r, 1200));
+    info = await tg("getWebhookInfo");
+    reported = info.result?.url || "";
+  }
+
+  // Tiga keadaan yang berbeda, dan dulu ketiganya dilaporkan sama: "belum cocok".
+  let verifikasi;
+  let saran = null;
+  if (!info.ok) {
+    verifikasi = "terpasang, tapi belum bisa diverifikasi";
+    saran = "Telegram menerima pemasangannya, hanya pengecekan ulangnya yang gagal. Tekan Cek Status sebentar lagi.";
+  } else if (sameUrl(reported, target)) {
+    verifikasi = "terpasang";
+  } else if (!reported) {
+    verifikasi = "belum terpasang";
+    saran = "Telegram melaporkan webhook masih kosong. Coba tekan Pasang Webhook sekali lagi.";
+  } else {
+    verifikasi = "terpasang ke alamat lain";
+    saran =
+      `Telegram menyimpan ${reported}, sedangkan Site URL kamu mengarah ke ${target}. ` +
+      `Kalau alamat yang tersimpan itu domain aktifmu, biarkan saja — botnya tetap jalan. ` +
+      `Kalau bukan, perbaiki Site URL di Pengaturan Situs lalu pasang ulang.`;
+  }
+
   return NextResponse.json({
     ok: true,
     action: "set",
     bot,
     webhook: target,
+    webhookTersimpan: reported || "(kosong)",
     secretDipakai: Boolean(secret),
-    verifikasi: info.result?.url === target ? "terpasang" : "belum cocok, cek lagi",
+    verifikasi,
+    saran,
+    pendingUpdates: info.result?.pending_update_count ?? 0,
+    lastError: info.result?.last_error_message || null,
     ownerTerdaftar: shopBotOwners(),
     catatan: shopBotOwners().length ? null : "SHOP_BOT_OWNER_IDS masih kosong — /admin dan /broadcast tidak akan bisa dipakai.",
     langkahSelanjutnya: `Buka Telegram, cari @${bot.username}, kirim /start`

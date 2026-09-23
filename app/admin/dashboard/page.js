@@ -3050,11 +3050,35 @@ export default function AdminDashboardPage() {
                     {botInfo.bot?.username && (
                       <p className="text-xs font-bold text-ink">
                         🤖 @{botInfo.bot.username}
-                        {botInfo.verifikasi ? ` · ${botInfo.verifikasi}` : ""}
+                        {botInfo.verifikasi ? (
+                          <span
+                            className={
+                              botInfo.verifikasi === "terpasang" ? " text-success" : " text-warn"
+                            }
+                          >
+                            {" · "}
+                            {botInfo.verifikasi}
+                          </span>
+                        ) : null}
                       </p>
                     )}
                     {botInfo.webhook && (
                       <p className="mt-1 break-all text-[11px] text-muted">Webhook: {botInfo.webhook}</p>
+                    )}
+                    {botInfo.webhookTersimpan && botInfo.webhookTersimpan !== botInfo.webhook && (
+                      <p className="mt-0.5 break-all text-[11px] text-muted">
+                        Tersimpan di Telegram: {botInfo.webhookTersimpan}
+                      </p>
+                    )}
+                    {botInfo.saran && (
+                      <p className="mt-1.5 rounded-md bg-surface2 px-2 py-1.5 text-[11px] leading-relaxed text-muted">
+                        {botInfo.saran}
+                      </p>
+                    )}
+                    {typeof botInfo.pendingUpdates === "number" && botInfo.pendingUpdates > 0 && (
+                      <p className="mt-1 text-[11px] text-warn">
+                        {botInfo.pendingUpdates} update menunggu diproses.
+                      </p>
                     )}
                     {botInfo.lastError && (
                       <p className="mt-1 text-[11px] font-medium text-rose">
