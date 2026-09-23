@@ -242,17 +242,21 @@ export default function HomePage() {
       <FlashSaleBanner />
 
       {/* ===== HERO ===== */}
-      <section className="hd-panel hd-paper relative mt-6 overflow-hidden rounded-3xl border-3 border-ink bg-gradient-to-br from-surface via-surface to-amber-soft p-6 sm:p-10 lg:grid lg:grid-cols-[1fr_420px] lg:items-center lg:gap-12"
+      <section data-parallax-root
+        className="hd-panel hd-paper relative mt-6 overflow-hidden rounded-3xl border-3 border-ink bg-gradient-to-br from-surface via-surface to-amber-soft p-6 sm:p-10 lg:grid lg:grid-cols-[1fr_420px] lg:items-center lg:gap-12"
         style={{ border: "3px solid rgb(var(--c-ink))" }}>
 
-        {/* speed-lines bg */}
-        <div className="speed-lines pointer-events-none absolute inset-0 opacity-60" />
+        {/* Tiga lapisan hiasan dengan kedalaman berbeda. Angka data-parallax
+            negatif = jauh (bergerak pelan & berlawanan), positif = dekat.
+            Selisih kecepatan inilah yang dibaca mata sebagai ruang. */}
+        <div data-parallax="-1.6" className="speed-lines pointer-events-none absolute -inset-8 opacity-60" />
 
-        {/* floating particles */}
-        <FloatingParticles />
+        <div data-parallax="-0.7" className="pointer-events-none absolute inset-0">
+          <FloatingParticles />
+        </div>
 
-        {/* big BOOM decoration */}
-        <span className="ono-text pointer-events-none absolute -right-4 top-4 select-none text-[88px] leading-none text-amber/[0.06] sm:text-[140px] rotate-12 font-extrabold" aria-hidden="true">
+        <span data-parallax="1.2"
+          className="ono-text pointer-events-none absolute -right-4 top-4 select-none text-[88px] leading-none text-amber/[0.06] sm:text-[140px] rotate-12 font-extrabold" aria-hidden="true">
           POW!
         </span>
 
@@ -366,12 +370,12 @@ export default function HomePage() {
           const I = p.icon;
           return (
             <Link key={p.href} href={p.href}
-              className="card-wow card-tilt shine hd-gloss group flex flex-col gap-3 p-4 sm:p-5">
-              <span className={`flex h-12 w-12 items-center justify-center rounded-xl ${p.tone} border-2 border-ink text-2xl`}
+              className="card-wow card-tilt glare shine hd-gloss group flex flex-col gap-3 p-4 sm:p-5">
+              <span className={`lift-3 flex h-12 w-12 items-center justify-center rounded-xl ${p.tone} border-2 border-ink text-2xl`}
                 style={{ boxShadow: "2px 2px 0 rgb(var(--c-ink))" }}>
                 {p.emoji}
               </span>
-              <div>
+              <div className="lift-1">
                 <p className="flex items-center gap-1 text-[15px] font-black text-ink">
                   {p.title}
                   <Icon.chevron className="text-muted transition-transform group-hover:translate-x-1" />
@@ -445,7 +449,7 @@ export default function HomePage() {
         <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {TESTIMONIALS.map((t, i) => (
             <div key={t.name}
-              className={`card-wow card-tilt manga-panel flex flex-col gap-3 p-5 stagger-${(i % 6) + 1} fade-up`}
+              className={`card-wow card-tilt glare manga-panel flex flex-col gap-3 p-5 stagger-${(i % 6) + 1} fade-up`}
               style={{ animationFillMode: "both" }}>
               {/* stars */}
               <div className="flex items-center justify-between">

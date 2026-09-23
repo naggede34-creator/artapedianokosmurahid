@@ -11,6 +11,8 @@ import MascotGreeting from "@/components/MascotGreeting";
 import WelcomeBonusPopup from "@/components/WelcomeBonusPopup";
 import InfoModal from "@/components/InfoModal";
 import LogoLoader from "@/components/LogoLoader";
+import RevealOnScroll from "@/components/RevealOnScroll";
+import Depth3D from "@/components/Depth3D";
 
 export default function SiteChrome({ children }) {
   const pathname = usePathname();
@@ -61,6 +63,8 @@ export default function SiteChrome({ children }) {
 
   return (
     <>
+      <RevealOnScroll />
+      <Depth3D />
       <LogoLoader />
       {/* Sapaan maskot & popup pembuka menunggu animasi loading selesai
           (lihat lib/introGate.js) supaya tidak tertimbun di belakangnya. */}

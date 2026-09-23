@@ -293,7 +293,15 @@ input[type="number"] { -moz-appearance: textfield; }
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.delay-1, .delay-2, .delay-3, .delay-4, .delay-5, .delay-6 { animation-delay: 0s; }
+/* Dulu keenamnya di-set 0s, jadi enam kelas ini tidak melakukan apa pun:
+   elemen yang memakai delay-1 sampai delay-6 muncul berbarengan, bukan
+   berurutan seperti yang jelas dimaksudkan di tempat pemakaiannya. */
+.delay-1 { animation-delay: .06s; }
+.delay-2 { animation-delay: .12s; }
+.delay-3 { animation-delay: .18s; }
+.delay-4 { animation-delay: .24s; }
+.delay-5 { animation-delay: .30s; }
+.delay-6 { animation-delay: .36s; }
 
 .scale-in { animation: scaleIn 0.25s ease-out both; }
 @keyframes scaleIn {
@@ -2275,4 +2283,134 @@ html.dark .card-wow {
   .card-wow { transition: none; }
   .card-wow:hover { transform: none; }
   .hd-gloss:hover::after { animation: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   REVEAL SAAT SCROLL
+   ───────────────────────────────────────────────────────────────────────
+   Kelas animasi masuk di situs ini (fade-up, anim-drop, anim-stagger, …)
+   adalah animasi CSS biasa: jalan begitu elemennya dirender. Untuk apa pun
+   di bawah layar, animasinya sudah selesai sebelum ada yang menggulir ke
+   sana — animasinya terbayar tapi tidak pernah dilihat.
+
+   Aturan di bawah ini MENAHAN animasi itu sampai elemennya benar-benar
+   terlihat, dan hanya berlaku saat `reveal-ready` terpasang di <html>.
+   Kelas itu dipasang oleh components/RevealOnScroll.js. Kalau JS mati,
+   kelasnya tidak pernah ada dan seluruh blok ini tidak berlaku: perilaku
+   lama kembali, isinya tetap terlihat.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+html.reveal-ready .fade-up:not(.is-visible),
+html.reveal-ready .anim-drop:not(.is-visible),
+html.reveal-ready .anim-slide:not(.is-visible),
+html.reveal-ready .manga-enter:not(.is-visible),
+html.reveal-ready .bounce-in:not(.is-visible),
+html.reveal-ready .scale-in:not(.is-visible),
+html.reveal-ready .slide-up:not(.is-visible),
+html.reveal-ready .anim-stagger:not(.is-visible) > * {
+  animation: none !important;
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+/* Gerak masuknya sekalian dibuat lebih berisi daripada fadeUpIn 8px yang
+   lama — sekarang memang ada yang menonton. */
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(18px) scale(.985); }
+  60%  { opacity: 1; }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+html.reveal-ready .fade-up.is-visible,
+html.reveal-ready .anim-drop.is-visible,
+html.reveal-ready .anim-slide.is-visible,
+html.reveal-ready .manga-enter.is-visible,
+html.reveal-ready .bounce-in.is-visible,
+html.reveal-ready .scale-in.is-visible,
+html.reveal-ready .slide-up.is-visible {
+  animation: revealUp .55s cubic-bezier(.2, .9, .3, 1.15) both;
+}
+
+/* Anak-anak stagger tetap memakai jeda bertingkat yang sudah ada; yang
+   diganti hanya nama animasinya. */
+html.reveal-ready .anim-stagger.is-visible > * {
+  animation-name: revealUp;
+  animation-duration: .55s;
+  animation-timing-function: cubic-bezier(.2, .9, .3, 1.15);
+  animation-fill-mode: both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.reveal-ready .fade-up,
+  html.reveal-ready .anim-drop,
+  html.reveal-ready .anim-slide,
+  html.reveal-ready .manga-enter,
+  html.reveal-ready .bounce-in,
+  html.reveal-ready .scale-in,
+  html.reveal-ready .slide-up,
+  html.reveal-ready .anim-stagger > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   KEDALAMAN 3D
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Tilt mengikuti kursor. Sudutnya datang dari components/Depth3D.js lewat
+   dua custom property; kalau JS tidak jalan, keduanya 0 dan kartunya diam —
+   perilaku :hover yang lama tetap ada sebagai cadangan di bawah. */
+html.depth-ready .card-tilt {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  transform: perspective(900px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transition: transform .14s ease-out, box-shadow .18s ease-out;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+html.depth-ready .card-tilt:hover {
+  /* Sudutnya sudah ditentukan kursor; yang tersisa untuk :hover cuma
+     mengangkatnya dan mempertegas bayangannya. */
+  transform: perspective(900px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateZ(16px);
+  box-shadow: 8px 8px 0 rgb(var(--c-ink)), 0 28px 54px -18px rgb(var(--c-blue) / .34);
+}
+
+/* Isi kartu melayang di atas kartunya. Tanpa ini, ikon dan judulnya ikut
+   miring rata seperti stiker di permukaan — yang justru membatalkan kesan
+   3D yang baru dibuat. */
+html.depth-ready .card-tilt .lift-1 { transform: translateZ(18px); }
+html.depth-ready .card-tilt .lift-2 { transform: translateZ(34px); }
+html.depth-ready .card-tilt .lift-3 { transform: translateZ(52px); }
+
+/* Sorotan yang titiknya ikut kursor. */
+html.depth-ready .card-tilt.glare { position: relative; overflow: hidden; }
+html.depth-ready .card-tilt.glare::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .2s ease;
+  background: radial-gradient(
+    circle at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgb(255 255 255 / .42),
+    transparent 55%
+  );
+}
+html.depth-ready .card-tilt.glare:hover::after { opacity: 1; }
+
+/* Lapisan parallax. transform diisi dari JS; properti di sini hanya menyiapkan
+   agar perpindahannya tidak memicu layout ulang. */
+[data-parallax] {
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.depth-ready .card-tilt,
+  html.depth-ready .card-tilt:hover { transform: none; transition: none; }
+  [data-parallax] { transform: none !important; }
 }
