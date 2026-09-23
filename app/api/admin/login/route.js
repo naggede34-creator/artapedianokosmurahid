@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ADMIN_COOKIE, ADMIN_COOKIE_VALUE, getAdminCode } from "@/lib/adminAuth";
+import { ADMIN_COOKIE, adminCodeMatches, adminCodeIsDefault, createAdminSession, adminCookieOptions } from "@/lib/adminAuth";
 import { sendMonitorLog, adminLoginLog } from "@/lib/monitor";
 import { rateLimit } from "@/lib/rateLimit";
 
@@ -12,20 +12,20 @@ export async function POST(req) {
       return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi dalam 5 menit." }, { status: 429 });
     }
 
-    if (!code || String(code) !== getAdminCode()) {
+    if (!code || !adminCodeMatches(code)) {
       sendMonitorLog(adminLoginLog({ success: false, ip }));
       return NextResponse.json({ error: "Kode admin salah." }, { status: 401 });
     }
 
     sendMonitorLog(adminLoginLog({ success: true, ip }));
 
-    const res = NextResponse.json({ ok: true });
-    res.cookies.set(ADMIN_COOKIE, ADMIN_COOKIE_VALUE, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7 // 7 hari
-    });
+    if (adminCodeIsDefault()) {
+      // Kode bawaan tertulis di repositori, jadi ia bukan rahasia siapa pun.
+      console.warn("[admin] ADMIN_CODE belum diisi — panel admin memakai kode bawaan yang ada di kode sumber.");
+    }
+
+    const res = NextResponse.json({ ok: true, defaultCode: adminCodeIsDefault() });
+    res.cookies.set(ADMIN_COOKIE, createAdminSession(), adminCookieOptions());
     return res;
   } catch (err) {
     console.error(err);

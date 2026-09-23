@@ -735,7 +735,7 @@ export default function ChatPage() {
       if (type === "text") setInput("");
       setReplyTo(null);
       setMentionQuery(null);
-      const local = { id:d.msgId, token, displayName:userName, type, createdAt:d.createdAt||new Date().toISOString(), ...extra, message:body.message||"", reactions:{}, pinned:false, mentions, replyTo:body.replyTo||null, replyToName:body.replyToName||null, replyToPreview:body.replyToPreview||null };
+      const local = { id:d.msgId, mine:true, displayName:userName, type, createdAt:d.createdAt||new Date().toISOString(), ...extra, message:body.message||"", reactions:{}, pinned:false, mentions, replyTo:body.replyTo||null, replyToName:body.replyToName||null, replyToPreview:body.replyToPreview||null };
       setMessages(prev=>[...prev, local]);
       setLastTs(local.createdAt);
       const aiBody = { message:body.message||"[stiker/suara]", type, displayName:userName, isCommand };
@@ -1006,7 +1006,11 @@ export default function ChatPage() {
           </div>
         ) : (
           <div key={item.key} id={`msg-${item.msg.id}`}>
-            <MsgBubble msg={item.msg} isMine={item.msg.token===token}
+            {/* "Punyaku atau bukan" ditentukan SERVER dan datang sebagai
+                item.msg.mine. Dulu dibandingkan di sini dengan token milik
+                sendiri, yang berarti token semua orang harus ikut dikirim ke
+                setiap peramban — dan kode akun di web ini adalah kredensial. */}
+            <MsgBubble msg={item.msg} isMine={item.msg.mine === true}
               onReply={m=>{ setReplyTo(m); inputRef.current?.focus(); }}
               prevSender={item.prev} nextSender={item.next}
               token={token} isAdmin={groupSettings.isAdmin}

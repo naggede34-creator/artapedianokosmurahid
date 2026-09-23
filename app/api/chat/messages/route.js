@@ -5,10 +5,20 @@ import { getChatSettings, chatClosedMessage } from "@/lib/chatSettings";
 
 export const dynamic = "force-dynamic";
 
-function serializeMsg(m) {
+// Kode akun TIDAK pernah ikut keluar dari sini.
+//
+// Di web ini kode akun adalah kredensialnya: siapa pun yang memegangnya bisa
+// membuka akun itu, melihat saldonya, dan membelanjakannya. Room Chat terbuka
+// untuk semua, jadi mengirim token tiap pesan sama dengan menerbitkan daftar
+// kata sandi semua orang yang pernah menulis di grup — satu permintaan ke
+// /api/chat/messages sudah cukup untuk memanennya.
+//
+// Yang dibutuhkan halaman chat cuma "ini pesanku atau bukan", dan itu bisa
+// dijawab di server tanpa memberitahukan milik siapa pesan orang lain.
+function serializeMsg(m, pemintaToken) {
   return {
     id: m.msgId,
-    token: m.token,
+    mine: Boolean(pemintaToken) && m.token === pemintaToken,
     displayName: m.displayName,
     message: m.message || "",
     type: m.type || "text",
@@ -55,7 +65,7 @@ export async function GET(req) {
       .toArray();
 
     const result = after ? msgs : [...msgs].reverse();
-    return NextResponse.json(result.map(serializeMsg));
+    return NextResponse.json(result.map((m) => serializeMsg(m, token)));
   } catch (err) {
     console.error("[chat/messages GET]", err);
     return NextResponse.json([], { status: 200 });

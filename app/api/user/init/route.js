@@ -3,13 +3,22 @@ import { usersCol } from "@/lib/db";
 import { generateUserToken } from "@/lib/token";
 import { sendTelegramNotif, sendTelegramChannelNotif, newUserNotif } from "@/lib/telegram";
 import { sendMonitorLog, userLoginLog } from "@/lib/monitor";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(req) {
   try {
     const body = await req.json().catch(() => ({}));
     const users = await usersCol();
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 
     if (body.token) {
+      // Endpoint ini adalah pintu masuk akun: menyebutkan kode akun yang benar
+      // langsung membuka akunnya. Tanpa batas percobaan, ia juga jadi tempat
+      // menebak kode orang lain sepuasnya — dan tiap tebakan adalah satu kueri
+      // ke database.
+      if (!rateLimit(`${ip}:user-init`, 30, 60_000)) {
+        return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi sebentar lagi." }, { status: 429 });
+      }
       const existing = await users.findOne({ token: body.token });
       if (existing) {
         sendMonitorLog(userLoginLog({ token: existing.token, isNew: false }));
@@ -23,6 +32,17 @@ export async function POST(req) {
         });
       }
       return NextResponse.json({ error: "Kode akun tidak ditemukan." }, { status: 404 });
+    }
+
+    // Pembuatan akun dibatasi lebih ketat daripada pembacaannya: akun baru
+    // berhak atas bonus sambutan, jadi membuat akun massal adalah mencetak
+    // saldo. Sepuluh per jam masih jauh di atas kebutuhan orang sungguhan yang
+    // ganti perangkat atau membersihkan peramban.
+    if (!rateLimit(`${ip}:user-create`, 10, 60 * 60_000)) {
+      return NextResponse.json(
+        { error: "Terlalu banyak akun baru dari koneksi ini. Coba lagi nanti atau hubungi CS." },
+        { status: 429 }
+      );
     }
 
     let token;
