@@ -52,6 +52,17 @@ function verified(req) {
   return req.headers.get("x-telegram-bot-api-secret-token") === expected;
 }
 
+// Dibuka lewat browser (GET) hanya untuk memastikan alamatnya benar. Telegram
+// selalu memakai POST, jadi di sini tidak ada pemrosesan apa pun.
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    endpoint: "webhook bot toko",
+    tokenTerpasang: shopBotConfigured(),
+    catatan: "Alamat ini menerima update dari Telegram lewat POST. Untuk memasangnya, buka /api/bot/setup"
+  });
+}
+
 export async function POST(req) {
   if (!shopBotConfigured()) return NextResponse.json({ ok: true });
   if (!verified(req)) return NextResponse.json({ ok: false }, { status: 401 });

@@ -101,6 +101,9 @@ export default function AdminDashboardPage() {
   // Judul + isi pesan yang tampil di halaman maintenance.
   const [maintenanceTextForm, setMaintenanceTextForm] = useState({ title: "", msg: "" });
   const [csForm, setCsForm] = useState("");
+  // Status & kontrol webhook bot toko.
+  const [botInfo, setBotInfo] = useState(null);
+  const [botBusy, setBotBusy] = useState("");
   const [savingCs, setSavingCs] = useState(false);
   const [csMsg, setCsMsg] = useState("");
   const [savingMaintenanceText, setSavingMaintenanceText] = useState(false);
@@ -503,6 +506,20 @@ export default function AdminDashboardPage() {
     } finally {
       setSavingDepositMethod(false);
       setTimeout(() => setDepositMethodMsg(""), 3000);
+    }
+  }
+
+  // action: info | set | delete
+  async function botWebhook(action) {
+    setBotBusy(action);
+    setBotInfo(null);
+    try {
+      const res = await fetch(`/api/bot/setup?action=${action}`);
+      setBotInfo(await res.json());
+    } catch {
+      setBotInfo({ error: "Gagal menghubungi endpoint bot." });
+    } finally {
+      setBotBusy("");
     }
   }
 
@@ -2973,6 +2990,89 @@ export default function AdminDashboardPage() {
               </p>
             )}
             {stockMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{stockMsg}</p>}
+          </div>
+
+          {/* Bot Telegram toko */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">Bot Telegram Toko</h2>
+            <p className="mt-1 text-xs text-muted">
+              Bot tempat pembeli order nokos &amp; deposit. Saldonya sama dengan di web. Pasang webhook
+              sekali di sini — tidak perlu membuka URL manual.
+            </p>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                onClick={() => botWebhook("info")}
+                disabled={!!botBusy}
+                className="btn-3d rounded-lg border border-line bg-surface px-3.5 py-2 text-xs font-semibold text-ink disabled:opacity-60"
+              >
+                {botBusy === "info" ? "Mengecek..." : "Cek Status"}
+              </button>
+              <button
+                onClick={() => botWebhook("set")}
+                disabled={!!botBusy}
+                className="btn-3d rounded-lg bg-amber px-3.5 py-2 text-xs font-semibold text-white disabled:opacity-60"
+              >
+                {botBusy === "set" ? "Memasang..." : "Pasang Webhook"}
+              </button>
+              <button
+                onClick={() => {
+                  if (window.confirm("Lepas webhook? Bot akan berhenti merespons sampai dipasang lagi.")) {
+                    botWebhook("delete");
+                  }
+                }}
+                disabled={!!botBusy}
+                className="btn-3d rounded-lg border border-rose/40 bg-rose-soft px-3.5 py-2 text-xs font-semibold text-rose disabled:opacity-60"
+              >
+                {botBusy === "delete" ? "Melepas..." : "Lepas Webhook"}
+              </button>
+            </div>
+
+            {botInfo && (
+              <div className="mt-3">
+                {botInfo.error ? (
+                  <div className="rounded-lg border border-rose/40 bg-rose-soft p-3">
+                    <p className="text-xs font-bold text-rose">{botInfo.error}</p>
+                    {botInfo.telegram && (
+                      <p className="mt-1 text-[11px] text-muted">Telegram: {botInfo.telegram}</p>
+                    )}
+                    {botInfo.hint && <p className="mt-1 text-[11px] text-muted">{botInfo.hint}</p>}
+                    {Array.isArray(botInfo.langkah) && (
+                      <ol className="mt-2 list-decimal space-y-0.5 pl-4 text-[11px] text-muted">
+                        {botInfo.langkah.map((l) => (
+                          <li key={l}>{l}</li>
+                        ))}
+                      </ol>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-line bg-surface p-3">
+                    {botInfo.bot?.username && (
+                      <p className="text-xs font-bold text-ink">
+                        🤖 @{botInfo.bot.username}
+                        {botInfo.verifikasi ? ` · ${botInfo.verifikasi}` : ""}
+                      </p>
+                    )}
+                    {botInfo.webhook && (
+                      <p className="mt-1 break-all text-[11px] text-muted">Webhook: {botInfo.webhook}</p>
+                    )}
+                    {botInfo.lastError && (
+                      <p className="mt-1 text-[11px] font-medium text-rose">
+                        Error terakhir dari Telegram: {botInfo.lastError}
+                      </p>
+                    )}
+                    {botInfo.catatan && (
+                      <p className="mt-1 text-[11px] font-medium text-warn">{botInfo.catatan}</p>
+                    )}
+                    {botInfo.langkahSelanjutnya && (
+                      <p className="mt-1.5 text-[11px] font-semibold text-teal-bright">
+                        {botInfo.langkahSelanjutnya}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Transfer saldo antar pengguna */}
