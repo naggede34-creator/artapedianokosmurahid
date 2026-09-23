@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { OTP_SERVERS, serverLabel } from "@/lib/otpServers";
+import { onoOrderSukses } from "@/lib/ono";
 
 // Ambil field yang mungkin berbeda nama antar respons API, tanpa merusak tampilan kalau tidak ada.
 function pick(obj, keys, fallback) {
@@ -200,6 +201,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal membeli nomor.");
+      onoOrderSukses();
       onOrderCreated({
         orderId: data.orderId,
         phoneNumber: data.phoneNumber,

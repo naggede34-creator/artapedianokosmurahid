@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useUser } from "@/app/providers";
+import { onoSaldoMasuk } from "@/lib/ono";
 
 function formatToken(token) {
   if (!token) return "AP-••••-••••-••••";
@@ -14,6 +15,27 @@ export default function SimCard({ compact = false }) {
   const { token, balance, depositBalance, name, ready } = useUser();
   const [hidden, setHidden] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Saldo yang bertambah dirayakan; yang berkurang tidak. Pembeli yang baru
+  // saja membayar sesuatu tidak perlu diberi tepuk tangan atas uang yang
+  // keluar dari kantongnya.
+  const nilaiRef = useRef(null);
+  const saldoSebelumnya = useRef(null);
+  const [naik, setNaik] = useState(false);
+
+  useEffect(() => {
+    if (!ready) return;
+    const sekarang = Number(balance || 0);
+    const sebelum = saldoSebelumnya.current;
+    saldoSebelumnya.current = sekarang;
+    // Render pertama bukan "kenaikan" — itu cuma saldo yang baru terbaca.
+    if (sebelum === null || sekarang <= sebelum) return;
+
+    setNaik(true);
+    onoSaldoMasuk(nilaiRef.current);
+    const t = setTimeout(() => setNaik(false), 750);
+    return () => clearTimeout(t);
+  }, [balance, ready]);
 
   function copy() {
     if (!token) return;
@@ -32,7 +54,8 @@ export default function SimCard({ compact = false }) {
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-medium text-white/65">{name ? `Saldo ${name}` : "Saldo kamu"}</p>
           <div className="mt-1 flex items-center gap-2">
-            <p className="text-[30px] font-extrabold leading-none tracking-tight tabular-nums sm:text-[36px]">
+            <p ref={nilaiRef}
+              className={`text-[30px] font-extrabold leading-none tracking-tight tabular-nums sm:text-[36px] ${naik ? "value-pop value-ring" : ""}`}>
               {!ready ? "Rp…" : hidden ? "Rp•••••" : `Rp${Number(balance || 0).toLocaleString("id-ID")}`}
             </p>
             <button

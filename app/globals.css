@@ -2510,3 +2510,77 @@ html.dark body {
   .sticker, .sticker:hover, .sticker-right, .sticker-right:hover { transform: none; transition: none; }
   .misprint, .misprint:hover { transition: none; transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ONOMATOPE & ANGKA YANG MELEDAK
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --ono-orange: 247 124 34;
+  --ono-blue: 37 99 235;
+  --ono-green: 13 148 96;
+  --ono-gold: 214 158 20;
+  --ono-red: 210 42 60;
+}
+
+/* Menempel di <body> dan fixed: kalau ditaruh di dalam tombol yang menekan,
+   hampir selalu terpotong oleh overflow: hidden kartunya. */
+.ono-burst {
+  position: fixed;
+  z-index: 90;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(var(--ono-rot, -6deg));
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(30px, 6vw, 52px);
+  line-height: 1;
+  letter-spacing: .02em;
+  color: rgb(var(--ono-c));
+  -webkit-text-stroke: 2px rgb(var(--c-ink));
+  paint-order: stroke fill;
+  text-shadow: 3px 3px 0 rgb(var(--c-ink) / .32);
+  animation: onoPop .85s cubic-bezier(.16, 1.1, .3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes onoPop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) rotate(var(--ono-rot)) scale(.35); }
+  22%  { opacity: 1; transform: translate(-50%, -54%) rotate(var(--ono-rot)) scale(1.18); }
+  38%  {              transform: translate(-50%, -56%) rotate(var(--ono-rot)) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -128%) rotate(var(--ono-rot)) scale(.94); }
+}
+
+/* Angka saldo saat bertambah: melompat sebentar lalu kembali, dengan cincin
+   yang melebar di belakangnya. Momen paling menyenangkan di seluruh situs
+   sebelumnya cuma berganti angka begitu saja. */
+.value-pop { animation: valuePop .7s cubic-bezier(.16, 1.2, .3, 1); }
+@keyframes valuePop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.22); filter: brightness(1.25); }
+  55%  { transform: scale(.97); }
+  100% { transform: scale(1); }
+}
+
+.value-ring { position: relative; }
+.value-ring::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.2em;
+  height: 1.2em;
+  border-radius: 999px;
+  border: 3px solid rgb(var(--c-success));
+  transform: translate(-50%, -50%) scale(.4);
+  opacity: .9;
+  pointer-events: none;
+  animation: valueRing .7s ease-out forwards;
+}
+@keyframes valueRing {
+  to { transform: translate(-50%, -50%) scale(3.2); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ono-burst { display: none; }
+  .value-pop { animation: none; }
+  .value-ring::after { animation: none; display: none; }
+}

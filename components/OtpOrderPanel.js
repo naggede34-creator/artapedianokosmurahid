@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { onoOtpMasuk } from "@/lib/ono";
 
 const CANCEL_COOLDOWN_MS = 3 * 60 * 1000;
 const AUTO_TRY_OTHER_MS = 120 * 1000; // 2 menit → muncul tombol "Coba Nomor Lain"
@@ -47,6 +48,12 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
   const [copied, setCopied] = useState("");
   const [waitingMsgIdx, setWaitingMsgIdx] = useState(0);
   const pollRef = useRef(null);
+  const kodeRef = useRef(null);
+  // Penanda lewat ref, bukan membaca status di dalam fetchStatus: efek
+  // pollingnya tidak memasukkan `status` sebagai dependensi, jadi nilai yang
+  // terbaca di sana sudah basi dan onomatopenya bisa meledak berulang kali
+  // setiap 4 detik.
+  const sudahBunyi = useRef(false);
   const tickRef = useRef(null);
   const msgRef = useRef(null);
 
@@ -60,6 +67,12 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
       const res = await fetch(`/api/otp/status?order_id=${activeOrder.orderId}&token=${token}`);
       const data = await res.json();
       if (res.ok) {
+        // Hanya saat kodenya BARU muncul, bukan tiap polling berhasil —
+        // pollingnya jalan tiap beberapa detik dan akan meledak terus-menerus.
+        if (data.otpCode && !sudahBunyi.current) {
+          sudahBunyi.current = true;
+          onoOtpMasuk(kodeRef.current);
+        }
         setStatus({ status: data.status, otpCode: data.otpCode, otpMsg: data.otpMsg });
         setRefunded(Boolean(data.refunded));
         if (["completed", "received", "done", "canceled", "expired"].includes(data.status)) {
@@ -167,6 +180,7 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
           serviceName: activeOrder.serviceName,
           countryName: activeOrder.countryName
         });
+        sudahBunyi.current = false;
         setStatus({ status: "pending", otpCode: null, otpMsg: null });
         setRefunded(false);
         setNow(Date.now());
@@ -221,7 +235,7 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
                 {copied === "kode" ? "Tersalin" : "Salin"}
               </button>
             </div>
-            <p className="mt-1 font-mono text-4xl font-semibold tracking-[0.25em] text-ink">{status.otpCode}</p>
+            <p ref={kodeRef} className="mt-1 font-mono text-4xl font-semibold tracking-[0.25em] text-ink">{status.otpCode}</p>
             {status.otpMsg && <p className="mt-2 text-xs text-muted">{status.otpMsg}</p>}
           </div>
         ) : status.status === "canceled" ? (
