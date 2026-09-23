@@ -35,6 +35,8 @@ import {
   confirmOrder,
   doOrder,
   checkStatus,
+  askCancelOrder,
+  doCancelOrder,
   showOrders,
   showDepositMethods,
   askDepositAmount,
@@ -228,6 +230,10 @@ async function handleCallback(cb) {
       return doOrder(chatId, messageId);
     case "st":
       return checkStatus(chatId, messageId, a);
+    case "ocx":
+      return askCancelOrder(chatId, messageId, a);
+    case "ocy":
+      return doCancelOrder(chatId, messageId, a);
     case "orders":
       return showOrders(chatId, messageId);
     case "dep":
