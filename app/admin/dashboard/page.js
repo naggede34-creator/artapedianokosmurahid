@@ -154,6 +154,8 @@ export default function AdminDashboardPage() {
   const [wdCheck, setWdCheck] = useState(null);
   const [wdBusy, setWdBusy] = useState("");
   const [wdMsg, setWdMsg] = useState("");
+  const [atlDiag, setAtlDiag] = useState(null);
+  const [atlBusy, setAtlBusy] = useState(false);
   const [savingDepositMethod, setSavingDepositMethod] = useState(false);
   const [depositMethodMsg, setDepositMethodMsg] = useState("");
   const [savingMaintenanceBtn, setSavingMaintenanceBtn] = useState(false);
@@ -723,6 +725,23 @@ export default function AdminDashboardPage() {
       setWdLoading(false);
     }
   }, []);
+
+  // Cek koneksi Atlantic dari server yang sebenarnya memanggilnya. Menebak
+  // dari sisi sini tidak ada gunanya: yang menentukan lolos atau tidak adalah
+  // apa yang dilihat Cloudflare dari server itu, bukan dari peramban admin.
+  async function cekAtlantic() {
+    setAtlBusy(true);
+    setAtlDiag(null);
+    try {
+      const res = await fetch("/api/admin/atlantic");
+      const d = await res.json();
+      setAtlDiag(d);
+    } catch (err) {
+      setAtlDiag({ verdict: err.message || "Gagal menjalankan diagnosa." });
+    } finally {
+      setAtlBusy(false);
+    }
+  }
 
   async function wdPost(action, body) {
     const res = await fetch("/api/admin/withdraw", {
@@ -2722,6 +2741,42 @@ export default function AdminDashboardPage() {
                 ATLANTIC_APIKEY belum diisi di environment variables, jadi penarikan belum bisa dipakai.
               </p>
             )}
+
+            {/* Diagnosa koneksi. Dipakai kalau deposit/penarikan Atlantic gagal
+                dan perlu dipastikan penyebabnya: dihadang Cloudflare sebelum
+                sampai ke Atlantic, atau ditolak Atlantic sendiri. */}
+            <div className="mt-3 rounded-xl border border-line bg-surface px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-ink">🩺 Cek koneksi Atlantic</p>
+                  <p className="text-[11px] text-muted">
+                    Dijalankan dari server, bukan dari HP kamu. Aman ditekan — cuma membaca daftar metode, tidak
+                    membuat tagihan dan tidak memindahkan uang.
+                  </p>
+                </div>
+                <button
+                  onClick={cekAtlantic}
+                  disabled={atlBusy}
+                  className="btn-3d shrink-0 rounded-lg border border-line bg-bg px-4 py-2 text-xs font-bold text-ink disabled:opacity-60"
+                >
+                  {atlBusy ? "Mengecek…" : "Cek sekarang"}
+                </button>
+              </div>
+
+              {atlDiag && (
+                <div
+                  className={`mt-3 rounded-lg border px-3 py-2 text-xs leading-relaxed ${
+                    atlDiag.lolosCloudflare === false
+                      ? "border-rose/40 bg-rose-soft text-rose"
+                      : atlDiag.apiKeyDiterima
+                        ? "border-teal/40 bg-teal-soft text-teal-bright"
+                        : "border-warn/40 bg-warn-soft text-warn"
+                  }`}
+                >
+                  {atlDiag.verdict || atlDiag.error}
+                </div>
+              )}
+            </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
