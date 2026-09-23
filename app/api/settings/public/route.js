@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
-import { getSettings, depositLimits, depositDisplay, manualDepositReady } from "@/lib/settings";
+import {
+  getSettings,
+  depositLimits,
+  depositDisplay,
+  manualDepositReady,
+  manualDepositHours,
+  cashbackPercentFor
+} from "@/lib/settings";
 import { PROVIDER_KEYS, DEPOSIT_PROVIDERS } from "@/lib/paymentProviders";
 import { warungNokosConfigured } from "@/lib/warungnokos";
 import { rumahOtpConfigured } from "@/lib/rumahotp";
@@ -29,6 +36,12 @@ export async function GET() {
     // membingungkan setelah mengisi nominal.
     if (!atlanticConfigured()) providers.atlantic = false;
     if (!manualDepositReady(settings)) providers.manual = false;
+
+    // Jam buka TIDAK mematikan providers.manual. Kalau dimatikan, metodenya
+    // hilang dari daftar dan orang mengira tokonya tidak punya QRIS manual sama
+    // sekali; yang benar adalah metodenya ada, cuma sedang tutup — dan itu yang
+    // ditampilkan halaman deposit lewat manualDeposit.open di bawah.
+    const jam = manualDepositHours(settings);
     return NextResponse.json({
       maintenance: !!maintenance,
       csUsername: csUsername || "teatlas",
@@ -47,7 +60,14 @@ export async function GET() {
       manualDeposit: {
         accountName: settings.manualDeposit?.accountName || "",
         accountLabel: settings.manualDeposit?.accountLabel || "",
-        instructions: settings.manualDeposit?.instructions || ""
+        instructions: settings.manualDeposit?.instructions || "",
+        open: jam.open,
+        openHour: jam.openHour,
+        closeHour: jam.closeHour,
+        hoursLabel: jam.label,
+        // Dipakai popup untung-rugi sebelum deposit manual dibuat.
+        cashbackPercent: cashbackPercentFor(settings, "manual"),
+        normalCashbackPercent: Number(settings.loyalty?.cashbackDepositPercent) || 0
       },
       depositMin: limits.min,
       depositMax: limits.max,

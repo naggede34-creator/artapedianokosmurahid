@@ -31,7 +31,8 @@ export default function DepositPage() {
     providers: { warungnokos: false, pakasir: true, rumahotp: false },
     fees: { warungnokos: 0, pakasir: 0, rumahotp: 0.7 },
     min: 2000,
-    max: 1000000
+    max: 1000000,
+    manual: null
   });
   const [step, setStep] = useState("amount"); // amount | method | payment
   const [amount, setAmount] = useState("");
@@ -52,6 +53,7 @@ export default function DepositPage() {
 
   // Deposit manual: user sendiri yang bilang sudah bayar, lalu admin yang
   // memutuskan. Tidak ada provider yang bisa ditanya.
+  const [manualInfoOpen, setManualInfoOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [proof, setProof] = useState(null);
   const [proofNote, setProofNote] = useState("");
@@ -70,7 +72,8 @@ export default function DepositPage() {
           providers,
           fees: d.depositFeePercent || {},
           min: d.depositMin || 2000,
-          max: d.depositMax || 1000000
+          max: d.depositMax || 1000000,
+          manual: d.manualDeposit || null
         });
         if (Array.isArray(d.depositMethods) && d.depositMethods.length) setMethods(d.depositMethods);
         const first = DEPOSIT_PROVIDERS.find((p) => providers[p.key]);
@@ -280,6 +283,10 @@ export default function DepositPage() {
 
   async function confirmManual() {
     if (!order || !token) return;
+    if (!proof) {
+      setError("Unggah bukti transfernya dulu ya.");
+      return;
+    }
     setConfirming(true);
     setError("");
     try {
@@ -344,6 +351,12 @@ export default function DepositPage() {
     }
   }
 
+  // Jam buka datang dari server (sudah dihitung dalam WIB). Menghitungnya di
+  // browser berarti ikut jam perangkat yang membukanya, dan itu bisa apa saja.
+  const manualTutup = cfg.manual ? cfg.manual.open === false : false;
+  const manualCashback = Number(cfg.manual?.cashbackPercent || 0);
+  const manualCashbackLebih = manualCashback > Number(cfg.manual?.normalCashbackPercent || 0);
+
   const feePct = provider ? Number(cfg.fees?.[provider] || 0) : 0;
   // Untuk Pakasir, biaya pastinya bisa ditanya langsung ke API penghitung biaya
   // mereka. Kalau gagal, jatuh ke estimasi persen dari pengaturan admin.
@@ -365,6 +378,74 @@ export default function DepositPage() {
       {/* items-start: tanpa ini panel langkah ikut diregangkan setinggi kolom
           kanan, dan di langkah pertama yang isinya pendek jadi ada ruang
           kosong sepanjang layar di bawah tombolnya. */}
+      {/* Penjelasan sebelum memilih QRIS manual. Sifat metodenya benar-benar
+          berbeda dari yang lain, dan satu-satunya waktu yang tepat untuk
+          mengatakannya adalah sebelum uangnya berpindah. */}
+      {manualInfoOpen && (
+        <div
+          className="fixed inset-0 z-[120] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Tentang QRIS manual"
+          onClick={() => setManualInfoOpen(false)}
+        >
+          <div
+            className="scale-in max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl border-2 border-line bg-bg p-5 sm:rounded-3xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-extrabold text-ink">Sebelum lanjut ke QRIS manual</h2>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Metode ini bukan QRIS otomatis. Baca sebentar supaya tidak salah harap.
+            </p>
+
+            <div className="mt-4 rounded-2xl border-2 border-success/30 bg-success-soft/40 p-4">
+              <p className="text-sm font-extrabold text-success">✓ Keunggulan</p>
+              <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-ink">
+                <li>💸 <b>Tanpa biaya admin</b> — yang kamu bayar persis sama dengan saldo yang masuk.</li>
+                <li>
+                  🎁 <b>Cashback lebih besar{manualCashback > 0 ? ` — ${manualCashback}%` : ""}</b>
+                  {manualCashbackLebih ? ` (metode lain ${Number(cfg.manual?.normalCashbackPercent || 0)}%)` : ""}, masuk otomatis begitu disetujui.
+                </li>
+                <li>🏦 Bisa dari e-wallet atau m-banking mana pun, sama seperti QRIS biasa.</li>
+              </ul>
+            </div>
+
+            <div className="mt-3 rounded-2xl border-2 border-warn/30 bg-warn-soft/40 p-4">
+              <p className="text-sm font-extrabold text-warn">! Kekurangan</p>
+              <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-ink">
+                <li>⏳ <b>Tidak otomatis.</b> Saldo masuk setelah admin mencocokkan pembayaranmu — biasanya 5–15 menit, bukan hitungan detik.</li>
+                <li>📎 <b>Wajib unggah bukti transfer.</b> Tanpa bukti, konfirmasinya tidak bisa dikirim.</li>
+                {cfg.manual?.hoursLabel && (
+                  <li>🕘 <b>Ada jam layanan:</b> {cfg.manual.hoursLabel}. Di luar jam itu metodenya tutup.</li>
+                )}
+                <li>🙍 Dicek manusia, jadi kalau nominalnya tidak cocok dengan mutasi, deposit bisa ditolak.</li>
+              </ul>
+            </div>
+
+            <p className="mt-3 text-center text-[11px] text-muted">
+              Butuh saldo detik ini juga? Pilih QRIS otomatis — ada biaya admin, tapi langsung masuk.
+            </p>
+
+            <div className="mt-4 flex gap-2">
+              <button type="button" onClick={() => setManualInfoOpen(false)} className="btn-ghost flex-1">
+                Pilih metode lain
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setManualInfoOpen(false);
+                  createDeposit();
+                }}
+                disabled={loading}
+                className="btn-primary flex-[2]"
+              >
+                Saya mengerti, lanjut
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="manga-card manga-rush halftone hd-paper anim-drop p-5 sm:p-6">
           <ol className="mb-6 flex items-center gap-2 text-xs font-semibold" aria-label="Langkah deposit">
@@ -445,6 +526,9 @@ export default function DepositPage() {
               <p className="label mt-5">Bayar pakai QRIS mana?</p>
               <div className="anim-stagger space-y-2" role="radiogroup">
                 {methods.map((p) => {
+                  const tutup = p.key === "manual" && manualTutup;
+                  // Metode yang sedang tutup tetap bisa dipilih supaya
+                  // keterangan jamnya terbaca; yang ditahan tombol bayarnya.
                   const on = !!cfg.providers?.[p.key];
                   const selected = provider === p.key && on;
                   return (
@@ -470,15 +554,18 @@ export default function DepositPage() {
                           <span className="text-sm font-bold text-ink">{p.name}</span>
                           {/* Label bebas dari admin, mis. "TERCEPAT" atau "PALING LARIS". */}
                           {on && p.badge ? <span className="comic-burst">{p.badge}</span> : null}
-                          {on ? (
-                            p.speed ? <Badge tone="gray">{p.speed}</Badge> : null
-                          ) : (
+                          {!on ? (
                             <Badge tone="red">nonaktif</Badge>
-                          )}
+                          ) : tutup ? (
+                            <Badge tone="red">tutup sekarang</Badge>
+                          ) : p.speed ? (
+                            <Badge tone="gray">{p.speed}</Badge>
+                          ) : null}
                         </span>
                         <span className="mt-0.5 block text-xs text-muted">
                           {p.desc}
                           {Number(cfg.fees?.[p.key] || 0) > 0 ? ` Biaya admin ${Number(cfg.fees[p.key])}%.` : ""}
+                          {p.key === "manual" && cfg.manual?.hoursLabel ? ` Jam layanan ${cfg.manual.hoursLabel}.` : ""}
                         </span>
                       </span>
                       <span
@@ -511,9 +598,18 @@ export default function DepositPage() {
                 <button type="button" onClick={() => setStep("amount")} className="btn-ghost flex-1">
                   Kembali
                 </button>
-                <button type="button" onClick={createDeposit} disabled={loading || !provider} className="btn-primary flex-[2]">
+                <button
+                  type="button"
+                  // Untuk QRIS manual, tombol ini TIDAK langsung membuat
+                  // tagihan. Metodenya berbeda sifat dari yang lain — tidak
+                  // otomatis, wajib unggah bukti, ada jam bukanya — dan orang
+                  // yang baru tahu itu setelah membayar akan merasa ditipu.
+                  onClick={() => (provider === "manual" ? setManualInfoOpen(true) : createDeposit())}
+                  disabled={loading || !provider || (provider === "manual" && manualTutup)}
+                  className="btn-primary flex-[2]"
+                >
                   {loading ? <Spinner /> : null}
-                  {loading ? "Membuat QRIS…" : "Buat QRIS"}
+                  {loading ? "Membuat QRIS…" : provider === "manual" ? "Lanjut bayar manual" : "Buat QRIS"}
                 </button>
               </div>
             </div>
@@ -668,11 +764,16 @@ export default function DepositPage() {
                         <div className="panel-3d mt-4 p-4">
                           <p className="text-sm font-extrabold text-ink">Kirim konfirmasi ke admin</p>
                           <p className="mt-1 text-xs text-muted">
-                            Lampirkan bukti transfernya kalau ada — pengecekannya jadi jauh lebih cepat.
+                            Unggah bukti transfermu dulu. Tanpa bukti, admin tidak bisa mencocokkan pembayaran dan
+                            saldonya tidak bisa diproses.
                           </p>
 
-                          <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line px-3 py-3 text-xs font-bold text-ink hover:border-amber">
-                            📎 {proof ? "Ganti bukti bayar" : "Unggah bukti bayar (opsional)"}
+                          <label
+                            className={`mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed px-3 py-3 text-xs font-bold hover:border-amber ${
+                              proof ? "border-success/50 text-success" : "border-amber/60 text-amber-bright"
+                            }`}
+                          >
+                            📎 {proof ? "Ganti bukti transfer" : "Unggah bukti transfer (wajib)"}
                             <input
                               type="file"
                               accept="image/*"
@@ -710,15 +811,20 @@ export default function DepositPage() {
                             <button type="button" onClick={() => setConfirmOpen(false)} className="btn-ghost flex-1">
                               Batal
                             </button>
-                            <button type="button" onClick={confirmManual} disabled={confirming} className="btn-primary flex-[2]">
+                            <button
+                              type="button"
+                              onClick={confirmManual}
+                              disabled={confirming || !proof}
+                              className="btn-primary flex-[2]"
+                            >
                               {confirming ? <Spinner /> : null}
-                              {confirming ? "Mengirim…" : "Kirim konfirmasi"}
+                              {confirming ? "Mengirim…" : proof ? "Saya sudah TF, kirim" : "Unggah bukti dulu"}
                             </button>
                           </div>
                         </div>
                       ) : (
                         <button type="button" onClick={() => setConfirmOpen(true)} className="btn-primary mt-4 w-full">
-                          Saya sudah bayar
+                          Saya sudah TF — kirim bukti
                         </button>
                       )}
                     </>

@@ -720,7 +720,17 @@ export default function ChatPage() {
         ...extra };
 
       const r = await fetch("/api/chat/messages", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
-      if (!r.ok) return;
+      if (!r.ok) {
+        // Grup bisa ditutup admin tepat saat pesan ini dikirim. Statusnya
+        // diperbarui di sini supaya kolom ketik langsung ikut tertutup, bukan
+        // menunggu polling berikutnya sementara pesannya diam-diam hilang.
+        const err = await r.json().catch(() => null);
+        if (err?.closed) {
+          setGroupSettings(g => ({ ...g, closed: true }));
+          alert(err.error || "Room Chat sedang ditutup admin.");
+        }
+        return;
+      }
       const d = await r.json();
       if (type === "text") setInput("");
       setReplyTo(null);

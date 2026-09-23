@@ -124,9 +124,17 @@ export default function AdminDashboardPage() {
     accountName: "",
     accountLabel: "",
     instructions: "",
-    ttlMinutes: "60"
+    ttlMinutes: "60",
+    openHour: "9",
+    closeHour: "1",
+    cashbackPercent: "3"
   });
   const [savingManual, setSavingManual] = useState(false);
+  // Room Chat: buka/tutup dari dasbor.
+  const [chatCfg, setChatCfg] = useState(null);
+  const [chatMsgDraft, setChatMsgDraft] = useState("");
+  const [chatBusy, setChatBusy] = useState(false);
+  const [chatSaveMsg, setChatSaveMsg] = useState("");
   const [manualMsg, setManualMsg] = useState("");
   // Antrean deposit manual yang menunggu dicek.
   const [manualDeposits, setManualDeposits] = useState([]);
@@ -565,6 +573,62 @@ export default function AdminDashboardPage() {
     }
   }
 
+  const loadChatCfg = useCallback(async () => {
+    try {
+      const res = await fetch("/api/chat/group-settings");
+      const d = await res.json();
+      setChatCfg(d);
+      setChatMsgDraft(d.closedMsg || "");
+    } catch {
+      setChatCfg(null);
+    }
+  }, []);
+
+  // Buka/tutup Room Chat. Penutupannya ditegakkan di server juga, jadi tombol
+  // ini benar-benar menutup grupnya — bukan cuma mematikan kolom ketik.
+  async function setChatClosed(closed) {
+    if (closed && !confirm("Tutup Room Chat? Semua pengguna tidak akan bisa mengirim pesan sampai dibuka lagi.")) return;
+    setChatBusy(true);
+    setChatSaveMsg("");
+    try {
+      const res = await fetch("/api/chat/group-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ closed, closedMsg: chatMsgDraft })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setChatSaveMsg(closed ? "Room Chat ditutup." : "Room Chat dibuka.");
+      loadChatCfg();
+    } catch (err) {
+      setChatSaveMsg(err.message || "Gagal mengubah status.");
+    } finally {
+      setChatBusy(false);
+      setTimeout(() => setChatSaveMsg(""), 3000);
+    }
+  }
+
+  async function saveChatClosedMsg() {
+    setChatBusy(true);
+    setChatSaveMsg("");
+    try {
+      const res = await fetch("/api/chat/group-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ closedMsg: chatMsgDraft })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setChatSaveMsg("Pesan penutupan tersimpan.");
+      loadChatCfg();
+    } catch (err) {
+      setChatSaveMsg(err.message || "Gagal menyimpan.");
+    } finally {
+      setChatBusy(false);
+      setTimeout(() => setChatSaveMsg(""), 3000);
+    }
+  }
+
   // Gambar QRIS dikecilkan dulu di browser. Yang diunggah orang biasanya
   // tangkapan layar 3–5 MB, dan itu ikut diunduh SETIAP user yang memilih
   // metode ini — bukan cuma sekali oleh adminnya.
@@ -918,7 +982,13 @@ export default function AdminDashboardPage() {
       accountName: data.manualDeposit?.accountName || "",
       accountLabel: data.manualDeposit?.accountLabel || "",
       instructions: data.manualDeposit?.instructions || "",
-      ttlMinutes: String(data.manualDeposit?.ttlMinutes ?? 60)
+      ttlMinutes: String(data.manualDeposit?.ttlMinutes ?? 60),
+      openHour: String(data.manualDeposit?.openHour ?? 9),
+      closeHour: String(data.manualDeposit?.closeHour ?? 1),
+      cashbackPercent:
+        data.manualDeposit?.cashbackPercent === null || data.manualDeposit?.cashbackPercent === undefined
+          ? ""
+          : String(data.manualDeposit.cashbackPercent)
     });
     setServerForms(
       Object.fromEntries(
@@ -1181,6 +1251,7 @@ export default function AdminDashboardPage() {
     // Antrean deposit manual ikut dimuat sejak awal supaya lencana jumlahnya
     // terlihat tanpa harus membuka tabnya dulu.
     loadManualDeposits("review");
+    loadChatCfg();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -2099,6 +2170,72 @@ export default function AdminDashboardPage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === "konten" && (
         <div className="mt-5 space-y-5">
+
+          {/* Room Chat: buka / tutup */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">💬 Room Chat Grup</h2>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Saat ditutup, <b>tidak ada pengguna yang bisa mengirim pesan</b> — penutupannya diperiksa di server,
+              bukan cuma mematikan kolom ketik. Pesan lama tetap bisa dibaca, dan admin tetap bisa menulis.
+            </p>
+
+            {!chatCfg ? (
+              <p className="mt-4 text-sm text-muted">Memuat status…</p>
+            ) : (
+              <>
+                <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3">
+                  <span
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl text-lg ${
+                      chatCfg.closed ? "bg-rose-soft text-rose" : "bg-teal-soft text-teal-bright"
+                    }`}
+                  >
+                    {chatCfg.closed ? "🔒" : "🔓"}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-ink">
+                      {chatCfg.closed ? "Room Chat sedang DITUTUP" : "Room Chat sedang DIBUKA"}
+                    </p>
+                    <p className="text-[11px] text-muted">
+                      {chatCfg.closed
+                        ? "Pengguna hanya bisa membaca, tidak bisa mengirim pesan."
+                        : "Semua pengguna bisa mengirim pesan seperti biasa."}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setChatClosed(!chatCfg.closed)}
+                    disabled={chatBusy}
+                    className={`btn-3d shrink-0 rounded-lg px-4 py-2 text-xs font-black text-white disabled:opacity-60 ${
+                      chatCfg.closed ? "bg-teal" : "bg-rose"
+                    }`}
+                  >
+                    {chatBusy ? "…" : chatCfg.closed ? "🔓 Buka Room Chat" : "🔒 Tutup Room Chat"}
+                  </button>
+                </div>
+
+                <div className="mt-3">
+                  <label className="text-xs font-medium text-muted">Pesan saat ditutup (dilihat pengguna)</label>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    <input
+                      value={chatMsgDraft}
+                      onChange={(e) => setChatMsgDraft(e.target.value.slice(0, 200))}
+                      placeholder="Room Chat sedang ditutup admin. Coba lagi nanti ya."
+                      className="min-w-[200px] flex-1 rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+                    />
+                    <button
+                      onClick={saveChatClosedMsg}
+                      disabled={chatBusy}
+                      className="btn-3d shrink-0 rounded-lg bg-amber px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+                    >
+                      Simpan
+                    </button>
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted">Kosongkan untuk memakai kalimat bawaan.</p>
+                </div>
+
+                {chatSaveMsg && <p className="mt-2 text-xs font-medium text-teal-bright">{chatSaveMsg}</p>}
+              </>
+            )}
+          </div>
 
           {/* Broadcast */}
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
@@ -3616,6 +3753,48 @@ export default function AdminDashboardPage() {
                           onChange={(e) => setManualForm((f) => ({ ...f, ttlMinutes: e.target.value }))}
                           className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
                         />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-medium text-muted">Cashback metode ini (%)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="100"
+                          value={manualForm.cashbackPercent}
+                          onChange={(e) => setManualForm((f) => ({ ...f, cashbackPercent: e.target.value }))}
+                          placeholder="kosong = ikut cashback umum"
+                          className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="text-[11px] font-medium text-muted">Jam layanan (WIB)</label>
+                        <div className="mt-1 flex items-center gap-2">
+                          <select
+                            value={manualForm.openHour}
+                            onChange={(e) => setManualForm((f) => ({ ...f, openHour: e.target.value }))}
+                            className="rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                          >
+                            {Array.from({ length: 24 }, (_, h) => (
+                              <option key={h} value={h}>{String(h).padStart(2, "0")}.00</option>
+                            ))}
+                          </select>
+                          <span className="text-xs text-muted">sampai</span>
+                          <select
+                            value={manualForm.closeHour}
+                            onChange={(e) => setManualForm((f) => ({ ...f, closeHour: e.target.value }))}
+                            className="rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                          >
+                            {Array.from({ length: 24 }, (_, h) => (
+                              <option key={h} value={h}>{String(h).padStart(2, "0")}.00</option>
+                            ))}
+                          </select>
+                        </div>
+                        <p className="mt-1 text-[10px] leading-relaxed text-muted">
+                          Boleh melewati tengah malam — 09.00 sampai 01.00 berarti buka jam 9 pagi sampai jam 1 dini
+                          hari. Jam buka sama dengan jam tutup berarti buka 24 jam. Di luar jam ini metodenya tetap
+                          terlihat di halaman deposit tapi ditandai tutup, dan tagihannya tidak bisa dibuat.
+                        </p>
                       </div>
                       <div className="sm:col-span-2">
                         <label className="text-[11px] font-medium text-muted">Cara bayar (dilihat user)</label>

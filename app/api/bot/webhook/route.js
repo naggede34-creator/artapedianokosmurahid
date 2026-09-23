@@ -44,6 +44,7 @@ import {
   checkDeposit,
   cancelDeposit,
   confirmDepositManual,
+  receiveDepositProof,
   showAdminPanel,
   askBroadcast,
   doBroadcast
@@ -100,7 +101,31 @@ export async function POST(req) {
 async function handleMessage(msg) {
   const chatId = msg.chat?.id;
   const text = (msg.text || "").trim();
-  if (!chatId || !text) return;
+  if (!chatId) return;
+
+  // Foto bukti transfer untuk deposit manual. Diperiksa SEBELUM syarat teks di
+  // bawah: pesan foto tidak punya msg.text, jadi kalau tidak ditangani di sini
+  // ia akan dibuang diam-diam dan yang mengirim mengira botnya rusak.
+  if (Array.isArray(msg.photo) && msg.photo.length) {
+    const sesi = await getSession(chatId);
+    if (sesi.step === "dep_proof") return receiveDepositProof(chatId, msg.photo);
+    return sendMessage(chatId, "Fotonya belum dibutuhkan sekarang. Kalau mau kirim bukti transfer, buka depositnya dulu lalu tekan <b>Saya Sudah Bayar</b>.", [
+      [{ text: "💰 Deposit", callback_data: "dep" }],
+      [{ text: "← Menu", callback_data: "home" }]
+    ]);
+  }
+
+  // Bukti transfer yang dikirim sebagai BERKAS, bukan foto. Telegram tidak
+  // mengecilkannya, dan formatnya bisa apa saja — lebih baik diminta ulang
+  // daripada disimpan sebagai sesuatu yang tidak bisa ditampilkan admin.
+  if (msg.document) {
+    const sesi = await getSession(chatId);
+    if (sesi.step === "dep_proof") {
+      return sendMessage(chatId, "Kirim buktinya sebagai <b>foto</b> ya, bukan berkas — supaya bisa langsung dilihat admin.");
+    }
+  }
+
+  if (!text) return;
 
   // Perintah
   if (text.startsWith("/")) {

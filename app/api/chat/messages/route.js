@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { chatMessagesCol } from "@/lib/db";
+import { isAdminRequest } from "@/lib/adminAuth";
+import { getChatSettings, chatClosedMessage } from "@/lib/chatSettings";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +68,15 @@ export async function POST(req) {
     const { token, displayName, message, type, replyTo, replyToName, replyToPreview, voiceData, stickerCode, imageData, pollQuestion, pollOptions, mentions, isCommand } = body;
 
     if (!token) return NextResponse.json({ error: "Token diperlukan." }, { status: 400 });
+
+    // Penutupan grup ditegakkan DI SINI, bukan cuma dengan mematikan kolom
+    // ketik di browser. Kolom yang mati hanya menghalangi yang mengetik lewat
+    // halamannya; permintaan langsung ke endpoint ini tetap lolos, dan grup
+    // yang "ditutup" masih bisa dimasuki pesan.
+    const chat = await getChatSettings();
+    if (chat.closed && !isAdminRequest(req)) {
+      return NextResponse.json({ error: chatClosedMessage(chat), closed: true }, { status: 403 });
+    }
     if (!displayName) return NextResponse.json({ error: "Nama tampilan diperlukan." }, { status: 400 });
     if (type === "text" && !String(message || "").trim())
       return NextResponse.json({ error: "Pesan tidak boleh kosong." }, { status: 400 });
