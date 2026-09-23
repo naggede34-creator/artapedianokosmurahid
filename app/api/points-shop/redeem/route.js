@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { usersCol, balanceLogsCol } from "@/lib/db";
+import { mergeLegacyPoints } from "@/lib/loyalty";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ const SHOP_ITEMS = {
 };
 
 export async function POST(req) {
-  const { token, itemId } = await req.json();
+  const { token, itemId } = await req.json().catch(() => ({}));
   if (!token || !itemId) return NextResponse.json({ error: "Data tidak lengkap." }, { status: 400 });
 
   const item = SHOP_ITEMS[itemId];
@@ -24,28 +25,56 @@ export async function POST(req) {
   const user = await users.findOne({ token });
   if (!user) return NextResponse.json({ error: "Pengguna tidak ditemukan." }, { status: 404 });
 
-  const currentPoints = user.loyalty?.points || 0;
-  if (currentPoints < item.pointsCost) {
-    return NextResponse.json({ error: `Poin tidak cukup. Kamu punya ${currentPoints} poin, butuh ${item.pointsCost} poin.` }, { status: 400 });
+  // Pindahkan dulu poin yang terlanjur tersimpan di field lama, supaya poin
+  // dari Misi dan Mystery Box ikut terhitung di sini.
+  await mergeLegacyPoints(token);
+
+  // Pemotongan poin dan syarat cukupnya dikerjakan dalam SATU operasi.
+  // Versi lama membaca poin dulu, memeriksanya, lalu memotong di langkah
+  // terpisah — dua penukaran yang datang bersamaan sama-sama lolos
+  // pemeriksaan dan poinnya terpotong dua kali.
+  const claimed = await users.findOneAndUpdate(
+    { token, points: { $gte: item.pointsCost } },
+    { $inc: { points: -item.pointsCost } },
+    { returnDocument: "after" }
+  );
+
+  if (!claimed) {
+    const kini = await users.findOne({ token }, { projection: { points: 1 } });
+    const punya = kini?.points || 0;
+    return NextResponse.json(
+      { error: `Poin tidak cukup. Kamu punya ${punya} poin, butuh ${item.pointsCost} poin.` },
+      { status: 400 }
+    );
   }
 
-  await users.updateOne({ token }, { $inc: { "loyalty.points": -item.pointsCost } });
+  let newBalance = claimed.balance || 0;
 
   if (item.reward.type === "saldo") {
-    await users.updateOne({ token }, { $inc: { balance: item.reward.amount } });
+    const after = await users.findOneAndUpdate(
+      { token },
+      { $inc: { balance: item.reward.amount } },
+      { returnDocument: "after" }
+    );
+    newBalance = after?.balance ?? newBalance;
+
     const logs = await balanceLogsCol();
     await logs.insertOne({
-      token, type: "points_shop", amount: item.reward.amount,
-      note: `Tukar Poin: ${itemId} (${item.pointsCost} poin)`, createdAt: new Date()
+      token,
+      type: "points_shop",
+      amount: item.reward.amount,
+      balanceAfter: newBalance,
+      title: `Tukar poin · ${itemId}`,
+      note: `Tukar Poin: ${itemId} (${item.pointsCost} poin)`,
+      createdAt: new Date()
     });
   }
 
-  const updatedUser = await users.findOne({ token });
   return NextResponse.json({
     ok: true,
     reward: item.reward,
     pointsSpent: item.pointsCost,
-    pointsLeft: updatedUser?.loyalty?.points || 0,
-    newBalance: updatedUser?.balance || 0,
+    pointsLeft: claimed.points || 0,
+    newBalance
   });
 }

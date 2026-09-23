@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
-import { resolveBadge, nextBadgeInfo } from "@/lib/loyalty";
+import { resolveBadge, nextBadgeInfo, mergeLegacyPoints } from "@/lib/loyalty";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +12,10 @@ export async function GET(req) {
     if (!token) return NextResponse.json({ error: "Kode akun kosong." }, { status: 400 });
 
     const users = await usersCol();
+    // Pindahkan poin yang terlanjur tersimpan di field lama sebelum dibaca,
+    // supaya angka yang dilihat user sudah termasuk poin dari Misi dan
+    // Mystery Box.
+    await mergeLegacyPoints(token);
     const user = await users.findOne({ token });
     if (!user) return NextResponse.json({ error: "Kode akun tidak ditemukan." }, { status: 404 });
 

@@ -59,7 +59,7 @@ export async function POST(req) {
       note: `Hadiah misi: ${missionId}`, createdAt: new Date()
     });
   } else if (reward.type === "points") {
-    await users.updateOne({ token }, { $inc: { "loyalty.points": reward.amount } });
+    await users.updateOne({ token }, { $inc: { points: reward.amount } });
   }
 
   return NextResponse.json({ ok: true, reward });

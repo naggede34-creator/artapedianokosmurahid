@@ -55,7 +55,7 @@ export async function POST(req) {
       note: `Mystery Box: ${prize.label}`, createdAt: new Date()
     });
   } else if (prize.type === "points" && prize.amount > 0) {
-    await (await usersCol()).updateOne({ token }, { $inc: { "loyalty.points": prize.amount } });
+    await (await usersCol()).updateOne({ token }, { $inc: { points: prize.amount } });
   }
 
   return NextResponse.json({ ok: true, prize });

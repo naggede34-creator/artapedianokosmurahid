@@ -18,9 +18,14 @@ export default function TokoPoinPage() {
 
   useEffect(() => {
     if (!token || !ready) return;
-    fetch(`/api/user?token=${token}`).then((r) => r.json()).then((d) => {
-      setPoints(d.loyalty?.points || 0);
-    });
+    // /api/user TIDAK PERNAH ADA. Permintaannya dibalas halaman 404, r.json()
+    // melempar, .then berikutnya tidak pernah jalan, dan poinnya tertinggal di
+    // nilai awal 0 — selamanya. Itu sebabnya halaman ini selalu menunjukkan
+    // 0 poin dan semua item tampak tidak terjangkau.
+    fetch(`/api/loyalty/info?token=${encodeURIComponent(token)}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("gagal"))))
+      .then((d) => setPoints(Number(d.points) || 0))
+      .catch(() => setPoints(0));
   }, [token, ready]);
 
   async function redeem(item) {
