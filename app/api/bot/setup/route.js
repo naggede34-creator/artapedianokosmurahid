@@ -115,8 +115,11 @@ export async function GET(req) {
       bot,
       alamatDituju: d.target,
       jawabanSetWebhook: d.jawabanSetWebhook,
+      ujiBentrokPolling: d.ujiBentrokPolling,
+      antreanTidakBergerak: d.antreanTidakBergerak,
       langkah: d.langkah,
-      kesimpulan: d.kesimpulan
+      kesimpulan: d.kesimpulan,
+      langkahPerbaikan: d.langkahPerbaikan
     });
   }
 

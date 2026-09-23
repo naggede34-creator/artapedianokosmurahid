@@ -377,8 +377,13 @@ async function handleDiagnosaBot(chatId, origin) {
     chatId,
     `\u{1FA7A} <b>Diagnosa Webhook Bot Toko</b>\n\n` +
       `Alamat dituju:\n<code>${esc(d.target || "(kosong)")}</code>\n\n` +
-      `Jawaban setWebhook: <code>${esc(d.jawabanSetWebhook)}</code>\n\n` +
+      `Jawaban setWebhook: <code>${esc(d.jawabanSetWebhook)}</code>\n` +
+      `Uji bentrok polling: <code>${esc(d.ujiBentrokPolling)}</code>\n\n` +
       `${baris}\n\n` +
-      `<b>Kesimpulan:</b>\n${esc(d.kesimpulan)}`
+      `<b>Kesimpulan:</b>\n${esc(d.kesimpulan)}` +
+      (d.langkahPerbaikan?.length
+        ? `\n\n<b>Langkah perbaikan:</b>\n` +
+          d.langkahPerbaikan.map((l, i) => `${i + 1}. ${esc(l)}`).join("\n")
+        : "")
   );
 }
