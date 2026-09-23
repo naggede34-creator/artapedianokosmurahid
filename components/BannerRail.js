@@ -72,8 +72,12 @@ export default function BannerRail({ placement = "homepage", title = "", classNa
             </>
           );
 
+          // banner-3d memberi bingkai komik dan kedalaman yang sama dengan
+          // kartu lain di situs. Ditulis sebagai kelas, bukan utilitas
+          // panjang, karena bayangan berlapis dan gerakan tekannya tidak bisa
+          // diungkapkan rapi dengan kelas utilitas.
           const kelas =
-            "group relative block aspect-[16/6] shrink-0 snap-start overflow-hidden rounded-2xl border-2 border-line bg-surface2 shadow-[0_4px_0_rgb(var(--c-line))] " +
+            "banner-3d group relative block aspect-[16/6] shrink-0 snap-start overflow-hidden " +
             (satu ? "w-full" : "w-[86%] md:w-full");
 
           return b.linkUrl ? (

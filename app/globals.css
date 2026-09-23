@@ -3393,3 +3393,28 @@ html.dark .hero-mascot-img,
   .admin-shell .glass:hover,
   .admin-shell tbody tr { transition: none; transform: none; }
 }
+
+
+/* ── Banner komik ─────────────────────────────────────────────────────
+   Bingkai tebal ala panel komik dengan bayangan padat di bawahnya, dan
+   tekanan yang terasa saat diketuk. Bayangannya padat (bukan kabur) supaya
+   ia terbaca sebagai sisi panel yang tebal, bukan sebagai kabut di bawah
+   gambar. */
+.banner-3d {
+  border-radius: 18px;
+  border: 3px solid rgb(var(--c-ink));
+  background: rgb(var(--c-surface2));
+  box-shadow: 5px 5px 0 rgb(var(--c-ink) / .9), 0 16px 26px -18px rgb(var(--c-ink) / .7);
+  transition: transform .22s cubic-bezier(.2, .9, .3, 1.1), box-shadow .22s ease;
+}
+a.banner-3d:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 rgb(var(--c-ink) / .9), 0 22px 34px -18px rgb(var(--c-ink) / .75);
+}
+a.banner-3d:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 rgb(var(--c-ink) / .9);
+}
+@media (prefers-reduced-motion: reduce) {
+  .banner-3d, a.banner-3d:hover, a.banner-3d:active { transition: none; transform: none; }
+}
