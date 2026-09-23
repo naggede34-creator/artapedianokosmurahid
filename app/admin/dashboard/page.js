@@ -21,6 +21,7 @@ const TABS = [
   { id: "transaksi", label: "Transaksi", icon: "💳" },
   { id: "depositmanual", label: "Deposit Manual", icon: "🔎" },
   { id: "tarik", label: "Tarik Saldo", icon: "🏦" },
+  { id: "juara", label: "Pembeli Terbanyak", icon: "🏆" },
   { id: "produk", label: "Produk", icon: "🛍️" },
   { id: "job", label: "Job/Saldo", icon: "💰" },
   { id: "tiket", label: "Tiket", icon: "🎫" },
@@ -154,6 +155,15 @@ export default function AdminDashboardPage() {
   const [wdCheck, setWdCheck] = useState(null);
   const [wdBusy, setWdBusy] = useState("");
   const [wdMsg, setWdMsg] = useState("");
+  // Pembeli Terbanyak mingguan
+  const [lbData, setLbData] = useState(null);
+  const [lbOffset, setLbOffset] = useState(0);
+  const [lbLoading, setLbLoading] = useState(false);
+  const [lbBusy, setLbBusy] = useState(false);
+  const [lbMsg, setLbMsg] = useState("");
+  const [lbPrizes, setLbPrizes] = useState("5000, 3000, 1000");
+  const [lbGift, setLbGift] = useState({ rank: "1", amount: "", note: "" });
+
   const [atlDiag, setAtlDiag] = useState(null);
   const [atlBusy, setAtlBusy] = useState(false);
   const [savingDepositMethod, setSavingDepositMethod] = useState(false);
@@ -740,6 +750,63 @@ export default function AdminDashboardPage() {
       setAtlDiag({ verdict: err.message || "Gagal menjalankan diagnosa." });
     } finally {
       setAtlBusy(false);
+    }
+  }
+
+  const loadLeaderboard = useCallback(async (offset) => {
+    setLbLoading(true);
+    try {
+      const res = await fetch(`/api/admin/leaderboard?offset=${offset ?? 0}`);
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setLbData(d);
+      if (Array.isArray(d.prizes) && d.prizes.length) setLbPrizes(d.prizes.map((p) => p.amount).join(", "));
+    } catch {
+      setLbData(null);
+    } finally {
+      setLbLoading(false);
+    }
+  }, []);
+
+  async function lbPost(body, sukses) {
+    setLbBusy(true);
+    setLbMsg("");
+    try {
+      const res = await fetch("/api/admin/leaderboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setLbMsg(sukses(d));
+      loadLeaderboard(lbOffset);
+    } catch (err) {
+      setLbMsg(err.message || "Gagal.");
+    } finally {
+      setLbBusy(false);
+      setTimeout(() => setLbMsg(""), 6000);
+    }
+  }
+
+  async function saveLbSettings(patch) {
+    setLbBusy(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leaderboard: patch })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setSettings(d);
+      setLbMsg("Pengaturan hadiah tersimpan.");
+      loadLeaderboard(lbOffset);
+    } catch (err) {
+      setLbMsg(err.message || "Gagal menyimpan.");
+    } finally {
+      setLbBusy(false);
+      setTimeout(() => setLbMsg(""), 4000);
     }
   }
 
@@ -1726,6 +1793,7 @@ export default function AdminDashboardPage() {
               setActiveTab(tab.id);
               if (tab.id === "depositmanual") loadManualDeposits(manualFilter);
               if (tab.id === "tarik") loadWithdrawals();
+              if (tab.id === "juara") loadLeaderboard(lbOffset);
             }}
             className={`relative flex-1 min-w-max rounded-xl px-3 py-2 text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === tab.id
@@ -2966,6 +3034,246 @@ export default function AdminDashboardPage() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* TAB: PEMBELI TERBANYAK                                        */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === "juara" && (
+        <div className="mt-5 space-y-5">
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="font-display text-base font-semibold text-ink">🏆 Pembeli Terbanyak</h2>
+                <p className="mt-1 text-xs leading-relaxed text-muted">
+                  Dihitung dari transaksi OTP yang <b>berhasil</b> dalam satu minggu (Senin–Minggu WIB). Pesanan yang
+                  direfund tidak dihitung — kalau ikut, siapa pun bisa memuncaki papan ini dengan memesan banyak nomor
+                  lalu membiarkannya gagal.
+                </p>
+              </div>
+              <select
+                value={lbOffset}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setLbOffset(v);
+                  loadLeaderboard(v);
+                }}
+                className="rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink outline-none focus:border-amber"
+              >
+                <option value={0}>Minggu ini</option>
+                <option value={-1}>Minggu lalu</option>
+                <option value={-2}>2 minggu lalu</option>
+                <option value={-3}>3 minggu lalu</option>
+              </select>
+            </div>
+
+            {lbMsg && <p className="mt-3 rounded-lg border border-teal/40 bg-teal/10 px-3 py-2 text-xs font-medium text-teal-bright">{lbMsg}</p>}
+
+            {lbLoading ? (
+              <p className="py-6 text-center text-sm text-muted">Memuat…</p>
+            ) : !lbData ? (
+              <p className="py-6 text-center text-sm text-muted">Gagal memuat peringkat.</p>
+            ) : (
+              <>
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px]">
+                  <span className="rounded-full border border-line px-2.5 py-1 text-muted">
+                    {new Date(lbData.weekStart).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })} –{" "}
+                    {new Date(new Date(lbData.weekEnd).getTime() - 86400000).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
+                  </span>
+                  <span className={`rounded-full px-2.5 py-1 font-bold ${lbData.settled ? "bg-teal-soft text-teal-bright" : "bg-amber-soft text-amber-bright"}`}>
+                    {lbData.settled ? `Sudah dicairkan (${lbData.settledBy || "-"})` : "Belum dicairkan"}
+                  </span>
+                  <span className={`rounded-full px-2.5 py-1 ${lbData.autoPay ? "bg-teal-soft text-teal-bright" : "bg-rose-soft text-rose"}`}>
+                    {lbData.autoPay ? "Cair otomatis tiap Senin" : "Pencairan otomatis MATI"}
+                  </span>
+                </div>
+
+                {lbData.items.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-muted">Belum ada transaksi berhasil di periode ini.</p>
+                ) : (
+                  <div className="mt-3 overflow-x-auto rounded-xl border border-line">
+                    <table className="w-full min-w-[520px] text-sm">
+                      <thead>
+                        <tr className="border-b border-line bg-surface2 text-left text-xs text-muted">
+                          <th className="px-4 py-2.5 font-medium">#</th>
+                          <th className="px-4 py-2.5 font-medium">Kode akun</th>
+                          <th className="px-4 py-2.5 font-medium">Transaksi</th>
+                          <th className="px-4 py-2.5 font-medium">Nilai</th>
+                          <th className="px-4 py-2.5 font-medium">Hadiah</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {lbData.items.map((it) => {
+                          const hadiah = lbData.prizes.find((p) => p.rank === it.rank)?.amount || 0;
+                          return (
+                            <tr key={it.rank} className={`border-b border-line last:border-0 ${it.rank <= 3 ? "bg-amber/5" : ""}`}>
+                              <td className="px-4 py-2.5 font-black text-ink">
+                                {it.rank === 1 ? "🥇" : it.rank === 2 ? "🥈" : it.rank === 3 ? "🥉" : `#${it.rank}`}
+                              </td>
+                              <td className="px-4 py-2.5 font-mono text-xs text-ink">{it.token}</td>
+                              <td className="px-4 py-2.5 text-ink">{it.count}x</td>
+                              <td className="px-4 py-2.5 text-muted">{fmtRp(it.totalSpent)}</td>
+                              <td className="px-4 py-2.5 font-semibold text-amber-bright">{hadiah ? fmtRp(hadiah) : "–"}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Cairkan sekarang */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">💸 Cairkan hadiah sekarang</h2>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Biasanya tidak perlu ditekan — hadiah minggu lalu cair sendiri tiap pagi. Tombol ini untuk mendahuluinya,
+              atau kalau cron sempat gagal. Aman ditekan dua kali: minggu yang sudah lunas tidak akan dibayar lagi.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                onClick={() => lbPost({ action: "settle", offset: -1 }, (d) => `Minggu ${d.weekKey}: ${d.winners.length} pemenang dibayar.`)}
+                disabled={lbBusy}
+                className="btn-3d rounded-lg bg-teal px-4 py-2 text-xs font-black text-white disabled:opacity-60"
+              >
+                {lbBusy ? "…" : "Cairkan hadiah minggu lalu"}
+              </button>
+              <button
+                onClick={() => {
+                  if (!confirm("Bayar ULANG minggu yang sudah dicairkan? Pemenangnya akan menerima hadiah untuk kedua kalinya, dan itu tidak bisa ditarik kembali.")) return;
+                  lbPost({ action: "settle", offset: -1, paksa: true }, (d) => `Dibayar ulang: ${d.winners.length} pemenang.`);
+                }}
+                disabled={lbBusy}
+                className="btn-3d rounded-lg border border-rose/40 px-4 py-2 text-xs font-bold text-rose disabled:opacity-60"
+              >
+                Bayar ulang (hati-hati)
+              </button>
+            </div>
+          </div>
+
+          {/* Hadiah khusus kapan saja */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">🎁 Kirim hadiah ke satu peringkat</h2>
+            <p className="mt-1 text-xs text-muted">
+              Di luar jadwal mingguan, kapan saja. Masuk langsung ke saldo orangnya dan tercatat terpisah di mutasi.
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-4">
+              <div>
+                <label className="text-[11px] font-medium text-muted">Peringkat</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={lbGift.rank}
+                  onChange={(e) => setLbGift((f) => ({ ...f, rank: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-amber"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-muted">Nominal (Rp)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={lbGift.amount}
+                  onChange={(e) => setLbGift((f) => ({ ...f, amount: e.target.value }))}
+                  placeholder="10000"
+                  className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-amber"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-[11px] font-medium text-muted">Catatan (dilihat penerima)</label>
+                <input
+                  value={lbGift.note}
+                  onChange={(e) => setLbGift((f) => ({ ...f, note: e.target.value }))}
+                  placeholder="mis: Bonus juara bertahan 3 minggu"
+                  className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-amber"
+                />
+              </div>
+              <div className="sm:col-span-4">
+                <button
+                  onClick={() => {
+                    if (!lbGift.amount) return;
+                    if (!confirm(`Kirim ${fmtRp(Number(lbGift.amount))} ke peringkat #${lbGift.rank} periode ini?`)) return;
+                    lbPost(
+                      { action: "prize", offset: lbOffset, rank: Number(lbGift.rank), amount: Number(lbGift.amount), note: lbGift.note },
+                      (d) => `Terkirim ke ${d.maskedToken} (peringkat #${d.rank}, ${d.count}x transaksi).`
+                    );
+                    setLbGift((f) => ({ ...f, amount: "", note: "" }));
+                  }}
+                  disabled={lbBusy || !lbGift.amount}
+                  className="btn-3d rounded-lg bg-amber px-4 py-2 text-xs font-black text-white disabled:opacity-60"
+                >
+                  Kirim hadiah
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Pengaturan hadiah */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">⚙️ Pengaturan hadiah</h2>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="text-[11px] font-medium text-muted">Hadiah per peringkat (pisahkan koma, urut dari #1)</label>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  <input
+                    value={lbPrizes}
+                    onChange={(e) => setLbPrizes(e.target.value)}
+                    placeholder="5000, 3000, 1000"
+                    className="min-w-[200px] flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-amber"
+                  />
+                  <button
+                    onClick={() =>
+                      saveLbSettings({
+                        prizes: lbPrizes
+                          .split(",")
+                          .map((x) => Number(String(x).replace(/[^\d]/g, "")))
+                          .filter((n) => Number.isFinite(n) && n >= 0)
+                      })
+                    }
+                    disabled={lbBusy}
+                    className="btn-3d shrink-0 rounded-lg bg-amber px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                  >
+                    Simpan
+                  </button>
+                </div>
+                <p className="mt-1 text-[10px] text-muted">Boleh lebih dari tiga peringkat. Isi 0 untuk peringkat yang tidak berhadiah.</p>
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border border-line bg-surface px-3.5 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink">Cairkan otomatis tiap minggu</p>
+                  <p className="text-[11px] text-muted">Matikan kalau mau membagi hadiahnya sendiri.</p>
+                </div>
+                <button
+                  onClick={() => saveLbSettings({ autoPay: !(settings?.leaderboard?.autoPay !== false) })}
+                  disabled={lbBusy}
+                  className={`btn-3d relative h-7 w-12 shrink-0 rounded-full transition-colors ${settings?.leaderboard?.autoPay !== false ? "bg-teal" : "bg-line"}`}
+                  aria-label="Toggle pencairan otomatis"
+                >
+                  <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings?.leaderboard?.autoPay !== false ? "translate-x-6" : "translate-x-1"}`} />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border border-line bg-surface px-3.5 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink">Tampilkan papan peringkat</p>
+                  <p className="text-[11px] text-muted">Matikan untuk menyembunyikannya dari pengguna.</p>
+                </div>
+                <button
+                  onClick={() => saveLbSettings({ enabled: !(settings?.leaderboard?.enabled !== false) })}
+                  disabled={lbBusy}
+                  className={`btn-3d relative h-7 w-12 shrink-0 rounded-full transition-colors ${settings?.leaderboard?.enabled !== false ? "bg-teal" : "bg-line"}`}
+                  aria-label="Toggle papan peringkat"
+                >
+                  <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings?.leaderboard?.enabled !== false ? "translate-x-6" : "translate-x-1"}`} />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

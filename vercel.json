@@ -1,7 +1,19 @@
 {
-  "regions": ["sin1"],
+  "regions": [
+    "sin1"
+  ],
   "crons": [
-    { "path": "/api/cron/cleanup", "schedule": "0 2 * * *" },
-    { "path": "/api/cron/stock-report", "schedule": "0 1 * * *" }
+    {
+      "path": "/api/cron/cleanup",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/stock-report",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-leaderboard",
+      "schedule": "0 3 * * *"
+    }
   ]
 }

@@ -23,10 +23,10 @@ export default function LeaderboardPage() {
   const [weeklyItems, setWeeklyItems] = useState([]);
   const [weeklyLoading, setWeeklyLoading] = useState(true);
   const [userRank, setUserRank] = useState(null);
-  const [userPrize, setUserPrize] = useState(null);
-  const [claimable, setClaimable] = useState(false);
-  const [claiming, setClaiming] = useState(false);
-  const [claimMsg, setClaimMsg] = useState("");
+  const [userCount, setUserCount] = useState(0);
+  const [userPrize, setUserPrize] = useState(0);
+  const [prizes, setPrizes] = useState([]);
+  const [lastWeek, setLastWeek] = useState(null);
   const [weekStart, setWeekStart] = useState(null);
 
   useEffect(() => {
@@ -44,36 +44,16 @@ export default function LeaderboardPage() {
       .then((data) => {
         setWeeklyItems(data.items || []);
         setUserRank(data.userRank || null);
-        setUserPrize(data.userPrize || null);
-        setClaimable(data.claimable || false);
+        setUserCount(data.userCount || 0);
+        setUserPrize(data.userPrize || 0);
+        setPrizes(Array.isArray(data.prizes) ? data.prizes : []);
+        setLastWeek(data.lastWeek || null);
         setWeekStart(data.weekStart ? new Date(data.weekStart) : null);
       })
       .finally(() => setWeeklyLoading(false));
   }, [token]);
 
   const medal = (rank) => (rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : null);
-
-  async function handleClaim() {
-    if (!token || claiming) return;
-    setClaiming(true);
-    setClaimMsg("");
-    try {
-      const res = await fetch("/api/leaderboard-weekly", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-      const d = await res.json();
-      if (d.ok) {
-        setClaimable(false);
-        setClaimMsg(`🎉 Kamu klaim hadiah peringkat #${d.rank}: +${d.prize.label}!`);
-      } else {
-        setClaimMsg(d.error || "Gagal klaim.");
-      }
-    } finally {
-      setClaiming(false);
-    }
-  }
 
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
@@ -110,46 +90,58 @@ export default function LeaderboardPage() {
             </p>
           )}
 
-          {/* User rank card */}
+          {/* Posisi sendiri. Tidak ada tombol klaim: hadiahnya cair otomatis
+              tiap Senin. Hadiah yang harus diklaim sendiri berakhir hangus
+              untuk orang yang tidak kebetulan membuka halaman ini. */}
           {userRank && (
-            <div className={`mb-4 rounded-2xl border-2 p-4 flex items-center gap-4 ${claimable ? "border-amber bg-amber-soft/50" : "border-teal/40 bg-teal/5"}`}>
+            <div className="panel-3d glow-3d mb-4 flex items-center gap-4 p-4">
               <span className="text-3xl">{medal(userRank) || `#${userRank}`}</span>
               <div className="flex-1">
-                <p className="text-sm font-bold text-ink">Posisimu minggu ini</p>
-                {userPrize ? (
-                  <p className="text-xs text-muted">Hadiah: <span className="font-bold text-amber-bright">{userPrize.label}</span></p>
-                ) : (
-                  <p className="text-xs text-muted">Belum mendapat hadiah minggu ini</p>
-                )}
+                <p className="text-sm font-bold text-ink">
+                  Posisimu minggu ini: <span className="text-amber-bright">#{userRank}</span>
+                </p>
+                <p className="text-xs text-muted">
+                  {userCount}x transaksi
+                  {userPrize > 0
+                    ? ` · hadiah ${rupiah(userPrize)} cair otomatis Senin pagi`
+                    : " · belum masuk zona hadiah, ayo naik lagi!"}
+                </p>
               </div>
-              {claimable && (
-                <button onClick={handleClaim} disabled={claiming} className="rounded-xl bg-amber px-3 py-2 text-xs font-extrabold text-white press disabled:opacity-50">
-                  {claiming ? "…" : "Klaim!"}
-                </button>
-              )}
             </div>
           )}
 
-          {claimMsg && (
-            <div className="mb-4 rounded-xl border border-teal/40 bg-teal/10 px-4 py-2.5 text-sm text-teal-bright font-semibold">
-              {claimMsg}
-            </div>
-          )}
-
-          {/* Prizes info */}
-          <div className="mb-4 grid grid-cols-3 gap-2">
-            {[
-              { rank: 1, prize: "Rp5.000", emoji: "🥇" },
-              { rank: 2, prize: "Rp3.000", emoji: "🥈" },
-              { rank: 3, prize: "Rp1.000", emoji: "🥉" },
-            ].map((p) => (
-              <div key={p.rank} className="rounded-xl border border-line bg-surface p-3 text-center">
-                <div className="text-2xl mb-1">{p.emoji}</div>
-                <p className="text-xs font-bold text-ink">#{p.rank}</p>
-                <p className="text-xs text-amber-bright font-semibold">{p.prize}</p>
-              </div>
-            ))}
+          <div className="mb-4 rounded-xl border border-teal/30 bg-teal/5 px-4 py-2.5 text-xs leading-relaxed text-ink">
+            💸 Hadiah <b>masuk saldo otomatis</b> tiap Senin pagi — tidak perlu diklaim. Pemenangnya diumumkan di
+            channel Telegram.
           </div>
+
+          {/* Hadiah per peringkat, ikut pengaturan admin. */}
+          {prizes.length > 0 && (
+            <div className={`mb-4 grid gap-2 ${prizes.length >= 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+              {prizes.map((p) => (
+                <div key={p.rank} className="card-3d p-3 text-center">
+                  <div className="mb-1 text-2xl">{medal(p.rank) || "🎖"}</div>
+                  <p className="text-xs font-bold text-ink">#{p.rank}</p>
+                  <p className="text-xs font-semibold text-amber-bright">{rupiah(p.amount)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pemenang minggu lalu. Tanpa ini papannya terasa kosong tiap Senin
+              pagi dan tidak ada bukti hadiahnya benar-benar dibagikan. */}
+          {lastWeek?.winners?.length > 0 && (
+            <div className="mb-4 rounded-2xl border border-line bg-surface p-4">
+              <p className="text-xs font-black uppercase tracking-wider text-muted">Pemenang minggu lalu</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {lastWeek.winners.map((w) => (
+                  <span key={w.rank} className="chip bg-amber-soft text-amber-bright">
+                    {medal(w.rank) || `#${w.rank}`} {w.count}x · {rupiah(w.amount)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="overflow-hidden rounded-2xl border border-line shadow-soft">
             {weeklyLoading ? (
@@ -174,7 +166,7 @@ export default function LeaderboardPage() {
                       <td className="px-4 py-3 font-extrabold text-ink">{medal(it.rank) || `#${it.rank}`}</td>
                       <td className="px-4 py-3 font-mono text-xs text-ink">{it.maskedToken}</td>
                       <td className="px-4 py-3 text-ink">{it.count}x</td>
-                      <td className="px-4 py-3 text-amber-bright font-semibold">{it.prize?.label || "–"}</td>
+                      <td className="px-4 py-3 font-semibold text-amber-bright">{it.prize > 0 ? rupiah(it.prize) : "–"}</td>
                     </tr>
                   ))}
                 </tbody>
