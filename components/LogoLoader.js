@@ -3,13 +3,22 @@
 import { useEffect, useRef, useState } from "react";
 import { markIntroDone } from "@/lib/introGate";
 
-// Durasi intro penuh (detik pertama kali dibuka) dan versi singkat untuk
-// kunjungan berikutnya dalam sesi yang sama. Ubah angka ini kalau mau.
-const FULL_MS = 25000;
-const QUICK_MS = 1400;
+// Durasi intro penuh (kunjungan pertama dalam satu sesi) dan versi singkat
+// untuk kunjungan berikutnya. Ubah angka ini kalau mau.
+//
+// Dulu 25 detik. Sesudah loader ini masih ada komik pembuka 4 halaman, jadi
+// pengunjung pertama menunggu sekitar 40 detik sebelum melihat satu pun harga.
+// Yang datang dari iklan atau dari tautan channel tidak menunggu selama itu —
+// mereka menutup tabnya, dan animasi yang paling bagus pun tidak terlihat oleh
+// orang yang sudah pergi.
+//
+// 7 detik cukup untuk animasinya selesai jalan, dan tombol Lewati muncul di
+// detik kedua untuk yang tidak mau menunggu sama sekali.
+const FULL_MS = 7000;
+const QUICK_MS = 1200;
 const SEEN_KEY = "artapedia_intro_seen";
 // Tombol lewati baru muncul setelah animasinya sempat terlihat.
-const SKIP_AFTER_MS = 2500;
+const SKIP_AFTER_MS = 2000;
 
 export default function LogoLoader() {
   const [percent, setPercent] = useState(1);

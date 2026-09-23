@@ -46,12 +46,25 @@
   --c-warn: 198 104 8;
   --c-warn-soft: 255 240 215;
 
-  /* komik 3D: hard offset shadow hitam navy */
-  --comic-shadow: 4px 4px 0 rgb(var(--c-ink));
-  --comic-shadow-sm: 2px 2px 0 rgb(var(--c-ink));
-  --comic-shadow-lg: 6px 6px 0 rgb(var(--c-ink));
+  /* komik 3D: hard offset shadow hitam navy
+   *
+   * Offset keras sendirian terbaca seperti dua lembar kertas yang ditumpuk,
+   * bukan seperti satu benda yang terangkat: tidak ada bayangan lembut di
+   * bawahnya, jadi tidak ada kesan jarak ke latar. Tiap bayangan sekarang
+   * dua lapis — garis keras yang memberi rasa komik, dan bayangan sebar di
+   * bawahnya yang memberi rasa terangkat. Dua-duanya dari satu token, jadi
+   * seluruh kartu, tombol, dan panel ikut berubah tanpa disentuh satu-satu.
+   */
+  --comic-shadow: 4px 4px 0 rgb(var(--c-ink)), 0 10px 22px -8px rgb(var(--c-navy) / 0.35);
+  --comic-shadow-sm: 2px 2px 0 rgb(var(--c-ink)), 0 5px 12px -5px rgb(var(--c-navy) / 0.3);
+  --comic-shadow-lg: 6px 6px 0 rgb(var(--c-ink)), 0 18px 34px -10px rgb(var(--c-navy) / 0.4);
   --comic-border: 2px solid rgb(var(--c-ink));
   --comic-border-blue: 2px solid rgb(var(--c-blue));
+
+  /* Garis terang tipis di tepi atas permukaan. Inilah yang membuat sesuatu
+   * terbaca mengilap dan punya ketebalan, bukan sekadar kotak berwarna. */
+  --kilau-atas: inset 0 1.5px 0 rgb(255 255 255 / 0.85);
+  --kilau-dalam: inset 0 1.5px 0 rgb(255 255 255 / 0.85), inset 0 -2px 0 rgb(var(--c-navy) / 0.07);
 }
 
 .dark {
@@ -91,11 +104,24 @@
   --c-warn: 255 168 56;
   --c-warn-soft: 56 34 10;
 
-  --comic-shadow: 4px 4px 0 rgb(var(--c-line) / 0.5);
-  --comic-shadow-sm: 2px 2px 0 rgb(var(--c-line) / 0.5);
-  --comic-shadow-lg: 6px 6px 0 rgb(var(--c-line) / 0.5);
+  /* Bayangan keras di mode gelap dulu memakai --c-line (biru abu) pada 0.5 —
+   * warna yang LEBIH TERANG dari latarnya. Yang tergambar karena itu bukan
+   * bayangan melainkan halo, dan kartunya terbaca rata menempel di layar.
+   *
+   * Sekarang lapisnya tiga, masing-masing punya tugas:
+   *   1. offset hampir hitam  -> bayangan keras yang memang terbaca gelap
+   *   2. bayangan sebar hitam -> jarak ke latar
+   *   3. kilau biru tipis     -> tepi yang menangkap cahaya, supaya benda
+   *                              gelap di atas latar gelap tetap punya batas
+   */
+  --comic-shadow: 4px 4px 0 rgb(2 6 18 / 0.9), 0 12px 26px -10px rgb(0 0 0 / 0.8), 0 0 24px -6px rgb(var(--c-blue) / 0.22);
+  --comic-shadow-sm: 2px 2px 0 rgb(2 6 18 / 0.85), 0 6px 14px -6px rgb(0 0 0 / 0.7);
+  --comic-shadow-lg: 6px 6px 0 rgb(2 6 18 / 0.9), 0 20px 38px -12px rgb(0 0 0 / 0.85), 0 0 32px -6px rgb(var(--c-blue) / 0.3);
   --comic-border: 2px solid rgb(var(--c-line) / 0.7);
   --comic-border-blue: 2px solid rgb(var(--c-blue));
+
+  --kilau-atas: inset 0 1.5px 0 rgb(255 255 255 / 0.12);
+  --kilau-dalam: inset 0 1.5px 0 rgb(255 255 255 / 0.12), inset 0 -2px 0 rgb(0 0 0 / 0.25);
 }
 
 html,
@@ -151,13 +177,16 @@ input[type="number"] { -moz-appearance: textfield; }
   .card {
     @apply rounded-2xl bg-surface;
     border: 2.5px solid rgb(var(--c-ink));
-    box-shadow: var(--comic-shadow);
+    /* Kilau dalam ditulis lebih dulu supaya ia berada DI ATAS permukaan;
+     * urutan box-shadow menentukan lapisannya, dan inset yang ditaruh
+     * belakangan akan tertimpa bayangan luar di tepinya. */
+    box-shadow: var(--kilau-dalam), var(--comic-shadow);
     position: relative;
-    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    transition: transform 0.16s cubic-bezier(.22,1,.36,1), box-shadow 0.16s cubic-bezier(.22,1,.36,1);
   }
   .card:not(.no-hover):hover {
-    transform: translate(-1px, -2px);
-    box-shadow: var(--comic-shadow-lg);
+    transform: translate(-1px, -3px);
+    box-shadow: var(--kilau-dalam), var(--comic-shadow-lg);
   }
   /* strip biru di atas card — efek 3D layered */
   .card::before {
@@ -174,7 +203,7 @@ input[type="number"] { -moz-appearance: textfield; }
   .card-flat {
     @apply rounded-2xl bg-surface2;
     border: 2px solid rgb(var(--c-ink) / 0.4);
-    box-shadow: var(--comic-shadow-sm);
+    box-shadow: var(--kilau-atas), var(--comic-shadow-sm);
   }
   .field {
     @apply w-full rounded-xl bg-surface px-3.5 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted/70;
@@ -189,13 +218,35 @@ input[type="number"] { -moz-appearance: textfield; }
     @apply mb-1.5 block text-[13px] font-bold text-ink uppercase tracking-wide;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black uppercase tracking-wider transition-[transform,box-shadow] duration-100 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black uppercase tracking-wider transition-[transform,box-shadow,background,color] duration-100 disabled:cursor-not-allowed;
     border: 2.5px solid rgb(var(--c-ink));
-    box-shadow: var(--comic-shadow);
+    box-shadow: var(--kilau-atas), var(--comic-shadow);
   }
   .btn:active:not(:disabled) {
     transform: translate(4px, 4px);
     box-shadow: none;
+  }
+  /* Tombol mati sebelumnya cuma diredupkan 50%. Warna gradasi yang
+   * ditembus-pandangkan begitu berubah jadi biru pucat dengan tulisan putih
+   * di atasnya — tidak terbaca, dan tidak terlihat mati; terlihat seperti
+   * tombol yang gagal dimuat.
+   *
+   * Yang mati sekarang jadi permukaan abu rata: kontrasnya cukup untuk
+   * dibaca, bayangan angkatnya dilepas supaya jelas tidak bisa ditekan, dan
+   * warnanya sama untuk semua ragam tombol — jadi "belum bisa ditekan"
+   * terlihat sama di seluruh situs. */
+  .btn:disabled,
+  .btn-primary:disabled,
+  .btn-dark:disabled,
+  .btn-ghost:disabled,
+  .btn-danger:disabled {
+    background: rgb(var(--c-surface3));
+    background-image: none;
+    color: rgb(var(--c-muted));
+    border-color: rgb(var(--c-ink) / 0.3);
+    box-shadow: none;
+    transform: none;
+    opacity: 1;
   }
   .btn-primary {
     @apply btn bg-amber text-ink;
@@ -357,8 +408,8 @@ input[type="number"] { -moz-appearance: textfield; }
 .card-shadow {
   box-shadow: var(--comic-shadow);
 }
-.hover-lift { transition: transform 0.15s ease, box-shadow 0.15s ease; }
-.hover-lift:hover { transform: translate(-1px, -1px); box-shadow: var(--comic-shadow-lg); }
+.hover-lift { transition: transform 0.18s cubic-bezier(.22,1,.36,1), box-shadow 0.18s cubic-bezier(.22,1,.36,1); }
+.hover-lift:hover { transform: translate(-1px, -2px); box-shadow: var(--comic-shadow-lg); }
 .press, .tap-scale { transition: transform 0.1s ease, box-shadow 0.1s ease; }
 .press:active, .tap-scale:active { transform: translate(4px, 4px); box-shadow: none !important; }
 .btn-3d { transition: transform 0.1s ease, box-shadow 0.1s ease; }
@@ -367,10 +418,10 @@ input[type="number"] { -moz-appearance: textfield; }
 /* glass — navbar bawah & sidebar */
 .glass {
   background: rgb(var(--c-surface) / 0.94);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
   border: 2.5px solid rgb(var(--c-ink) / 0.65);
-  box-shadow: 0 -3px 0 rgb(var(--c-blue) / 0.15) inset;
+  box-shadow: var(--kilau-atas), 0 -3px 0 rgb(var(--c-blue) / 0.15) inset, 0 14px 30px -14px rgb(var(--c-navy) / 0.35);
 }
 .glass-dark {
   background: rgb(var(--c-navy-bright) / 0.9);

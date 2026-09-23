@@ -23,7 +23,12 @@ const KEY = "artapedia_comic_seen";
 // Panel yang berisi banyak teks diberi waktu baca lebih panjang. Angka yang
 // sama untuk semua panel membuat panel pendek terasa lambat dan panel panjang
 // terasa terpotong.
-const JEDA = [4200, 4600, 5200, 0]; // 0 = menunggu ditekan
+//
+// Totalnya sengaja dijaga di bawah 10 detik. Komik ini muncul SESUDAH loader,
+// jadi yang dihitung pengunjung adalah jumlah keduanya — dan yang datang dari
+// iklan tidak menunggu setengah menit untuk melihat satu harga pun. Panel
+// terakhir menunggu ditekan, jadi yang memang mau membaca tidak dikejar.
+const JEDA = [3000, 3200, 3600, 0]; // 0 = menunggu ditekan
 
 export default function ComicIntro() {
   const [tampil, setTampil] = useState(false);
