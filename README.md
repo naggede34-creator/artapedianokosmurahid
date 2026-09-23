@@ -176,10 +176,17 @@ langsung dari Telegram, memakai **saldo yang sama** dengan di web.
 ```
 SHOP_BOT_TOKEN=token-dari-botfather
 SHOP_BOT_OWNER_IDS=5510813257
-SHOP_BOT_WEBHOOK_SECRET=teks-acak-bebas
+SHOP_BOT_WEBHOOK_SECRET=artapedia_bot_2026
 ```
 
-3. Pasang webhook-nya sekali (buka di browser):
+`SHOP_BOT_WEBHOOK_SECRET` **hanya boleh berisi huruf, angka, `_`, dan `-`**.
+Telegram menolak `setWebhook` kalau ada spasi atau tanda baca lain, dan webhook
+jadi tidak pernah terpasang. Kalau nilainya salah format, kode ini melewatinya
+dan memasang webhook tanpa secret supaya bot tetap jalan, lalu memberi tahu di
+Dashboard Admin. Boleh juga dikosongkan.
+
+3. Pasang webhook lewat Dashboard Admin → Pengaturan → **Bot Telegram Toko** →
+   **Pasang Webhook**. Atau manual:
 
 ```
 https://domain-kamu.vercel.app/api/bot/setup?secret=ISI_CRON_SECRET

@@ -515,7 +515,20 @@ export default function AdminDashboardPage() {
     setBotInfo(null);
     try {
       const res = await fetch(`/api/bot/setup?action=${action}`);
-      setBotInfo(await res.json());
+      const d = await res.json();
+
+      // Setelah memasang, cek ulang ke Telegram supaya yang ditampilkan adalah
+      // keadaan sebenarnya, bukan sekadar "permintaan diterima".
+      if (action === "set" && !d.error) {
+        await new Promise((r) => setTimeout(r, 1500));
+        try {
+          const res2 = await fetch("/api/bot/setup?action=info");
+          const d2 = await res2.json();
+          setBotInfo({ ...d, cekUlang: d2 });
+          return;
+        } catch {}
+      }
+      setBotInfo(d);
     } catch {
       setBotInfo({ error: "Gagal menghubungi endpoint bot." });
     } finally {
@@ -3087,6 +3100,28 @@ export default function AdminDashboardPage() {
                     )}
                     {botInfo.catatan && (
                       <p className="mt-1 text-[11px] font-medium text-warn">{botInfo.catatan}</p>
+                    )}
+                    {botInfo.peringatanSecret && (
+                      <p className="mt-1.5 rounded-md border border-warn/40 bg-warn-soft px-2 py-1.5 text-[11px] leading-relaxed text-warn">
+                        {botInfo.peringatanSecret}
+                      </p>
+                    )}
+                    {botInfo.telegram && (
+                      <p className="mt-1 text-[11px] text-muted">
+                        Jawaban Telegram: <span className="font-mono">{String(botInfo.telegram)}</span>
+                      </p>
+                    )}
+                    {botInfo.cekUlang && (
+                      <p
+                        className={`mt-1.5 rounded-md px-2 py-1.5 text-[11px] font-semibold ${
+                          botInfo.cekUlang.verifikasi === "terpasang"
+                            ? "bg-success-soft text-success"
+                            : "bg-rose-soft text-rose"
+                        }`}
+                      >
+                        Cek ulang: {botInfo.cekUlang.verifikasi} · {botInfo.cekUlang.webhook}
+                        {botInfo.cekUlang.lastError ? ` · error: ${botInfo.cekUlang.lastError}` : ""}
+                      </p>
                     )}
                     {botInfo.langkahSelanjutnya && (
                       <p className="mt-1.5 text-[11px] font-semibold text-teal-bright">

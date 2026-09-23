@@ -8,7 +8,14 @@
 // sekadar "Unauthorized" yang tidak menolong.
 import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/adminAuth";
-import { shopBotToken, shopBotConfigured, shopBotOwners } from "@/lib/shopBot";
+import {
+  shopBotToken,
+  shopBotConfigured,
+  shopBotOwners,
+  rawWebhookSecret,
+  webhookSecret,
+  webhookSecretValid
+} from "@/lib/shopBot";
 import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
@@ -154,6 +161,10 @@ export async function GET(req) {
       lastError: r.last_error_message || null,
       lastErrorAt: r.last_error_date ? new Date(r.last_error_date * 1000).toISOString() : null,
       ownerTerdaftar: shopBotOwners(),
+      peringatanSecret:
+        rawWebhookSecret().length > 0 && !webhookSecretValid()
+          ? "SHOP_BOT_WEBHOOK_SECRET berisi karakter yang tidak diterima Telegram (hanya huruf, angka, _ dan -). Selama begitu, secretnya diabaikan."
+          : null,
       // Kesalahan paling sering: owner id belum diisi, jadi /admin & /broadcast
       // ditolak padahal botnya sendiri sudah jalan.
       catatan: shopBotOwners().length ? null : "SHOP_BOT_OWNER_IDS masih kosong — /admin dan /broadcast tidak akan bisa dipakai."
@@ -179,7 +190,12 @@ export async function GET(req) {
     );
   }
 
-  const secret = (process.env.SHOP_BOT_WEBHOOK_SECRET || "").trim();
+  // Secret yang formatnya salah membuat setWebhook DITOLAK — itu penyebab paling
+  // sering webhook "sudah dipasang" tapi ternyata kosong. Daripada menggagalkan
+  // seluruh pemasangan, secret yang tidak sah dilewati dan admin diberi tahu.
+  const secret = webhookSecret();
+  const secretBermasalah = rawWebhookSecret().length > 0 && !webhookSecretValid();
+
   const set = await tg("setWebhook", {
     url: target,
     allowed_updates: ["message", "callback_query"],
@@ -189,7 +205,15 @@ export async function GET(req) {
 
   if (!set.ok) {
     return NextResponse.json(
-      { error: "Telegram menolak pemasangan webhook.", telegram: set.description, alamat: target },
+      {
+        error: "Telegram menolak pemasangan webhook.",
+        telegram: set.description,
+        alamat: target,
+        langkah: [
+          "Pastikan Site URL di Pengaturan Situs adalah domain yang benar-benar aktif",
+          "Alamatnya harus bisa dibuka publik lewat HTTPS"
+        ]
+      },
       { status: 400 }
     );
   }
@@ -236,6 +260,10 @@ export async function GET(req) {
     lastError: info.result?.last_error_message || null,
     ownerTerdaftar: shopBotOwners(),
     catatan: shopBotOwners().length ? null : "SHOP_BOT_OWNER_IDS masih kosong — /admin dan /broadcast tidak akan bisa dipakai.",
+    peringatanSecret: secretBermasalah
+      ? "SHOP_BOT_WEBHOOK_SECRET berisi karakter yang tidak diterima Telegram (hanya boleh huruf, angka, _ dan -), jadi webhook dipasang TANPA secret. Bot tetap jalan. Kalau mau memakainya, ganti nilainya jadi seperti artapedia_bot_2026 lalu pasang ulang."
+      : null,
+    telegram: set.description || "webhook dipasang",
     langkahSelanjutnya: `Buka Telegram, cari @${bot.username}, kirim /start`
   });
 }

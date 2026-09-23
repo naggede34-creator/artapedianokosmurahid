@@ -9,6 +9,7 @@ import {
   sendMessage,
   setSession,
   shopBotConfigured,
+  webhookSecret,
   isShopBotOwner,
   esc
 } from "@/lib/shopBot";
@@ -46,8 +47,11 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // Telegram mengirim header ini kalau webhook dipasang dengan secret_token.
+// Memakai webhookSecret() yang sama dengan pemasang webhook: kalau secretnya
+// tidak sah, webhook dipasang TANPA secret, jadi di sini pun tidak boleh
+// menuntutnya — kalau berbeda, semua update akan ditolak 401 dan menumpuk.
 function verified(req) {
-  const expected = (process.env.SHOP_BOT_WEBHOOK_SECRET || "").trim();
+  const expected = webhookSecret();
   if (!expected) return true;
   return req.headers.get("x-telegram-bot-api-secret-token") === expected;
 }
