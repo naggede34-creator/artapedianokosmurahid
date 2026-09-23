@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
 import { generateUserToken } from "@/lib/token";
-import { sendTelegramNotif, sendTelegramChannelNotif, newUserNotif } from "@/lib/telegram";
+import { newUserNotif } from "@/lib/telegram";
+import { umumkan } from "@/lib/notifyHub";
 import { sendMonitorLog, userLoginLog } from "@/lib/monitor";
 import { rateLimit } from "@/lib/rateLimit";
 
@@ -80,9 +81,10 @@ export async function POST(req) {
     });
 
     const userCount = await users.countDocuments();
+    // newUserNotif sudah menyamarkan kedua kode akun, jadi teks yang sama
+    // aman dipakai untuk channel.
     const notifText = newUserNotif({ token, referredBy, userCount });
-    sendTelegramNotif(notifText);
-    sendTelegramChannelNotif(notifText);
+    umumkan({ jenis: "user_baru", admin: notifText, publik: notifText });
     sendMonitorLog(userLoginLog({ token, isNew: true }));
 
     return NextResponse.json({ token, balance: 0, createdAt, tourDone: false });

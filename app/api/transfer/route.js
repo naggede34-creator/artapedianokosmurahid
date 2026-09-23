@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
 import { logBalance } from "@/lib/ledger";
-import { sendTelegramNotif, transferNotif } from "@/lib/telegram";
+import { transferNotif, transferPublicNotif } from "@/lib/telegram";
+import { umumkan } from "@/lib/notifyHub";
 import { rateLimit } from "@/lib/rateLimit";
 import { getSettings, transferConfig, transferFeeFor } from "@/lib/settings";
 
@@ -141,8 +142,14 @@ export async function POST(req) {
       ref
     });
 
-    const transferText = transferNotif({ fromToken, toToken, amount, fee, fromBalance: debited.balance });
-    sendTelegramNotif(transferText);
+    // Versi channel hanya memuat nominal: kode akun pengirim maupun penerima
+    // adalah kredensial di situs ini, dan menyamarkannya pun tidak ada gunanya
+    // dibaca orang lain.
+    umumkan({
+      jenis: "transfer",
+      admin: transferNotif({ fromToken, toToken, amount, fee, fromBalance: debited.balance }),
+      publik: transferPublicNotif({ amount, fee })
+    });
 
     return NextResponse.json({ balance: debited.balance, transferredTo: toToken, amount, fee, total, ref });
   } catch (err) {

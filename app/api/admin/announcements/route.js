@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { announcementsCol } from "@/lib/db";
 import { isAdminRequest } from "@/lib/adminAuth";
-import { sendTelegramNotif, announcementCreatedNotif } from "@/lib/telegram";
+import { announcementCreatedNotif } from "@/lib/telegram";
+import { umumkan } from "@/lib/notifyHub";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +54,8 @@ export async function POST(req) {
     };
     const result = await col.insertOne(doc);
 
-    sendTelegramNotif(announcementCreatedNotif({ title, category }));
+    const teksPengumuman = announcementCreatedNotif({ title, category });
+    umumkan({ jenis: "pengumuman", admin: teksPengumuman, publik: teksPengumuman });
 
     return NextResponse.json({ id: result.insertedId.toString(), ...doc });
   } catch (err) {

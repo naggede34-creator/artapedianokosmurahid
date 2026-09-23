@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/adminAuth";
 import { getSettings, serverDisplay } from "@/lib/settings";
 import { buildStockReport, DEFAULT_REPORT_SERVICES } from "@/lib/stockReport";
-import { stockReportNotif, sendTelegramChannelNotif } from "@/lib/telegram";
+import { stockReportNotif } from "@/lib/telegram";
+import { umumkan } from "@/lib/notifyHub";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -66,7 +67,10 @@ export async function POST(req) {
     if (!groups.length) {
       return NextResponse.json({ error: "Tidak ada data stok yang bisa diambil dari provider." }, { status: 502 });
     }
-    await sendTelegramChannelNotif(stockReportNotif(groups, { serverName: (key) => serverDisplay(settings, key).name }));
+    await umumkan({
+      jenis: "stok",
+      publik: stockReportNotif(groups, { serverName: (key) => serverDisplay(settings, key).name })
+    });
     return NextResponse.json({ ok: true, sent: groups.length, services });
   } catch (err) {
     console.error("[admin/stock-report:send]", err?.message || err);

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OTP_SERVERS } from "@/lib/otpServers";
+import { DAFTAR_PUBLIK, channelAktifUntuk } from "@/lib/channelNotifTypes";
 
 function fmtDate(d) {
   if (!d) return "-";
@@ -131,6 +132,9 @@ export default function AdminDashboardPage() {
     cashbackPercent: "3"
   });
   const [savingManual, setSavingManual] = useState(false);
+  // Notif mana saja yang ikut diumumkan ke channel Telegram.
+  const [savingChannelNotif, setSavingChannelNotif] = useState("");
+  const [channelNotifMsg, setChannelNotifMsg] = useState("");
   // Room Chat: buka/tutup dari dasbor.
   const [chatCfg, setChatCfg] = useState(null);
   const [chatMsgDraft, setChatMsgDraft] = useState("");
@@ -364,6 +368,32 @@ export default function AdminDashboardPage() {
       setSiteSettingsMsg("Pengaturan tersimpan.");
     } catch (err) { setSiteSettingsMsg(err.message); }
     finally { setSiteSettingsSubmitting(false); setTimeout(() => setSiteSettingsMsg(""), 4000); }
+  }
+
+  // Satu jenis notif dinyalakan/dimatikan. Yang dikirim cuma jenis itu saja —
+  // bukan seluruh objeknya — supaya dua tab admin yang terbuka bersamaan tidak
+  // saling menimpa pengaturan yang baru diubah yang lain.
+  async function toggleChannelNotif(jenis) {
+    if (savingChannelNotif) return;
+    setSavingChannelNotif(jenis);
+    setChannelNotifMsg("");
+    try {
+      const nilaiBaru = !channelAktifUntuk(settings, jenis);
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelNotif: { [jenis]: nilaiBaru } })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menyimpan.");
+      setSettings(data);
+      setChannelNotifMsg(`${DAFTAR_PUBLIK[jenis].label} ${nilaiBaru ? "dinyalakan" : "dimatikan"}.`);
+    } catch (err) {
+      setChannelNotifMsg(err.message || "Gagal menyimpan.");
+    } finally {
+      setSavingChannelNotif("");
+      setTimeout(() => setChannelNotifMsg(""), 3000);
+    }
   }
 
   const loadAdminProducts = useCallback(async () => {
@@ -4974,6 +5004,61 @@ export default function AdminDashboardPage() {
                 {siteSettingsSubmitting ? "Menyimpan…" : "Simpan Pengaturan Situs"}
               </button>
             </form>
+          </div>
+
+          {/* Notif mana saja yang diumumkan ke channel */}
+          <div className="glass admin-card rounded-2xl p-5 shadow-soft">
+            <h2 className="font-display text-base font-semibold text-ink">📣 Notifikasi ke Channel</h2>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Semua kejadian selalu masuk ke <b>chat admin</b>. Yang diatur di sini cuma salinan yang ikut
+              diumumkan ke <b>channel</b>. Versi channel selalu disaring: kode akun &amp; nomor telepon disamarkan,
+              dan kode OTP, saldo, nama asli, serta nomor rekening tidak pernah ikut.
+            </p>
+            <p className="mt-2 rounded-xl border border-amber/30 bg-amber/10 px-3 py-2 text-[11px] leading-relaxed text-ink">
+              🔒 Tarik saldo admin, penyesuaian saldo/poin, bukti transfer deposit manual, dan hasil pindai keamanan
+              <b> tidak ada di daftar ini</b> dan tidak bisa dinyalakan — semuanya tetap di chat admin saja.
+            </p>
+
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {Object.entries(DAFTAR_PUBLIK).map(([jenis, info]) => {
+                const aktif = channelAktifUntuk(settings, jenis);
+                const sibuk = savingChannelNotif === jenis;
+                return (
+                  <button
+                    key={jenis}
+                    type="button"
+                    onClick={() => toggleChannelNotif(jenis)}
+                    disabled={Boolean(savingChannelNotif)}
+                    className={`flex items-start gap-3 rounded-2xl border p-3 text-left transition press disabled:opacity-60 ${
+                      aktif ? "border-teal-bright/50 bg-teal-bright/10" : "border-line bg-card"
+                    }`}
+                  >
+                    <span
+                      className={`mt-0.5 flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition ${
+                        aktif ? "justify-end bg-teal-bright" : "justify-start bg-line"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <span className="h-5 w-5 rounded-full bg-white shadow" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-ink">
+                        {info.label}
+                        {info.pin && <span className="ml-1.5 text-[10px] font-bold text-amber">📌 DIPIN</span>}
+                      </span>
+                      <span className="mt-0.5 block text-[11px] leading-snug text-muted">
+                        {sibuk ? "Menyimpan…" : info.catatan}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {channelNotifMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{channelNotifMsg}</p>}
+            <p className="mt-3 text-[11px] leading-relaxed text-muted">
+              Channel dibaca lewat <b>Telegram Channel ID</b> di atas. Kalau kosong, tidak ada yang terkirim ke
+              channel berapa pun sakelar yang dinyalakan.
+            </p>
           </div>
 
           {/* Platform Markup */}

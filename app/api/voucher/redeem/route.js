@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { vouchersCol, usersCol } from "@/lib/db";
-import { sendTelegramNotif, voucherRedeemedNotif } from "@/lib/telegram";
+import { voucherRedeemedNotif, voucherPublicNotif } from "@/lib/telegram";
+import { umumkan } from "@/lib/notifyHub";
 import { logBalance } from "@/lib/ledger";
 import { rateLimit } from "@/lib/rateLimit";
 
@@ -56,14 +57,19 @@ export async function POST(req) {
       ref: code
     });
 
-    sendTelegramNotif(
-      voucherRedeemedNotif({
+    // Kode vouchernya tidak ikut ke channel — voucher yang masih punya sisa
+    // pemakaian akan langsung ditebus pembaca pertama, bukan oleh orang yang
+    // dituju admin.
+    umumkan({
+      jenis: "voucher",
+      admin: voucherRedeemedNotif({
         code,
         amount: voucher.amount,
         token,
         remainingUses: Math.max(0, claimed.maxUses - claimed.usedCount)
-      })
-    );
+      }),
+      publik: voucherPublicNotif({ amount: voucher.amount, token })
+    });
 
     return NextResponse.json({ ok: true, amount: voucher.amount, balance: updatedUser?.balance });
   } catch (err) {

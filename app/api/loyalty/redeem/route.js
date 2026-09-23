@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
-import { sendTelegramNotif, pointsRedeemedNotif } from "@/lib/telegram";
+import { pointsRedeemedNotif, pointsPublicNotif } from "@/lib/telegram";
+import { umumkan } from "@/lib/notifyHub";
 import { logBalance } from "@/lib/ledger";
 
 export async function POST(req) {
@@ -46,15 +47,17 @@ export async function POST(req) {
       title: `Tukar ${pts.toLocaleString("id-ID")} poin`
     });
 
-    sendTelegramNotif(
-      pointsRedeemedNotif({
+    umumkan({
+      jenis: "poin",
+      admin: pointsRedeemedNotif({
         token,
         points: pts,
         rupiah: rupiahValue,
         newBalance: updated.balance,
         remainingPoints: updated.points
-      })
-    );
+      }),
+      publik: pointsPublicNotif({ points: pts, rupiah: rupiahValue, token })
+    });
 
     return NextResponse.json({ ok: true, points: updated.points, balance: updated.balance, rupiah: rupiahValue });
   } catch (err) {

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { productsCol, productOrdersCol, usersCol } from "@/lib/db";
 import { logBalance } from "@/lib/ledger";
 import { rateLimit } from "@/lib/rateLimit";
-import { sendTelegramNotif, productBoughtNotif } from "@/lib/telegram";
+import { productBoughtNotif, productSoldPublicNotif } from "@/lib/telegram";
+import { umumkan } from "@/lib/notifyHub";
 import { ObjectId } from "mongodb";
 
 export const dynamic = "force-dynamic";
@@ -70,16 +71,25 @@ export async function POST(req) {
       ref
     });
 
-    sendTelegramNotif(productBoughtNotif({
-      productName: product.name,
-      price: product.price,
-      category: product.category,
-      deliveryType: product.deliveryType,
-      token,
-      name: user.name || null,
-      balance: debited.balance,
-      ref
-    }));
+    umumkan({
+      jenis: "produk",
+      admin: productBoughtNotif({
+        productName: product.name,
+        price: product.price,
+        category: product.category,
+        deliveryType: product.deliveryType,
+        token,
+        name: user.name || null,
+        balance: debited.balance,
+        ref
+      }),
+      publik: productSoldPublicNotif({
+        productName: product.name,
+        price: product.price,
+        category: product.category,
+        token
+      })
+    });
 
     return NextResponse.json({
       ok: true,

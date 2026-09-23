@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { vouchersCol } from "@/lib/db";
 import { isAdminRequest } from "@/lib/adminAuth";
 import { generateVoucherCode } from "@/lib/voucherCode";
-import { sendTelegramNotif, voucherCreatedNotif } from "@/lib/telegram";
+import { voucherCreatedNotif } from "@/lib/telegram";
+import { umumkan } from "@/lib/notifyHub";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +58,11 @@ export async function POST(req) {
       createdAt: new Date()
     });
 
-    sendTelegramNotif(voucherCreatedNotif({ code, amount, maxUses }));
+    // Bawaannya MATI. Kalau dinyalakan, kodenya ikut terbaca seluruh channel —
+    // itu memang gunanya untuk bagi-bagi voucher, tapi bukan yang diinginkan
+    // untuk voucher yang dibuat khusus untuk satu orang.
+    const teksVoucher = voucherCreatedNotif({ code, amount, maxUses });
+    umumkan({ jenis: "voucher_baru", admin: teksVoucher, publik: teksVoucher });
 
     return NextResponse.json({ code, amount, maxUses, usedCount: 0 });
   } catch (err) {

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { jobSubmissionsCol, usersCol, jobsCol } from "@/lib/db";
 import { logBalance } from "@/lib/ledger";
 import { isAdminRequest } from "@/lib/adminAuth";
-import { sendTelegramNotif, jobApprovedNotif } from "@/lib/telegram";
+import { jobApprovedNotif, jobApprovedPublicNotif } from "@/lib/telegram";
+import { umumkan } from "@/lib/notifyHub";
 import { ObjectId } from "mongodb";
 
 export const dynamic = "force-dynamic";
@@ -76,16 +77,24 @@ export async function POST(req) {
     });
 
     const userInfo = await users.findOne({ token: sub.token }, { projection: { name: 1 } });
-    sendTelegramNotif(jobApprovedNotif({
-      jobTitle: sub.jobTitle,
-      reward: sub.reward,
-      token: sub.token,
-      name: userInfo?.name || null,
-      balance: updatedUser.balance,
-      completedCount: updatedJob?.completedCount ?? 1,
-      maxCompletions: updatedJob?.maxCompletions ?? 0,
-      submittedAt: sub.submittedAt
-    }));
+    umumkan({
+      jenis: "job",
+      admin: jobApprovedNotif({
+        jobTitle: sub.jobTitle,
+        reward: sub.reward,
+        token: sub.token,
+        name: userInfo?.name || null,
+        balance: updatedUser.balance,
+        completedCount: updatedJob?.completedCount ?? 1,
+        maxCompletions: updatedJob?.maxCompletions ?? 0,
+        submittedAt: sub.submittedAt
+      }),
+      publik: jobApprovedPublicNotif({
+        jobTitle: sub.jobTitle,
+        reward: sub.reward,
+        token: sub.token
+      })
+    });
 
     return NextResponse.json({ ok: true, balance: updatedUser.balance });
   } catch (err) {

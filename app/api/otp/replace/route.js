@@ -3,7 +3,8 @@ import { otpOrdersCol, usersCol } from "@/lib/db";
 import { createOrder, toEpochMs } from "@/lib/rumahotp";
 import { createWarungNokosOrder, getWarungNokosCountries, isWarungNokosServer } from "@/lib/warungnokos";
 import { createDibananaOrder, getDibananaPrices } from "@/lib/dibanana";
-import { sendTelegramNotif, otpPurchaseNotif, otpAutoRefundNotif } from "@/lib/telegram";
+import { otpPurchaseNotif, otpAutoRefundNotif, otpRefundPublicNotif } from "@/lib/telegram";
+import { umumkan } from "@/lib/notifyHub";
 import { logBalance } from "@/lib/ledger";
 
 // Dipakai saat nomor yang dibeli kedaluwarsa tanpa kode OTP masuk. User bisa minta
@@ -126,15 +127,23 @@ export async function POST(req) {
         title: `Refund OTP ${oldOrder.serviceName || ""}`.trim(),
         ref: oldOrder.orderId
       });
-      sendTelegramNotif(
-        otpAutoRefundNotif({
+      umumkan({
+        jenis: "otp_refund",
+        admin: otpAutoRefundNotif({
           orderId: oldOrder.orderId,
           serviceName: oldOrder.serviceName,
           countryName: oldOrder.countryName,
           price: oldOrder.price,
           token
+        }),
+        publik: otpRefundPublicNotif({
+          serviceName: oldOrder.serviceName,
+          countryName: oldOrder.countryName,
+          price: oldOrder.price,
+          token,
+          reason: "nomor pengganti tidak tersedia"
         })
-      );
+      });
       return NextResponse.json({
         replaced: false,
         refunded: true,
@@ -165,8 +174,11 @@ export async function POST(req) {
       expiredAt: fresh.expiredMs ? new Date(fresh.expiredMs) : null
     });
 
-    sendTelegramNotif(
-      otpPurchaseNotif({
+    // Admin saja: nomor pengganti bukan penjualan baru — saldonya sudah
+    // terpotong di pesanan sebelumnya. Mengumumkannya sebagai "terjual"
+    // akan menghitung satu pembelian dua kali di channel.
+    umumkan({
+      admin: otpPurchaseNotif({
         orderId: fresh.orderId,
         serviceName: oldOrder.serviceName,
         countryName: oldOrder.countryName,
@@ -174,7 +186,7 @@ export async function POST(req) {
         price: oldOrder.price,
         token
       })
-    );
+    });
 
     return NextResponse.json({
       replaced: true,

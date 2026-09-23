@@ -13,7 +13,8 @@
 import { NextResponse } from "next/server";
 import { getSettings, serverDisplay } from "@/lib/settings";
 import { buildStockReport, DEFAULT_REPORT_SERVICES } from "@/lib/stockReport";
-import { stockReportNotif, sendTelegramChannelNotif } from "@/lib/telegram";
+import { stockReportNotif } from "@/lib/telegram";
+import { umumkan } from "@/lib/notifyHub";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -39,7 +40,10 @@ export async function GET(req) {
     if (!groups.length) {
       return NextResponse.json({ ok: false, reason: "no-data" }, { status: 200 });
     }
-    await sendTelegramChannelNotif(stockReportNotif(groups, { serverName: (key) => serverDisplay(settings, key).name }));
+    await umumkan({
+      jenis: "stok",
+      publik: stockReportNotif(groups, { serverName: (key) => serverDisplay(settings, key).name })
+    });
     return NextResponse.json({ ok: true, sent: groups.length });
   } catch (err) {
     console.error("[cron/stock-report]", err?.message || err);

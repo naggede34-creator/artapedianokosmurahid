@@ -8,6 +8,8 @@ import { NextResponse } from "next/server";
 import { getSettings } from "@/lib/settings";
 import { ambilPet, rawatPet, gantiNamaPet, petConfig } from "@/lib/pet";
 import { rateLimit } from "@/lib/rateLimit";
+import { petLevelPublicNotif } from "@/lib/telegram";
+import { umumkan } from "@/lib/notifyHub";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +49,17 @@ export async function POST(req) {
     if (action === "makan" || action === "main") {
       const r = await rawatPet(token, action, settings);
       if (!r.ok) return NextResponse.json({ error: r.error }, { status: 409 });
+      // Yang diumumkan cuma kenaikan level, bukan tiap kali diberi makan:
+      // channel yang dibanjiri dua notif per orang per hari berhenti dibaca.
+      if (r.naikLevel && r.pet) {
+        const teks = petLevelPublicNotif({
+          level: r.pet.level,
+          tahapNama: r.pet.tahapNama,
+          bonus: r.pet.bonusCashback,
+          token
+        });
+        umumkan({ jenis: "pet", admin: teks, publik: teks });
+      }
       return NextResponse.json(r);
     }
 
