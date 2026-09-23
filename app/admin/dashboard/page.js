@@ -3029,6 +3029,13 @@ export default function AdminDashboardPage() {
                 {botBusy === "set" ? "Memasang..." : "Pasang Webhook"}
               </button>
               <button
+                onClick={() => botWebhook("diagnosa")}
+                disabled={!!botBusy}
+                className="btn-3d rounded-lg border border-blue/40 bg-blue-soft px-3.5 py-2 text-xs font-semibold text-blue-bright disabled:opacity-60"
+              >
+                {botBusy === "diagnosa" ? "Menganalisa..." : "Diagnosa Mendalam"}
+              </button>
+              <button
                 onClick={() => {
                   if (window.confirm("Lepas webhook? Bot akan berhenti merespons sampai dipasang lagi.")) {
                     botWebhook("delete");
@@ -3121,6 +3128,22 @@ export default function AdminDashboardPage() {
                       >
                         Cek ulang: {botInfo.cekUlang.verifikasi} · {botInfo.cekUlang.webhook}
                         {botInfo.cekUlang.lastError ? ` · error: ${botInfo.cekUlang.lastError}` : ""}
+                      </p>
+                    )}
+                    {Array.isArray(botInfo.langkah) && (
+                      <div className="mt-2 rounded-md bg-surface2 p-2">
+                        {botInfo.langkah.map((l) => (
+                          <p key={l.saat} className="break-all text-[11px] text-muted">
+                            <span className="font-semibold text-ink">{l.saat}:</span> {l.url}
+                            {l.pending != null ? ` · ${l.pending} pending` : ""}
+                            {l.lastError ? ` · ${l.lastError}` : ""}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                    {botInfo.kesimpulan && (
+                      <p className="mt-2 rounded-md border border-amber/40 bg-amber-soft px-2 py-1.5 text-[11px] font-semibold leading-relaxed text-amber-bright">
+                        {botInfo.kesimpulan}
                       </p>
                     )}
                     {botInfo.langkahSelanjutnya && (

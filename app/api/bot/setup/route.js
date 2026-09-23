@@ -133,6 +133,71 @@ export async function GET(req) {
     return NextResponse.json({ ok: d.ok, action: "delete", bot, telegram: d.description || "webhook dilepas" });
   }
 
+  // Diagnosa: merekam keadaan webhook sebelum dipasang, tepat sesudah dipasang,
+  // dan beberapa detik kemudian. Kalau alamatnya terisi lalu hilang sendiri,
+  // berarti ada program lain yang memakai token bot yang sama — memanggil
+  // getUpdates (long polling) atau deleteWebhook akan menghapus webhook kita.
+  if (action === "diagnosa") {
+    const langkah = [];
+    const snapshot = async (label) => {
+      const i = await tg("getWebhookInfo");
+      langkah.push({
+        saat: label,
+        url: i.result?.url || "(kosong)",
+        pending: i.result?.pending_update_count ?? null,
+        lastError: i.result?.last_error_message || null
+      });
+      return i.result?.url || "";
+    };
+
+    let settingsD = {};
+    try {
+      settingsD = await getSettings();
+    } catch {}
+    const baseD = (settingsD.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || url.origin).replace(/\/+$/, "");
+    const targetD = `${baseD}/api/bot/webhook`;
+
+    await snapshot("sebelum dipasang");
+
+    const setD = await tg("setWebhook", {
+      url: targetD,
+      allowed_updates: ["message", "callback_query"],
+      drop_pending_updates: true,
+      ...(webhookSecret() ? { secret_token: webhookSecret() } : {})
+    });
+
+    const seg0 = await snapshot("tepat setelah dipasang");
+    await new Promise((r) => setTimeout(r, 3500));
+    const seg3 = await snapshot("3,5 detik kemudian");
+
+    let kesimpulan;
+    if (!setD.ok) {
+      kesimpulan = `Telegram menolak pemasangan: ${setD.description}`;
+    } else if (!seg0) {
+      kesimpulan =
+        "Telegram menjawab berhasil, tapi alamatnya TIDAK pernah tersimpan walau dicek seketika. " +
+        "Ini terjadi kalau ada program lain yang terus-menerus memakai token bot yang sama.";
+    } else if (!seg3) {
+      kesimpulan =
+        "Webhook sempat terpasang lalu HILANG sendiri dalam hitungan detik. " +
+        "Penyebabnya program lain yang memakai token bot yang sama: memanggil getUpdates " +
+        "(long polling) atau deleteWebhook akan menghapus webhook ini. " +
+        "Matikan bot lama itu, atau ambil token baru di @BotFather lewat /revoke.";
+    } else {
+      kesimpulan = "Webhook terpasang dan bertahan. Bot siap dipakai.";
+    }
+
+    return NextResponse.json({
+      ok: true,
+      action: "diagnosa",
+      bot,
+      alamatDituju: targetD,
+      jawabanSetWebhook: setD.description || (setD.ok ? "berhasil" : "gagal"),
+      langkah,
+      kesimpulan
+    });
+  }
+
   if (action === "info") {
     const info = await tg("getWebhookInfo");
     const r = info.result || {};
