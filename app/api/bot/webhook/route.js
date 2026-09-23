@@ -15,6 +15,10 @@ import {
 } from "@/lib/shopBot";
 import {
   showHome,
+  showWelcome,
+  showServerStatus,
+  showHowTo,
+  filterServices,
   askLogin,
   doLogin,
   doRegister,
@@ -102,7 +106,7 @@ async function handleMessage(msg) {
 
     if (cmd === "/start") {
       await setSession(chatId, { username: msg.from?.username || null });
-      return showHome(chatId);
+      return showWelcome(chatId, msg.from);
     }
     if (cmd === "/menu") return showHome(chatId);
     if (cmd === "/saldo" || cmd === "/akun") {
@@ -197,6 +201,10 @@ async function handleCallback(cb) {
       return doLogout(chatId, messageId);
     case "info":
       return showInfo(chatId, messageId);
+    case "srvstat":
+      return showServerStatus(chatId, messageId);
+    case "howto":
+      return showHowTo(chatId, messageId);
     case "buy":
       return showServers(chatId, messageId);
     case "srv":
@@ -205,6 +213,9 @@ async function handleCallback(cb) {
       return listServicesPage(chatId, messageId, Number(a) || 0);
     case "svq":
       return askServiceQuery(chatId, messageId);
+    case "svf":
+      // data ikut membawa kata kunci; kosong berarti hapus filter
+      return filterServices(chatId, messageId, a || "");
     case "svc":
       return chooseService(chatId, messageId, Number(a));
     case "cop":

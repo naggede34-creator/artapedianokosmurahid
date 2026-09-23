@@ -5,6 +5,12 @@ const nextConfig = {
   // directly at runtime (required for @resvg/resvg-js and satori's HarfBuzz WASM).
   experimental: {
     serverComponentsExternalPackages: ["@resvg/resvg-js", "satori", "harfbuzzjs"],
+    // Banner sambutan bot dikirim ke Telegram sebagai berkas, bukan lewat URL,
+    // supaya tidak bergantung pada alamat situs yang bisa salah isi. Berkas di
+    // public/ tidak ikut terbawa ke fungsi serverless kecuali disebut di sini.
+    outputFileTracingIncludes: {
+      "/api/bot/webhook": ["./public/bot-welcome.jpg"],
+    },
   },
   // Browser bawaan Telegram (dibuka lewat tombol link biasa, bukan web_app) suka
   // nyimpen cache halaman HTML lebih agresif daripada Chrome/Safari biasa, jadi
