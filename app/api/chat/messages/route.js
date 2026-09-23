@@ -34,10 +34,16 @@ export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const after = searchParams.get("after");
+    const token = searchParams.get("token");
     const limit = Math.min(80, parseInt(searchParams.get("limit") || "60"));
 
     const col = await chatMessagesCol();
     const filter = { deleted: { $ne: true } };
+    // "Hapus untuk saya" menyimpan kode akun peminta di hiddenFor. Disaring di
+    // sini, bukan di browser: kalau disaring di browser, pesan yang katanya
+    // sudah dihapus tetap terkirim ke sana dan tinggal dibuka lewat alat
+    // pengembang — janji "sudah hilang" jadi tidak benar.
+    if (token) filter.hiddenFor = { $ne: token };
     if (after) filter.createdAt = { $gt: new Date(after) };
 
     const msgs = await col

@@ -3035,3 +3035,108 @@ html.dark .hero-mascot-img,
   .comic-intro, .ci-panel, .ci-bubble, .ci-orang, .ci-elang,
   .ci-ono-q, .ci-ono-pow, .ci-burst { animation: none; transition: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ROOM CHAT — LATAR KOMIK & TOMBOL 3D
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Tiga lapisan dengan kedalaman berbeda. Satu raster datar terbaca sebagai
+   tekstur; bertumpuk begini terbaca sebagai halaman komik. Semua
+   pointer-events: none supaya tidak satu pun menahan gulungan daftar pesan. */
+.chat-bg-rays,
+.chat-bg-tone,
+.chat-bg-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.chat-bg-rays {
+  inset: -25%;
+  background: repeating-conic-gradient(from 0deg at 50% 38%,
+    rgb(255 255 255 / .022) 0deg 2.4deg, transparent 2.4deg 9deg);
+}
+
+.chat-bg-tone {
+  background-image:
+    radial-gradient(circle at 50% 50%, rgb(247 124 34 / .055) 1.2px, transparent 1.4px),
+    radial-gradient(circle at 50% 50%, rgb(46 134 255 / .055) 1.2px, transparent 1.4px);
+  background-size: 24px 24px, 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+.chat-bg-glow {
+  background:
+    radial-gradient(120% 45% at 50% 0%, rgb(46 134 255 / .1), transparent 72%),
+    radial-gradient(90% 40% at 50% 100%, rgb(247 124 34 / .07), transparent 74%);
+}
+
+/* ── Tombol 3D ──────────────────────────────────────────────────────────
+   Bentuk timbul lewat dua bayangan: satu keras di bawah sebagai "sisi"
+   tombolnya, satu lembut sebagai bayangan jatuh. Saat ditekan, sisi kerasnya
+   menghilang dan tombolnya turun — gerakan yang sama dengan tombol sungguhan,
+   dan jauh lebih terasa daripada sekadar mengecil. */
+.chat-btn3d {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: linear-gradient(180deg, rgb(255 255 255 / .12), rgb(255 255 255 / .04));
+  border: 1px solid rgb(255 255 255 / .14);
+  box-shadow: 0 3px 0 rgb(0 0 0 / .45), 0 6px 12px -4px rgb(0 0 0 / .5);
+  transition: transform .12s ease, box-shadow .12s ease, background .15s ease;
+}
+.chat-btn3d:hover {
+  background: linear-gradient(180deg, rgb(247 124 34 / .3), rgb(247 124 34 / .12));
+  border-color: rgb(247 124 34 / .5);
+}
+.chat-btn3d:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 rgb(0 0 0 / .45), 0 2px 5px -2px rgb(0 0 0 / .5);
+}
+
+.chat-send3d {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid rgb(6 12 28 / .55);
+  background: linear-gradient(180deg, #34e07c, #128C7E);
+  box-shadow:
+    0 5px 0 #0b6b5f,
+    0 10px 20px -6px rgb(18 140 126 / .7),
+    inset 0 1.5px 0 rgb(255 255 255 / .4);
+  transition: transform .12s ease, box-shadow .12s ease, filter .15s ease;
+}
+.chat-send3d:hover { filter: brightness(1.07); }
+.chat-send3d:active {
+  transform: translateY(5px);
+  box-shadow: 0 0 0 #0b6b5f, 0 3px 8px -4px rgb(18 140 126 / .7), inset 0 1.5px 0 rgb(255 255 255 / .3);
+}
+.chat-send3d:disabled { opacity: .55; cursor: not-allowed; }
+
+.chat-send3d.is-rec {
+  background: linear-gradient(180deg, #ff6b6b, #dc2626);
+  box-shadow:
+    0 5px 0 #8f1414,
+    0 10px 22px -6px rgb(220 38 38 / .8),
+    inset 0 1.5px 0 rgb(255 255 255 / .35);
+  animation: chatRecPulse 1s ease-in-out infinite;
+}
+@keyframes chatRecPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-btn3d, .chat-send3d { transition: none; }
+  .chat-send3d.is-rec { animation: none; }
+}

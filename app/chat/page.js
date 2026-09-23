@@ -185,7 +185,8 @@ function ReactionPicker({ onPick, onClose, style }) {
 }
 
 /* ─── Message Bubble ──────────────────────────────────────────── */
-function MsgBubble({ msg, isMine, onReply, prevSender, nextSender, token, isAdmin, onPin, onReact, onVote }) {
+function MsgBubble({ msg, isMine, onReply, prevSender, nextSender, token, isAdmin, onPin, onReact, onVote, onDelete }) {
+  const [konfirmHapus, setKonfirmHapus] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const holdTimer = useRef(null);
   const bubbleRef = useRef(null);
@@ -303,17 +304,64 @@ function MsgBubble({ msg, isMine, onReply, prevSender, nextSender, token, isAdmi
           <div style={{ position:"fixed", inset:0, zIndex:99 }} onClick={()=>setShowReactionPicker(false)} />
           <ReactionPicker onPick={e => onReact(msg.id, e)} onClose={()=>setShowReactionPicker(false)}
             style={{ bottom:"calc(100% + 4px)", [isMine?"right":"left"]:0 }} />
-          {isAdmin && (
-            <div style={{ position:"absolute", bottom:"calc(100% + 54px)", [isMine?"right":"left"]:0, zIndex:101, background:"rgba(20,24,32,.97)", border:"1px solid rgba(255,255,255,.1)", borderRadius:12, padding:4, display:"flex", flexDirection:"column", boxShadow:"0 8px 24px rgba(0,0,0,.5)", minWidth:140 }}>
-              <button onClick={() => { onReply(msg); setShowReactionPicker(false); }} style={{ background:"none", border:"none", cursor:"pointer", padding:"8px 12px", fontSize:13, color:"rgba(255,255,255,.8)", textAlign:"left", borderRadius:8, display:"flex", alignItems:"center", gap:8 }}>↩ Balas</button>
-              <button onClick={() => { onPin(msg.id, msg.pinned); setShowReactionPicker(false); }} style={{ background:"none", border:"none", cursor:"pointer", padding:"8px 12px", fontSize:13, color:msg.pinned?"#fb923c":"rgba(255,255,255,.8)", textAlign:"left", borderRadius:8, display:"flex", alignItems:"center", gap:8 }}>📌 {msg.pinned?"Unpin":"Pin Pesan"}</button>
-            </div>
-          )}
+          {/* Menunya sekarang untuk SEMUA orang, bukan admin saja. Sebelumnya
+              hanya admin yang punya menu, jadi tidak ada satu pun cara bagi
+              pengirimnya menghapus pesannya sendiri. */}
+          <div style={{ position:"absolute", bottom:"calc(100% + 54px)", [isMine?"right":"left"]:0, zIndex:101, background:"rgba(20,24,32,.97)", border:"1px solid rgba(255,255,255,.1)", borderRadius:12, padding:4, display:"flex", flexDirection:"column", boxShadow:"0 8px 24px rgba(0,0,0,.5)", minWidth:184 }}>
+            <button onClick={() => { onReply(msg); setShowReactionPicker(false); }} style={menuBtn}>↩ Balas</button>
+
+            {isAdmin && (
+              <button onClick={() => { onPin(msg.id, msg.pinned); setShowReactionPicker(false); }}
+                style={{ ...menuBtn, color: msg.pinned ? "#fb923c" : "rgba(255,255,255,.8)" }}>
+                📌 {msg.pinned ? "Unpin" : "Pin Pesan"}
+              </button>
+            )}
+
+            <div style={{ height:1, background:"rgba(255,255,255,.08)", margin:"4px 8px" }} />
+
+            {/* Selalu boleh: cuma menyembunyikan dari layar sendiri. */}
+            <button onClick={() => { onDelete(msg.id, "me"); setShowReactionPicker(false); }} style={menuBtn}>
+              🙈 Hapus untuk saya
+            </button>
+
+            {/* Untuk semua: pengirimnya, atau admin untuk pesan siapa pun. */}
+            {(isMine || isAdmin) && (
+              konfirmHapus ? (
+                <button onClick={() => { onDelete(msg.id, isMine ? "all" : "admin"); setShowReactionPicker(false); }}
+                  style={{ ...menuBtn, color:"#fff", background:"rgba(239,68,68,.9)", fontWeight:700 }}>
+                  ⚠️ Yakin? Hapus permanen
+                </button>
+              ) : (
+                // Satu ketukan konfirmasi: menghapus untuk semua orang tidak
+                // bisa dibatalkan, dan menu ini muncul tepat di bawah jempol.
+                <button onClick={(e) => { e.stopPropagation(); setKonfirmHapus(true); }}
+                  style={{ ...menuBtn, color:"#f87171" }}>
+                  🗑 Hapus untuk semua{!isMine && isAdmin ? " (admin)" : ""}
+                </button>
+              )
+            )}
+          </div>
         </>
       )}
     </div>
   );
 }
+
+// Gaya tombol menu pesan. Disatukan supaya baris menunya tidak perlahan-lahan
+// berbeda tinggi dan warnanya satu sama lain.
+const menuBtn = {
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  padding: "9px 12px",
+  fontSize: 13,
+  color: "rgba(255,255,255,.85)",
+  textAlign: "left",
+  borderRadius: 8,
+  display: "flex",
+  alignItems: "center",
+  gap: 8
+};
 
 /* ─── Group Settings Panel ────────────────────────────────────── */
 function GroupSettingsPanel({ settings, onClose, onSaved }) {
@@ -585,7 +633,7 @@ export default function ChatPage() {
 
   async function loadMessages() {
     try {
-      const r = await fetch("/api/chat/messages?limit=60");
+      const r = await fetch(`/api/chat/messages?limit=60${token ? `&token=${encodeURIComponent(token)}` : ""}`);
       const data = await r.json();
       if (Array.isArray(data) && data.length) {
         setMessages(data);
@@ -598,7 +646,9 @@ export default function ChatPage() {
   const poll = useCallback(async () => {
     if (!lastTs) return;
     try {
-      const r = await fetch(`/api/chat/messages?after=${encodeURIComponent(lastTs)}`);
+      const r = await fetch(
+        `/api/chat/messages?after=${encodeURIComponent(lastTs)}${token ? `&token=${encodeURIComponent(token)}` : ""}`
+      );
       const data = await r.json();
       if (Array.isArray(data) && data.length) {
         setMessages(prev => {
@@ -736,6 +786,25 @@ export default function ChatPage() {
       if (d.ok) {
         setMessages(prev => prev.map(m => ({ ...m, pinned: !currentlyPinned && m.id===msgId })));
         setGroupSettings(g => ({ ...g, pinnedMsgId: currentlyPinned?null:msgId }));
+      }
+    } catch {}
+  }
+
+  async function handleDelete(msgId, scope) {
+    try {
+      const r = await fetch("/api/chat/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ msgId, token, scope })
+      });
+      const d = await r.json();
+      if (!d.ok) return;
+      // Dikeluarkan dari daftar di layar, bukan menunggu polling berikutnya.
+      // Jeda tiga detik antara menekan hapus dan pesannya benar-benar hilang
+      // terasa seperti tombolnya tidak bekerja.
+      setMessages((prev) => prev.filter((m) => m.id !== msgId));
+      if (groupSettings.pinnedMsgId === msgId) {
+        setGroupSettings((g) => ({ ...g, pinnedMsgId: null }));
       }
     } catch {}
   }
@@ -900,16 +969,13 @@ export default function ChatPage() {
 
       {/* ── Messages ── */}
       <div style={{ flex:1, overflowY:"auto", padding:"10px 10px 4px", position:"relative" }} className="chat-scroll">
-        {/* Wallpaper: raster halftone dua warna brand + cahaya lembut dari
-            atas. Menggantikan titik hijau samar yang praktis tidak terlihat,
-            jadi latarnya terbaca sebagai kertas komik, bukan bidang kosong. */}
-        <div style={{ position:"absolute", inset:0, pointerEvents:"none",
-          backgroundImage:
-            "radial-gradient(circle at 50% 50%, rgba(247,124,34,.05) 1.1px, transparent 1.3px)," +
-            "radial-gradient(circle at 50% 50%, rgba(46,134,255,.05) 1.1px, transparent 1.3px)," +
-            "radial-gradient(120% 55% at 50% 0%, rgba(46,134,255,.07), transparent 70%)",
-          backgroundSize:"26px 26px, 26px 26px, 100% 100%",
-          backgroundPosition:"0 0, 13px 13px, 0 0" }} />
+        {/* Latar komik berlapis. Tiga lapisan dengan kedalaman berbeda:
+            garis kecepatan yang jauh, raster halftone dua warna di tengah,
+            dan cahaya lembut dari atas. Satu raster datar saja terbaca sebagai
+            tekstur; bertumpuk begini terbaca sebagai halaman komik. */}
+        <div className="chat-bg-rays" />
+        <div className="chat-bg-tone" />
+        <div className="chat-bg-glow" />
 
         {grouped.length === 0 && (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:12, padding:"40px 20px" }}>
@@ -934,7 +1000,7 @@ export default function ChatPage() {
               onReply={m=>{ setReplyTo(m); inputRef.current?.focus(); }}
               prevSender={item.prev} nextSender={item.next}
               token={token} isAdmin={groupSettings.isAdmin}
-              onPin={handlePin} onReact={handleReact} onVote={handleVote} />
+              onPin={handlePin} onReact={handleReact} onVote={handleVote} onDelete={handleDelete} />
           </div>
         ))}
         <div ref={bottomRef} style={{ height:4 }} />
@@ -994,19 +1060,13 @@ export default function ChatPage() {
         {/* Toolbar */}
         <div style={{ display:"flex", flexDirection:"column", gap:4, flexShrink:0 }}>
           {/* Image upload */}
-          <button onClick={()=>fileInputRef.current?.click()} style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.08)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"background .15s" }}
-            onMouseEnter={e=>e.currentTarget.style.background="rgba(37,211,102,.15)"}
-            onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.06)"}
-            aria-label="Kirim gambar">
+          <button onClick={()=>fileInputRef.current?.click()} className="chat-btn3d" aria-label="Kirim gambar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(255,255,255,.5)"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
           </button>
           <input ref={fileInputRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleImageFile} />
           {/* Poll (admin only) */}
           {groupSettings.isAdmin && (
-            <button onClick={()=>setShowPoll(true)} style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.08)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"background .15s" }}
-              onMouseEnter={e=>e.currentTarget.style.background="rgba(37,211,102,.15)"}
-              onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.06)"}
-              aria-label="Buat poll">
+            <button onClick={()=>setShowPoll(true)} className="chat-btn3d" aria-label="Buat poll">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="rgba(255,255,255,.5)"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></svg>
             </button>
           )}
@@ -1066,9 +1126,7 @@ export default function ChatPage() {
         {/* Send / Mic */}
         {input.trim() ? (
           <button onClick={()=>sendMsg("text")} disabled={sending||(groupSettings.closed&&!groupSettings.isAdmin)}
-            style={{ width:50, height:50, borderRadius:"50%", background:"linear-gradient(135deg,#128C7E,#25D366)", border:"none", cursor:sending?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:"0 4px 18px rgba(37,211,102,.45)", transition:"transform .15s" }}
-            onMouseDown={e=>e.currentTarget.style.transform="scale(.92)"}
-            onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}>
+            className="chat-send3d" aria-label="Kirim pesan">
             {sending
               ? <div style={{ width:22, height:22, border:"2.5px solid rgba(255,255,255,.3)", borderTopColor:"white", borderRadius:"50%", animation:"spin .7s linear infinite" }} />
               : <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -1076,7 +1134,7 @@ export default function ChatPage() {
           </button>
         ) : (
           <button onPointerDown={startRecording} onPointerUp={stopRecording} onPointerLeave={stopRecording}
-            style={{ width:50, height:50, borderRadius:"50%", background: recording?"linear-gradient(135deg,#dc2626,#ef4444)":"linear-gradient(135deg,#128C7E,#25D366)", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow: recording?"0 4px 18px rgba(220,38,38,.5)":"0 4px 18px rgba(37,211,102,.45)", transition:"all .2s" }}>
+            className={`chat-send3d ${recording ? "is-rec" : ""}`} aria-label="Rekam suara">
             {recording
               ? <span style={{ width:16, height:16, borderRadius:3, background:"white", display:"block" }} />
               : <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
