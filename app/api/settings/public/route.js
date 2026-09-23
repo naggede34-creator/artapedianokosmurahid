@@ -14,7 +14,7 @@ export async function GET() {
   const limits = depositLimits();
   try {
     const settings = await getSettings();
-    const { maintenance, maintenanceMsg, maintenanceTitle, maintenanceButtonLabel, maintenanceButtonUrl, depositProviders, depositFeePercent, heroChars } = settings;
+    const { csUsername, maintenance, maintenanceMsg, maintenanceTitle, maintenanceButtonLabel, maintenanceButtonUrl, depositProviders, depositFeePercent, heroChars } = settings;
     const providers = { ...depositProviders };
     if (!warungNokosConfigured()) providers.warungnokos = false;
     if (rumahOtpConfigured()) {
@@ -24,6 +24,7 @@ export async function GET() {
     }
     return NextResponse.json({
       maintenance: !!maintenance,
+      csUsername: csUsername || "teatlas",
       maintenanceMsg,
       maintenanceTitle: maintenanceTitle || "Sedang Maintenance",
       maintenanceButtonLabel: maintenanceButtonLabel || "",
@@ -48,6 +49,7 @@ export async function GET() {
       },
       depositFeePercent: { warungnokos: 0, pakasir: 0, rumahotp: 0.7 },
       depositMethods: DEPOSIT_PROVIDERS.map((p) => ({ key: p.key, name: p.name, badge: "", desc: p.desc, speed: p.speed })),
+      csUsername: "teatlas",
       depositMin: limits.min,
       depositMax: limits.max,
       ...CHANNELS()

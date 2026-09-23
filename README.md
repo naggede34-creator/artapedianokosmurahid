@@ -163,6 +163,65 @@ Env terkait:
 | --- | --- | --- |
 | `PAKASIR_BASE_URL` | `https://app.pakasir.com` | Ganti host kalau Pakasir memindahkannya |
 
+## Bot Telegram toko (pembeli)
+
+Bot terpisah dari bot owner. Pembeli bisa beli nokos, deposit, dan cek pesanan
+langsung dari Telegram, memakai **saldo yang sama** dengan di web.
+
+### Cara pasang
+
+1. Buat bot di @BotFather, salin tokennya.
+2. Isi di Vercel → Environment Variables:
+
+```
+SHOP_BOT_TOKEN=token-dari-botfather
+SHOP_BOT_OWNER_IDS=5510813257
+SHOP_BOT_WEBHOOK_SECRET=teks-acak-bebas
+```
+
+3. Pasang webhook-nya sekali (buka di browser):
+
+```
+https://domain-kamu.vercel.app/api/bot/setup?secret=ISI_CRON_SECRET
+```
+
+Cek statusnya dengan `?action=info`, lepas dengan `?action=delete`.
+Pastikan **Site URL** sudah benar di Dashboard Admin → Pengaturan Situs,
+karena deposit lewat bot memakai alamat itu.
+
+### Cara kerjanya
+
+| Menu bot | Yang terjadi |
+| --- | --- |
+| Beli Nokos | Hanya server yang menyala yang muncul. Yang dimatikan admin tidak terlihat sama sekali. |
+| Deposit | Memanggil `/api/deposit/create` yang sama dengan web |
+| Login | Menautkan chat Telegram ke kode akun web |
+| Buat Akun | Membuat kode akun baru, tidak wajib — bisa juga login pakai kode dari web |
+| Pesanan Saya | Riwayat + tombol cek OTP |
+| Customer Service | Membuka chat ke username CS yang diatur admin |
+
+**Saldo tidak pernah dihitung ulang di bot.** Order memakai `placeOtpOrder` dan
+deposit memakai endpoint web, jadi tidak ada logika uang yang digandakan —
+beli di bot atau di web, potongannya satu.
+
+Daftar layanan & negara disimpan di sesi bot, dan tombolnya hanya mengirim nomor
+urut. Ini bukan sekadar hemat: data callback Telegram dibatasi 64 byte, sementara
+kode produk sebagian provider jauh lebih panjang dari itu.
+
+### Notifikasi otomatis
+
+User yang akunnya tertaut akan menerima pesan langsung di bot saat:
+OTP masuk, deposit berhasil, dan saldo dikembalikan otomatis. Notifikasi ini
+berjalan dari alur web juga — jadi order lewat web, kabarnya tetap masuk ke bot.
+
+User baru (dari web maupun bot) tetap dilaporkan ke channel seperti sebelumnya.
+
+### Admin bot
+
+`/admin` membuka panel statistik, `/broadcast pesan` menyiarkan ke semua chat
+yang pernah membuka bot. Keduanya hanya bisa dipakai id yang terdaftar di
+`SHOP_BOT_OWNER_IDS`.
+
 ## Catatan penting soal Vercel Cron
 
 Paket **Vercel Hobby hanya mengizinkan cron 1x sehari**. Kalau `vercel.json`

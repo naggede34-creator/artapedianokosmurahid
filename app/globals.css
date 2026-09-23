@@ -2028,3 +2028,98 @@ input[type="number"] { -moz-appearance: textfield; }
   .manga-card, .depth-pop { transition: none; }
   .manga-card:hover, .depth-pop:hover { transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Animasi masuk & hidup — dipasang di elemen yang sudah ada lewat
+   kelas tambahan, jadi tidak mengubah tata letak apa pun.
+   Semuanya berhenti saat prefers-reduced-motion aktif.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Muncul dari bawah dengan sedikit pantulan, khas panel komik yang dijatuhkan. */
+@keyframes panelDrop {
+  0%   { opacity: 0; transform: translateY(26px) scale(.96) rotate(-1deg); }
+  60%  { opacity: 1; transform: translateY(-4px) scale(1.01) rotate(.4deg); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
+}
+.anim-drop { animation: panelDrop .5s cubic-bezier(.2, .9, .3, 1.2) both; }
+
+/* Masuk dari samping seperti panel manga yang digeser. */
+@keyframes panelSlide {
+  from { opacity: 0; transform: translateX(-22px) skewX(4deg); }
+  to   { opacity: 1; transform: translateX(0) skewX(0); }
+}
+.anim-slide { animation: panelSlide .45s cubic-bezier(.2, .9, .3, 1.1) both; }
+
+/* Jeda berurutan supaya daftar tidak muncul serentak. */
+.anim-stagger > * { animation: panelDrop .5s cubic-bezier(.2, .9, .3, 1.2) both; }
+.anim-stagger > *:nth-child(1) { animation-delay: .04s; }
+.anim-stagger > *:nth-child(2) { animation-delay: .09s; }
+.anim-stagger > *:nth-child(3) { animation-delay: .14s; }
+.anim-stagger > *:nth-child(4) { animation-delay: .19s; }
+.anim-stagger > *:nth-child(5) { animation-delay: .24s; }
+.anim-stagger > *:nth-child(6) { animation-delay: .29s; }
+.anim-stagger > *:nth-child(n + 7) { animation-delay: .34s; }
+
+/* Denyut halus untuk angka saldo & label penting. */
+@keyframes softPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.035); }
+}
+.anim-pulse { animation: softPulse 2.8s ease-in-out infinite; }
+
+/* Kilau melintas, untuk tombol utama. */
+@keyframes sheen {
+  0%   { transform: translateX(-120%) skewX(-18deg); }
+  55%  { transform: translateX(240%) skewX(-18deg); }
+  100% { transform: translateX(240%) skewX(-18deg); }
+}
+.anim-sheen { position: relative; overflow: hidden; }
+.anim-sheen::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 42%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4), transparent);
+  animation: sheen 3.6s ease-in-out infinite;
+}
+
+/* Getar kecil untuk menarik perhatian, mis. stok menipis. */
+@keyframes nudge {
+  0%, 92%, 100% { transform: translateX(0) rotate(0); }
+  94%           { transform: translateX(-2px) rotate(-1.5deg); }
+  96%           { transform: translateX(2px) rotate(1.5deg); }
+  98%           { transform: translateX(-1px) rotate(-.7deg); }
+}
+.anim-nudge { animation: nudge 4.5s ease-in-out infinite; }
+
+/* Garis bawah yang melebar saat judul muncul. */
+@keyframes inkSweep {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.anim-underline { position: relative; }
+.anim-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  height: 4px;
+  width: 64px;
+  border-radius: 999px;
+  transform-origin: left center;
+  background: linear-gradient(90deg, rgb(var(--c-orange)), rgb(var(--c-blue)));
+  animation: inkSweep .6s cubic-bezier(.2, .9, .3, 1.1) .15s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-drop,
+  .anim-slide,
+  .anim-stagger > *,
+  .anim-pulse,
+  .anim-nudge { animation: none; }
+  .anim-sheen::after { animation: none; opacity: 0; }
+  .anim-underline::after { animation: none; transform: scaleX(1); }
+}

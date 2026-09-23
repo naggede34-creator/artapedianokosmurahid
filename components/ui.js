@@ -40,7 +40,7 @@ export function PageHeader({ title, desc, action, icon }) {
               {icon}
             </span>
           )}
-          <h1 className="comic-head text-[26px] leading-tight text-ink sm:text-[32px]">{title}</h1>
+          <h1 className="comic-head anim-underline text-[26px] leading-tight text-ink sm:text-[32px]">{title}</h1>
         </div>
         {desc && <p className="mt-2 text-sm leading-relaxed text-muted">{desc}</p>}
       </div>

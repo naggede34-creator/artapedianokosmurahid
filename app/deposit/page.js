@@ -298,7 +298,7 @@ export default function DepositPage() {
       />
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="manga-card manga-rush halftone p-5 sm:p-6">
+        <div className="manga-card manga-rush halftone anim-drop p-5 sm:p-6">
           <ol className="mb-6 flex items-center gap-2 text-xs font-semibold" aria-label="Langkah deposit">
             {["Nominal", "Metode", "Bayar"].map((label, i) => (
               <li key={label} className="flex flex-1 items-center gap-2">
@@ -337,7 +337,7 @@ export default function DepositPage() {
                   className="w-full bg-transparent px-2 py-4 text-2xl font-extrabold tabular-nums text-ink outline-none placeholder:text-muted/40"
                 />
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-2">
+              <div className="anim-stagger mt-3 grid grid-cols-3 gap-2">
                 {QUICK.filter((v) => v >= cfg.min && v <= cfg.max).map((v) => (
                   <button
                     key={v}
@@ -355,7 +355,7 @@ export default function DepositPage() {
 
               {error && <Alert className="mt-4">{error}</Alert>}
 
-              <button type="submit" disabled={!token} className="btn-primary mt-6 w-full">
+              <button type="submit" disabled={!token} className="btn-primary anim-sheen mt-6 w-full">
                 Pilih metode pembayaran
               </button>
               <p className="mt-3 text-center text-xs text-muted">
@@ -375,7 +375,7 @@ export default function DepositPage() {
               </div>
 
               <p className="label mt-5">Bayar pakai QRIS mana?</p>
-              <div className="space-y-2" role="radiogroup">
+              <div className="anim-stagger space-y-2" role="radiogroup">
                 {methods.map((p) => {
                   const on = !!cfg.providers?.[p.key];
                   const selected = provider === p.key && on;

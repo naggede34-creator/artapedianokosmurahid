@@ -249,7 +249,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
           {screen === "server" && (
-            <div className="fade-up space-y-3">
+            <div className="fade-up anim-stagger space-y-3">
               <p className="text-sm text-muted">Mau pakai server yang mana?</p>
               {serverList.map((sv, i) => {
                 const on = available[sv.key] !== false;
@@ -346,7 +346,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
               ) : (
                 <>
                   <p className="mt-5 text-sm font-semibold text-ink">Aplikasi Populer</p>
-                  <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="anim-stagger mt-3 grid grid-cols-2 gap-3">
                     {popular.map((s) => (
                       <button
                         key={s.service_code}

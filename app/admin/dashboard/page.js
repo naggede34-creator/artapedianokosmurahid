@@ -100,6 +100,9 @@ export default function AdminDashboardPage() {
   const [maintenanceBtnForm, setMaintenanceBtnForm] = useState({ label: "", url: "" });
   // Judul + isi pesan yang tampil di halaman maintenance.
   const [maintenanceTextForm, setMaintenanceTextForm] = useState({ title: "", msg: "" });
+  const [csForm, setCsForm] = useState("");
+  const [savingCs, setSavingCs] = useState(false);
+  const [csMsg, setCsMsg] = useState("");
   const [savingMaintenanceText, setSavingMaintenanceText] = useState(false);
   const [maintenanceTextMsg, setMaintenanceTextMsg] = useState("");
   // Nama, label, keterangan, dan pesan offline tiap server nokos.
@@ -503,6 +506,27 @@ export default function AdminDashboardPage() {
     }
   }
 
+  async function saveCs() {
+    setSavingCs(true);
+    setCsMsg("");
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csUsername: csForm })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSettings(data);
+      setCsMsg("Username CS tersimpan.");
+    } catch (err) {
+      setCsMsg(err.message || "Gagal menyimpan.");
+    } finally {
+      setSavingCs(false);
+      setTimeout(() => setCsMsg(""), 3000);
+    }
+  }
+
   async function saveMaintenanceText() {
     setSavingMaintenanceText(true);
     setMaintenanceTextMsg("");
@@ -622,6 +646,7 @@ export default function AdminDashboardPage() {
       title: data.maintenanceTitle || "",
       msg: data.maintenanceMsg || "",
     });
+    setCsForm(data.csUsername || "");
     setDepositForms(
       Object.fromEntries(
         (Array.isArray(data.depositMethods) ? data.depositMethods : []).map((m) => [
@@ -2592,6 +2617,29 @@ export default function AdminDashboardPage() {
                   </button>
                 </div>
               </div>
+              <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-muted">Username Customer Service (Telegram)</label>
+                <div className="mt-1.5 flex gap-2">
+                  <input
+                    value={csForm}
+                    onChange={(e) => setCsForm(e.target.value)}
+                    placeholder="teatlas"
+                    className="w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+                  />
+                  <button
+                    onClick={saveCs}
+                    disabled={savingCs}
+                    className="btn-3d shrink-0 rounded-lg bg-amber px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+                  >
+                    {savingCs ? "..." : "Simpan"}
+                  </button>
+                </div>
+                {csMsg && <p className="mt-1.5 text-xs font-medium text-teal-bright">{csMsg}</p>}
+                <p className="mt-1 text-[11px] text-muted">
+                  Tanpa tanda @. Dipakai tombol Customer Service di web dan di bot Telegram.
+                </p>
+              </div>
+
               <div className="sm:col-span-2">
                 <label className="text-xs font-medium text-muted">Judul &amp; pesan halaman maintenance</label>
                 <input

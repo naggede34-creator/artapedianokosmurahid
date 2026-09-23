@@ -38,7 +38,9 @@ function TypingDots() {
 }
 
 export default function SupportWidget({
-  channelInfo = "https://t.me/kkaelnokosmurah"}) {
+  channelInfo = "https://t.me/kkaelnokosmurah",
+  csUsername = "teatlas"
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState([GREETING]);
@@ -150,6 +152,17 @@ export default function SupportWidget({
       {/* Speed-dial links */}
       {!chatOpen && menuOpen && (
         <div className="flex flex-col items-end gap-2">
+          {/* CS manusia — diletakkan paling atas karena ini yang paling dicari
+              user saat ada masalah transaksi. */}
+          <a
+            href={`https://t.me/${(csUsername || "teatlas").replace(/^@/, "")}`}
+            target="_blank"
+            rel="noreferrer"
+            className="hover-lift flex items-center gap-2 rounded-full border-2 border-amber bg-amber-soft py-2 pl-3 pr-4 text-sm font-bold text-amber-bright shadow-lift"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber text-white">💬</span>
+            Customer Service
+          </a>
           <a
             href={channelInfo}
             target="_blank"

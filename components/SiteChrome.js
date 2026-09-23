@@ -23,6 +23,7 @@ export default function SiteChrome({ children }) {
   const [maintenanceBtnLabel, setMaintenanceBtnLabel] = useState("");
   const [maintenanceBtnUrl, setMaintenanceBtnUrl] = useState("");
   const [channelInfo, setChannelInfo] = useState("https://t.me/kkaelnokosmurah");
+  const [csUsername, setCsUsername] = useState("teatlas");
 
   useEffect(() => {
     if (isAdmin) {
@@ -38,6 +39,7 @@ export default function SiteChrome({ children }) {
         setMaintenanceBtnLabel(d.maintenanceButtonLabel || "");
         setMaintenanceBtnUrl(d.maintenanceButtonUrl || "");
         if (d.channelInfo) setChannelInfo(d.channelInfo);
+        if (d.csUsername) setCsUsername(d.csUsername);
       })
       .catch(() => setMaintenance(false))
       .finally(() => setChecked(true));
@@ -70,7 +72,7 @@ export default function SiteChrome({ children }) {
       <main className="pb-24 md:pb-0">{children}</main>
       <Footer />
       <BottomNav />
-      <SupportWidget channelInfo={channelInfo} />
+      <SupportWidget channelInfo={channelInfo} csUsername={csUsername} />
     </>
   );
 }

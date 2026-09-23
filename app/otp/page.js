@@ -184,7 +184,7 @@ function OtpPageInner() {
               }}
             />
           ) : (
-            <div className="manga-card halftone flex flex-col items-center gap-3 px-6 py-10 text-center">
+            <div className="manga-card halftone anim-drop flex flex-col items-center gap-3 px-6 py-10 text-center">
               <span className="float-slow flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-soft text-amber-bright shadow-[0_4px_0_rgb(var(--c-orange)/0.3)]">
                 <Icon.phone width={26} height={26} />
               </span>
