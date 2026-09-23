@@ -163,6 +163,9 @@ export default function AdminDashboardPage() {
   const [lbMsg, setLbMsg] = useState("");
   const [lbPrizes, setLbPrizes] = useState("5000, 3000, 1000");
   const [lbGift, setLbGift] = useState({ rank: "1", amount: "", note: "" });
+  const [petForm, setPetForm] = useState(null);
+  const [petBusy, setPetBusy] = useState(false);
+  const [petMsg, setPetMsg] = useState("");
 
   const [atlDiag, setAtlDiag] = useState(null);
   const [atlBusy, setAtlBusy] = useState(false);
@@ -789,6 +792,33 @@ export default function AdminDashboardPage() {
     }
   }
 
+  async function savePetSettings(patch) {
+    setPetBusy(true);
+    setPetMsg("");
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pet: patch })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setSettings(d);
+      setPetForm((f) => ({
+        ...f,
+        enabled: d.pet?.enabled !== false,
+        bonusPerLevel: String(d.pet?.bonusPerLevel ?? 0.1),
+        maxBonus: String(d.pet?.maxBonus ?? 2)
+      }));
+      setPetMsg("Pengaturan pet tersimpan.");
+    } catch (err) {
+      setPetMsg(err.message || "Gagal menyimpan.");
+    } finally {
+      setPetBusy(false);
+      setTimeout(() => setPetMsg(""), 3500);
+    }
+  }
+
   async function saveLbSettings(patch) {
     setLbBusy(true);
     try {
@@ -1063,6 +1093,14 @@ export default function AdminDashboardPage() {
         ])
       )
     );
+    setPetForm({
+      enabled: data.pet?.enabled !== false,
+      bonusPerLevel: String(data.pet?.bonusPerLevel ?? 0.1),
+      maxBonus: String(data.pet?.maxBonus ?? 2),
+      xpBeriMakan: String(data.pet?.xpBeriMakan ?? 15),
+      xpBermain: String(data.pet?.xpBermain ?? 10),
+      xpHarian: String(data.pet?.xpHarian ?? 5)
+    });
     setManualForm({
       qrImage: data.manualDeposit?.qrImage || "",
       accountName: data.manualDeposit?.accountName || "",
@@ -4222,6 +4260,99 @@ export default function AdminDashboardPage() {
               </div>
             </div>
             {settingsMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{settingsMsg}</p>}
+          </div>
+
+          {/* Pet Arta Pedia */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">🥚 Pet Arta Pedia</h2>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Level pet menambah <b>persen cashback deposit</b> — ini uang sungguhan yang keluar tiap kali orang isi
+              saldo. Bonus akhirnya = level × bonus per level, dan <b>selalu</b> dibatasi bonus maksimum, berapa pun
+              yang diisi di kolom pertama.
+            </p>
+
+            {petForm && (
+              <>
+                <div className="mt-4 flex items-center justify-between rounded-lg border border-line bg-surface px-3.5 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-ink">Fitur pet aktif</p>
+                    <p className="text-[11px] text-muted">Kalau dimatikan, halaman petnya tertutup dan bonusnya jadi 0.</p>
+                  </div>
+                  <button
+                    onClick={() => savePetSettings({ enabled: !petForm.enabled })}
+                    disabled={petBusy}
+                    className={`btn-3d relative h-7 w-12 shrink-0 rounded-full transition-colors ${petForm.enabled ? "bg-teal" : "bg-line"}`}
+                    aria-label="Toggle fitur pet"
+                  >
+                    <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${petForm.enabled ? "translate-x-6" : "translate-x-1"}`} />
+                  </button>
+                </div>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {[
+                    { k: "bonusPerLevel", label: "Bonus cashback per level (%)", step: "0.01", max: "1", hint: "mis. 0,1 = tiap level menambah 0,1%" },
+                    { k: "maxBonus", label: "Bonus maksimum (%)", step: "0.1", max: "10", hint: "batas atas, tidak bisa dilewati" },
+                    { k: "xpBeriMakan", label: "XP sekali beri makan", step: "1", max: "100", hint: "100 XP = naik satu level" },
+                    { k: "xpBermain", label: "XP sekali diajak main", step: "1", max: "100", hint: "sekali sehari, sama seperti makan" },
+                    { k: "xpHarian", label: "XP harian tanpa dirawat", step: "1", max: "100", hint: "supaya pet tetap tumbuh pelan" }
+                  ].map((f) => (
+                    <div key={f.k}>
+                      <label className="text-[11px] font-medium text-muted">{f.label}</label>
+                      <input
+                        type="number"
+                        step={f.step}
+                        min="0"
+                        max={f.max}
+                        value={petForm[f.k]}
+                        onChange={(e) => setPetForm((x) => ({ ...x, [f.k]: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                      />
+                      <p className="mt-0.5 text-[10px] text-muted">{f.hint}</p>
+                    </div>
+                  ))}
+
+                  <div className="sm:col-span-2">
+                    <p className="mb-2 rounded-lg border border-amber/30 bg-amber/5 px-3 py-2 text-[11px] text-ink">
+                      Contoh dengan angka sekarang: pet level 10 menambah{" "}
+                      <b>
+                        +
+                        {Math.min(
+                          Number(petForm.maxBonus) || 0,
+                          Number(((Number(petForm.bonusPerLevel) || 0) * 10).toFixed(2))
+                        )}
+                        %
+                      </b>{" "}
+                      cashback, dan level 30 (tertinggi) menambah{" "}
+                      <b>
+                        +
+                        {Math.min(
+                          Number(petForm.maxBonus) || 0,
+                          Number(((Number(petForm.bonusPerLevel) || 0) * 30).toFixed(2))
+                        )}
+                        %
+                      </b>
+                      .
+                    </p>
+                    <button
+                      onClick={() =>
+                        savePetSettings({
+                          bonusPerLevel: Number(petForm.bonusPerLevel) || 0,
+                          maxBonus: Number(petForm.maxBonus) || 0,
+                          xpBeriMakan: Number(petForm.xpBeriMakan) || 0,
+                          xpBermain: Number(petForm.xpBermain) || 0,
+                          xpHarian: Number(petForm.xpHarian) || 0
+                        })
+                      }
+                      disabled={petBusy}
+                      className="btn-3d rounded-lg bg-amber px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
+                    >
+                      {petBusy ? "Menyimpan…" : "Simpan pengaturan pet"}
+                    </button>
+                    {petMsg && <span className="ml-2 text-xs font-medium text-teal-bright">{petMsg}</span>}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Loyalitas */}

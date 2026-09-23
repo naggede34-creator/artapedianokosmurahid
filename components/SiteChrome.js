@@ -9,6 +9,7 @@ import SupportWidget from "@/components/SupportWidget";
 import BroadcastBar from "@/components/BroadcastBar";
 import MascotGreeting from "@/components/MascotGreeting";
 import ComicIntro from "@/components/ComicIntro";
+import MascotNudge from "@/components/MascotNudge";
 import WelcomeBonusPopup from "@/components/WelcomeBonusPopup";
 import InfoModal from "@/components/InfoModal";
 import LogoLoader from "@/components/LogoLoader";
@@ -85,6 +86,7 @@ export default function SiteChrome({ children }) {
       {/* Sapaan maskot & popup pembuka menunggu animasi loading selesai
           (lihat lib/introGate.js) supaya tidak tertimbun di belakangnya. */}
       <ComicIntro />
+      <MascotNudge />
       <MascotGreeting />
       <InfoModal />
       <WelcomeBonusPopup />

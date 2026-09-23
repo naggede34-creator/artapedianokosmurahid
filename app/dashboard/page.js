@@ -46,6 +46,7 @@ const shortcuts = [
   { href: "/deposit", label: "Isi saldo", icon: Icon.qris },
   { href: "/transfer", label: "Transfer", icon: Icon.transfer },
   { href: "/mutasi", label: "Mutasi", icon: Icon.ledger },
+  { href: "/pet", label: "Pet Arta Pedia", icon: "🥚", badge: "Baru" },
   { href: "/misi", label: "Misi & Poin", icon: Icon.star },
   { href: "/referral", label: "Undang teman", icon: Icon.gift },
   { href: "/apikey", label: "API Key", icon: Icon.key, badge: "Dev" },

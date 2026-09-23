@@ -65,6 +65,7 @@ const sections = [
   {
     title: "Hadiah",
     items: [
+      { href: "/pet", label: "Pet Arta Pedia", icon: <span className="text-[17px] leading-none">🥚</span>, badge: "Baru" },
       { href: "/loyalitas", label: "Poin & Level", icon: <Icon.star width={19} height={19} /> },
       { href: "/toko-poin", label: "Toko Poin", icon: I.cart, badge: "Baru" },
       { href: "/misi", label: "Misi & Tantangan", icon: I.trophy, badge: "Baru" },
