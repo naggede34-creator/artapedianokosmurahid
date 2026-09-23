@@ -1,22 +1,22 @@
 // Pasang / lepas / cek webhook bot toko.
 //
-// Bisa dipakai dua cara:
+// Bisa dipakai tiga cara:
 //   1. Dari Dashboard Admin (tombol) — memakai cookie admin yang sudah login.
-//   2. Manual lewat URL: /api/bot/setup?secret=ISI_CRON_SECRET
+//   2. Manual lewat URL: /api/bot/setup?action=set&secret=ISI_CRON_SECRET
+//   3. Lewat bot OWNER: /pasangwebhook, /cekwebhook, /diagnosabot
 //
-// Kalau dibuka tanpa keduanya, jawabannya menyebutkan apa yang kurang, bukan
-// sekadar "Unauthorized" yang tidak menolong.
+// Logika pemasangannya sendiri ada di lib/botWebhook.js supaya jalur tombol dan
+// jalur bot owner tidak punya versi masing-masing yang lama-lama berbeda.
 import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/adminAuth";
+import { shopBotConfigured, shopBotOwners, rawWebhookSecret, webhookSecretValid } from "@/lib/shopBot";
 import {
-  shopBotToken,
-  shopBotConfigured,
-  shopBotOwners,
-  rawWebhookSecret,
-  webhookSecret,
-  webhookSecretValid
-} from "@/lib/shopBot";
-import { getSettings } from "@/lib/settings";
+  shopBotIdentity,
+  setShopWebhook,
+  shopWebhookInfo,
+  deleteShopWebhook,
+  diagnoseShopWebhook
+} from "@/lib/botWebhook";
 
 export const dynamic = "force-dynamic";
 
@@ -33,47 +33,20 @@ function authorize(req) {
   return {
     ok: false,
     error:
-      "Butuh izin. Dua caranya: login dulu di /admin lalu buka halaman ini dari " +
-      "Dashboard Admin, ATAU tambahkan ?secret=NILAI_CRON_SECRET di URL " +
-      "(nilainya ada di Environment Variables Vercel, bukan ditebak).",
+      "Butuh izin. Tiga caranya: login dulu di /admin lalu pakai tombol di Dashboard Admin, " +
+      "tambahkan ?secret=NILAI_CRON_SECRET di URL (nilainya ada di Environment Variables " +
+      "Vercel, bukan ditebak), atau kirim /pasangwebhook ke bot owner.",
     hint: given ? "Secret yang kamu kirim tidak cocok dengan CRON_SECRET." : "Kamu belum mengirim ?secret= sama sekali."
   };
 }
 
-// Selalu mengembalikan objek, tidak pernah melempar. Kalau Telegram tidak bisa
-// dihubungi, halaman ini harus tetap memberi jawaban yang bisa dibaca admin —
-// bukan mati tanpa pesan.
-// Dua alamat dianggap sama kalau cuma beda hal sepele: garis miring di ujung,
-// huruf besar/kecil di host, atau "www." di depan. Perbedaan seperti itu tidak
-// membuat webhook gagal, jadi tidak perlu dilaporkan sebagai masalah.
-function sameUrl(a, b) {
-  const norm = (v) => {
-    try {
-      const u = new URL(String(v));
-      return `${u.protocol}//${u.host.toLowerCase().replace(/^www\./, "")}${u.pathname.replace(/\/+$/, "")}`;
-    } catch {
-      return String(v || "").trim().replace(/\/+$/, "").toLowerCase();
-    }
-  };
-  return Boolean(a) && norm(a) === norm(b);
-}
+const catatanOwner = () =>
+  shopBotOwners().length ? null : "SHOP_BOT_OWNER_IDS masih kosong — /admin dan /broadcast tidak akan bisa dipakai.";
 
-async function tg(method, body) {
-  const token = shopBotToken();
-  try {
-    const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
-      method: body ? "POST" : "GET",
-      signal: AbortSignal.timeout(15000),
-      ...(body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {})
-    });
-    const data = await res.json().catch(() => null);
-    if (!data) return { ok: false, description: `Respons Telegram tidak terbaca (HTTP ${res.status})` };
-    return data;
-  } catch (err) {
-    const reason = err?.name === "TimeoutError" ? "waktu tunggu habis" : err?.message || "jaringan gagal";
-    return { ok: false, description: `Tidak bisa menghubungi api.telegram.org (${reason})`, unreachable: true };
-  }
-}
+const peringatanSecret = () =>
+  rawWebhookSecret().length > 0 && !webhookSecretValid()
+    ? "SHOP_BOT_WEBHOOK_SECRET berisi karakter yang tidak diterima Telegram (hanya huruf, angka, _ dan -). Selama begitu, secretnya diabaikan dan webhook dipasang tanpa secret. Bot tetap jalan."
+    : null;
 
 export async function GET(req) {
   const auth = authorize(req);
@@ -95,16 +68,17 @@ export async function GET(req) {
 
   const url = new URL(req.url);
   const action = url.searchParams.get("action") || "set";
+  const origin = url.origin;
 
   // Cek token dulu: kalau tokennya salah, semua aksi lain pasti gagal dan
   // pesannya jadi membingungkan.
-  const me = await tg("getMe");
-  if (!me.ok) {
-    if (me.unreachable) {
+  const id = await shopBotIdentity();
+  if (!id.ok) {
+    if (id.unreachable) {
       return NextResponse.json(
         {
           error: "Server tidak bisa menghubungi Telegram.",
-          telegram: me.description,
+          telegram: id.error,
           langkah: [
             "Coba lagi sebentar — biasanya gangguan sementara",
             "Kalau terus gagal, cek apakah deployment-mu bisa mengakses internet keluar"
@@ -116,7 +90,7 @@ export async function GET(req) {
     return NextResponse.json(
       {
         error: "Token bot ditolak Telegram.",
-        telegram: me.description,
+        telegram: id.error,
         langkah: [
           "Cek lagi SHOP_BOT_TOKEN di Vercel — pastikan tersalin utuh, tanpa spasi",
           "Kalau token lama sudah di-revoke, ambil token baru di @BotFather"
@@ -126,156 +100,59 @@ export async function GET(req) {
     );
   }
 
-  const bot = { id: me.result?.id, username: me.result?.username, name: me.result?.first_name };
+  const bot = { id: id.id, username: id.username, name: id.name };
 
   if (action === "delete") {
-    const d = await tg("deleteWebhook", { drop_pending_updates: false });
-    return NextResponse.json({ ok: d.ok, action: "delete", bot, telegram: d.description || "webhook dilepas" });
+    const d = await deleteShopWebhook();
+    return NextResponse.json({ ok: d.ok, action: "delete", bot, telegram: d.telegram });
   }
 
-  // Diagnosa: merekam keadaan webhook sebelum dipasang, tepat sesudah dipasang,
-  // dan beberapa detik kemudian. Kalau alamatnya terisi lalu hilang sendiri,
-  // berarti ada program lain yang memakai token bot yang sama — memanggil
-  // getUpdates (long polling) atau deleteWebhook akan menghapus webhook kita.
   if (action === "diagnosa") {
-    const langkah = [];
-    const snapshot = async (label) => {
-      const i = await tg("getWebhookInfo");
-      langkah.push({
-        saat: label,
-        url: i.result?.url || "(kosong)",
-        pending: i.result?.pending_update_count ?? null,
-        lastError: i.result?.last_error_message || null
-      });
-      return i.result?.url || "";
-    };
-
-    let settingsD = {};
-    try {
-      settingsD = await getSettings();
-    } catch {}
-    const baseD = (settingsD.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || url.origin).replace(/\/+$/, "");
-    const targetD = `${baseD}/api/bot/webhook`;
-
-    await snapshot("sebelum dipasang");
-
-    const setD = await tg("setWebhook", {
-      url: targetD,
-      allowed_updates: ["message", "callback_query"],
-      drop_pending_updates: true,
-      ...(webhookSecret() ? { secret_token: webhookSecret() } : {})
-    });
-
-    const seg0 = await snapshot("tepat setelah dipasang");
-    await new Promise((r) => setTimeout(r, 3500));
-    const seg3 = await snapshot("3,5 detik kemudian");
-
-    let kesimpulan;
-    if (!setD.ok) {
-      kesimpulan = `Telegram menolak pemasangan: ${setD.description}`;
-    } else if (!seg0) {
-      kesimpulan =
-        "Telegram menjawab berhasil, tapi alamatnya TIDAK pernah tersimpan walau dicek seketika. " +
-        "Ini terjadi kalau ada program lain yang terus-menerus memakai token bot yang sama.";
-    } else if (!seg3) {
-      kesimpulan =
-        "Webhook sempat terpasang lalu HILANG sendiri dalam hitungan detik. " +
-        "Penyebabnya program lain yang memakai token bot yang sama: memanggil getUpdates " +
-        "(long polling) atau deleteWebhook akan menghapus webhook ini. " +
-        "Matikan bot lama itu, atau ambil token baru di @BotFather lewat /revoke.";
-    } else {
-      kesimpulan = "Webhook terpasang dan bertahan. Bot siap dipakai.";
-    }
-
+    const d = await diagnoseShopWebhook(origin);
     return NextResponse.json({
       ok: true,
       action: "diagnosa",
       bot,
-      alamatDituju: targetD,
-      jawabanSetWebhook: setD.description || (setD.ok ? "berhasil" : "gagal"),
-      langkah,
-      kesimpulan
+      alamatDituju: d.target,
+      jawabanSetWebhook: d.jawabanSetWebhook,
+      langkah: d.langkah,
+      kesimpulan: d.kesimpulan
     });
   }
 
   if (action === "info") {
-    const info = await tg("getWebhookInfo");
-    const r = info.result || {};
-    const expected = `${(
-      (await getSettings().catch(() => ({}))).siteUrl ||
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      url.origin
-    ).replace(/\/+$/, "")}/api/bot/webhook`;
-
+    const r = await shopWebhookInfo(origin);
     return NextResponse.json({
-      ok: info.ok,
+      ok: r.ok,
       action: "info",
       bot,
       webhook: r.url || "(belum dipasang)",
-      verifikasi: !r.url
-        ? "belum terpasang"
-        : sameUrl(r.url, expected)
-        ? "terpasang"
-        : "terpasang ke alamat lain",
+      verifikasi: !r.url ? "belum terpasang" : r.terpasang ? "terpasang" : "terpasang ke alamat lain",
       saran: !r.url
         ? "Tekan Pasang Webhook."
-        : sameUrl(r.url, expected)
+        : r.terpasang
         ? null
-        : `Telegram menyimpan ${r.url}, sedangkan Site URL kamu ${expected}. Kalau yang tersimpan itu domain aktifmu, botnya tetap jalan.`,
-      pendingUpdates: r.pending_update_count ?? 0,
-      lastError: r.last_error_message || null,
-      lastErrorAt: r.last_error_date ? new Date(r.last_error_date * 1000).toISOString() : null,
-      ownerTerdaftar: shopBotOwners(),
-      peringatanSecret:
-        rawWebhookSecret().length > 0 && !webhookSecretValid()
-          ? "SHOP_BOT_WEBHOOK_SECRET berisi karakter yang tidak diterima Telegram (hanya huruf, angka, _ dan -). Selama begitu, secretnya diabaikan."
-          : null,
+        : `Telegram menyimpan ${r.url}, sedangkan Site URL kamu ${r.expected}. Kalau yang tersimpan itu domain aktifmu, botnya tetap jalan.`,
+      pendingUpdates: r.pending,
+      lastError: r.lastError,
+      lastErrorAt: r.lastErrorAt,
+      ownerTerdaftar: r.owners,
+      peringatanSecret: peringatanSecret(),
       // Kesalahan paling sering: owner id belum diisi, jadi /admin & /broadcast
       // ditolak padahal botnya sendiri sudah jalan.
-      catatan: shopBotOwners().length ? null : "SHOP_BOT_OWNER_IDS masih kosong — /admin dan /broadcast tidak akan bisa dipakai."
+      catatan: catatanOwner()
     });
   }
 
   // action=set
-  let settings = {};
-  try {
-    settings = await getSettings();
-  } catch {}
-  const base = (settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || url.origin).replace(/\/+$/, "");
-  const target = `${base}/api/bot/webhook`;
-
-  if (!/^https:\/\//i.test(target)) {
+  const r = await setShopWebhook(origin);
+  if (!r.ok) {
     return NextResponse.json(
       {
-        error: "Alamat webhook harus HTTPS.",
-        alamatTerbaca: target,
-        langkah: ["Isi Site URL yang benar di Dashboard Admin → Pengaturan Situs, mis. https://domainkamu.vercel.app"]
-      },
-      { status: 400 }
-    );
-  }
-
-  // Secret yang formatnya salah membuat setWebhook DITOLAK — itu penyebab paling
-  // sering webhook "sudah dipasang" tapi ternyata kosong. Daripada menggagalkan
-  // seluruh pemasangan, secret yang tidak sah dilewati dan admin diberi tahu.
-  const secret = webhookSecret();
-  const secretBermasalah = rawWebhookSecret().length > 0 && !webhookSecretValid();
-
-  const set = await tg("setWebhook", {
-    url: target,
-    allowed_updates: ["message", "callback_query"],
-    drop_pending_updates: true,
-    ...(secret ? { secret_token: secret } : {})
-  });
-
-  if (!set.ok) {
-    return NextResponse.json(
-      {
-        error: "Telegram menolak pemasangan webhook.",
-        telegram: set.description,
-        alamat: target,
+        error: r.error,
+        alamatTerbaca: r.target || null,
         langkah: [
-          "Pastikan Site URL di Pengaturan Situs adalah domain yang benar-benar aktif",
+          "Isi Site URL yang benar di Dashboard Admin → Pengaturan Situs, mis. https://domainkamu.vercel.app",
           "Alamatnya harus bisa dibuka publik lewat HTTPS"
         ]
       },
@@ -283,31 +160,21 @@ export async function GET(req) {
     );
   }
 
-  // Telegram kadang belum langsung melaporkan webhook yang baru dipasang, jadi
-  // verifikasinya diberi satu kesempatan kedua sebelum dinyatakan tidak cocok.
-  let info = await tg("getWebhookInfo");
-  let reported = info.result?.url || "";
-  if (info.ok && !sameUrl(reported, target)) {
-    await new Promise((r) => setTimeout(r, 1200));
-    info = await tg("getWebhookInfo");
-    reported = info.result?.url || "";
-  }
-
   // Tiga keadaan yang berbeda, dan dulu ketiganya dilaporkan sama: "belum cocok".
   let verifikasi;
   let saran = null;
-  if (!info.ok) {
-    verifikasi = "terpasang, tapi belum bisa diverifikasi";
-    saran = "Telegram menerima pemasangannya, hanya pengecekan ulangnya yang gagal. Tekan Cek Status sebentar lagi.";
-  } else if (sameUrl(reported, target)) {
+  if (r.terpasang) {
     verifikasi = "terpasang";
-  } else if (!reported) {
+  } else if (!r.reported) {
     verifikasi = "belum terpasang";
-    saran = "Telegram melaporkan webhook masih kosong. Coba tekan Pasang Webhook sekali lagi.";
+    saran =
+      "Telegram melaporkan webhook masih kosong padahal pemasangannya diterima. " +
+      "Jalankan ?action=diagnosa (atau /diagnosabot di bot owner) — biasanya ada program lain " +
+      "yang masih memakai token bot yang sama.";
   } else {
     verifikasi = "terpasang ke alamat lain";
     saran =
-      `Telegram menyimpan ${reported}, sedangkan Site URL kamu mengarah ke ${target}. ` +
+      `Telegram menyimpan ${r.reported}, sedangkan Site URL kamu mengarah ke ${r.target}. ` +
       `Kalau alamat yang tersimpan itu domain aktifmu, biarkan saja — botnya tetap jalan. ` +
       `Kalau bukan, perbaiki Site URL di Pengaturan Situs lalu pasang ulang.`;
   }
@@ -316,19 +183,17 @@ export async function GET(req) {
     ok: true,
     action: "set",
     bot,
-    webhook: target,
-    webhookTersimpan: reported || "(kosong)",
-    secretDipakai: Boolean(secret),
+    webhook: r.target,
+    webhookTersimpan: r.reported || "(kosong)",
+    secretDipakai: r.secretDipakai,
     verifikasi,
     saran,
-    pendingUpdates: info.result?.pending_update_count ?? 0,
-    lastError: info.result?.last_error_message || null,
+    pendingUpdates: r.pending,
+    lastError: r.lastError,
     ownerTerdaftar: shopBotOwners(),
-    catatan: shopBotOwners().length ? null : "SHOP_BOT_OWNER_IDS masih kosong — /admin dan /broadcast tidak akan bisa dipakai.",
-    peringatanSecret: secretBermasalah
-      ? "SHOP_BOT_WEBHOOK_SECRET berisi karakter yang tidak diterima Telegram (hanya boleh huruf, angka, _ dan -), jadi webhook dipasang TANPA secret. Bot tetap jalan. Kalau mau memakainya, ganti nilainya jadi seperti artapedia_bot_2026 lalu pasang ulang."
-      : null,
-    telegram: set.description || "webhook dipasang",
+    catatan: catatanOwner(),
+    peringatanSecret: peringatanSecret(),
+    telegram: r.telegram,
     langkahSelanjutnya: `Buka Telegram, cari @${bot.username}, kirim /start`
   });
 }

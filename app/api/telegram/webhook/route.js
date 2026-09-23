@@ -4,6 +4,15 @@ import { sendMessage, isOwner, rupiah, HELP_TEXT } from "@/lib/telegramBot";
 import { logBalance } from "@/lib/ledger";
 import { esc } from "@/lib/telegram";
 import { diagnoseWarungNokos, warungNokosConfigured } from "@/lib/warungnokos";
+import {
+  webhookUrl,
+  shopBotIdentity,
+  setShopWebhook,
+  shopWebhookInfo,
+  deleteShopWebhook,
+  diagnoseShopWebhook
+} from "@/lib/botWebhook";
+import { shopBotConfigured, shopBotOwners } from "@/lib/shopBot";
 
 // Set URL ini sebagai webhook bot di BotFather / API Telegram:
 // https://domainkamu.vercel.app/api/telegram/webhook
@@ -40,6 +49,9 @@ export async function POST(req) {
 
     const [cmdRaw, ...args] = text.split(/\s+/);
     const cmd = cmdRaw.toLowerCase();
+    // Dipakai kalau Site URL di pengaturan kosong: alamat deployment ini sendiri
+    // sudah pasti alamat yang benar, karena update ini sampai ke sini.
+    const origin = new URL(req.url).origin;
     const users = await usersCol();
 
     if (cmd === "/start" || cmd === "/help") {
@@ -79,6 +91,16 @@ export async function POST(req) {
           await sendMessage(chatId, `Gagal cek WarungNokos: ${esc(e.message)}`);
         }
       }
+    } else if (cmd === "/linkwebhook") {
+      await handleLinkWebhook(chatId, origin);
+    } else if (cmd === "/pasangwebhook") {
+      await handlePasangWebhook(chatId, origin);
+    } else if (cmd === "/cekwebhook") {
+      await handleCekWebhook(chatId, origin);
+    } else if (cmd === "/lepaswebhook") {
+      await handleLepasWebhook(chatId);
+    } else if (cmd === "/diagnosabot") {
+      await handleDiagnosaBot(chatId, origin);
     } else {
       await sendMessage(chatId, "Perintah tidak dikenali. Ketik /help untuk lihat menu.");
     }
@@ -222,5 +244,141 @@ async function handleStatistik(chatId, users) {
       `Total saldo beredar: ${rupiah(agg?.totalSaldo || 0)}\n` +
       `Total teman berhasil diundang: ${agg?.totalReferralCount || 0}\n` +
       `Total bonus referral dibagikan: ${rupiah(agg?.totalReferralEarnings || 0)}`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Kendali webhook BOT TOKO dari bot OWNER.
+//
+// Bot owner dan bot toko memakai token yang berbeda, jadi bot owner tetap hidup
+// walau webhook bot toko mati — itu sebabnya perintah ini ditaruh di sini dan
+// bukan di bot tokonya sendiri, yang tidak akan bisa menerima perintah apa pun
+// selama webhook-nya belum terpasang.
+// ---------------------------------------------------------------------------
+
+function botBelumDiisi(chatId) {
+  return sendMessage(
+    chatId,
+    "SHOP_BOT_TOKEN belum diisi di Environment Variables Vercel.\n" +
+      "Isi dulu dengan token bot toko dari @BotFather, redeploy, lalu ulangi perintah ini."
+  );
+}
+
+function catatanOwner() {
+  return shopBotOwners().length
+    ? ""
+    : "\n\n\u26A0\uFE0F SHOP_BOT_OWNER_IDS masih kosong — /admin dan /broadcast di bot toko akan ditolak.";
+}
+
+async function handleLinkWebhook(chatId, origin) {
+  const target = (await webhookUrl(origin)) || `${origin}/api/bot/webhook`;
+  const punyaCron = Boolean((process.env.CRON_SECRET || "").trim());
+
+  await sendMessage(
+    chatId,
+    `\u{1F517} <b>Link Webhook Bot Toko</b>\n\n` +
+      `<b>Alamat webhook</b> (ini yang didaftarkan ke Telegram):\n` +
+      `<code>${esc(target)}</code>\n\n` +
+      `<b>Pasang manual lewat browser:</b>\n` +
+      `<code>${esc(target.replace(/\/webhook$/, "/setup"))}?action=set${punyaCron ? "&secret=ISI_CRON_SECRET" : ""}</code>\n\n` +
+      `<b>Cek status lewat browser:</b>\n` +
+      `<code>${esc(target.replace(/\/webhook$/, "/setup"))}?action=info${punyaCron ? "&secret=ISI_CRON_SECRET" : ""}</code>\n\n` +
+      (punyaCron
+        ? `Ganti <code>ISI_CRON_SECRET</code> dengan nilai CRON_SECRET di Vercel. `
+        : `CRON_SECRET belum diisi, jadi alamat di atas bisa dibuka tanpa secret. `) +
+      `Atau lebih gampang: kirim /pasangwebhook di sini.`
+  );
+}
+
+async function handlePasangWebhook(chatId, origin) {
+  if (!shopBotConfigured()) return botBelumDiisi(chatId);
+
+  await sendMessage(chatId, "\u23F3 Memasang webhook bot toko...");
+
+  const id = await shopBotIdentity();
+  if (!id.ok) {
+    await sendMessage(
+      chatId,
+      `\u274C Token bot toko ditolak Telegram.\n<code>${esc(id.error || "-")}</code>\n\n` +
+        `Cek lagi SHOP_BOT_TOKEN di Vercel — pastikan tersalin utuh tanpa spasi.`
+    );
+    return;
+  }
+
+  const r = await setShopWebhook(origin);
+  if (!r.ok) {
+    await sendMessage(chatId, `\u274C Gagal memasang.\n<code>${esc(r.error || "-")}</code>`);
+    return;
+  }
+
+  const kepala = r.terpasang ? "\u2705 Webhook terpasang" : "\u26A0\uFE0F Terpasang, tapi belum terverifikasi";
+  await sendMessage(
+    chatId,
+    `${kepala}\n\n` +
+      `Bot: @${esc(id.username || "-")}\n` +
+      `Alamat: <code>${esc(r.target)}</code>\n` +
+      `Tersimpan di Telegram: <code>${esc(r.reported || "(kosong)")}</code>\n` +
+      `Secret dipakai: ${r.secretDipakai ? "ya" : "tidak"}\n` +
+      `Update menunggu: ${r.pending}\n` +
+      (r.lastError ? `Error terakhir: <code>${esc(r.lastError)}</code>\n` : "") +
+      (r.secretBermasalah
+        ? `\n\u26A0\uFE0F SHOP_BOT_WEBHOOK_SECRET berisi karakter yang tidak diterima Telegram ` +
+          `(hanya huruf, angka, _ dan -), jadi webhook dipasang TANPA secret. Bot tetap jalan.\n`
+        : "") +
+      (r.terpasang
+        ? `\nSekarang buka @${esc(id.username || "botmu")} lalu kirim /start.`
+        : `\nTelegram menjawab "${esc(r.telegram)}" tapi alamatnya belum terbaca. Jalankan /diagnosabot.`) +
+      catatanOwner()
+  );
+}
+
+async function handleCekWebhook(chatId, origin) {
+  if (!shopBotConfigured()) return botBelumDiisi(chatId);
+
+  const id = await shopBotIdentity();
+  const r = await shopWebhookInfo(origin);
+
+  await sendMessage(
+    chatId,
+    `\u{1F50E} <b>Status Webhook Bot Toko</b>\n\n` +
+      `Bot: ${id.ok ? `@${esc(id.username || "-")}` : `<i>${esc(id.error || "tidak terbaca")}</i>`}\n` +
+      `Status: <b>${r.terpasang ? "terpasang" : r.url ? "terpasang ke alamat lain" : "belum terpasang"}</b>\n` +
+      `Tersimpan: <code>${esc(r.url || "(kosong)")}</code>\n` +
+      `Seharusnya: <code>${esc(r.expected || "(Site URL kosong)")}</code>\n` +
+      `Update menunggu: ${r.pending}\n` +
+      (r.lastError ? `Error terakhir: <code>${esc(r.lastError)}</code>\n` : "") +
+      (r.terpasang ? "" : `\nKirim /pasangwebhook untuk memasang.`) +
+      catatanOwner()
+  );
+}
+
+async function handleLepasWebhook(chatId) {
+  if (!shopBotConfigured()) return botBelumDiisi(chatId);
+  const r = await deleteShopWebhook();
+  await sendMessage(
+    chatId,
+    r.ok
+      ? `\u2705 Webhook bot toko dilepas.\nBot toko berhenti menerima pesan sampai dipasang lagi lewat /pasangwebhook.`
+      : `\u274C Gagal melepas: <code>${esc(r.telegram)}</code>`
+  );
+}
+
+async function handleDiagnosaBot(chatId, origin) {
+  if (!shopBotConfigured()) return botBelumDiisi(chatId);
+
+  await sendMessage(chatId, "\u23F3 Memeriksa webhook bot toko (butuh beberapa detik)...");
+
+  const d = await diagnoseShopWebhook(origin);
+  const baris = d.langkah
+    .map((l) => `\u2022 <b>${esc(l.saat)}</b>: <code>${esc(l.url)}</code>${l.pending != null ? ` (${l.pending} menunggu)` : ""}`)
+    .join("\n");
+
+  await sendMessage(
+    chatId,
+    `\u{1FA7A} <b>Diagnosa Webhook Bot Toko</b>\n\n` +
+      `Alamat dituju:\n<code>${esc(d.target || "(kosong)")}</code>\n\n` +
+      `Jawaban setWebhook: <code>${esc(d.jawabanSetWebhook)}</code>\n\n` +
+      `${baris}\n\n` +
+      `<b>Kesimpulan:</b>\n${esc(d.kesimpulan)}`
   );
 }

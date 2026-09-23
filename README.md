@@ -185,14 +185,33 @@ jadi tidak pernah terpasang. Kalau nilainya salah format, kode ini melewatinya
 dan memasang webhook tanpa secret supaya bot tetap jalan, lalu memberi tahu di
 Dashboard Admin. Boleh juga dikosongkan.
 
-3. Pasang webhook lewat Dashboard Admin → Pengaturan → **Bot Telegram Toko** →
-   **Pasang Webhook**. Atau manual:
+3. Pasang webhook. Ada tiga cara, pilih yang paling gampang:
+
+**a. Lewat bot owner** — paling praktis, tidak perlu buka browser sama sekali.
+Kirim `/pasangwebhook` ke bot owner. Bot owner memakai `TELEGRAM_BOT_TOKEN` yang
+berbeda dari bot toko, jadi dia tetap hidup walau webhook bot toko mati.
+Perintah lain: `/linkwebhook` (lihat alamatnya), `/cekwebhook` (cek status),
+`/lepaswebhook`, `/diagnosabot`.
+
+**b. Lewat Dashboard Admin** → Pengaturan → **Bot Telegram Toko** →
+**Pasang Webhook**.
+
+**c. Manual lewat browser:**
 
 ```
-https://domain-kamu.vercel.app/api/bot/setup?secret=ISI_CRON_SECRET
+https://domain-kamu.vercel.app/api/bot/setup?action=set&secret=ISI_CRON_SECRET
 ```
 
-Cek statusnya dengan `?action=info`, lepas dengan `?action=delete`.
+Alamat webhook bot toko sendiri (yang didaftarkan ke Telegram) adalah:
+
+```
+https://domain-kamu.vercel.app/api/bot/webhook
+```
+
+Cek statusnya dengan `?action=info`, lepas dengan `?action=delete`, dan kalau
+webhook terpasang lalu hilang sendiri jalankan `?action=diagnosa`. Penyebab
+paling sering: masih ada program lain yang memakai token bot yang sama —
+`getUpdates` (long polling) menghapus webhook.
 Pastikan **Site URL** sudah benar di Dashboard Admin → Pengaturan Situs,
 karena deposit lewat bot memakai alamat itu.
 
@@ -383,7 +402,18 @@ curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://domainkamu.verc
 - `/cekuser TOKEN` — lihat detail satu user (saldo, referral, tanggal daftar)
 - `/listuser [halaman]` — daftar user terbaru, 10 per halaman
 - `/statistik` — ringkasan total user, total saldo beredar, dan total bonus referral
+- `/statuswarungnokos` — cek koneksi & saldo akun WarungNokos
 - `/help` — tampilkan menu perintah
+
+Kendali **bot toko** dari sini (tokennya beda, jadi bot owner tetap bisa dipakai
+walau bot toko sedang mati):
+
+- `/linkwebhook` — tampilkan alamat webhook bot toko + link pasang manualnya
+- `/pasangwebhook` — pasang webhook bot toko sekarang
+- `/cekwebhook` — cek webhook bot toko terpasang atau belum
+- `/lepaswebhook` — lepas webhook bot toko
+- `/diagnosabot` — rekam keadaan webhook sebelum/sesudah dipasang untuk cari
+  sebabnya kalau webhook hilang sendiri
 
 Chat_id yang tidak terdaftar di `TELEGRAM_OWNER_IDS` akan diabaikan begitu saja
 (bot tidak membalas apa pun), supaya panel ini tidak "bocor" ke orang lain.
