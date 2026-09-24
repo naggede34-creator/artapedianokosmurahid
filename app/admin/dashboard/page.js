@@ -273,6 +273,10 @@ export default function AdminDashboardPage() {
   // Panel hero bisa dimatikan tanpa menghapus daftar karakternya.
   const [heroOn, setHeroOn] = useState(true);
   const [heroOnSaving, setHeroOnSaving] = useState(false);
+  // Komik pembuka.
+  const [komikOn, setKomikOn] = useState(true);
+  const [komikSaving, setKomikSaving] = useState(false);
+  const [komikMsg, setKomikMsg] = useState("");
   // Fitur klaim garansi.
   const [garansiOn, setGaransiOn] = useState(true);
   const [garansiNote, setGaransiNote] = useState("");
@@ -418,6 +422,7 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error(data.error || "Gagal menyimpan.");
       setSettings(data);
       setHeroOn(data.heroCharsEnabled !== false);
+      setKomikOn(data.comicIntroEnabled !== false);
       setGaransiOn(data.warranty?.enabled !== false);
       setGaransiNote(data.warranty?.note || "");
       if (setMsg) setMsg(pesan || "Tersimpan.");
@@ -1199,6 +1204,7 @@ export default function AdminDashboardPage() {
       )
     );
     setHeroOn(data.heroCharsEnabled !== false);
+    setKomikOn(data.comicIntroEnabled !== false);
     setGaransiOn(data.warranty?.enabled !== false);
     setGaransiNote(data.warranty?.note || "");
     if (Array.isArray(data.heroChars) && data.heroChars.length > 0) {
@@ -5099,6 +5105,50 @@ export default function AdminDashboardPage() {
                 {siteSettingsSubmitting ? "Menyimpan…" : "Simpan Pengaturan Situs"}
               </button>
             </form>
+          </div>
+
+          {/* Komik pembuka */}
+          <div className="glass admin-card rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">🎬 Komik Pembuka</h2>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Empat panel komik yang muncul sesudah animasi loading, sekali per sesi. Dimatikan = pengunjung
+              langsung sampai ke beranda.
+            </p>
+            <p className="mt-2 rounded-xl border border-blue/30 bg-blue-soft px-3 py-2 text-[11px] leading-relaxed text-ink">
+              Komik + loader memakan sekitar <b>17 detik</b> di kunjungan pertama. Kalau kamu memasang iklan
+              berbayar, matikan ini: yang datang dari iklan tidak menunggu selama itu, dan mereka pergi
+              sebelum melihat satu harga pun.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => simpanSakelar({ comicIntroEnabled: !komikOn }, setKomikSaving, setKomikMsg, !komikOn ? "Komik pembuka dinyalakan." : "Komik pembuka dimatikan.")}
+              disabled={komikSaving}
+              className={`mt-4 flex w-full items-center gap-3 rounded-2xl border-2 p-3 text-left transition press disabled:opacity-60 ${
+                komikOn ? "border-success bg-success-soft" : "border-rose/60 bg-rose-soft"
+              }`}
+            >
+              <span
+                className={`flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition ${
+                  komikOn ? "justify-end bg-success" : "justify-start bg-rose"
+                }`}
+                aria-hidden="true"
+              >
+                <span className="h-5 w-5 rounded-full bg-white shadow" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-ink">
+                  Komik pembuka
+                  <span className={`ml-1.5 align-middle text-[10px] font-black uppercase ${komikOn ? "text-success" : "text-rose"}`}>
+                    {komikSaving ? "● …" : komikOn ? "● ON" : "● OFF"}
+                  </span>
+                </span>
+                <span className="mt-0.5 block text-[11px] leading-snug text-muted">
+                  {komikOn ? "Tampil sekali per sesi, ada tombol Lewati." : "Dilewati. Pengunjung langsung ke beranda."}
+                </span>
+              </span>
+            </button>
+            {komikMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{komikMsg}</p>}
           </div>
 
           {/* Fitur klaim garansi */}

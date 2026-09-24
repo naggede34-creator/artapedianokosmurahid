@@ -77,6 +77,7 @@ export async function GET() {
       // karakter tetap diunduh semua pengunjung untuk sesuatu yang tidak
       // pernah tampil.
       heroCharsEnabled: settings.heroCharsEnabled !== false,
+      comicIntroEnabled: settings.comicIntroEnabled !== false,
       heroChars: settings.heroCharsEnabled === false ? [] : heroChars || [],
       warranty: { enabled: settings.warranty?.enabled !== false, note: settings.warranty?.note || "" },
       ...CHANNELS()

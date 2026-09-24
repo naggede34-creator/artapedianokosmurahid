@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CHANNEL_LIST_URL, BOT_URL } from "@/lib/links";
 import { useEffect, useState } from "react";
 import { onOpenersFree } from "@/lib/introGate";
 
@@ -189,10 +190,50 @@ export default function InfoModal() {
             </div>
           )}
 
+          {/* Dua tautan keluar, ditaruh SEBELUM Room Chat: keduanya yang paling
+              berguna untuk orang yang baru pertama kali membuka web ini, dan
+              popup ini memang muncul tepat di kunjungan pertama. */}
+          <a
+            href={CHANNEL_LIST_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="btn-3d mt-4 flex items-center gap-3 rounded-2xl border-2 border-amber bg-amber-soft px-4 py-3 transition-colors hover:border-amber-bright"
+          >
+            <span className="text-lg">📢</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-black uppercase tracking-wide text-amber-bright">
+                Wajib masuk sini · CH agar dpt informasi
+              </span>
+              <span className="block text-[11px] leading-relaxed text-muted">
+                Semua channel info, promo, dan notifikasi pembelian sekaligus. Gangguan server diumumkan di
+                sini lebih dulu.
+              </span>
+            </span>
+            <span className="shrink-0 text-muted">↗</span>
+          </a>
+
+          <a
+            href={BOT_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="btn-3d mt-2.5 flex items-center gap-3 rounded-2xl border-2 border-blue bg-blue-soft px-4 py-3 transition-colors hover:border-blue-bright"
+          >
+            <span className="text-lg">🤖</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-black uppercase tracking-wide text-blue-bright">
+                Order via bot juga bisa
+              </span>
+              <span className="block text-[11px] leading-relaxed text-muted">
+                Beli nokos dan isi saldo langsung dari Telegram. Saldonya sama, tidak terpisah.
+              </span>
+            </span>
+            <span className="shrink-0 text-muted">↗</span>
+          </a>
+
           <Link
             href="/chat"
             onClick={close}
-            className="btn-3d mt-4 flex items-center gap-3 rounded-2xl border border-teal/40 bg-teal-soft px-4 py-3 transition-colors hover:border-teal"
+            className="btn-3d mt-2.5 flex items-center gap-3 rounded-2xl border border-teal/40 bg-teal-soft px-4 py-3 transition-colors hover:border-teal"
           >
             <span className="text-lg">💬</span>
             <span className="min-w-0 flex-1">

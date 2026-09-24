@@ -70,13 +70,47 @@ export default function ComicIntro() {
       return undefined;
     }
 
-    const off = onIntroDone(() => {
-      try {
-        sessionStorage.setItem(KEY, "1");
-      } catch {}
-      setTampil(true);
-    });
-    return off;
+    let batal = false;
+    let lepas = null;
+
+    // Pengaturan ditanyakan DULU, baru komiknya dipasang. Kalau dibalik —
+    // komik tampil lalu dimatikan setelah jawabannya datang — pengunjung
+    // sempat melihatnya sekejap dan itu terbaca sebagai halaman yang rusak,
+    // bukan sebagai fitur yang memang dimatikan.
+    fetch("/api/settings/public")
+      .then((r) => r.json())
+      .then((d) => {
+        if (batal) return;
+        if (d?.comicIntroEnabled === false) {
+          // Dimatikan admin: komiknya dilewati, dan "selesai" tetap ditandai
+          // supaya halaman di belakangnya tidak menunggu sesuatu yang tidak
+          // akan pernah muncul.
+          lepas = onIntroDone(markComicDone);
+          return;
+        }
+        lepas = onIntroDone(() => {
+          try {
+            sessionStorage.setItem(KEY, "1");
+          } catch {}
+          setTampil(true);
+        });
+      })
+      .catch(() => {
+        // Pengaturan tidak terbaca: komiknya tetap tampil. Ini fitur tampilan,
+        // bukan jalur uang — gagal ke arah "tetap jalan seperti biasa".
+        if (batal) return;
+        lepas = onIntroDone(() => {
+          try {
+            sessionStorage.setItem(KEY, "1");
+          } catch {}
+          setTampil(true);
+        });
+      });
+
+    return () => {
+      batal = true;
+      if (lepas) lepas();
+    };
   }, []);
 
   // Panel berganti sendiri kecuali yang terakhir, yang menunggu ditekan.
