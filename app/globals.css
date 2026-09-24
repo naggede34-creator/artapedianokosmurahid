@@ -3942,3 +3942,91 @@ html.dark .tepi-tebal {
 @media (prefers-reduced-motion: reduce) {
   .balok-3d, .balok-3d:hover { transform: none; transition: none; }
 }
+
+/* ═══════════ LEMBAR & KOTAK POPUP YANG TIDAK TENGGELAM ═══════════
+ *
+ * Masalah yang diperbaiki: semua popup hadiah (kotak misteri, kartu gosok,
+ * naik level, tantangan mingguan) menempel di dasar layar tanpa dua hal —
+ * batas tinggi dan jatah untuk bilah gestur.
+ *
+ * Akibatnya diukur, bukan dikira-kira: tombol "Tutup" berakhir 28px dari dasar
+ * layar di SEMUA ukuran ponsel, sedangkan bilah gestur/home indicator setinggi
+ * sekitar 34px. Jadi tombolnya memang tertutup — dan karena popupnya menutup
+ * seluruh layar, orang yang tidak bisa menekan Tutup tidak bisa berbuat apa-apa
+ * selain memuat ulang halaman.
+ *
+ * Tanpa batas tinggi ada masalah kedua: isi yang lebih panjang dari layar tidak
+ * bisa digulir sama sekali (wadahnya overflow-hidden), jadi tombolnya benar-
+ * benar hilang, bukan cuma tertutup.
+ */
+
+/* Lembar yang menempel di dasar layar. */
+.lembar-bawah {
+  /* dvh mengikuti bilah alamat peramban seluler yang menyusut-membesar; vh
+     tidak, dan itu sumber klasik "tombol saya di bawah bilah alamat". */
+  max-height: 92dvh;
+  overflow-y: auto;
+  /* Gulir di dalam lembar tidak ikut menggulirkan halaman di belakangnya. */
+  overscroll-behavior: contain;
+  /* max(), bukan env() sendirian.
+   *
+   * env(safe-area-inset-bottom) bernilai 0 di banyak keadaan yang tombolnya
+   * TETAP tertutup: peramban Android dengan bilah navigasi lunak, mode layar
+   * penuh, dan peramban yang tidak mendukung env() sama sekali. Mengandalkan
+   * env() saja berarti perbaikan ini tidak berlaku justru di peranti yang
+   * paling sering memunculkan masalahnya.
+   *
+   * 1,25rem (20px) ditambah padding isi yang sudah ada (28px) menjadikan
+   * tombolnya sekitar 48px dari dasar layar — lebih tinggi dari bilah gestur
+   * mana pun yang umum (sekitar 34px). Di iPhone, env() yang lebih besar dari
+   * itu yang dipakai. */
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+}
+
+/* Kotak yang melayang di tengah layar. Tidak butuh jatah bilah gestur karena
+   tidak menempel di dasar, tapi tetap butuh batas tinggi. */
+.kotak-tengah {
+  max-height: 88dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Kotak tengah tidak menempel di dasar, tapi saat isinya lebih panjang dari
+     layar ia memenuhi tinggi maksimalnya — dan saat itu dasarnya ikut dekat
+     dengan bilah gestur. */
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+/* Peramban lama tanpa dvh tetap mendapat batas, cuma kurang presisi. */
+@supports not (height: 1dvh) {
+  .lembar-bawah { max-height: 92vh; }
+  .kotak-tengah { max-height: 88vh; }
+}
+
+/* ═══════════ LAYAR TUNGGU ROOM CHAT ═══════════
+ *
+ * Dipindah ke sini dari <style> di dalam app/chat/page.js, dan bukan karena
+ * kerapian: blok itu memuat tanda kutip (img[alt=""] dan [style*="chatBar"]),
+ * dan tanda kutip di dalam <style> JSX di-escape jadi &quot; oleh server tapi
+ * TIDAK oleh peramban.
+ *
+ * React membandingkan teks keduanya saat hidrasi, menemukannya berbeda, lalu
+ * membuang seluruh pohon komponennya dan merender ulang dari nol — itulah
+ * error #418, #423, dan #425 yang muncul tiap kali halaman chat dibuka.
+ *
+ * Selektor atribut juga diganti kelas biasa. Selektor seperti img[alt=""]
+ * mengenai SEMUA gambar tanpa alt di halaman itu, bukan cuma maskotnya.
+ */
+@keyframes chatBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+@keyframes chatBar {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(280%); }
+}
+.chat-tunggu-maskot { animation: chatBob 1.8s ease-in-out infinite; }
+.chat-tunggu-bar    { animation: chatBar 1.1s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-tunggu-maskot,
+  .chat-tunggu-bar { animation: none !important; }
+}

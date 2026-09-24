@@ -57,7 +57,7 @@ export default function LevelUpModal({ token, onClose }) {
         );
       })}
 
-      <div className={`relative w-full max-w-sm rounded-3xl overflow-hidden bg-bg border-2 ${style.ring} shadow-2xl`}
+      <div className={`relative w-full max-w-sm rounded-3xl kotak-tengah bg-bg border-2 ${style.ring} shadow-2xl`}
            style={{ animation: "bounceIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both" }}>
         {/* Gradient bg */}
         <div className={`absolute inset-0 bg-gradient-to-br ${style.bg} pointer-events-none`} />

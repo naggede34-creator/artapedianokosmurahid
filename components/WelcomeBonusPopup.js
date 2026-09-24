@@ -54,7 +54,7 @@ export default function WelcomeBonusPopup() {
         style={{ background: "rgb(var(--c-ink) / 0.5)" }}
         onClick={close}
       />
-      <div className="animate-scale-in relative w-full max-w-sm overflow-hidden rounded-3xl bg-surface shadow-lift">
+      <div className="animate-scale-in relative w-full max-w-sm kotak-tengah rounded-3xl bg-surface shadow-lift">
         {/* Gradient header */}
         <div className="relative overflow-hidden bg-gradient-to-br from-amber to-amber-bright px-6 py-8 text-center text-white">
           <div className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />

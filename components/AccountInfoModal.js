@@ -85,7 +85,7 @@ export default function AccountInfoModal({ open, onClose, token, balance, joined
         className="animate-fade-in absolute inset-0"
         style={{ background: "rgb(var(--c-ink) / 0.45)" }}
       />
-      <div className="animate-scale-in relative w-full max-w-sm overflow-hidden rounded-2xl border border-line bg-surface shadow-lift">
+      <div className="animate-scale-in relative w-full max-w-sm kotak-tengah rounded-2xl border border-line bg-surface shadow-lift">
         <div className="flex items-center justify-between bg-teal-bright px-5 py-4 text-white">
           <div className="flex items-center gap-2">
             <button

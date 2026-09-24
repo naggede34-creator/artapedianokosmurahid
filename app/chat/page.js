@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useUser } from "@/app/providers";
 import { useRouter } from "next/navigation";
 
@@ -604,7 +604,33 @@ export default function ChatPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [recording, setRecording] = useState(false);
   const [lastTs, setLastTs] = useState(null);
-  const [onlineCount] = useState(() => 847 + Math.floor(Math.random()*120));
+  // DULU: useState(() => 847 + Math.floor(Math.random()*120))
+  //
+  // Dua masalah sekaligus dalam satu baris.
+  //
+  // 1. RUSAK. Nilai acak dihitung ulang di peramban, jadi berbeda dari yang
+  //    sudah dirender server. React menemukan teks yang tidak cocok saat
+  //    hidrasi lalu membuang seluruh pohon komponennya dan merendernya ulang
+  //    dari nol — itulah error #418, #423, dan #425 yang muncul tiap kali
+  //    halaman chat dibuka.
+  //
+  // 2. ANGKANYA KARANGAN. "847 online" tidak dihitung dari siapa pun; ia cuma
+  //    bilangan acak antara 847 dan 966 yang berganti tiap kali halaman
+  //    dimuat. Orang yang melihatnya menyimpulkan grupnya ramai, padahal
+  //    tidak ada satu pun data di baliknya.
+  //
+  // Sekarang: jumlah orang berbeda yang benar-benar menulis di pesan yang
+  // termuat. Angkanya lebih kecil, tapi bisa dipertanggungjawabkan — dan
+  // labelnya juga diubah, karena "pernah menulis" memang bukan "sedang
+  // online".
+  const jumlahPenulis = useMemo(() => {
+    const nama = new Set();
+    for (const m of messages) {
+      if (m?.isSystem || m?.isAI) continue;
+      if (m?.displayName) nama.add(m.displayName);
+    }
+    return nama.size;
+  }, [messages]);
   const [groupSettings, setGroupSettings] = useState({ name:"Artapedia Community", desc:"", photo:null, closed:false, pinnedMsgId:null, isAdmin:false });
   const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionIndex, setMentionIndex] = useState(0);
@@ -846,21 +872,12 @@ export default function ChatPage() {
       <div style={{ position:"relative", width:96, height:96, display:"flex", alignItems:"center", justifyContent:"center" }}>
         <div style={{ position:"absolute", inset:0, borderRadius:"50%", background:"radial-gradient(circle, rgba(247,124,34,.28), transparent 68%)", filter:"blur(10px)" }} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/maskot-sm.webp" alt="" style={{ width:76, height:76, objectFit:"contain", animation:"chatBob 1.8s ease-in-out infinite", filter:"drop-shadow(0 8px 14px rgba(0,0,0,.5))" }} />
+        <img src="/maskot-sm.webp" alt="" className="chat-tunggu-maskot" style={{ width:76, height:76, objectFit:"contain", filter:"drop-shadow(0 8px 14px rgba(0,0,0,.5))" }} />
       </div>
       <div style={{ width:118, height:4, borderRadius:99, background:"rgba(255,255,255,.08)", overflow:"hidden" }}>
-        <div style={{ width:"42%", height:"100%", borderRadius:99, background:"linear-gradient(90deg,#f77c22,#2e86ff)", animation:"chatBar 1.1s ease-in-out infinite" }} />
+        <div className="chat-tunggu-bar" style={{ width:"42%", height:"100%", borderRadius:99, background:"linear-gradient(90deg,#f77c22,#2e86ff)" }} />
       </div>
       <span style={{ color:"rgba(255,255,255,.45)", fontSize:13, letterSpacing:".2px" }}>Menyiapkan Room Chat…</span>
-      <style>{`
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes chatBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-        @keyframes chatBar{0%{transform:translateX(-120%)}100%{transform:translateX(280%)}}
-        @media (prefers-reduced-motion: reduce){
-          img[alt=""]{animation:none!important}
-          [style*="chatBar"]{animation:none!important}
-        }
-      `}</style>
     </div>
   );
 
@@ -935,7 +952,7 @@ export default function ChatPage() {
           <div style={{ color:"white", fontSize:16, fontWeight:700, letterSpacing:"-.2px", lineHeight:1.2 }}>{groupSettings.name}</div>
           <div style={{ color:"rgba(255,255,255,.55)", fontSize:11.5, marginTop:1.5, display:"flex", alignItems:"center", gap:5 }}>
             <span style={{ width:6, height:6, borderRadius:"50%", background:"#25D366", flexShrink:0, boxShadow:"0 0 5px #25D366" }} />
-            {onlineCount.toLocaleString("id-ID")} online
+            {jumlahPenulis > 0 ? `${jumlahPenulis.toLocaleString("id-ID")} orang menulis di sini` : "Grup terbuka"}
             {groupSettings.closed && <span style={{ background:"rgba(239,68,68,.2)", color:"#f87171", borderRadius:99, padding:"1px 8px", fontSize:10.5, fontWeight:600, marginLeft:4 }}>TUTUP</span>}
           </div>
         </div>

@@ -149,7 +149,7 @@ export default function MysteryBoxModal({ open, onClose, token, orderId }) {
         className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4"
         style={{ background: "rgb(0 0 0 / 0.75)", backdropFilter: "blur(4px)" }}
       >
-        <div className="relative w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl bg-surface overflow-hidden shadow-2xl">
+        <div className="relative w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl bg-surface lembar-bawah shadow-2xl">
           <Confetti active={phase === "revealed" && isWin} />
 
           {/* Decorative top bar */}

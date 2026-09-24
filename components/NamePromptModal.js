@@ -34,7 +34,7 @@ export default function NamePromptModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 px-4 pt-4 pb-20 sm:p-4" style={{ backdropFilter: "blur(3px)" }}>
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm p-6 kotak-tengah">
         <div className="text-2xl mb-2">✍️</div>
         <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 mb-1">Isi nama kamu yuk!</h3>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">

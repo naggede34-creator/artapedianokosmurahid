@@ -108,7 +108,7 @@ export default function ScratchCard({ token, onClose, onClaimed }) {
         </div>
       ))}
 
-      <div className="w-full max-w-sm rounded-3xl bg-bg border border-line shadow-2xl overflow-hidden">
+      <div className="w-full max-w-sm rounded-3xl bg-bg border border-line shadow-2xl lembar-bawah">
         {/* Header */}
         <div className="bg-gradient-to-r from-amber/30 to-amber-bright/20 px-5 py-4 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber text-xl shadow-md shadow-amber/30">🎫</div>
