@@ -23,6 +23,7 @@ const TABS = [
   { id: "transaksi", label: "Transaksi", icon: "💳" },
   { id: "depositmanual", label: "Deposit Manual", icon: "🔎" },
   { id: "tarik", label: "Tarik Saldo", icon: "🏦" },
+  { id: "gateway", label: "QRIS Gateway", icon: "💸" },
   { id: "juara", label: "Pembeli Terbanyak", icon: "🏆" },
   { id: "produk", label: "Produk", icon: "🛍️" },
   { id: "job", label: "Job/Saldo", icon: "💰" },
@@ -273,6 +274,13 @@ export default function AdminDashboardPage() {
   // Panel hero bisa dimatikan tanpa menghapus daftar karakternya.
   const [heroOn, setHeroOn] = useState(true);
   const [heroOnSaving, setHeroOnSaving] = useState(false);
+  // QRIS Gateway — antrean penarikan yang perlu diproses manual.
+  const [gwItems, setGwItems] = useState([]);
+  const [gwPending, setGwPending] = useState(0);
+  const [gwFilter, setGwFilter] = useState("pending");
+  const [gwLoading, setGwLoading] = useState(false);
+  const [gwBusy, setGwBusy] = useState("");
+  const [gwMsg, setGwMsg] = useState("");
   // Komik pembuka.
   const [komikOn, setKomikOn] = useState(true);
   const [komikSaving, setKomikSaving] = useState(false);
@@ -431,6 +439,43 @@ export default function AdminDashboardPage() {
     } finally {
       setBusy(false);
       if (setMsg) setTimeout(() => setMsg(""), 3000);
+    }
+  }
+
+  const loadGateway = useCallback(async () => {
+    setGwLoading(true);
+    try {
+      const res = await fetch(`/api/admin/gateway?status=${gwFilter}`);
+      const d = await res.json();
+      if (res.ok) { setGwItems(d.items || []); setGwPending(d.pending || 0); }
+    } catch {}
+    setGwLoading(false);
+  }, [gwFilter]);
+
+  async function gatewayAksi(wdId, aksi) {
+    let alasan = "";
+    if (aksi === "tolak") {
+      alasan = prompt("Alasan penolakan (dibaca pengguna):", "Nomor e-wallet tidak aktif") || "";
+      if (!alasan) return;
+    }
+    if (aksi === "selesai" && !confirm("Tandai SUDAH DIKIRIM?\n\nTekan ini hanya SETELAH uangnya benar-benar kamu transfer ke e-wallet tujuan. Saldo penggunanya sudah dipotong sejak ia mengajukan.")) return;
+    setGwBusy(wdId);
+    setGwMsg("");
+    try {
+      const res = await fetch("/api/admin/gateway", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wdId, aksi, alasan })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Gagal.");
+      setGwMsg(aksi === "tolak" ? "Penarikan ditolak, saldo dikembalikan penuh." : "Ditandai sudah dikirim.");
+      loadGateway();
+    } catch (err) {
+      setGwMsg(err.message || "Gagal.");
+    } finally {
+      setGwBusy("");
+      setTimeout(() => setGwMsg(""), 4000);
     }
   }
 
@@ -1908,6 +1953,7 @@ export default function AdminDashboardPage() {
               if (tab.id === "depositmanual") loadManualDeposits(manualFilter);
               if (tab.id === "tarik") loadWithdrawals();
               if (tab.id === "juara") loadLeaderboard(lbOffset);
+              if (tab.id === "gateway") loadGateway();
             }}
             className={`relative flex-1 min-w-max rounded-xl px-3 py-2 text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === tab.id
@@ -2934,6 +2980,131 @@ export default function AdminDashboardPage() {
               <img src={proofView.image} alt="Bukti bayar" className="mt-3 w-full rounded-xl border border-line" />
             ) : (
               <p className="py-8 text-center text-sm text-muted">Memuat bukti…</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* TAB: QRIS GATEWAY                                             */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === "gateway" && (
+        <div className="mt-5 space-y-5">
+          <div className="glass admin-card rounded-2xl p-5 shadow-soft sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-base font-semibold text-ink">💸 Penarikan QRIS Gateway</h2>
+              {gwPending > 0 && (
+                <span className="rounded-full bg-rose px-2.5 py-0.5 text-[11px] font-black text-white">
+                  {gwPending} menunggu
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Penarikan <b>tidak otomatis</b>. Kirim uangnya sendiri ke e-wallet di bawah, baru tandai
+              <b> Sudah Dikirim</b>.
+            </p>
+            <p className="mt-2 rounded-xl border border-amber/30 bg-amber/10 px-3 py-2 text-[11px] leading-relaxed text-ink">
+              ⚠️ Saldo penggunanya <b>sudah dipotong</b> sejak ia mengajukan. Jadi kalau kamu menolak,
+              saldonya dikembalikan penuh termasuk biaya — dan kalau kamu menandai “Sudah Dikirim” padahal
+              belum mengirim, uang itu hilang dari sisi pengguna tanpa pernah sampai.
+            </p>
+
+            <div className="mt-4 flex gap-2">
+              {[["pending", "Menunggu"], ["done", "Selesai"], ["rejected", "Ditolak"], ["all", "Semua"]].map(([v, l]) => (
+                <button
+                  key={v}
+                  onClick={() => { setGwFilter(v); setTimeout(loadGateway, 0); }}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                    gwFilter === v ? "bg-ink text-bg" : "border border-line text-muted hover:text-ink"
+                  }`}
+                >{l}</button>
+              ))}
+              <button onClick={loadGateway} className="ml-auto rounded-xl border border-line px-3 py-1.5 text-xs font-bold text-muted">
+                ⟳ Muat ulang
+              </button>
+            </div>
+
+            {gwMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{gwMsg}</p>}
+
+            {gwLoading ? (
+              <div className="skeleton mt-4 h-28 rounded-xl" />
+            ) : gwItems.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">Tidak ada penarikan pada filter ini.</p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {gwItems.map((w) => (
+                  <div key={w.wdId} className="rounded-2xl border-2 border-line p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-lg font-black tabular-nums text-ink">{fmtRp(w.diterima)}</p>
+                        <p className="text-[11px] text-muted">
+                          ditarik {fmtRp(w.amount)} − biaya {fmtRp(w.biaya)}
+                        </p>
+                      </div>
+                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${
+                        w.status === "pending" ? "border-amber text-amber-bright"
+                          : w.status === "done" ? "border-teal/40 text-teal-bright"
+                          : "border-rose/40 text-rose"
+                      }`}>
+                        {w.status === "pending" ? "MENUNGGU" : w.status === "done" ? "SELESAI" : "DITOLAK"}
+                      </span>
+                    </div>
+
+                    {/* Empat hal yang harus dilihat admin sebelum mengirim uang. */}
+                    <dl className="mt-3 grid gap-1.5 text-xs sm:grid-cols-2">
+                      <div className="flex gap-2">
+                        <dt className="w-24 shrink-0 text-muted">Siapa</dt>
+                        <dd className="min-w-0 font-semibold text-ink">
+                          {w.nama || "(tanpa nama)"} <span className="block font-mono text-[10px] text-muted">{w.token}</span>
+                        </dd>
+                      </div>
+                      <div className="flex gap-2">
+                        <dt className="w-24 shrink-0 text-muted">E-wallet</dt>
+                        <dd className="font-semibold text-ink">{w.ewalletNama}</dd>
+                      </div>
+                      <div className="flex gap-2">
+                        <dt className="w-24 shrink-0 text-muted">Nomor</dt>
+                        <dd className="font-mono font-bold text-ink">{w.nomor}</dd>
+                      </div>
+                      <div className="flex gap-2">
+                        <dt className="w-24 shrink-0 text-muted">Atas nama</dt>
+                        <dd className="font-semibold text-ink">{w.atasNama}</dd>
+                      </div>
+                      <div className="flex gap-2">
+                        <dt className="w-24 shrink-0 text-muted">Sisa saldo</dt>
+                        <dd className="tabular-nums text-ink">{fmtRp(w.saldoSisa)}</dd>
+                      </div>
+                      <div className="flex gap-2">
+                        <dt className="w-24 shrink-0 text-muted">Diajukan</dt>
+                        <dd className="text-muted">{w.createdAt ? new Date(w.createdAt).toLocaleString("id-ID") : "-"}</dd>
+                      </div>
+                    </dl>
+
+                    {w.alasan && <p className="mt-2 text-[11px] text-rose">Alasan: {w.alasan}</p>}
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => { navigator.clipboard?.writeText(w.nomor); setGwMsg("Nomor e-wallet disalin."); }}
+                        className="rounded-xl border border-line px-3 py-2 text-xs font-bold text-ink press"
+                      >📋 Salin nomor</button>
+                      {w.status === "pending" && (
+                        <>
+                          <button
+                            onClick={() => gatewayAksi(w.wdId, "selesai")}
+                            disabled={gwBusy === w.wdId}
+                            className="flex-1 rounded-xl bg-teal-bright px-3 py-2 text-xs font-black text-white press disabled:opacity-60"
+                          >{gwBusy === w.wdId ? "…" : "✅ Sudah Dikirim"}</button>
+                          <button
+                            onClick={() => gatewayAksi(w.wdId, "tolak")}
+                            disabled={gwBusy === w.wdId}
+                            className="flex-1 rounded-xl border-2 border-rose px-3 py-2 text-xs font-black text-rose press disabled:opacity-60"
+                          >❌ Tolak</button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -5633,6 +5804,8 @@ function ExportSection() {
   const [to, setTo] = useState("");
   const [loading, setLoading] = useState(false);
   const [backupLoading, setBackupLoading] = useState(false);
+  const [akunLoading, setAkunLoading] = useState(false);
+  const [akunLimit, setAkunLimit] = useState(200000);
 
   // Import state
   const [importFile, setImportFile] = useState(null);
@@ -5676,6 +5849,23 @@ function ExportSection() {
       URL.revokeObjectURL(url);
     } finally {
       setBackupLoading(false);
+    }
+  }
+
+  async function doAkun() {
+    setAkunLoading(true);
+    try {
+      const res = await fetch(`/api/admin/export?type=akun&limit=${encodeURIComponent(akunLimit || 200000)}`);
+      if (!res.ok) { alert("Gagal download database akun."); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `artapedia-akun-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setAkunLoading(false);
     }
   }
 
@@ -5736,6 +5926,45 @@ function ExportSection() {
         </div>
         <button onClick={doExport} disabled={loading} className="w-full rounded-xl bg-teal-bright text-white py-2.5 text-sm font-bold press disabled:opacity-50 border border-teal">
           {loading ? "Menyiapkan…" : "⬇️ Download CSV"}
+        </button>
+      </div>
+
+      {/* Database akun saja (JSON ringkas) */}
+      <div className="glass rounded-2xl p-5 shadow-soft border border-blue/20">
+        <h2 className="text-base font-bold text-ink mb-1">📇 Database Akun (JSON)</h2>
+        <p className="text-xs text-muted mb-3 leading-relaxed">
+          Isinya <b>token, nama, saldo, koin, poin, dan pet</b> saja. Riwayat pembelian
+          sengaja <b>tidak ikut</b> — di riwayat itu ada nomor telepon dan kode OTP orang,
+          dan yang tidak ada di dalam berkas tidak bisa bocor dari berkas itu.
+        </p>
+        <p className="text-[11px] text-muted mb-3 leading-relaxed">
+          Catatan: situs ini belum punya mata uang <b>koin</b> yang terpisah dari poin, jadi
+          kolom koin bernilai 0 untuk semua akun sampai fiturnya ada.
+        </p>
+        <p className="text-[11px] text-rose mb-3 leading-relaxed">
+          ⚠️ <b>Token adalah kredensial.</b> Siapa pun yang memegang berkas ini bisa membuka
+          akun mana pun di dalamnya dan membelanjakan saldonya. Jangan dikirim lewat chat dan
+          jangan disimpan di perangkat yang dipakai bersama.
+        </p>
+        <label className="block text-xs font-semibold text-muted mb-1.5">Batas baris</label>
+        <input
+          type="number"
+          min={1}
+          max={500000}
+          value={akunLimit}
+          onChange={(e) => setAkunLimit(e.target.value)}
+          className="input text-sm w-full mb-1"
+        />
+        <p className="text-[11px] text-muted mb-4">
+          Maksimal 500.000. Kalau jumlah akun melebihi batas ini, berkasnya menuliskan
+          <code className="mx-1">terpotong: true</code> supaya ketahuan sekarang, bukan nanti.
+        </p>
+        <button
+          onClick={doAkun}
+          disabled={akunLoading}
+          className="w-full rounded-xl bg-blue-bright text-white py-2.5 text-sm font-bold press disabled:opacity-50 border border-blue"
+        >
+          {akunLoading ? "Menyiapkan…" : "⬇️ Download Database Akun"}
         </button>
       </div>
 

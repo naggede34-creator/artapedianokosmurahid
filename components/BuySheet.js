@@ -239,7 +239,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
     <div className="fixed inset-0 z-[70]">
       <div className="animate-fade-in absolute inset-0" style={{ background: "rgb(var(--c-navy-bright) / 0.5)" }} onClick={onClose} />
 
-      <div className="animate-sheet-up absolute inset-x-0 bottom-0 mx-auto flex max-h-[88vh] max-w-2xl flex-col rounded-t-[28px] border border-line bg-surface shadow-lift">
+      <div className="animate-sheet-up absolute inset-x-0 bottom-0 mx-auto flex max-h-[88dvh] max-w-2xl flex-col rounded-t-[28px] border border-line bg-surface shadow-lift">
         <div className="mx-auto mt-2.5 h-1.5 w-12 shrink-0 rounded-full bg-line" />
 
         <div className="shrink-0 px-5 pb-3 pt-2">
@@ -259,7 +259,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
+        <div className="gulir-aman min-h-0 flex-1 px-5">
           {screen === "server" && (
             <div className="fade-up anim-stagger space-y-3">
               {serverDijawab && serverList.length === 0 ? (
@@ -305,7 +305,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
 
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-2">
-                        <span className="text-[15px] font-extrabold tracking-tight text-ink">{sv.name}</span>
+                        <span className="min-w-0 break-words text-[15px] font-extrabold tracking-tight text-ink">{sv.name}</span>
                         {sv.badge ? (
                           <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${look.soft} ${look.text}`}>
                             {sv.badge}

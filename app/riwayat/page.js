@@ -295,7 +295,7 @@ function Modal({ children, onClose }) {
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center sm:p-4" role="dialog" aria-modal="true">
       <button aria-label="Tutup" onClick={onClose} className="animate-fade-in absolute inset-0" style={{ background: "rgb(var(--c-navy-bright) / 0.5)" }} />
-      <div className="animate-sheet-up relative max-h-[90vh] w-full max-w-md overflow-y-auto sm:animate-scale-in">{children}</div>
+      <div className="animate-sheet-up lembar-bawah relative w-full max-w-md sm:animate-scale-in">{children}</div>
     </div>
   );
 }

@@ -120,7 +120,7 @@ function BuyModal({ product, balance, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-3xl bg-bg border-2 border-line overflow-hidden max-h-[88vh] flex flex-col"
+      <div className="w-full max-w-sm rounded-3xl bg-bg border-2 border-line overflow-hidden max-h-[88dvh] flex flex-col"
         style={{ boxShadow: "6px 6px 0 0 rgba(0,0,0,0.15)" }}>
         {/* Header */}
         <div className="bg-gradient-to-r from-amber to-amber-bright p-5 text-white">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useUser } from "@/app/providers";
 import { rupiah } from "@/components/ui";
+import GatewayTerms from "@/components/GatewayTerms";
 
 const TAB = [
   { id: "buat", label: "Buat QRIS", ikon: "⚡" },
@@ -180,6 +181,8 @@ export default function GatewayPage() {
 
   return (
     <div className="gw-shell panggung-3d mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-8">
+      {/* Syarat & ketentuan, sekali per akun sebelum fiturnya dipakai. */}
+      <GatewayTerms token={token} />
       {/* ── Kepala ── */}
       <div className="gw-hero card balok-3d tepi-tebal relative overflow-hidden p-5 sm:p-7">
         <span className="gw-hero-glow" aria-hidden="true" />

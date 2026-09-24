@@ -243,6 +243,23 @@ export default function InfoModal() {
             </span>
             <span className="shrink-0 text-muted">›</span>
           </Link>
+
+          <Link
+            href="/gateway"
+            onClick={close}
+            className="btn-3d mt-2.5 flex items-center gap-3 rounded-2xl border-2 border-blue bg-blue-soft px-4 py-3 transition-colors hover:border-blue-bright"
+          >
+            <span className="text-lg">💸</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-black uppercase tracking-wide text-blue-bright">
+                Kuy coba fitur QRIS Gateway
+              </span>
+              <span className="block text-[11px] leading-relaxed text-muted">
+                Bikin QRIS pembayaran sendiri buat jualanmu, uangnya masuk otomatis. Bisa ditarik ke e-wallet.
+              </span>
+            </span>
+            <span className="shrink-0 text-muted">›</span>
+          </Link>
         </div>
 
         <div className="shrink-0 border-t border-line px-5 pb-5 pt-4">

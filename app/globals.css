@@ -4001,6 +4001,24 @@ html.dark .tepi-tebal {
   .kotak-tengah { max-height: 88vh; }
 }
 
+/* Area gulir DI DALAM lembar yang menempel di dasar layar.
+ *
+ * .lembar-bawah memberi jatah bilah gestur pada lembarnya, tapi kalau isinya
+ * dibungkus wadah gulir sendiri (header tetap di atas, daftar panjang
+ * bergulir di bawahnya), jatah itu ada di luar wadah gulirnya — baris
+ * TERAKHIR daftar tetap berhenti di tepi layar dan tertutup bilah gestur.
+ * Itu yang membuat nama server terakhir di lembar Beli Nokos tidak terbaca.
+ *
+ * Jatahnya harus diberikan di dalam wadah gulirnya, supaya ikut tergulir. */
+.gulir-aman {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* max(), bukan env() sendirian: env() bernilai 0 di Android dengan bilah
+     navigasi lunak dan di peramban yang tidak mendukungnya — justru peranti
+     yang paling sering menutupi tombol. */
+  padding-bottom: max(1.75rem, calc(env(safe-area-inset-bottom) + 0.75rem));
+}
+
 /* ═══════════ LAYAR TUNGGU ROOM CHAT ═══════════
  *
  * Dipindah ke sini dari <style> di dalam app/chat/page.js, dan bukan karena

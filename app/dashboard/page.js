@@ -52,7 +52,8 @@ const shortcuts = [
   { href: "/apikey", label: "API Key", icon: Icon.key, badge: "Dev" },
   { href: "/produk", label: "Toko Produk", icon: Icon.shop, badge: "Baru" },
   { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin, badge: "Baru" },
-  { href: "/chat", label: "Grup Chat", icon: "💬", badge: "Live" }
+  { href: "/chat", label: "Grup Chat", icon: "💬", badge: "Live" },
+  { href: "/gateway", label: "QRIS Gateway", icon: "💸", badge: "Baru" }
 ];
 
 function WarrantyModal({ open, onClose, token }) {
@@ -172,7 +173,7 @@ function WarrantyModal({ open, onClose, token }) {
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center px-0 sm:px-5">
       <button aria-label="Tutup" onClick={onClose} className="animate-fade-in absolute inset-0" style={{ background: "rgb(var(--c-ink) / 0.5)" }} />
-      <div className="animate-scale-in relative w-full max-w-lg overflow-hidden rounded-t-3xl sm:rounded-3xl border border-line bg-bg shadow-lift flex flex-col max-h-[92vh]">
+      <div className="animate-scale-in relative w-full max-w-lg overflow-hidden rounded-t-3xl sm:rounded-3xl border border-line bg-bg shadow-lift flex flex-col max-h-[92dvh]">
 
         {/* Header gradient */}
         <div className="shrink-0 bg-gradient-to-br from-rose to-rose/80 px-5 py-5 text-white">
@@ -523,6 +524,12 @@ export default function DashboardPage() {
               🛡️ Claim Garansi
             </button>
           )}
+          <Link
+            href="/gateway"
+            className="btn-3d flex items-center gap-1.5 rounded-xl border border-blue/40 bg-blue-soft px-4 py-2.5 text-sm font-semibold text-blue-bright transition-colors hover:bg-blue/10"
+          >
+            💸 QRIS Gateway
+          </Link>
           <button onClick={() => setModal(true)} className="btn-ghost px-4 py-2.5">
             {name ? "Info akun" : "Atur nama & kode akun"}
           </button>

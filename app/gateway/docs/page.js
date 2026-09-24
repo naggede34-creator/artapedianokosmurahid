@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   INVOICE_MIN, INVOICE_MAX, BIAYA_QRIS, WD_MIN, BIAYA_WD
 } from "@/lib/gatewayConfig";
+import { SITE_URL } from "@/lib/links";
 
 const rp = (n) => `Rp${Number(n).toLocaleString("id-ID")}`;
 
@@ -59,7 +60,7 @@ export default function GatewayDocsPage() {
         <h2 className="font-display text-base font-black text-ink">Dasar</h2>
         <table className="mt-3 w-full text-left">
           <tbody>
-            <Baris nama="Base URL" tipe="" ket={<code>/api/gw/v1</code>} />
+            <Baris nama="Base URL" tipe="" ket={<code>{SITE_URL}/api/gw/v1</code>} />
             <Baris nama="Autentikasi" tipe="header" wajib ket={<>Header <code>X-API-Key: apk_xxx</code> di SETIAP permintaan.</>} />
             <Baris nama="Format" tipe="JSON" ket="Permintaan dan jawaban sama-sama JSON." />
           </tbody>
@@ -101,7 +102,7 @@ export default function GatewayDocsPage() {
           </tbody>
         </table>
 
-        <Blok judul="cURL" kode={`curl -X POST https://artapedia.id/api/gw/v1/invoice \\
+        <Blok judul="cURL" kode={`curl -X POST ${SITE_URL}/api/gw/v1/invoice \\
   -H "X-API-Key: apk_KUNCI_KAMU" \\
   -H "Content-Type: application/json" \\
   -d '{"amount": 25000, "ref": "ORDER-123"}'`} />
@@ -136,7 +137,7 @@ export default function GatewayDocsPage() {
           Cek status satu tagihan. Status yang mungkin: <code>pending</code>, <code>paid</code>,
           <code> expired</code>.
         </p>
-        <Blok judul="cURL" kode={`curl https://artapedia.id/api/gw/v1/invoice/INV-A1B2C3D4E5F6G7 \\
+        <Blok judul="cURL" kode={`curl ${SITE_URL}/api/gw/v1/invoice/INV-A1B2C3D4E5F6G7 \\
   -H "X-API-Key: apk_KUNCI_KAMU"`} />
       </div>
 
@@ -177,7 +178,7 @@ export default function GatewayDocsPage() {
         <Blok bahasa="Node.js" judul="Node.js" kode={`const KEY = process.env.ARTAPEDIA_GW_KEY;
 
 async function buatTagihan(nominal, ref) {
-  const r = await fetch("https://artapedia.id/api/gw/v1/invoice", {
+  const r = await fetch("${SITE_URL}/api/gw/v1/invoice", {
     method: "POST",
     headers: { "X-API-Key": KEY, "Content-Type": "application/json" },
     body: JSON.stringify({ amount: nominal, ref })
@@ -189,7 +190,7 @@ async function buatTagihan(nominal, ref) {
 
 // Sebelum mengirim barang, pastikan dulu ke sumbernya.
 async function sudahDibayar(invoiceId) {
-  const r = await fetch(\`https://artapedia.id/api/gw/v1/invoice/\${invoiceId}\`, {
+  const r = await fetch(\`${SITE_URL}/api/gw/v1/invoice/\${invoiceId}\`, {
     headers: { "X-API-Key": KEY }
   });
   const d = await r.json();
@@ -201,7 +202,7 @@ $key = getenv('ARTAPEDIA_GW_KEY');
 
 function buatTagihan($nominal, $ref) {
   global $key;
-  $ch = curl_init('https://artapedia.id/api/gw/v1/invoice');
+  $ch = curl_init('${SITE_URL}/api/gw/v1/invoice');
   curl_setopt_array($ch, [
     CURLOPT_POST => true,
     CURLOPT_RETURNTRANSFER => true,
@@ -217,7 +218,7 @@ function buatTagihan($nominal, $ref) {
         <Blok bahasa="Python" judul="Python" kode={`import os, requests
 
 KEY = os.environ["ARTAPEDIA_GW_KEY"]
-BASE = "https://artapedia.id/api/gw/v1"
+BASE = "${SITE_URL}/api/gw/v1"
 
 def buat_tagihan(nominal, ref=""):
     r = requests.post(f"{BASE}/invoice",
