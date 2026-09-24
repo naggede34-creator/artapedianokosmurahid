@@ -24,6 +24,7 @@ const TABS = [
   { id: "depositmanual", label: "Deposit Manual", icon: "🔎" },
   { id: "tarik", label: "Tarik Saldo", icon: "🏦" },
   { id: "gateway", label: "QRIS Gateway", icon: "💸" },
+  { id: "bot", label: "Bot Telegram", icon: "🤖" },
   { id: "juara", label: "Pembeli Terbanyak", icon: "🏆" },
   { id: "produk", label: "Produk", icon: "🛍️" },
   { id: "job", label: "Job/Saldo", icon: "💰" },
@@ -439,6 +440,81 @@ export default function AdminDashboardPage() {
     } finally {
       setBusy(false);
       if (setMsg) setTimeout(() => setMsg(""), 3000);
+    }
+  }
+
+  // ── Bot Telegram tambahan ──────────────────────────────────────────
+  const [botList, setBotList] = useState([]);
+  const [botPertama, setBotPertama] = useState(null);
+  const [botBase, setBotBase] = useState("");
+  const [botLoading, setBotLoading] = useState(false);
+  const [botToken, setBotToken] = useState("");
+  const [botAdding, setBotAdding] = useState(false);
+  const [botMsg, setBotMsg] = useState("");
+  const [botErr, setBotErr] = useState("");
+  const [botTbBusy, setBotTbBusy] = useState("");
+
+  const loadBots = useCallback(async () => {
+    setBotLoading(true);
+    try {
+      const res = await fetch("/api/admin/bots");
+      const d = await res.json();
+      if (res.ok) {
+        setBotList(d.items || []);
+        setBotPertama(d.botPertama || null);
+        setBotBase(d.base || "");
+      }
+    } catch {}
+    setBotLoading(false);
+  }, []);
+
+  async function tambahBotBaru() {
+    const t = botToken.trim();
+    if (!t) return;
+    setBotAdding(true);
+    setBotMsg("");
+    setBotErr("");
+    try {
+      const res = await fetch("/api/admin/bots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aksi: "tambah", token: t })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Gagal menambah bot.");
+      // Tokennya dihapus dari kotak isian begitu tersimpan. Ia kredensial, dan
+      // membiarkannya terpampang di layar dasbor yang sering dibuka sambil
+      // berbagi layar adalah cara termudah membocorkannya.
+      setBotToken("");
+      setBotMsg(d.pesan || "Bot ditambahkan.");
+      loadBots();
+    } catch (err) {
+      setBotErr(err.message || "Gagal menambah bot.");
+    } finally {
+      setBotAdding(false);
+    }
+  }
+
+  async function botAksi(botId, aksi, nama) {
+    if (aksi === "hapus" && !confirm(`Hapus bot @${nama}?\n\nWebhook-nya dilepas, jadi bot itu berhenti menjawab pembeli. Tokennya juga dihapus dari daftar — untuk memakainya lagi harus ditempel ulang.`)) return;
+    setBotTbBusy(botId);
+    setBotMsg("");
+    setBotErr("");
+    try {
+      const res = await fetch("/api/admin/bots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aksi, botId })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Gagal.");
+      setBotMsg(d.pesan || "Selesai.");
+      loadBots();
+    } catch (err) {
+      setBotErr(err.message || "Gagal.");
+    } finally {
+      setBotTbBusy("");
+      setTimeout(() => { setBotMsg(""); setBotErr(""); }, 5000);
     }
   }
 
@@ -1954,6 +2030,7 @@ export default function AdminDashboardPage() {
               if (tab.id === "tarik") loadWithdrawals();
               if (tab.id === "juara") loadLeaderboard(lbOffset);
               if (tab.id === "gateway") loadGateway();
+              if (tab.id === "bot") loadBots();
             }}
             className={`relative flex-1 min-w-max rounded-xl px-3 py-2 text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === tab.id
@@ -2988,6 +3065,180 @@ export default function AdminDashboardPage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* TAB: QRIS GATEWAY                                             */}
       {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === "bot" && (
+        <div className="mt-5 space-y-5">
+          {/* Tambah bot baru */}
+          <div className="glass admin-card rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">🤖 Tambah Bot Toko Baru</h2>
+            <p className="mt-1.5 text-xs leading-relaxed text-muted">
+              Tempel token bot dari <b>@BotFather</b>, lalu tekan Tambah. Webhook-nya dipasang
+              otomatis dan botnya langsung jalan dengan <b>menu, harga, saldo, dan cara order yang
+              sama persis</b> seperti bot pertama — bukan salinan, memang kode yang sama.
+            </p>
+
+            <div className="mt-3 rounded-xl border border-rose/30 bg-rose-soft p-3">
+              <p className="text-[11px] font-bold leading-relaxed text-rose">
+                ⚠️ Token bot adalah kunci penuh bot itu. Siapa pun yang memegangnya bisa membaca
+                semua percakapan pembeli dan mengirim pesan atas nama tokomu. Jangan tempel di grup,
+                jangan kirim lewat chat, dan jangan tulis di kode.
+              </p>
+            </div>
+
+            <label className="mt-4 block text-xs font-semibold text-muted">Token bot</label>
+            <input
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              value={botToken}
+              onChange={(e) => setBotToken(e.target.value)}
+              placeholder="1234567890:AAH..."
+              className="input mt-1.5 w-full font-mono text-sm"
+            />
+            <p className="mt-1 text-[11px] text-muted">
+              Dibuat tersembunyi supaya tidak terbaca orang lain saat dasbor ini dibuka bersama.
+            </p>
+
+            {!botBase && (
+              <p className="mt-3 rounded-xl border border-amber/30 bg-amber-soft px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-bright">
+                Site URL belum diisi di tab <b>Pengaturan</b>. Tanpa itu webhook tidak bisa dipasang
+                dan bot barunya tidak akan pernah menjawab.
+              </p>
+            )}
+
+            <button
+              onClick={tambahBotBaru}
+              disabled={botAdding || !botToken.trim()}
+              className="press mt-3 w-full rounded-xl border border-blue bg-blue-bright py-2.5 text-sm font-bold text-white disabled:opacity-50"
+            >
+              {botAdding ? "Memeriksa token ke Telegram…" : "➕ Tambah Bot"}
+            </button>
+
+            {botMsg && <p className="mt-2.5 text-xs font-bold text-success">{botMsg}</p>}
+            {botErr && <p className="mt-2.5 text-xs font-bold text-rose">{botErr}</p>}
+          </div>
+
+          {/* Bot pertama (dari environment) */}
+          {botPertama && (
+            <div className="glass admin-card rounded-2xl p-5 shadow-soft sm:p-6">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="font-display text-base font-semibold text-ink">Bot pertama</h2>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-black text-white ${
+                    botPertama.terpasang ? "bg-success" : "bg-rose"
+                  }`}
+                >
+                  {botPertama.terpasang ? "ON" : "OFF"}
+                </span>
+              </div>
+              <p className="mt-1.5 text-xs leading-relaxed text-muted">{botPertama.catatan}</p>
+            </div>
+          )}
+
+          {/* Daftar bot tambahan */}
+          <div className="glass admin-card rounded-2xl p-5 shadow-soft sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-base font-semibold text-ink">
+                Bot tambahan {botList.length > 0 && `(${botList.length})`}
+              </h2>
+              <button onClick={loadBots} className="rounded-xl border border-line px-3 py-1.5 text-xs font-bold text-muted">
+                ↻ Muat ulang
+              </button>
+            </div>
+
+            {botLoading ? (
+              <p className="mt-4 text-sm text-muted">Memuat…</p>
+            ) : botList.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">
+                Belum ada bot tambahan. Tempel token di atas untuk menambah bot kedua, ketiga, dan
+                seterusnya — semuanya berbagi saldo, harga, dan stok yang sama.
+              </p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {botList.map((b) => (
+                  <div key={b.botId} className="rounded-2xl border border-line bg-surface p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a
+                        href={`https://t.me/${b.username}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm font-black text-ink underline decoration-dotted"
+                      >
+                        @{b.username || b.botId}
+                      </a>
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-black text-white ${
+                          b.aktif ? "bg-success" : "bg-rose"
+                        }`}
+                      >
+                        {b.aktif ? "ON" : "OFF"}
+                      </span>
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-black text-white ${
+                          b.webhookOk ? "bg-success" : "bg-amber"
+                        }`}
+                      >
+                        {b.webhookOk ? "WEBHOOK OK" : "WEBHOOK BELUM"}
+                      </span>
+                    </div>
+
+                    <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+                      <dt className="text-muted">Nama</dt>
+                      <dd className="font-bold text-ink">{b.nama || "-"}</dd>
+                      <dt className="text-muted">ID bot</dt>
+                      <dd className="font-mono text-ink">{b.botId}</dd>
+                      <dt className="text-muted">Token</dt>
+                      <dd className="font-mono text-ink">{b.tokenSamar}</dd>
+                      <dt className="text-muted">Update diterima</dt>
+                      <dd className="font-bold text-ink">{b.jumlahUpdate}</dd>
+                      <dt className="text-muted">Terakhir dipakai</dt>
+                      <dd className="text-ink">
+                        {b.terakhirDipakai
+                          ? new Date(b.terakhirDipakai).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })
+                          : "belum pernah"}
+                      </dd>
+                    </dl>
+
+                    {/* Tokennya tidak pernah ditampilkan utuh: yang di atas hanya
+                        penanda supaya admin tahu bot mana ini. */}
+                    {!b.webhookOk && b.webhookPesan && (
+                      <p className="mt-2 rounded-lg border border-amber/30 bg-amber-soft px-2.5 py-1.5 text-[11px] font-semibold text-amber-bright">
+                        {b.webhookPesan}
+                      </p>
+                    )}
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => botAksi(b.botId, b.aktif ? "nonaktif" : "aktif", b.username)}
+                        disabled={botTbBusy === b.botId}
+                        className={`press flex-1 rounded-xl py-2 text-xs font-bold text-white disabled:opacity-50 ${
+                          b.aktif ? "bg-rose" : "bg-success"
+                        }`}
+                      >
+                        {botTbBusy === b.botId ? "…" : b.aktif ? "⏸ Matikan" : "▶ Nyalakan"}
+                      </button>
+                      <button
+                        onClick={() => botAksi(b.botId, "pasang-ulang", b.username)}
+                        disabled={botTbBusy === b.botId}
+                        className="press flex-1 rounded-xl border border-line py-2 text-xs font-bold text-ink disabled:opacity-50"
+                      >
+                        ↻ Pasang ulang webhook
+                      </button>
+                      <button
+                        onClick={() => botAksi(b.botId, "hapus", b.username)}
+                        disabled={botTbBusy === b.botId}
+                        className="press w-full rounded-xl border border-rose/40 bg-rose-soft py-2 text-xs font-bold text-rose disabled:opacity-50"
+                      >
+                        🗑 Hapus bot
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {activeTab === "gateway" && (
         <div className="mt-5 space-y-5">
           <div className="glass admin-card rounded-2xl p-5 shadow-soft sm:p-6">
