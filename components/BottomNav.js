@@ -16,7 +16,7 @@ export default function BottomNav() {
   const pathname = usePathname() || "/";
 
   return (
-    <nav className="glass fixed inset-x-0 bottom-0 z-50 border-x-0 border-b-0 md:hidden" aria-label="Navigasi bawah">
+    <nav className="glass fixed inset-x-0 bottom-0 z-50 border-x-0 border-b-0 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden" aria-label="Navigasi bawah">
       <div className="mx-auto flex max-w-content items-end justify-between px-2 pt-1.5">
         {tabs.map((t) => {
           const active = t.match ? t.match.includes(pathname) : pathname.startsWith(t.href);

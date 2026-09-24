@@ -39,6 +39,17 @@ export const metadata = {
 };
 
 export const viewport = {
+  // TANPA ini, env(safe-area-inset-*) bernilai NOL di iOS — selalu, di semua
+  // peranti. Ada 12 tempat di kode ini yang memakai env() untuk menjaga tombol
+  // agar tidak tertutup bilah gestur, dan sebelum baris ini ada, tidak satu
+  // pun dari dua belas itu berpengaruh di iPhone. Halaman baru "keluar" ke
+  // area aman setelah viewport-fit: cover dinyalakan, dan barulah insetnya
+  // dilaporkan.
+  //
+  // Konsekuensinya: apa pun yang menempel di tepi layar sekarang WAJIB memberi
+  // jatah env() sendiri — bilah navigasi bawah sudah disesuaikan bersamaan
+  // dengan perubahan ini.
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#F0F6FF" },
     { media: "(prefers-color-scheme: dark)", color: "#04091C" }

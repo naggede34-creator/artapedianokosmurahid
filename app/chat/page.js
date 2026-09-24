@@ -1086,7 +1086,7 @@ export default function ChatPage() {
       {/* ── Input bar ── */}
       {/* env(safe-area-inset-bottom): di iPhone dan di dalam Telegram, bilah
           bawah menutupi tombol kirim kalau tidak diberi ruang. */}
-      <div style={{ background:"rgba(10,13,20,.98)", padding:"8px 10px calc(10px + env(safe-area-inset-bottom))", display:"flex", alignItems:"flex-end", gap:8, flexShrink:0, borderTop:"1px solid rgba(247,124,34,.18)", boxShadow:"0 -6px 22px rgba(0,0,0,.35)" }}>
+      <div style={{ background:"rgba(10,13,20,.98)", padding:"8px 10px max(34px, calc(10px + env(safe-area-inset-bottom)))", display:"flex", alignItems:"flex-end", gap:8, flexShrink:0, borderTop:"1px solid rgba(247,124,34,.18)", boxShadow:"0 -6px 22px rgba(0,0,0,.35)" }}>
 
         {/* Toolbar */}
         <div style={{ display:"flex", flexDirection:"column", gap:4, flexShrink:0 }}>
