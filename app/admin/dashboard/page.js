@@ -447,6 +447,7 @@ export default function AdminDashboardPage() {
   const [botList, setBotList] = useState([]);
   const [botPertama, setBotPertama] = useState(null);
   const [botBase, setBotBase] = useState("");
+  const [botCalon, setBotCalon] = useState([]);
   const [botLoading, setBotLoading] = useState(false);
   const [botToken, setBotToken] = useState("");
   const [botAdding, setBotAdding] = useState(false);
@@ -463,6 +464,7 @@ export default function AdminDashboardPage() {
         setBotList(d.items || []);
         setBotPertama(d.botPertama || null);
         setBotBase(d.base || "");
+        setBotCalon(d.calon || []);
       }
     } catch {}
     setBotLoading(false);
@@ -3098,11 +3100,30 @@ export default function AdminDashboardPage() {
               Dibuat tersembunyi supaya tidak terbaca orang lain saat dasbor ini dibuka bersama.
             </p>
 
-            {!botBase && (
-              <p className="mt-3 rounded-xl border border-amber/30 bg-amber-soft px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-bright">
-                Site URL belum diisi di tab <b>Pengaturan</b>. Tanpa itu webhook tidak bisa dipasang
-                dan bot barunya tidak akan pernah menjawab.
+            {botCalon.length === 0 ? (
+              <p className="mt-3 rounded-xl border border-rose/30 bg-rose-soft px-3 py-2 text-[11px] font-semibold leading-relaxed text-rose">
+                Tidak ada alamat situs yang bisa dipakai. Isi <b>Site URL</b> di tab Pengaturan
+                dengan alamat yang benar-benar bisa dibuka di peramban.
               </p>
+            ) : (
+              <div className="mt-3 rounded-xl border border-line bg-surface2/50 p-3">
+                <p className="text-[11px] font-bold text-muted">Alamat webhook yang akan dipakai</p>
+                <ol className="mt-1.5 space-y-1">
+                  {botCalon.map((c, i) => (
+                    <li key={c.base} className="text-[11px] leading-relaxed">
+                      <span className={i === 0 ? "font-black text-ink" : "text-muted"}>
+                        {i === 0 ? "1\u20e3 dicoba duluan" : `${i + 1}\u20e3 cadangan`}
+                      </span>{" "}
+                      <span className="font-mono text-ink">{c.base}/api/bot/webhook/&lt;id&gt;</span>
+                      <span className="text-muted"> \u00b7 {c.asal}</span>
+                    </li>
+                  ))}
+                </ol>
+                <p className="mt-2 text-[11px] leading-relaxed text-muted">
+                  Kalau yang pertama tidak bisa dihubungi Telegram, cadangannya dicoba otomatis.
+                  Alamat ini harus bisa dibuka dari internet \u2014 <b>DNS-nya harus ketemu</b>.
+                </p>
+              </div>
             )}
 
             <button
@@ -3200,10 +3221,42 @@ export default function AdminDashboardPage() {
 
                     {/* Tokennya tidak pernah ditampilkan utuh: yang di atas hanya
                         penanda supaya admin tahu bot mana ini. */}
-                    {!b.webhookOk && b.webhookPesan && (
-                      <p className="mt-2 rounded-lg border border-amber/30 bg-amber-soft px-2.5 py-1.5 text-[11px] font-semibold text-amber-bright">
+                    {b.webhookUrl && (
+                      <p className="mt-2 break-all font-mono text-[10px] text-muted">
+                        {b.webhookUrl}
+                      </p>
+                    )}
+
+                    {b.webhookPesan && (
+                      <p
+                        className={`mt-2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold leading-relaxed ${
+                          b.webhookOk
+                            ? "border border-amber/30 bg-amber-soft text-amber-bright"
+                            : "border border-rose/30 bg-rose-soft text-rose"
+                        }`}
+                      >
                         {b.webhookPesan}
                       </p>
+                    )}
+
+                    {/* Alamat yang DICOBA dan gagal ikut ditampilkan. Tanpa ini,
+                        "webhook belum terpasang" tidak memberi tahu siapa pun
+                        alamat apa yang salah. */}
+                    {!b.webhookOk && b.webhookPercobaan?.length > 0 && (
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-[11px] font-bold text-muted">
+                          Lihat {b.webhookPercobaan.length} alamat yang dicoba
+                        </summary>
+                        <ul className="mt-1.5 space-y-1.5">
+                          {b.webhookPercobaan.map((p) => (
+                            <li key={p.url} className="rounded-lg border border-line bg-surface2/50 px-2.5 py-1.5">
+                              <p className="break-all font-mono text-[10px] text-ink">{p.url}</p>
+                              <p className="text-[10px] text-muted">dari: {p.asal}</p>
+                              <p className="mt-1 text-[10px] leading-relaxed text-rose">{p.alasan}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
                     )}
 
                     <div className="mt-3 flex flex-wrap gap-2">

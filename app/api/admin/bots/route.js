@@ -7,27 +7,31 @@
 import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/adminAuth";
 import { getSettings } from "@/lib/settings";
-import { daftarBot, tambahBot, hapusBot, setAktif, ambilBot, pasangWebhook, alamatWebhook } from "@/lib/bots";
+import { daftarBot, tambahBot, hapusBot, setAktif, ambilBot, pasangWebhook, botsUpdateWebhook } from "@/lib/bots";
+import { calonBase } from "@/lib/webhookBase";
 
 export const dynamic = "force-dynamic";
 
-// Alamat situs untuk webhook. Urutannya: pengaturan admin, lalu env Vercel.
-// Bukan header Host permintaan ini: header itu berasal dari peramban, dan
-// webhook yang dipasang dari header palsu akan mengirim seluruh percakapan
-// pembeli ke alamat orang lain.
-function baseUrl(settings) {
-  const dari = (settings?.siteUrl || process.env.SITE_URL || "").trim();
-  if (dari) return dari.replace(/\/+$/, "");
-  const vercel = (process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || "").trim();
-  return vercel ? `https://${vercel.replace(/\/+$/, "")}` : "";
-}
+// Alamat situs untuk webhook: DAFTAR calon, bukan satu.
+//
+// Satu sumber berarti satu huruf salah di Pengaturan mematikan seluruh fitur,
+// dan yang muncul cuma "Failed to resolve host" dari Telegram tanpa
+// menyebutkan alamat apa yang dicoba.
+//
+// Header Host permintaan ini sengaja TIDAK dipakai sebagai sumber: header itu
+// berasal dari peramban, dan webhook yang dipasang dari Host palsu akan
+// mengirim seluruh percakapan pembeli ke alamat orang lain.
 
 export async function GET(req) {
   if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const settings = await getSettings();
+    const calon = calonBase(settings);
     return NextResponse.json({
-      base: baseUrl(settings),
+      base: calon[0]?.base || "",
+      // Seluruh calon ikut dikirim supaya admin bisa MELIHAT alamat apa yang
+      // akan dipakai, sebelum menambah bot dan kebingungan kenapa gagal.
+      calon,
       // Bot pertama ditampilkan apa adanya: ia dari environment, tidak bisa
       // diubah dari sini, dan menyembunyikannya membuat admin mengira
       // botnya hilang.
@@ -58,16 +62,16 @@ export async function POST(req) {
 
   try {
     const settings = await getSettings();
-    const base = baseUrl(settings);
+    const calon = calonBase(settings);
 
     if (aksi === "tambah") {
-      if (!base) {
+      if (!calon.length) {
         return NextResponse.json(
-          { error: "Isi dulu Site URL di Pengaturan. Tanpa itu webhook bot tidak bisa dipasang dan botnya tidak akan menjawab." },
+          { error: "Tidak ada alamat situs yang bisa dipakai. Isi Site URL di tab Pengaturan dengan alamat situs ini yang benar-benar bisa dibuka di peramban (mis. https://namasitus.vercel.app)." },
           { status: 400 }
         );
       }
-      const r = await tambahBot({ token: body?.token, baseUrl: base });
+      const r = await tambahBot({ token: body?.token, calon });
       if (!r.ok) return NextResponse.json({ error: r.alasan }, { status: 400 });
       return NextResponse.json({
         ok: true,
@@ -75,8 +79,10 @@ export async function POST(req) {
         bot: r.bot,
         webhook: r.webhook,
         pesan: r.webhook.ok
-          ? `Bot @${r.bot.username} siap. Coba kirim /start ke botnya.`
-          : `Bot @${r.bot.username} tersimpan, tapi webhook-nya gagal dipasang: ${r.webhook.alasan}`
+          ? (r.webhook.peringatanSumber
+              ? `Bot @${r.bot.username} siap lewat ${r.webhook.url} \u2014 tapi ${r.webhook.peringatanSumber}`
+              : `Bot @${r.bot.username} siap. Coba kirim /start ke botnya.`)
+          : `Bot @${r.bot.username} tersimpan, tapi webhook-nya belum terpasang. ${r.webhook.alasan}`
       });
     }
 
@@ -96,7 +102,10 @@ export async function POST(req) {
       // webhook-nya dilepas, jadi tanpa ini botnya tetap bisu meski tertulis aktif.
       if (aksi === "aktif") {
         const bot = await ambilBot(botId);
-        if (bot?.token && base) await pasangWebhook(bot.token, alamatWebhook(base, botId), bot.webhookSecret);
+        if (bot?.token && calon.length) {
+          const w = await pasangWebhook(bot.token, botId, calon);
+          await botsUpdateWebhook(botId, w);
+        }
       }
       return NextResponse.json({ ok: true, pesan: aksi === "aktif" ? "Bot dinyalakan." : "Bot dimatikan." });
     }
@@ -104,11 +113,18 @@ export async function POST(req) {
     if (aksi === "pasang-ulang") {
       const bot = await ambilBot(botId);
       if (!bot?.token) return NextResponse.json({ error: "Bot tidak ada di daftar." }, { status: 404 });
-      if (!base) return NextResponse.json({ error: "Site URL belum diisi di Pengaturan." }, { status: 400 });
-      const r = await pasangWebhook(bot.token, alamatWebhook(base, botId), bot.webhookSecret);
+      if (!calon.length) {
+        return NextResponse.json({ error: "Tidak ada alamat situs yang bisa dipakai. Isi Site URL di tab Pengaturan." }, { status: 400 });
+      }
+      const r = await pasangWebhook(bot.token, botId, calon);
+      // Hasilnya disimpan apa pun ujungnya, supaya lencana WEBHOOK OK / BELUM
+      // di daftar ikut berubah dan tidak menunjukkan keadaan lama.
+      await botsUpdateWebhook(botId, r);
       return NextResponse.json(
-        r?.ok ? { ok: true, pesan: "Webhook dipasang ulang." } : { error: r?.description || "setWebhook gagal." },
-        { status: r?.ok ? 200 : 400 }
+        r.ok
+          ? { ok: true, pesan: r.peringatanSumber ? `Webhook terpasang di ${r.url}. ${r.peringatanSumber}` : `Webhook terpasang di ${r.url}.` }
+          : { error: r.alasan, percobaan: r.percobaan },
+        { status: r.ok ? 200 : 400 }
       );
     }
 
