@@ -5029,13 +5029,13 @@ export default function AdminDashboardPage() {
                     type="button"
                     onClick={() => toggleChannelNotif(jenis)}
                     disabled={Boolean(savingChannelNotif)}
-                    className={`flex items-start gap-3 rounded-2xl border p-3 text-left transition press disabled:opacity-60 ${
-                      aktif ? "border-teal-bright/50 bg-teal-bright/10" : "border-line bg-card"
+                    className={`flex items-start gap-3 rounded-2xl border-2 p-3 text-left transition press disabled:opacity-60 ${
+                      aktif ? "border-success bg-success-soft" : "border-rose/60 bg-rose-soft"
                     }`}
                   >
                     <span
                       className={`mt-0.5 flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition ${
-                        aktif ? "justify-end bg-teal-bright" : "justify-start bg-line"
+                        aktif ? "justify-end bg-success" : "justify-start bg-rose"
                       }`}
                       aria-hidden="true"
                     >
@@ -5044,6 +5044,13 @@ export default function AdminDashboardPage() {
                     <span className="min-w-0">
                       <span className="block text-sm font-semibold text-ink">
                         {info.label}
+                        <span
+                          className={`ml-1.5 align-middle text-[10px] font-black uppercase ${
+                            aktif ? "text-success" : "text-rose"
+                          }`}
+                        >
+                          {aktif ? "● ON" : "● OFF"}
+                        </span>
                         {info.pin && <span className="ml-1.5 text-[10px] font-bold text-amber">📌 DIPIN</span>}
                       </span>
                       <span className="mt-0.5 block text-[11px] leading-snug text-muted">
