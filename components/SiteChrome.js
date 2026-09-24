@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { CHANNEL_URL } from "@/lib/links";
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -32,7 +33,7 @@ export default function SiteChrome({ children }) {
   const [maintenanceTitle, setMaintenanceTitle] = useState("Sedang Maintenance");
   const [maintenanceBtnLabel, setMaintenanceBtnLabel] = useState("");
   const [maintenanceBtnUrl, setMaintenanceBtnUrl] = useState("");
-  const [channelInfo, setChannelInfo] = useState("https://t.me/kkaelnokosmurah");
+  const [channelInfo, setChannelInfo] = useState(CHANNEL_URL);
   const [csUsername, setCsUsername] = useState("teatlas");
 
   useEffect(() => {
@@ -125,7 +126,7 @@ function MaintenanceScreen({ title, message, buttonLabel, buttonUrl }) {
               </a>
             )}
             <a
-              href="https://t.me/kkaelnokosmurah"
+              href={CHANNEL_URL}
               target="_blank"
               rel="noreferrer"
               className="btn-3d rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-amber/40 hover:text-amber-bright"

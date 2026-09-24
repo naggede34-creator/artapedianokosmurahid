@@ -7,6 +7,7 @@ import HeroMascot from "@/components/HeroMascot";
 import TransactionTicker from "@/components/TransactionTicker";
 import LiveTicker from "@/components/LiveTicker";
 import BannerRail from "@/components/BannerRail";
+import ChannelNotifCard from "@/components/ChannelNotifCard";
 import { Icon } from "@/components/ui";
 
 const products = [
@@ -334,6 +335,11 @@ export default function HomePage() {
         </div>
         <LiveTicker />
       </section>
+
+      {/* Ditaruh tepat setelah tiker pembelian: orang baru saja melihat
+          transaksi lewat satu per satu, dan pertanyaan yang muncul persis
+          saat itu adalah "lihat semuanya di mana?". */}
+      <ChannelNotifCard className="mt-6" />
 
       {/* Banner dari admin. Ditaruh SESUDAH hero dan pembelian terbaru, bukan
           di paling atas: yang baru datang harus melihat apa yang dijual dan

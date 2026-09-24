@@ -11,11 +11,12 @@ import { PROVIDER_KEYS, DEPOSIT_PROVIDERS } from "@/lib/paymentProviders";
 import { warungNokosConfigured } from "@/lib/warungnokos";
 import { rumahOtpConfigured } from "@/lib/rumahotp";
 import { atlanticConfigured } from "@/lib/atlantic";
+import { CHANNEL_URL } from "@/lib/links";
 
 export const dynamic = "force-dynamic";
 
 const CHANNELS = () => ({
-  channelInfo: process.env.TELEGRAM_CHANNEL_1 || "https://t.me/kkaelnokosmurah"
+  channelInfo: CHANNEL_URL
 });
 
 export async function GET() {

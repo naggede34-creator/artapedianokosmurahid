@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CHANNEL_URL } from "@/lib/links";
 
 const GREETING = {
   role: "assistant",
@@ -38,7 +39,7 @@ function TypingDots() {
 }
 
 export default function SupportWidget({
-  channelInfo = "https://t.me/kkaelnokosmurah",
+  channelInfo = CHANNEL_URL,
   csUsername = "teatlas"
 }) {
   const [menuOpen, setMenuOpen] = useState(false);

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CHANNEL_URL } from "@/lib/links";
 import { Logo } from "@/components/Navbar";
 
 const cols = [
@@ -43,7 +44,7 @@ export default function Footer() {
             Nomor OTP dan isi saldo QRIS — semuanya diproses otomatis 24 jam.
           </p>
           <div className="mt-4 flex gap-2">
-            <a href="https://t.me/kkaelnokosmurah" target="_blank" rel="noreferrer" className="btn-ghost px-3 py-2 text-xs">
+            <a href={CHANNEL_URL} target="_blank" rel="noreferrer" className="btn-ghost px-3 py-2 text-xs">
               Channel Telegram
             </a>
           </div>

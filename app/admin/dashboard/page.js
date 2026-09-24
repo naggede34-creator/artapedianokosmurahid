@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OTP_SERVERS } from "@/lib/otpServers";
 import { DAFTAR_PUBLIK, channelAktifUntuk } from "@/lib/channelNotifTypes";
+import { CHANNEL_ID, CHANNEL_URL } from "@/lib/links";
 
 function fmtDate(d) {
   if (!d) return "-";
@@ -4987,8 +4988,33 @@ export default function AdminDashboardPage() {
                   <input value={siteSettingsForm.telegramChatId} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, telegramChatId: e.target.value }))} placeholder="-100... (dari env)" className="mt-1.5 input w-full text-sm" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-muted">Telegram Channel ID <span className="text-amber text-xs">(notif user baru)</span></label>
-                  <input value={siteSettingsForm.telegramChannelId} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, telegramChannelId: e.target.value }))} placeholder="-100... channel ID (env TELEGRAM_CHANNEL_ID)" className="mt-1.5 input w-full text-sm" />
+                  <label className="text-xs font-medium text-muted">Telegram Channel ID <span className="text-amber text-xs">(semua notif publik)</span></label>
+                  <input value={siteSettingsForm.telegramChannelId} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, telegramChannelId: e.target.value }))} placeholder={`${CHANNEL_ID} (channel resmi)`} className="mt-1.5 input w-full text-sm" />
+                  {/* Kolom ini MENIMPA channel bawaan di kode. Kalau isinya masih
+                      channel lama, mengganti kode tidak akan berpengaruh sama
+                      sekali — notifnya tetap ke channel lama, tanpa error apa
+                      pun. Karena itu keadaannya ditulis apa adanya di sini, dan
+                      dikembalikan dalam sekali klik. */}
+                  {siteSettingsForm.telegramChannelId.trim() === CHANNEL_ID ? (
+                    <p className="mt-1.5 text-[11px] font-semibold text-success">
+                      ✅ Mengarah ke channel resmi ({CHANNEL_URL.replace("https://", "")})
+                    </p>
+                  ) : (
+                    <div className="mt-1.5 rounded-lg border border-amber/40 bg-amber-soft px-2.5 py-2">
+                      <p className="text-[11px] leading-relaxed text-ink">
+                        {siteSettingsForm.telegramChannelId.trim()
+                          ? <>⚠️ Isi kolom ini <b>menimpa</b> channel resmi. Selama masih terisi nilai lain, notif tidak akan masuk ke {CHANNEL_URL.replace("https://", "")}.</>
+                          : <>Kosong = otomatis pakai channel resmi <b>{CHANNEL_ID}</b>.</>}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setSiteSettingsForm((f) => ({ ...f, telegramChannelId: CHANNEL_ID }))}
+                        className="mt-1.5 rounded-lg bg-ink px-2.5 py-1 text-[11px] font-bold text-bg press"
+                      >
+                        Pakai channel resmi
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted">Min Deposit (Rp)</label>
