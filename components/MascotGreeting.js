@@ -80,6 +80,21 @@ export default function MascotGreeting() {
     return () => window.removeEventListener("keydown", onKey);
   }, [show]);
 
+  // Menutup sendiri sesudah kalimatnya selesai diketik.
+  //
+  // Ini sapaan, bukan pertanyaan — tidak ada yang perlu diputuskan, jadi tidak
+  // pantas menuntut ketukan. Dan yang lebih penting: popup Tutorial &
+  // Informasi MENUNGGU sapaan ini ditutup. Selama ia hanya bisa ditutup dengan
+  // ketukan, siapa pun yang membiarkannya tidak akan pernah melihat syarat,
+  // ketentuan, dan aturan refundnya — padahal itu yang dipegang kalau nanti
+  // ada sengketa.
+  useEffect(() => {
+    if (!show || leaving) return undefined;
+    // Panjang kalimat x kecepatan ketik, plus jeda baca.
+    const t = setTimeout(close, line.length * 22 + 4500);
+    return () => clearTimeout(t);
+  }, [show, leaving, line]);
+
   function close() {
     setLeaving(true);
     setTimeout(() => {

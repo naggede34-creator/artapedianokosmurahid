@@ -5,9 +5,18 @@ import { CHANNEL_LIST_URL, BOT_URL } from "@/lib/links";
 import { useEffect, useState } from "react";
 import { onOpenersFree } from "@/lib/introGate";
 
-// Sudah menekan "Selesai" (permanen) vs cuma "Tutup" (muncul lagi kunjungan berikutnya).
-const READ_KEY = "artapedia_info_read";
-const DISMISS_KEY = "artapedia_info_dismissed";
+// Popup ini SENGAJA muncul setiap kali web dibuka — pengguna baru maupun lama,
+// sudah pernah menekan "Selesai" atau belum.
+//
+// Dulu ia diredam dua lapis: localStorage "artapedia_info_read" (permanen, dari
+// tombol Selesai) dan sessionStorage "artapedia_info_dismissed" (dari tombol
+// Tutup). Akibatnya siapa pun yang pernah menekan Selesai sekali tidak akan
+// pernah melihatnya lagi — termasuk saat syarat, ketentuan, atau aturan
+// refundnya berubah. Isinya justru yang harus dibaca ulang setiap kali, karena
+// ini yang dipegang kalau nanti ada sengketa soal nomor atau saldo.
+//
+// Dua kunci itu tidak lagi dibaca. Kalau suatu saat mau diredam lagi, yang
+// diubah cukup di sini — bukan di tiga tempat seperti sebelumnya.
 
 const TABS = [
   { id: "refund", label: "Refund" },
@@ -59,12 +68,6 @@ export default function InfoModal() {
   const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
-    try {
-      if (localStorage.getItem(READ_KEY) === "1") return;
-      if (sessionStorage.getItem(DISMISS_KEY) === "1") return;
-    } catch {
-      // Storage diblokir (mode privat) — tetap tampilkan, tidak apa-apa.
-    }
     // Menunggu animasi loading DAN sapaan maskot ditutup, supaya popup tidak
     // menumpuk di layar yang sama.
     let t;
@@ -77,18 +80,14 @@ export default function InfoModal() {
     };
   }, []);
 
+  // Kedua tombol sama-sama menutup dan tidak menyimpan apa pun. Bedanya cuma
+  // "Selesai" menuntut centang sudah dibaca — itu yang dicatat sebagai
+  // persetujuan, sedangkan "Tutup" tidak.
   function close() {
-    // "Tutup" hanya menunda sampai kunjungan berikutnya.
-    try {
-      sessionStorage.setItem(DISMISS_KEY, "1");
-    } catch {}
     setOpen(false);
   }
 
   function finish() {
-    try {
-      localStorage.setItem(READ_KEY, "1");
-    } catch {}
     setOpen(false);
   }
 
