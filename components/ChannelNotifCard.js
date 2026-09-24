@@ -13,13 +13,13 @@ import { CHANNEL_URL, BOT_URL, WEBAPP_URL } from "@/lib/links";
 // order di bawahnya untuk yang memang sudah siap beli.
 export default function ChannelNotifCard({ className = "" }) {
   return (
-    <section className={className}>
-      <div className="card card-tilt relative overflow-hidden p-5 sm:p-6">
+    <section className={`panggung-3d ${className}`}>
+      <div className="card balok-3d tepi-tebal relative overflow-hidden p-5 sm:p-6">
         <div className="pointer-events-none absolute -right-8 -top-10 text-[110px] leading-none opacity-[0.07] select-none">
           📢
         </div>
 
-        <div className="relative">
+        <div className="relative timbul">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2.5 w-2.5">
               <span className="pulse-live absolute inset-0 inline-flex rounded-full bg-success opacity-75" />
@@ -50,7 +50,7 @@ export default function ChannelNotifCard({ className = "" }) {
             rel="noreferrer"
             className="btn-primary press mt-5 w-full text-[15px]"
           >
-            📢 Gabung Channel Notifikasi
+            📢 NOTIFIKASI PEMBELIAN
           </a>
 
           <div className="mt-2.5 grid grid-cols-2 gap-2.5">

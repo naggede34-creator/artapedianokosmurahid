@@ -55,9 +55,9 @@
    * bawahnya yang memberi rasa terangkat. Dua-duanya dari satu token, jadi
    * seluruh kartu, tombol, dan panel ikut berubah tanpa disentuh satu-satu.
    */
-  --comic-shadow: 4px 4px 0 rgb(var(--c-ink)), 0 10px 22px -8px rgb(var(--c-navy) / 0.35);
+  --comic-shadow: 2px 2px 0 rgb(var(--c-ink)), 4px 4px 0 rgb(var(--c-ink)), 0 10px 22px -8px rgb(var(--c-navy) / 0.35);
   --comic-shadow-sm: 2px 2px 0 rgb(var(--c-ink)), 0 5px 12px -5px rgb(var(--c-navy) / 0.3);
-  --comic-shadow-lg: 6px 6px 0 rgb(var(--c-ink)), 0 18px 34px -10px rgb(var(--c-navy) / 0.4);
+  --comic-shadow-lg: 2px 2px 0 rgb(var(--c-ink)), 4px 4px 0 rgb(var(--c-ink)), 7px 7px 0 rgb(var(--c-ink)), 0 20px 38px -10px rgb(var(--c-navy) / 0.42);
   --comic-border: 2px solid rgb(var(--c-ink));
   --comic-border-blue: 2px solid rgb(var(--c-blue));
 
@@ -114,9 +114,9 @@
    *   3. kilau biru tipis     -> tepi yang menangkap cahaya, supaya benda
    *                              gelap di atas latar gelap tetap punya batas
    */
-  --comic-shadow: 4px 4px 0 rgb(2 6 18 / 0.9), 0 12px 26px -10px rgb(0 0 0 / 0.8), 0 0 24px -6px rgb(var(--c-blue) / 0.22);
+  --comic-shadow: 2px 2px 0 rgb(2 6 18 / 0.92), 4px 4px 0 rgb(2 6 18 / 0.85), 0 12px 26px -10px rgb(0 0 0 / 0.8), 0 0 24px -6px rgb(var(--c-blue) / 0.22);
   --comic-shadow-sm: 2px 2px 0 rgb(2 6 18 / 0.85), 0 6px 14px -6px rgb(0 0 0 / 0.7);
-  --comic-shadow-lg: 6px 6px 0 rgb(2 6 18 / 0.9), 0 20px 38px -12px rgb(0 0 0 / 0.85), 0 0 32px -6px rgb(var(--c-blue) / 0.3);
+  --comic-shadow-lg: 2px 2px 0 rgb(2 6 18 / 0.92), 4px 4px 0 rgb(2 6 18 / 0.85), 7px 7px 0 rgb(2 6 18 / 0.78), 0 22px 40px -12px rgb(0 0 0 / 0.85), 0 0 32px -6px rgb(var(--c-blue) / 0.3);
   --comic-border: 2px solid rgb(var(--c-line) / 0.7);
   --comic-border-blue: 2px solid rgb(var(--c-blue));
 
@@ -3831,4 +3831,76 @@ html.dark .pet-kandang,
 
 @media (prefers-reduced-motion: reduce) {
   .nudge, .nudge-maskot { animation: none; }
+}
+
+/* ═══════════════ KEDALAMAN KOMIK 3D ═══════════════
+ *
+ * Bayangan offset tunggal terbaca seperti kertas yang ditumpuk. Yang membuat
+ * sesuatu terbaca punya KETEBALAN adalah sisi sampingnya yang terlihat — dan
+ * di CSS, sisi samping itu ditiru dengan beberapa bayangan keras bertingkat.
+ * Token --comic-shadow sudah memakai tiga tingkat; blok di bawah ini untuk
+ * hal-hal yang perlu lebih tebal lagi.
+ */
+
+/* Panggung 3D. Anaknya boleh berdiri di kedalaman berbeda. */
+.panggung-3d {
+  perspective: 900px;
+  perspective-origin: 50% 40%;
+}
+
+/* Benda yang dimiringkan. Isinya ikut miring karena preserve-3d — tanpa itu,
+ * yang miring cuma kotaknya dan isinya tetap rata menempel, yang justru
+ * membongkar ilusinya. */
+.balok-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(.22, 1, .36, 1), box-shadow 0.35s cubic-bezier(.22, 1, .36, 1);
+}
+.balok-3d:hover {
+  transform: rotateX(4deg) rotateY(-5deg) translateY(-3px);
+  box-shadow: var(--kilau-dalam), var(--comic-shadow-lg);
+}
+
+/* Isi yang mengambang di atas permukaan balok. Angkanya kecil dengan sengaja:
+ * yang meyakinkan itu jarak yang halus, bukan yang mencolok. */
+.timbul   { transform: translateZ(18px); }
+.timbul-2 { transform: translateZ(34px); }
+
+/* Tepi tebal seperti balok kayu yang dicetak. Dipakai untuk satu-dua benda
+ * utama per halaman saja — kalau semuanya setebal ini, tidak ada lagi yang
+ * menonjol dan halamannya jadi berisik. */
+.tepi-tebal {
+  box-shadow:
+    2px 2px 0 rgb(var(--c-ink)),
+    4px 4px 0 rgb(var(--c-ink)),
+    6px 6px 0 rgb(var(--c-ink)),
+    8px 8px 0 rgb(var(--c-ink)),
+    10px 10px 0 rgb(var(--c-ink) / 0.55),
+    0 24px 44px -12px rgb(var(--c-navy) / 0.45);
+}
+:root[data-theme="dark"] .tepi-tebal,
+html.dark .tepi-tebal {
+  box-shadow:
+    2px 2px 0 rgb(2 6 18 / 0.92),
+    4px 4px 0 rgb(2 6 18 / 0.88),
+    6px 6px 0 rgb(2 6 18 / 0.82),
+    8px 8px 0 rgb(2 6 18 / 0.72),
+    0 26px 46px -12px rgb(0 0 0 / 0.85),
+    0 0 34px -8px rgb(var(--c-blue) / 0.3);
+}
+
+/* Judul dengan tinta bertumpuk — tebalnya bertambah, bukan cuma bergeser. */
+.judul-timbul {
+  text-shadow:
+    1px 1px 0 rgb(var(--c-ink)),
+    2px 2px 0 rgb(var(--c-ink)),
+    3px 3px 0 rgb(var(--c-orange)),
+    4px 4px 0 rgb(var(--c-orange)),
+    6px 6px 0 rgb(var(--c-ink) / 0.25);
+}
+
+/* Peranti yang tidak kuat memutar banyak lapis bayangan tiap frame akan
+ * tersendat. Yang sudah memilih "kurangi gerak" juga tidak ingin benda
+ * bergoyang saat disentuh. */
+@media (prefers-reduced-motion: reduce) {
+  .balok-3d, .balok-3d:hover { transform: none; transition: none; }
 }

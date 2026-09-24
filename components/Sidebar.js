@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CHANNEL_URL } from "@/lib/links";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -43,7 +44,19 @@ const I = {
 
 const sections = [
   {
-    items: [{ href: "/dashboard", label: "Beranda", icon: <Icon.home width={19} height={19} /> }]
+    items: [
+      { href: "/dashboard", label: "Beranda", icon: <Icon.home width={19} height={19} /> },
+      // Tautan keluar ke channel Telegram. Ditaruh paling atas bersama Beranda,
+      // bukan diselipkan di Bantuan: ini yang dipakai orang untuk memastikan
+      // tokonya benar-benar jalan sebelum mereka mengisi saldo.
+      {
+        href: CHANNEL_URL,
+        label: "Notifikasi Pembelian",
+        icon: <span className="text-[17px] leading-none">📢</span>,
+        badge: "Live",
+        external: true
+      }
+    ]
   },
   {
     title: "Belanja",
@@ -131,19 +144,28 @@ export default function Sidebar({ open, onClose }) {
               {section.title && <p className="px-3 pb-1.5 text-xs font-semibold text-muted">{section.title}</p>}
               <div className="flex flex-col gap-0.5">
                 {section.items.map((item) => {
-                  const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onClose}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold transition-colors ${
-                        active ? "bg-amber-soft text-amber-bright" : "text-ink hover:bg-surface2"
-                      }`}
-                    >
+                  const active = !item.external && (pathname === item.href || pathname?.startsWith(`${item.href}/`));
+                  const isi = (
+                    <>
                       <span className={active ? "text-amber-bright" : "text-muted"}>{item.icon}</span>
                       <span className="flex-1">{item.label}</span>
                       {item.badge && <span className="chip bg-amber text-white">{item.badge}</span>}
+                      {item.external && <span className="text-[11px] text-muted">↗</span>}
+                    </>
+                  );
+                  const kelas = `flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold transition-colors ${
+                    active ? "bg-amber-soft text-amber-bright" : "text-ink hover:bg-surface2"
+                  }`;
+                  // Tautan keluar tidak boleh lewat <Link>: Next akan mencoba
+                  // memuatnya sebagai rute di dalam situs ini, dan yang terbuka
+                  // adalah halaman 404, bukan Telegram.
+                  return item.external ? (
+                    <a key={item.href} href={item.href} target="_blank" rel="noreferrer" onClick={onClose} className={kelas}>
+                      {isi}
+                    </a>
+                  ) : (
+                    <Link key={item.href} href={item.href} onClick={onClose} className={kelas}>
+                      {isi}
                     </Link>
                   );
                 })}

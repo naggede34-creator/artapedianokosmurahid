@@ -199,7 +199,7 @@ function SectionHeader({ badge, title, sub }) {
           {badge}
         </div>
       )}
-      <h2 className="hd-title misprint text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{title}</h2>
+      <h2 className="hd-title judul-timbul misprint text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{title}</h2>
       {sub && <p className="mt-2 text-sm text-muted">{sub}</p>}
     </div>
   );
