@@ -70,6 +70,7 @@ const sections = [
     title: "Saldo",
     items: [
       { href: "/deposit", label: "Isi Saldo (QRIS)", icon: <Icon.qris width={19} height={19} /> },
+      { href: "/gateway", label: "QRIS Gateway", icon: <span className="text-[17px] leading-none">💸</span>, badge: "Baru" },
       { href: "/transfer", label: "Transfer Saldo", icon: <Icon.transfer width={19} height={19} /> },
       { href: "/mutasi", label: "Mutasi Saldo", icon: <Icon.ledger width={19} height={19} /> },
       { href: "/riwayat", label: "Riwayat Transaksi", icon: <Icon.history width={19} height={19} /> }

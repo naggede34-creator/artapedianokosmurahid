@@ -4030,3 +4030,59 @@ html.dark .tepi-tebal {
   .chat-tunggu-maskot,
   .chat-tunggu-bar { animation: none !important; }
 }
+
+/* ═══════════ QRIS GATEWAY ═══════════
+ *
+ * Dasbor terpisah, dan tampilannya sengaja dibedakan dari toko: ini dompet
+ * yang isinya uang titipan pembeli ORANG LAIN, bukan saldo belanja. Orang
+ * yang sedang menarik uang masuk harus tahu sekali lihat bahwa ia tidak
+ * sedang berada di halaman beli nokos.
+ *
+ * Pembedanya warna aksen hijau-uang dan bingkai yang lebih tebal, bukan tata
+ * letak yang berbeda — tata letak yang berbeda berarti orang harus belajar
+ * dua situs.
+ */
+.gw-shell {
+  overflow-x: clip;
+  perspective: 1200px;
+  perspective-origin: 50% 30%;
+}
+
+.gw-shell .card {
+  border-width: 2.5px;
+  border-radius: 20px;
+}
+
+/* Kepala dasbor: cahaya hijau yang menyapu pelan, seperti mesin EDC yang
+   menyala. Ditaruh di ::after lewat elemen sendiri supaya tidak ikut terpotong
+   radius kartunya. */
+.gw-hero-glow {
+  position: absolute;
+  inset: -40% -20% auto -20%;
+  height: 160%;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 20% 0%, rgb(var(--c-success) / 0.22), transparent 70%),
+    radial-gradient(50% 45% at 85% 10%, rgb(var(--c-blue) / 0.18), transparent 70%);
+  animation: gwGlow 7s ease-in-out infinite alternate;
+}
+@keyframes gwGlow {
+  from { transform: translateX(-6%) scale(1); }
+  to   { transform: translateX(6%) scale(1.06); }
+}
+
+/* Angka uang di gateway pakai lebar digit tetap: saldo yang berubah tiap
+   beberapa detik akan bergoyang kiri-kanan tanpa ini, dan itu terbaca seperti
+   halaman yang berkedip. */
+.gw-shell .tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* Blok kode dokumentasi: monospace sungguhan dan gulir mendatar sendiri,
+   supaya contoh yang panjang tidak menggeser seluruh halaman. */
+.gw-shell pre {
+  font-family: var(--font-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  overscroll-behavior-x: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gw-hero-glow { animation: none; }
+}
