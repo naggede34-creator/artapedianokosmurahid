@@ -72,7 +72,13 @@ export async function GET() {
       },
       depositMin: limits.min,
       depositMax: limits.max,
-      heroChars: heroChars || [],
+      // Daftar karakternya dikosongkan saat panelnya dimatikan, bukan dikirim
+      // lalu disembunyikan halaman: kalau dikirim, gambar dan teks tiap
+      // karakter tetap diunduh semua pengunjung untuk sesuatu yang tidak
+      // pernah tampil.
+      heroCharsEnabled: settings.heroCharsEnabled !== false,
+      heroChars: settings.heroCharsEnabled === false ? [] : heroChars || [],
+      warranty: { enabled: settings.warranty?.enabled !== false, note: settings.warranty?.note || "" },
       ...CHANNELS()
     });
   } catch (err) {

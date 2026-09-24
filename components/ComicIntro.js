@@ -229,57 +229,123 @@ export default function ComicIntro() {
   );
 }
 
-// Digambar sebagai SVG, bukan gambar raster: karakternya cuma dipakai di
-// komik ini, dan sebuah PNG untuknya menambah berkas yang harus diunduh semua
-// pengunjung hanya untuk beberapa detik pertama.
+// Digambar sebagai SVG, bukan gambar raster: karakternya cuma dipakai di komik
+// ini, dan sebuah PNG untuknya menambah berkas yang harus diunduh SEMUA
+// pengunjung hanya untuk beberapa detik pertama — justru di detik-detik ketika
+// mereka paling mudah menutup tab.
+//
+// Sosoknya seluruh badan, bukan cuma kepala dan bahu: pose berpikir dengan
+// tangan di dagu itu yang menyampaikan "bingung" tanpa perlu satu kata pun,
+// dan pose tidak terbaca kalau tangannya tidak ikut kelihatan.
 function Orang({ mood = "bingung" }) {
   const kesal = mood === "kesal";
+  const kaos = kesal ? "#E8502F" : "#2E6FD8";
+  const kaosGelap = kesal ? "#C33A1D" : "#1F529F";
+  const kulit = "#F3C193";
+  const tinta = "#0B162C";
+
   return (
-    <svg className="ci-orang" viewBox="0 0 220 260" role="img" aria-label={kesal ? "Pembeli yang kesal" : "Pembeli yang kebingungan"}>
-      <ellipse cx="110" cy="248" rx="70" ry="9" fill="rgb(11 22 44 / .18)" />
+    <svg className="ci-orang" viewBox="0 0 260 560" role="img" aria-label={kesal ? "Pembeli yang kesal" : "Pembeli yang kebingungan"}>
+      <ellipse cx="130" cy="548" rx="86" ry="11" fill="rgb(11 22 44 / .18)" />
 
-      {/* badan */}
-      <path d="M45 260 Q48 182 110 176 Q172 182 175 260 Z" fill={kesal ? "#FF6B6B" : "#2E86FF"} stroke="#0B162C" strokeWidth="5" strokeLinejoin="round" />
-      <path d="M110 176 L96 214 L110 226 L124 214 Z" fill="#E8EFFC" stroke="#0B162C" strokeWidth="4" strokeLinejoin="round" />
+      {/* ── KAKI ── */}
+      <path d="M96 318 L92 470 L88 512 h44 l6 -44 L146 330 Z" fill="#26364F" stroke={tinta} strokeWidth="5" strokeLinejoin="round" />
+      <path d="M146 330 L152 470 L156 512 h44 l-4 -46 L176 318 Z" fill="#2C3E5C" stroke={tinta} strokeWidth="5" strokeLinejoin="round" />
+      {/* saku kargo */}
+      <rect x="96" y="372" width="30" height="40" rx="5" fill="#1D2C44" stroke={tinta} strokeWidth="4" />
+      <rect x="166" y="372" width="30" height="40" rx="5" fill="#1D2C44" stroke={tinta} strokeWidth="4" />
 
-      {/* leher */}
-      <path d="M96 156 h28 v24 h-28 z" fill="#F0B98B" stroke="#0B162C" strokeWidth="5" strokeLinejoin="round" />
+      {/* ── SEPATU ── */}
+      <path d="M84 512 h50 v20 q0 8 -10 8 H74 q-8 0 -8 -8 q0 -12 18 -20 Z" fill="#FFFFFF" stroke={tinta} strokeWidth="5" strokeLinejoin="round" />
+      <path d="M204 512 h-50 v20 q0 8 10 8 h50 q8 0 8 -8 q0 -12 -18 -20 Z" fill="#FFFFFF" stroke={tinta} strokeWidth="5" strokeLinejoin="round" />
+      <path d="M84 512 h24 l-10 20 H74 Z" fill={kaos} />
+      <path d="M204 512 h-24 l10 20 h24 Z" fill={kaos} />
 
-      {/* kepala */}
-      <rect x="60" y="56" width="100" height="106" rx="42" fill="#F7C79B" stroke="#0B162C" strokeWidth="5" />
+      {/* ── IKAT PINGGANG ── */}
+      <rect x="92" y="306" width="92" height="20" rx="4" fill="#8B5A2B" stroke={tinta} strokeWidth="5" />
+      <rect x="128" y="306" width="18" height="20" fill="#C08A4A" stroke={tinta} strokeWidth="4" />
 
-      {/* rambut */}
-      <path d="M58 100 Q54 44 110 44 Q166 44 162 100 Q150 76 110 76 Q70 76 58 100 Z" fill="#101A30" stroke="#0B162C" strokeWidth="5" strokeLinejoin="round" />
+      {/* ── KAOS ── */}
+      <path d="M88 200 q-6 -34 22 -46 l20 -8 h20 l20 8 q28 12 22 46 l-8 116 q-54 14 -88 0 Z"
+            fill={kaos} stroke={tinta} strokeWidth="5" strokeLinejoin="round" />
+      {/* lipatan bawah kaos, biar tidak terbaca seperti papan rata */}
+      <path d="M96 292 q34 12 72 0" stroke={kaosGelap} strokeWidth="5" fill="none" strokeLinecap="round" />
+      {/* kerah */}
+      <path d="M112 152 q18 18 36 0" fill="none" stroke={tinta} strokeWidth="5" strokeLinecap="round" />
+
+      {/* Tulisan dada. Ukurannya dipilih supaya berakhir sebelum x=166 — di
+          sebelah kanan itu lengan yang diangkat lewat, dan tulisan yang
+          tertutup lengan terbaca seperti kesalahan gambar, bukan sebagai pose. */}
+      <text x="132" y="222" textAnchor="middle" fontSize="18" fontWeight="900" fill="#FFFFFF"
+            stroke={tinta} strokeWidth="5" paintOrder="stroke" fontFamily="system-ui, sans-serif">ARTA</text>
+      <text x="132" y="244" textAnchor="middle" fontSize="18" fontWeight="900" fill="#FFFFFF"
+            stroke={tinta} strokeWidth="5" paintOrder="stroke" fontFamily="system-ui, sans-serif">PEDIA</text>
+
+      {/* ── LENGAN KIRI (menggantung, tangan masuk saku) ── */}
+      <path d="M92 196 q-16 44 -10 86 q2 16 16 16 q12 0 14 -14" fill={kaos} stroke={tinta} strokeWidth="5" strokeLinejoin="round" />
+
+      {/* ── LENGAN KANAN: siku keluar, lengan bawah naik ke dagu ──
+          Inilah pose berpikirnya. Sikunya sengaja dibuang jauh ke kanan supaya
+          lengan bawahnya naik di LUAR tulisan dada. */}
+      <path d="M162 190 q40 14 42 56 q2 14 -11 16 q-13 2 -15 -11 q-5 -30 -26 -43 Z"
+            fill={kaos} stroke={tinta} strokeWidth="5" strokeLinejoin="round" />
+      {/* Lengan bawah digambar dua kali: garis tebal gelap sebagai tinta luar,
+          lalu garis kulit yang lebih tipis di atasnya. Stroke tidak punya
+          outline sendiri, jadi begini cara memberinya. */}
+      <path d="M200 250 q-12 -66 -46 -100" stroke={tinta} strokeWidth="32" fill="none" strokeLinecap="round" />
+      <path d="M200 250 q-12 -66 -46 -100" stroke={kulit} strokeWidth="22" fill="none" strokeLinecap="round" />
+      {/* gelang manik di pergelangan */}
+      <path d="M176 176 q12 6 12 16" stroke="#C0622A" strokeWidth="7" fill="none" strokeLinecap="round" strokeDasharray="2 5" />
+      {/* kepalan tangan di bawah dagu */}
+      <circle cx="152" cy="148" r="15" fill={kulit} stroke={tinta} strokeWidth="5" />
+
+      {/* ── LEHER ── */}
+      <path d="M114 128 h32 v30 h-32 z" fill={kulit} stroke={tinta} strokeWidth="5" strokeLinejoin="round" />
+      <path d="M114 138 q16 12 32 0" fill="rgb(11 22 44 / .2)" stroke="none" />
+
+      {/* kalung */}
+      <path d="M116 158 q14 16 28 0" fill="none" stroke="#D9DEE8" strokeWidth="3.5" />
+      <circle cx="130" cy="170" r="4" fill="#D9DEE8" stroke={tinta} strokeWidth="2" />
+
+      {/* ── KEPALA ── */}
+      <rect x="86" y="36" width="88" height="100" rx="38" fill={kulit} stroke={tinta} strokeWidth="5" />
+
+      {/* rambut berjambul */}
+      <path d="M84 84 Q78 26 130 22 Q182 26 176 84 Q170 62 156 58 L166 40 L140 52 L146 30
+               L124 48 L118 28 L104 52 L92 44 Z"
+            fill="#161F36" stroke={tinta} strokeWidth="5" strokeLinejoin="round" />
 
       {kesal ? (
         <>
-          {/* mata memicing */}
-          <path d="M80 112 q10 -6 20 0" stroke="#0B162C" strokeWidth="6" fill="none" strokeLinecap="round" />
-          <path d="M122 112 q10 -6 20 0" stroke="#0B162C" strokeWidth="6" fill="none" strokeLinecap="round" />
-          {/* alis menukik */}
-          <path d="M78 96 q12 4 22 10" stroke="#0B162C" strokeWidth="5" fill="none" strokeLinecap="round" />
-          <path d="M142 96 q-12 4 -22 10" stroke="#0B162C" strokeWidth="5" fill="none" strokeLinecap="round" />
-          {/* mulut melengkung ke bawah */}
-          <path d="M94 142 q16 -12 32 0" stroke="#0B162C" strokeWidth="4.5" fill="none" strokeLinecap="round" />
-          {/* urat kesal */}
-          <path d="M150 62 l8 8 M158 62 l-8 8" stroke="#E11D48" strokeWidth="4" strokeLinecap="round" />
+          <path d="M104 84 q10 -6 20 0" stroke={tinta} strokeWidth="6" fill="none" strokeLinecap="round" />
+          <path d="M136 84 q10 -6 20 0" stroke={tinta} strokeWidth="6" fill="none" strokeLinecap="round" />
+          <path d="M102 68 q12 4 22 10" stroke={tinta} strokeWidth="5" fill="none" strokeLinecap="round" />
+          <path d="M158 68 q-12 4 -22 10" stroke={tinta} strokeWidth="5" fill="none" strokeLinecap="round" />
+          <path d="M116 116 q14 -12 28 0" stroke={tinta} strokeWidth="4.5" fill="none" strokeLinecap="round" />
+          <path d="M164 44 l8 8 M172 44 l-8 8" stroke="#E11D48" strokeWidth="4" strokeLinecap="round" />
         </>
       ) : (
         <>
-          <circle cx="90" cy="112" r="7.5" fill="#0B162C" />
-          <circle cx="132" cy="112" r="7.5" fill="#0B162C" />
-          <circle cx="92.5" cy="109.5" r="2.4" fill="#fff" />
-          <circle cx="134.5" cy="109.5" r="2.4" fill="#fff" />
-          <path d="M80 96 q10 -7 20 -2" stroke="#0B162C" strokeWidth="4.5" fill="none" strokeLinecap="round" />
-          <path d="M122 92 q10 -3 20 4" stroke="#0B162C" strokeWidth="4.5" fill="none" strokeLinecap="round" />
-          <path d="M96 138 q14 8 30 -2" stroke="#0B162C" strokeWidth="4.5" fill="none" strokeLinecap="round" />
+          {/* mata biru, satu alis terangkat — raut bertanya-tanya */}
+          <ellipse cx="112" cy="84" rx="7.5" ry="8.5" fill="#2E6FD8" />
+          <ellipse cx="148" cy="84" rx="7.5" ry="8.5" fill="#2E6FD8" />
+          <circle cx="112" cy="84" r="3.6" fill={tinta} />
+          <circle cx="148" cy="84" r="3.6" fill={tinta} />
+          <circle cx="114.5" cy="81" r="2.2" fill="#fff" />
+          <circle cx="150.5" cy="81" r="2.2" fill="#fff" />
+          <path d="M100 64 q12 -8 24 -2" stroke={tinta} strokeWidth="5" fill="none" strokeLinecap="round" />
+          <path d="M138 58 q12 -2 22 8" stroke={tinta} strokeWidth="5" fill="none" strokeLinecap="round" />
+          {/* mulut kecil mengerucut — sedang berpikir, bukan tersenyum */}
+          <path d="M124 116 q8 6 16 0" stroke={tinta} strokeWidth="4.5" fill="none" strokeLinecap="round" />
+          {/* setetes keringat */}
+          <path d="M176 62 q6 10 0 14 q-6 -4 0 -14 Z" fill="#8FC7FF" stroke={tinta} strokeWidth="2.5" />
         </>
       )}
 
-      {/* tangan memegang HP */}
-      <path d="M166 208 q24 -16 18 -44" stroke="#0B162C" strokeWidth="5" fill="none" strokeLinecap="round" />
-      <rect x="168" y="146" width="34" height="52" rx="7" fill="#101A30" stroke="#0B162C" strokeWidth="5" />
-      <rect x="174" y="153" width="22" height="38" rx="3" fill={kesal ? "#FF9AA2" : "#6EB0FF"} />
+      {/* Jari telunjuk menempel di dagu. Satu garis ini yang mengubah
+          "tangan kebetulan ada di dekat wajah" jadi "sedang berpikir". */}
+      <path d="M146 136 q-6 -8 -12 -8" stroke={tinta} strokeWidth="6" fill="none" strokeLinecap="round" />
     </svg>
   );
 }
+

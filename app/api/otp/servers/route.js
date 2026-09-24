@@ -27,22 +27,39 @@ export async function GET() {
     console.error("[otp/servers]", err?.message || err);
   }
 
+  // Server yang dimatikan admin TIDAK ikut dikirim sama sekali — bukan dikirim
+  // lalu disembunyikan di sisi peramban.
+  //
+  // Dua alasan. Pertama, yang disembunyikan dengan CSS tetap ada di respons
+  // API dan tetap terbaca siapa pun yang membuka tab jaringan; daftar server
+  // yang sengaja dimatikan bukan hal yang perlu diumumkan. Kedua, tombol
+  // nonaktif berbaris di antara yang aktif membuat halaman terbaca seperti
+  // toko yang setengah mati — padahal yang dijual memang cuma sisanya.
+  //
+  // Penyaringan di sini TIDAK menggantikan penolakan di rute order: siapa pun
+  // bisa memanggil rute itu langsung dengan kunci server apa pun, dan yang
+  // menahannya di sana, bukan daftar ini.
   const available = {};
-  const items = OTP_SERVERS.map((s) => {
+  const items = [];
+  for (const s of OTP_SERVERS) {
     const d = settings
       ? serverDisplay(settings, s.key)
       : { key: s.key, name: s.name, badge: s.badge, desc: s.desc, provider: s.provider, enabled: true, offlineMsg: "" };
-    available[s.key] = providerReady(s.key) && d.enabled;
-    return {
+    const siap = providerReady(s.key) && d.enabled;
+    if (!siap) continue;
+    available[s.key] = true;
+    items.push({
       key: s.key,
       name: d.name,
       badge: d.badge,
       desc: d.desc,
       provider: d.provider || s.provider,
-      available: available[s.key],
-      offlineMsg: d.offlineMsg || ""
-    };
-  });
+      available: true,
+      offlineMsg: ""
+    });
+  }
 
-  return NextResponse.json({ available, items });
+  // Semua server dimatikan: halaman beli nokos perlu tahu bedanya antara
+  // "daftarnya belum termuat" dan "memang tidak ada yang bisa dipakai".
+  return NextResponse.json({ available, items, kosong: items.length === 0 });
 }

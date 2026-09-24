@@ -3042,12 +3042,17 @@ html.dark .hero-mascot-img,
 .ci-tail-right { left: auto; right: 26px; }
 
 /* ── Tokoh ──────────────────────────────────────────────────────────── */
+/* Sosoknya sekarang seluruh badan (260x560, jauh lebih jangkung dari versi
+ * potongan dada yang lama). Yang dibatasi karena itu TINGGINYA, bukan
+ * lebarnya: dengan lebar yang dipatok, sosok jangkung akan menjulang keluar
+ * dari panelnya, dan kepalanya terpotong bingkai komik. */
 .ci-orang {
   position: absolute;
-  left: 4%;
+  left: 3%;
   bottom: 0;
-  width: 43%;
-  max-height: 74%;
+  width: auto;
+  height: 82%;
+  max-width: 46%;
   z-index: 2;
   animation: ciRise .5s cubic-bezier(.2, .9, .3, 1.2) both;
 }
@@ -3098,8 +3103,9 @@ html.dark .hero-mascot-img,
     left: 0;
     right: 0;
     margin: 0 auto;
-    width: 68%;
-    max-height: 46%;
+    width: auto;
+    height: 52%;
+    max-width: 62%;
     bottom: 6%;
   }
   .ci-elang {
@@ -3495,8 +3501,27 @@ a.banner-3d:active {
   /* Bayangan PADAT, bukan kabur: ia harus terbaca sebagai sisi panel yang
      tebal. Bayangan kabur di bawah kartu terbaca sebagai kabut, dan itu yang
      membuat kartu terasa melayang tanpa bobot alih-alih tebal. */
-  box-shadow: 5px 5px 0 rgb(var(--c-ink) / .85), 0 18px 30px -22px rgb(var(--c-ink) / .8);
-  transition: transform .2s cubic-bezier(.2, .9, .3, 1.1), box-shadow .2s ease;
+  /* Tinta bertingkat, bukan satu offset. Satu offset terbaca seperti dua
+     lembar kertas ditumpuk; yang membuat panel terbaca TEBAL adalah sisi
+     sampingnya yang terlihat, dan itu ditiru dengan beberapa lapis yang
+     bergeser sedikit demi sedikit. Lapis kabur paling bawah memberi jarak ke
+     latar; tanpa itu, kartunya tebal tapi tetap menempel. */
+  box-shadow:
+    2px 2px 0 rgb(var(--c-ink) / .9),
+    4px 4px 0 rgb(var(--c-ink) / .85),
+    6px 6px 0 rgb(var(--c-ink) / .78),
+    0 20px 34px -20px rgb(var(--c-ink) / .8);
+  transform-style: preserve-3d;
+  transition: transform .22s cubic-bezier(.2, .9, .3, 1.1), box-shadow .22s ease;
+}
+
+/* Perspektif dipasang di WADAHNYA, bukan di kartunya. Kalau perspective ada di
+   kartu itu sendiri, tiap kartu punya titik hilangnya masing-masing dan
+   halamannya terbaca seperti tumpukan foto yang diambil dari sudut berbeda-beda
+   — bukan seperti satu ruang yang dilihat dari satu tempat. */
+.user-dash {
+  perspective: 1200px;
+  perspective-origin: 50% 30%;
 }
 
 /* Halftone tipis di tiap kartu — jejak cetakan komik, bukan gradasi digital. */
@@ -3514,8 +3539,21 @@ a.banner-3d:active {
 
 .user-dash .card:hover,
 .user-dash .panel-3d:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 8px 8px 0 rgb(var(--c-ink) / .85), 0 24px 38px -22px rgb(var(--c-ink) / .85);
+  transform: translate(-2px, -3px) rotateX(3deg) rotateY(-3deg);
+  box-shadow:
+    2px 2px 0 rgb(var(--c-ink) / .9),
+    4px 4px 0 rgb(var(--c-ink) / .85),
+    7px 7px 0 rgb(var(--c-ink) / .8),
+    10px 10px 0 rgb(var(--c-ink) / .6),
+    0 28px 44px -20px rgb(var(--c-ink) / .85);
+}
+
+/* Kemiringannya dimatikan untuk yang memilih "kurangi gerak" — dan itu juga
+   menolong peranti lemah, yang paling terasa tersendat justru saat memutar
+   banyak lapis bayangan sambil memiringkan elemen. */
+@media (prefers-reduced-motion: reduce) {
+  .user-dash .card:hover,
+  .user-dash .panel-3d:hover { transform: none; }
 }
 
 /* Pintasan menu: kotak tebal yang benar-benar tertekan saat diketuk. */

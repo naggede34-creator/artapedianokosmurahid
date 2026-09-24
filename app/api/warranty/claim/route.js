@@ -1,10 +1,30 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, warrantyClaimsCol } from "@/lib/db";
+import { getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
   try {
+    // Diperiksa di sini, bukan cuma disembunyikan tombolnya di dashboard.
+    // Tombol yang hilang tidak menghentikan siapa pun yang sudah tahu alamat
+    // rutenya, dan klaim yang tetap masuk saat fiturnya "mati" akan menumpuk
+    // di panel admin tanpa ada yang mengharapkannya.
+    try {
+      const settings = await getSettings();
+      if (settings?.warranty?.enabled === false) {
+        return NextResponse.json(
+          { error: settings.warranty.note || "Klaim garansi sedang ditutup sementara." },
+          { status: 403 }
+        );
+      }
+    } catch (err) {
+      // Pengaturan tidak terbaca: fitur dibiarkan JALAN. Gagal ke arah menolak
+      // klaim berarti pembeli yang nomornya bermasalah kehilangan satu-satunya
+      // jalan untuk mengadu, hanya karena database sedang lambat.
+      console.error("[warranty/claim] pengaturan tidak terbaca:", err?.message || err);
+    }
+
     const { token, orderId, description, screenshotData, purchasePrice } = await req.json();
 
     if (!token || !orderId || !description?.trim() || !purchasePrice) {

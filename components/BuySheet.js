@@ -22,6 +22,10 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   const [serverList, setServerList] = useState(() =>
     OTP_SERVERS.map((s) => ({ key: s.key, name: s.name, badge: s.badge, desc: s.desc, provider: s.provider, offlineMsg: "" }))
   );
+  // Sudah dijawab API atau belum. Tanpa ini, daftar cadangan di atas tidak bisa
+  // dibedakan dari daftar sungguhan — dan saat admin mematikan SEMUA server,
+  // yang tampil justru daftar cadangan berisi server yang sudah dimatikan.
+  const [serverDijawab, setServerDijawab] = useState(false);
   // Daftar aplikasi tiap server WarungNokos diambil saat server itu dipilih; daftar
   // Server Murah sudah dikirim halaman induk lewat prop `services`.
   const [remoteServices, setRemoteServices] = useState({});
@@ -51,7 +55,13 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
       .then((r) => r.json())
       .then((d) => {
         if (d?.available) setAvailable(d.available);
-        if (Array.isArray(d?.items) && d.items.length) setServerList(d.items);
+        // Daftar kosong tetap dipakai: itu jawaban yang sah, artinya admin
+        // mematikan semua server. Memakai daftar cadangan di sini akan
+        // menampilkan server yang justru baru saja dimatikan.
+        if (Array.isArray(d?.items)) {
+          setServerList(d.items);
+          setServerDijawab(true);
+        }
       })
       .catch(() => {});
   }, [open]);
@@ -252,7 +262,18 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
           {screen === "server" && (
             <div className="fade-up anim-stagger space-y-3">
-              <p className="text-sm text-muted">Mau pakai server yang mana?</p>
+              {serverDijawab && serverList.length === 0 ? (
+                <div className="card-flat p-6 text-center">
+                  <p className="text-3xl">🛠️</p>
+                  <p className="mt-2 text-sm font-bold text-ink">Semua server sedang ditutup</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">
+                    Admin sedang menonaktifkan seluruh server nokos. Coba lagi nanti, atau pantau channel
+                    untuk info pembukaannya.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted">Mau pakai server yang mana?</p>
+              )}
               {serverList.map((sv, i) => {
                 const on = available[sv.key] !== false;
                 // Tiap provider punya warna & ikonnya sendiri supaya mudah dibedakan sekilas.

@@ -360,6 +360,9 @@ export default function DashboardPage() {
   const [board, setBoard] = useState(null);
   const [modal, setModal] = useState(false);
   const [warrantyModal, setWarrantyModal] = useState(false);
+  // Garansi bisa dimatikan admin. Bawaannya true supaya tombolnya tidak
+  // berkedip hilang-muncul sebelum pengaturannya sempat terbaca.
+  const [garansiAktif, setGaransiAktif] = useState(true);
   const [recentOrders, setRecentOrders] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [ticketsLoaded, setTicketsLoaded] = useState(false);
@@ -371,6 +374,17 @@ export default function DashboardPage() {
   const [ticketReply, setTicketReply] = useState("");
   const [ticketReplyLoading, setTicketReplyLoading] = useState(false);
   const [showTicketForm, setShowTicketForm] = useState(false);
+
+  // Fitur garansi bisa ditutup admin sewaktu-waktu. Kalau pengaturannya gagal
+  // dibaca, tombolnya dibiarkan tetap ada: lebih baik pengguna menekan tombol
+  // lalu diberi tahu sedang ditutup, daripada tombolnya hilang diam-diam dan
+  // mereka mengira nomor bermasalah memang tidak bisa diadukan.
+  useEffect(() => {
+    fetch("/api/settings/public")
+      .then((r) => r.json())
+      .then((d) => setGaransiAktif(d?.warranty?.enabled !== false))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -501,12 +515,14 @@ export default function DashboardPage() {
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setWarrantyModal(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-rose/40 bg-rose-soft px-4 py-2.5 text-sm font-semibold text-rose transition-colors hover:bg-rose/10"
-          >
-            🛡️ Claim Garansi
-          </button>
+          {garansiAktif && (
+            <button
+              onClick={() => setWarrantyModal(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-rose/40 bg-rose-soft px-4 py-2.5 text-sm font-semibold text-rose transition-colors hover:bg-rose/10"
+            >
+              🛡️ Claim Garansi
+            </button>
+          )}
           <button onClick={() => setModal(true)} className="btn-ghost px-4 py-2.5">
             {name ? "Info akun" : "Atur nama & kode akun"}
           </button>

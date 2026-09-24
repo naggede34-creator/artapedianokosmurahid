@@ -270,6 +270,14 @@ export default function AdminDashboardPage() {
     { emoji: "🦅", name: "ARTA PEDIA SUPPORT", accent: "#FF6B1A", glow: "#2E86FF", sub: "Siap Bantu 24 Jam ✦", line: "Halo! Aku elang penjaga Arta Pedia. Ada kendala nokos atau deposit? Panggil aku~" },
   ];
   const [heroCharsForm, setHeroCharsForm] = useState(DEFAULT_HERO_CHARS);
+  // Panel hero bisa dimatikan tanpa menghapus daftar karakternya.
+  const [heroOn, setHeroOn] = useState(true);
+  const [heroOnSaving, setHeroOnSaving] = useState(false);
+  // Fitur klaim garansi.
+  const [garansiOn, setGaransiOn] = useState(true);
+  const [garansiNote, setGaransiNote] = useState("");
+  const [garansiSaving, setGaransiSaving] = useState(false);
+  const [garansiMsg, setGaransiMsg] = useState("");
   const [heroCharsMsg, setHeroCharsMsg] = useState("");
   const [heroCharsSaving, setHeroCharsSaving] = useState(false);
 
@@ -394,6 +402,30 @@ export default function AdminDashboardPage() {
     } finally {
       setSavingChannelNotif("");
       setTimeout(() => setChannelNotifMsg(""), 3000);
+    }
+  }
+
+  async function simpanSakelar(patch, setBusy, setMsg, pesan) {
+    setBusy(true);
+    if (setMsg) setMsg("");
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menyimpan.");
+      setSettings(data);
+      setHeroOn(data.heroCharsEnabled !== false);
+      setGaransiOn(data.warranty?.enabled !== false);
+      setGaransiNote(data.warranty?.note || "");
+      if (setMsg) setMsg(pesan || "Tersimpan.");
+    } catch (err) {
+      if (setMsg) setMsg(err.message || "Gagal menyimpan.");
+    } finally {
+      setBusy(false);
+      if (setMsg) setTimeout(() => setMsg(""), 3000);
     }
   }
 
@@ -1166,6 +1198,9 @@ export default function AdminDashboardPage() {
         ])
       )
     );
+    setHeroOn(data.heroCharsEnabled !== false);
+    setGaransiOn(data.warranty?.enabled !== false);
+    setGaransiNote(data.warranty?.note || "");
     if (Array.isArray(data.heroChars) && data.heroChars.length > 0) {
       setHeroCharsForm(data.heroChars);
     }
@@ -2566,7 +2601,7 @@ export default function AdminDashboardPage() {
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
             <div className="flex items-center justify-between mb-1">
               <h2 className="font-display text-base font-semibold text-ink">🦸 Hero Panel Karakter (Beranda)</h2>
-              {heroCharsForm.length < 6 && (
+              {heroCharsForm.length < 6 && heroOn && (
                 <button type="button"
                   onClick={() => setHeroCharsForm((f) => [...f, { emoji: "✨", name: "Karakter", accent: "#818cf8", glow: "#6366f1", sub: "Subtitle", line: "Dialog karakter di sini." }])}
                   className="text-xs font-bold px-3 py-1.5 rounded-xl border border-amber/40 text-amber-bright hover:bg-amber/10 transition-colors press">
@@ -2574,9 +2609,43 @@ export default function AdminDashboardPage() {
                 </button>
               )}
             </div>
-            <p className="text-xs text-muted mb-4">Atur karakter yang berputar di hero panel beranda. Maks 6 karakter.</p>
+            <p className="text-xs text-muted mb-3">Atur karakter yang berputar di hero panel beranda. Maks 6 karakter.</p>
 
-            <div className="space-y-3">
+            {/* Sakelar tampil/tidak. Dipisah dari tombol Simpan di bawah supaya
+                mematikan panelnya tidak perlu menunggu seluruh daftar karakter
+                ikut disimpan ulang. */}
+            <button
+              type="button"
+              onClick={() => simpanSakelar({ heroCharsEnabled: !heroOn }, setHeroOnSaving, setHeroCharsMsg, !heroOn ? "Panel karakter ditampilkan." : "Panel karakter disembunyikan.")}
+              disabled={heroOnSaving}
+              className={`mb-4 flex w-full items-center gap-3 rounded-2xl border-2 p-3 text-left transition press disabled:opacity-60 ${
+                heroOn ? "border-success bg-success-soft" : "border-rose/60 bg-rose-soft"
+              }`}
+            >
+              <span
+                className={`flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition ${
+                  heroOn ? "justify-end bg-success" : "justify-start bg-rose"
+                }`}
+                aria-hidden="true"
+              >
+                <span className="h-5 w-5 rounded-full bg-white shadow" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-ink">
+                  Tampilkan di beranda
+                  <span className={`ml-1.5 align-middle text-[10px] font-black uppercase ${heroOn ? "text-success" : "text-rose"}`}>
+                    {heroOnSaving ? "● …" : heroOn ? "● ON" : "● OFF"}
+                  </span>
+                </span>
+                <span className="mt-0.5 block text-[11px] leading-snug text-muted">
+                  {heroOn
+                    ? "Panel karakter tampil di hero beranda."
+                    : "Panel disembunyikan. Daftar karakter di bawah tetap tersimpan dan akan tampil lagi begitu dinyalakan."}
+                </span>
+              </span>
+            </button>
+
+            <div className={`space-y-3 ${heroOn ? "" : "opacity-50"}`}>
               {heroCharsForm.map((c, i) => (
                 <div key={i} className="rounded-2xl border border-line bg-bg p-4 relative"
                   style={{ borderLeft: `4px solid ${c.accent || "#818cf8"}` }}>
@@ -5030,6 +5099,67 @@ export default function AdminDashboardPage() {
                 {siteSettingsSubmitting ? "Menyimpan…" : "Simpan Pengaturan Situs"}
               </button>
             </form>
+          </div>
+
+          {/* Fitur klaim garansi */}
+          <div className="glass admin-card rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">🛡️ Klaim Garansi</h2>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Saat ditutup, tombol <b>Claim Garansi</b> hilang dari dashboard pengguna <b>dan</b> rute klaimnya
+              menolak. Tombol yang cuma disembunyikan tidak menghentikan siapa pun yang sudah tahu alamat
+              rutenya, dan klaimnya akan tetap menumpuk di panel ini.
+            </p>
+            <p className="mt-2 rounded-xl border border-amber/30 bg-amber/10 px-3 py-2 text-[11px] leading-relaxed text-ink">
+              ⚠️ Klaim yang <b>sudah</b> masuk tidak ikut hilang — semuanya tetap ada di tab Tiket dan tetap bisa
+              kamu setujui atau tolak seperti biasa.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => simpanSakelar({ warranty: { enabled: !garansiOn, note: garansiNote } }, setGaransiSaving, setGaransiMsg, !garansiOn ? "Klaim garansi dibuka." : "Klaim garansi ditutup.")}
+              disabled={garansiSaving}
+              className={`mt-4 flex w-full items-center gap-3 rounded-2xl border-2 p-3 text-left transition press disabled:opacity-60 ${
+                garansiOn ? "border-success bg-success-soft" : "border-rose/60 bg-rose-soft"
+              }`}
+            >
+              <span
+                className={`flex h-6 w-11 shrink-0 items-center rounded-full px-0.5 transition ${
+                  garansiOn ? "justify-end bg-success" : "justify-start bg-rose"
+                }`}
+                aria-hidden="true"
+              >
+                <span className="h-5 w-5 rounded-full bg-white shadow" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-ink">
+                  Fitur klaim garansi
+                  <span className={`ml-1.5 align-middle text-[10px] font-black uppercase ${garansiOn ? "text-success" : "text-rose"}`}>
+                    {garansiSaving ? "● …" : garansiOn ? "● ON" : "● OFF"}
+                  </span>
+                </span>
+                <span className="mt-0.5 block text-[11px] leading-snug text-muted">
+                  {garansiOn ? "Pengguna bisa mengajukan klaim garansi." : "Klaim baru ditolak. Yang sudah masuk tetap bisa diproses."}
+                </span>
+              </span>
+            </button>
+
+            <label className="mt-3 block text-xs font-medium text-muted">Alasan yang dibaca pengguna saat ditutup</label>
+            <input
+              value={garansiNote}
+              onChange={(e) => setGaransiNote(e.target.value)}
+              placeholder="Klaim garansi sedang ditutup sementara."
+              maxLength={300}
+              className="mt-1.5 input w-full text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => simpanSakelar({ warranty: { enabled: garansiOn, note: garansiNote } }, setGaransiSaving, setGaransiMsg, "Alasan tersimpan.")}
+              disabled={garansiSaving}
+              className="mt-2 rounded-xl bg-ink px-4 py-2 text-xs font-bold text-bg press disabled:opacity-60"
+            >
+              Simpan alasan
+            </button>
+            {garansiMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{garansiMsg}</p>}
           </div>
 
           {/* Notif mana saja yang diumumkan ke channel */}
