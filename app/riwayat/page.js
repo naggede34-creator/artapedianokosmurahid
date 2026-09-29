@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useLembarTerbuka } from "@/lib/lembarTerbuka";
 import { useSearchParams } from "next/navigation";
 import { useUser } from "@/app/providers";
 import OtpOrderPanel from "@/components/OtpOrderPanel";
@@ -283,6 +284,7 @@ function RiwayatInner() {
 }
 
 function Modal({ children, onClose }) {
+  useLembarTerbuka(true);
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);

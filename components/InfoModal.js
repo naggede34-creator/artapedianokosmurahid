@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CHANNEL_LIST_URL, BOT_URL } from "@/lib/links";
 import { useEffect, useState } from "react";
+import { useLembarTerbuka } from "@/lib/lembarTerbuka";
 import { onOpenersFree } from "@/lib/introGate";
 
 // Popup ini SENGAJA muncul setiap kali web dibuka — pengguna baru maupun lama,
@@ -90,6 +91,9 @@ export default function InfoModal() {
   function finish() {
     setOpen(false);
   }
+
+  // Sebelum return awal: urutan kait React harus sama di tiap render.
+  useLembarTerbuka(open);
 
   if (!open) return null;
 

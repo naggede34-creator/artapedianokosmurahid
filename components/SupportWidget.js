@@ -87,7 +87,7 @@ export default function SupportWidget({
   }
 
   return (
-    <div className="fixed right-4 z-50 flex flex-col items-end gap-3 md:right-6 bottom-[calc(6rem_+_env(safe-area-inset-bottom))] md:bottom-[calc(1.5rem_+_max(1rem,env(safe-area-inset-bottom)))]">
+    <div className="gelembung-bantuan fixed right-4 z-50 flex flex-col items-end gap-3 md:right-6 bottom-[calc(6rem_+_env(safe-area-inset-bottom))] md:bottom-[calc(1.5rem_+_max(1rem,env(safe-area-inset-bottom)))]">
       {/* Chat panel */}
       {chatOpen && (
         <div className="animate-scale-in flex h-[70vh] max-h-[520px] w-[92vw] max-w-[360px] flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-lift">

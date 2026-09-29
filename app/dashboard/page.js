@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLembarTerbuka } from "@/lib/lembarTerbuka";
 import { useUser } from "@/app/providers";
 import SimCard from "@/components/SimCard";
 import AccountInfoModal from "@/components/AccountInfoModal";
@@ -57,6 +58,7 @@ const shortcuts = [
 ];
 
 function WarrantyModal({ open, onClose, token }) {
+  useLembarTerbuka(open);
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);

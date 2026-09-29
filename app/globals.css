@@ -4010,6 +4010,26 @@ html.dark .tepi-tebal {
  * Itu yang membuat nama server terakhir di lembar Beli Nokos tidak terbaca.
  *
  * Jatahnya harus diberikan di dalam wadah gulirnya, supaya ikut tergulir. */
+/* ═══════════ YANG MELAYANG DISEMBUNYIKAN SAAT LEMBAR TERBUKA ═══════════
+ *
+ * Bilah navigasi bawah dan gelembung Bantuan melayang di atas halaman. Selama
+ * sebuah lembar menutupi layar keduanya tidak berguna, dan yang lebih buruk:
+ * keduanya menutupi isi lembarnya — itulah nama server terakhir yang tertutup
+ * di lembar Beli Nokos.
+ *
+ * Ini SENGAJA tidak diselesaikan dengan menaikkan z-index lembarnya. z-index
+ * cuma berlaku di dalam konteks penumpukan yang sama, dan satu leluhur dengan
+ * transform/filter/opacity — apa pun yang ditambahkan nanti demi animasi —
+ * mengurung lembarnya sehingga angka berapa pun di situ tidak berarti.
+ * Elemen yang display:none tidak bisa menutupi apa pun, di konteks penumpukan
+ * mana pun.
+ *
+ * Penandanya dipasang di <body> oleh lib/lembarTerbuka.js. */
+body[data-lembar-terbuka] .bilah-bawah,
+body[data-lembar-terbuka] .gelembung-bantuan {
+  display: none;
+}
+
 .gulir-aman {
   overflow-y: auto;
   overscroll-behavior: contain;

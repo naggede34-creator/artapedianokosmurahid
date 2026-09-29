@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useLembarTerbuka } from "@/lib/lembarTerbuka";
 import { OTP_SERVERS, serverLabel } from "@/lib/otpServers";
 import { onoOrderSukses } from "@/lib/ono";
 
@@ -232,6 +233,11 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
       setBuyingKey(null);
     }
   }
+
+  // Dipanggil SEBELUM "if (!open) return null" — kait React harus berjalan di
+  // urutan yang sama setiap render, dan menaruhnya sesudah return awal akan
+  // melempar begitu lembarnya ditutup.
+  useLembarTerbuka(open);
 
   if (!open) return null;
 
