@@ -28,7 +28,10 @@ const nextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-XSS-Protection", value: "1; mode=block" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          // Kamera & mikrofon dibuka untuk situs sendiri: catatan suara dan panggilan
+          // suara/video di Room Chat memakainya. Dengan camera=() / microphone=()
+          // peramban menolak getUserMedia tanpa pernah bertanya ke pengguna.
+          { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
           {
             key: "Content-Security-Policy",
             value: [
@@ -37,6 +40,9 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https:",
+              // Catatan suara diputar dari data:/blob:. Tanpa media-src, aturan
+              // default-src 'self' memblokirnya dan tombol putar diam saja.
+              "media-src 'self' data: blob:",
               "connect-src 'self'",
               "frame-ancestors 'none'",
             ].join("; ")
