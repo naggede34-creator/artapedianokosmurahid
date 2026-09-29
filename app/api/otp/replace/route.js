@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
-import { createOrder, toEpochMs } from "@/lib/rumahotp";
-import { createWarungNokosOrder, getWarungNokosCountries, isWarungNokosServer } from "@/lib/warungnokos";
-import { createDibananaOrder, getDibananaPrices } from "@/lib/dibanana";
+import { beliNomorPengganti, bisaDiganti } from "@/lib/gantiNomor";
 import { otpPurchaseNotif, otpAutoRefundNotif, otpRefundPublicNotif } from "@/lib/telegram";
 import { umumkan } from "@/lib/notifyHub";
 import { logBalance } from "@/lib/ledger";
-import { cfg } from "@/lib/config";
 
 // Dipakai saat nomor yang dibeli kedaluwarsa tanpa kode OTP masuk. User bisa minta
 // nomor pengganti tanpa membayar lagi (memakai saldo yang sudah terpotong di order lama).
@@ -30,9 +27,7 @@ export async function POST(req) {
       return NextResponse.json({ error: "Ganti nomor hanya bisa dipakai untuk pesanan yang sudah kedaluwarsa." }, { status: 400 });
     }
 
-    const isWn = isWarungNokosServer(oldOrder.server);
-    const isBn = oldOrder.server === "dibanana";
-    if ((isWn || isBn) ? !oldOrder.serviceId || oldOrder.countryId == null : !oldOrder.numberId || !oldOrder.providerId) {
+    if (!bisaDiganti(oldOrder)) {
       return NextResponse.json({ error: "Data pesanan lama tidak lengkap, tidak bisa diganti otomatis." }, { status: 400 });
     }
 
@@ -48,82 +43,21 @@ export async function POST(req) {
       return NextResponse.json({ error: "Pesanan ini sudah diproses sebelumnya." }, { status: 400 });
     }
 
-    // Pesan nomor pengganti ke provider yang sama. Hasilnya diseragamkan ke `fresh`.
-    let fresh = null;
-    try {
-      if (isBn) {
-        // Ambil ulang id produk yang segar, lalu pesan nomor pengganti.
-        const providers = await getDibananaPrices({ service: oldOrder.serviceId, country: oldOrder.countryId });
-        const p = providers[oldOrder.providerIndex || 0] || providers[0];
-        const made = p ? await createDibananaOrder({ id: p.id }) : null;
-        if (made?.orderId) {
-          fresh = {
-            orderId: made.orderId,
-            phoneNumber: made.phoneNumber || "-",
-            expiredMs: Date.now() + 19 * 60 * 1000,
-            extra: { server: "dibanana", countryId: oldOrder.countryId, providerIndex: oldOrder.providerIndex || 0 }
-          };
-        }
-      } else if (isWn) {
-        // Harga & kunci produk diambil ulang supaya harga modal yang dikirim
-        // selalu yang berlaku saat ini.
-        const rows = await getWarungNokosCountries(oldOrder.server, oldOrder.serviceId);
-        const country = rows.find((c) => String(c.countryId) === String(oldOrder.countryId));
-        const entry =
-          country?.pricelist.find((p) => String(p.key) === String(oldOrder.providerKey)) ||
-          country?.pricelist[0];
-        const made = entry
-          ? await createWarungNokosOrder(oldOrder.server, {
-              key: entry.key,
-              operator: oldOrder.operator || "any",
-              modalPrice: entry.price,
-              serviceName: oldOrder.serviceName || undefined
-            })
-          : null;
-        if (made?.id) {
-          fresh = {
-            orderId: made.id,
-            phoneNumber: made.number || "-",
-            expiredMs: Date.now() + 20 * 60 * 1000,
-            extra: {
-              server: oldOrder.server,
-              countryId: String(oldOrder.countryId),
-              providerKey: entry.key,
-              operator: oldOrder.operator || "any"
-            }
-          };
-        }
-      } else {
-        const result = await createOrder((await cfg("RUMAHOTP_APIKEY")), {
-          numberId: oldOrder.numberId,
-          providerId: oldOrder.providerId,
-          operatorId: oldOrder.operatorId
-        });
-        const data = result?.data || result;
-        if (data?.order_id) {
-          fresh = {
-            orderId: String(data.order_id),
-            phoneNumber: data.phone_number || "-",
-            expiredMs: toEpochMs(data.expired_at),
-            extra: { server: "rumahotp" }
-          };
-        }
-      }
-    } catch (e) {
-      fresh = null;
-    }
+    const fresh = await beliNomorPengganti(oldOrder);
 
     if (!fresh) {
-      // Provider tidak bisa kasih nomor pengganti -> saldo dikembalikan penuh.
+      // Provider tidak bisa kasih nomor pengganti -> saldo dikembalikan penuh,
+      // termasuk biaya jaminan kalau ada: jaminannya tidak terpenuhi.
+      const totalRefund = oldOrder.price + (Number(oldOrder.jaminanBiaya) || 0);
       const refunded = await users.findOneAndUpdate(
         { token },
-        { $inc: { balance: oldOrder.price } },
+        { $inc: { balance: totalRefund } },
         { returnDocument: "after" }
       );
       await logBalance({
         token,
         type: "otp_refund",
-        amount: oldOrder.price,
+        amount: totalRefund,
         balanceAfter: refunded?.balance,
         title: `Refund OTP ${oldOrder.serviceName || ""}`.trim(),
         ref: oldOrder.orderId
@@ -162,6 +96,7 @@ export async function POST(req) {
       countryName: oldOrder.countryName,
       phoneNumber: fresh.phoneNumber,
       price: oldOrder.price,
+      ...(oldOrder.jaminanBiaya ? { jaminanBiaya: oldOrder.jaminanBiaya, jaminanGanti: true } : {}),
       status: "pending",
       otpCode: null,
       otpMsg: null,

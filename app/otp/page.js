@@ -50,6 +50,8 @@ function OtpPageInner() {
   const [servicesLoading, setServicesLoading] = useState(true);
   const [order, setOrder] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Kata kunci dari chip saran di panel OTP; menimpa ?q= selama lembar terbuka.
+  const [cariSaran, setCariSaran] = useState("");
   const [refreshSignal, setRefreshSignal] = useState(0);
   const [favorites, setFavorites] = useState([]);
   const [recentServices, setRecentServices] = useState([]);
@@ -185,7 +187,7 @@ function OtpPageInner() {
               order={order}
               token={token}
               refreshSignal={refreshSignal}
-              onBuyAgain={() => setSheetOpen(true)}
+              onBuyAgain={(nama) => { setCariSaran(typeof nama === "string" ? nama : ""); setSheetOpen(true); }}
               onChanged={() => {
                 refreshBalance();
                 clearActiveOrder();
@@ -281,13 +283,13 @@ function OtpPageInner() {
 
       <BuySheet
         open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
+        onClose={() => { setSheetOpen(false); setCariSaran(""); }}
         services={services}
         servicesLoading={servicesLoading}
         token={token}
         balance={balance}
         onOrderCreated={handleOrderCreated}
-        initialQuery={searchParams.get("q") || ""}
+        initialQuery={cariSaran || searchParams.get("q") || ""}
       />
       <MysteryBoxModal
         open={mysteryOpen}

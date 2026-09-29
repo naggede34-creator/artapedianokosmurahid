@@ -12,6 +12,7 @@ import { warungNokosConfigured } from "@/lib/warungnokos";
 import { rumahOtpConfigured } from "@/lib/rumahotp";
 import { atlanticConfigured } from "@/lib/atlantic";
 import { CHANNEL_URL } from "@/lib/links";
+import { infoJaminan } from "@/lib/jaminan";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,9 @@ export async function GET() {
       maintenanceButtonUrl: maintenanceButtonUrl || "",
       depositProviders: providers,
       depositFeePercent,
+      // Jaminan OTP: { aktif, persen, menit }. Dipakai lembar beli untuk
+      // menampilkan (atau menyembunyikan) pilihan jaminan.
+      jaminan: await infoJaminan().catch(() => ({ aktif: false, persen: 0, menit: 4 })),
       // Nama & label metode deposit yang diatur admin.
       depositMethods: PROVIDER_KEYS.map((k) => depositDisplay(settings, k)),
       // Keterangan singkat QRIS manual untuk ditampilkan sebelum deposit dibuat.

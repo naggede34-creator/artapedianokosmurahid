@@ -31,7 +31,9 @@ export async function GET(req) {
       createdAt: order.createdAt,
       refunded: r.refunded ? true : order.refunded || false,
       balance: r.refunded ? r.newBalance : undefined,
-      pointsEarned: r.pointsEarned
+      pointsEarned: r.pointsEarned,
+      // Nomornya diganti otomatis oleh jaminan: klien pindah ke pesanan baru ini.
+      ...(r.gantiKe ? { gantiKe: r.gantiKe } : {})
     });
   } catch (err) {
     console.error(err?.response?.data || err);

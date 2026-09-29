@@ -44,6 +44,7 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
   const [now, setNow] = useState(Date.now());
   const [cancelling, setCancelling] = useState(false);
   const [replacing, setReplacing] = useState(false);
+  const [gantiOtomatis, setGantiOtomatis] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
   const [waitingMsgIdx, setWaitingMsgIdx] = useState(0);
@@ -60,12 +61,42 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
   const waitElapsedMs = now - new Date(order.createdAt).getTime();
   const showTryOther = !status.otpCode && !refunded && waitElapsedMs > AUTO_TRY_OTHER_MS && status.status === "pending";
 
+  // Saran layanan lain, diambil sekali saat kode OTP masuk.
+  const [saran, setSaran] = useState([]);
+  const sudahAmbilSaran = useRef(false);
+  useEffect(() => {
+    if (!status.otpCode || sudahAmbilSaran.current) return;
+    sudahAmbilSaran.current = true;
+    fetch(`/api/otp/rekomendasi?service=${encodeURIComponent(activeOrder.serviceName || "")}`)
+      .then((r) => r.json())
+      .then((d) => setSaran(Array.isArray(d.rekomendasi) ? d.rekomendasi.slice(0, 4) : []))
+      .catch(() => {});
+  }, [status.otpCode, activeOrder.serviceName]);
+
   const isFinal = ["completed", "received", "done", "canceled", "expired"].includes(status.status);
 
   async function fetchStatus() {
     try {
       const res = await fetch(`/api/otp/status?order_id=${activeOrder.orderId}&token=${token}`);
       const data = await res.json();
+      if (res.ok && data.gantiKe) {
+        // Jaminan OTP bekerja: nomornya diganti otomatis, panel pindah ke pesanan baru.
+        setActiveOrder({
+          orderId: data.gantiKe.orderId,
+          phoneNumber: data.gantiKe.phoneNumber,
+          price: data.gantiKe.price,
+          createdAt: new Date().toISOString(),
+          expiredAt: data.gantiKe.expiredAt,
+          serviceName: activeOrder.serviceName,
+          countryName: activeOrder.countryName
+        });
+        sudahBunyi.current = false;
+        setStatus({ status: "pending", otpCode: null, otpMsg: null });
+        setRefunded(false);
+        setNow(Date.now());
+        setGantiOtomatis(true);
+        return;
+      }
       if (res.ok) {
         // Hanya saat kodenya BARU muncul, bukan tiap polling berhasil —
         // pollingnya jalan tiap beberapa detik dan akan meledak terus-menerus.
@@ -237,6 +268,23 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
             </div>
             <p ref={kodeRef} className="mt-1 font-mono text-4xl font-semibold tracking-[0.25em] text-ink">{status.otpCode}</p>
             {status.otpMsg && <p className="mt-2 text-xs text-muted">{status.otpMsg}</p>}
+            {saran.length > 0 && onBuyAgain && (
+              <div className="mt-3 border-t border-line pt-3">
+                <p className="text-xs font-medium text-muted">Butuh nomor lain?</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {saran.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => onBuyAgain(n)}
+                      className="rounded-full border border-amber/40 bg-amber-soft px-3 py-1 text-xs font-semibold text-amber-bright"
+                    >
+                      🛒 {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : status.status === "canceled" ? (
           <p className="text-sm text-rose">Pesanan dibatalkan, saldo sudah dikembalikan.</p>
@@ -289,12 +337,18 @@ export default function OtpOrderPanel({ order, token, onClose, onChanged, onBuyA
         )}
       </div>
 
+      {gantiOtomatis && !status.otpCode && (
+        <p className="mt-3 rounded-xl bg-amber-soft px-3 py-2 text-xs font-semibold text-amber-bright">
+          🛡 Jaminan OTP bekerja: nomor lama diganti otomatis dengan nomor ini, tanpa biaya tambahan.
+        </p>
+      )}
+
       {error && <p className="mt-3 text-sm text-rose">{error}</p>}
 
       <div className="mt-5 flex flex-wrap gap-2.5">
         {onBuyAgain && (
           <button
-            onClick={onBuyAgain}
+            onClick={() => onBuyAgain()}
             className="btn-3d flex-1 rounded-lg border border-amber/40 px-5 py-2.5 text-sm font-medium text-amber-bright transition-colors hover:bg-amber-soft sm:flex-none"
           >
             Beli lagi

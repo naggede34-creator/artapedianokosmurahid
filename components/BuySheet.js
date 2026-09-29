@@ -46,6 +46,20 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   const [buyError, setBuyError] = useState("");
   // Diisi saat order ditolak karena saldo kurang: nominal top-up yang menutup selisihnya.
   const [topupNominal, setTopupNominal] = useState(0);
+  // Jaminan OTP: pilihan ini diingat di browser supaya tidak perlu dicentang tiap beli.
+  const [jaminanInfo, setJaminanInfo] = useState({ aktif: false, persen: 0, menit: 4 });
+  const [pakaiJaminan, setPakaiJaminan] = useState(false);
+  useEffect(() => {
+    fetch("/api/settings/public")
+      .then((r) => r.json())
+      .then((d) => d?.jaminan && setJaminanInfo(d.jaminan))
+      .catch(() => {});
+    try { setPakaiJaminan(localStorage.getItem("ap_jaminan") === "1"); } catch {}
+  }, []);
+  function ubahJaminan(v) {
+    setPakaiJaminan(v);
+    try { localStorage.setItem("ap_jaminan", v ? "1" : "0"); } catch {}
+  }
 
   // Daftar aplikasi & status loading milik server yang sedang dipilih.
   const isRemote = server !== null && server !== "rumahotp";
@@ -199,7 +213,8 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
         operatorName: operatorName || null,
         serviceName: selectedService.service_name,
         countryName: country.name,
-        server: provider.server || server || "rumahotp"
+        server: provider.server || server || "rumahotp",
+        jaminan: jaminanInfo.aktif && pakaiJaminan
       };
       // Server non-RumahOTP memakai kunci service + country_id (+ index tier harga
       // untuk dibanana, karena id produknya diambil ulang di server).
@@ -460,6 +475,23 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                   </button>
                 ))}
               </div>
+
+              {jaminanInfo.aktif && (
+                <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-surface2 px-3 py-2.5">
+                  <input
+                    type="checkbox"
+                    checked={pakaiJaminan}
+                    onChange={(e) => ubahJaminan(e.target.checked)}
+                    className="mt-1 h-4 w-4 accent-amber"
+                  />
+                  <span className="text-xs leading-relaxed text-muted">
+                    <b className="text-ink">🛡 Jaminan OTP (+{jaminanInfo.persen}% dari harga)</b>
+                    <br />
+                    Kode belum masuk dalam {jaminanInfo.menit} menit? Nomor diganti otomatis. Kalau tetap gagal, semuanya
+                    dikembalikan — biaya jaminan hanya terpakai kalau kodenya masuk.
+                  </span>
+                </label>
+              )}
 
               {buyError && (
                 <div className="mt-3 rounded-xl bg-rose-soft px-3 py-2 text-sm text-rose">
