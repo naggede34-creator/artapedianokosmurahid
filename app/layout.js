@@ -27,9 +27,21 @@ export const metadata = {
   title: "Arta Pedia ID — Nokos Termurah dan Fast",
   description:
     "Beli nomor OTP (nokos) untuk WhatsApp, Telegram, Google dan ratusan layanan lain, dan isi saldo otomatis via QRIS. Diproses 24 jam.",
+  // manifest wajib ditunjuk di sini, kalau tidak peramban tidak pernah
+  // menawarkan "Pasang aplikasi" walau berkasnya ada.
+  manifest: "/manifest.webmanifest",
+  applicationName: "Arta Pedia ID",
+  // iOS tidak membaca manifest untuk hal-hal ini; ia punya metanya sendiri.
+  // Tanpa appleWebApp, situs yang ditambahkan ke layar utama di iPhone tetap
+  // membuka bilah alamat Safari dan tidak terasa seperti aplikasi.
+  appleWebApp: {
+    capable: true,
+    title: "Arta Pedia",
+    statusBarStyle: "black-translucent"
+  },
   icons: {
     icon: [{ url: "/logo-mark.svg", type: "image/svg+xml" }, { url: "/logo-mark.png", sizes: "512x512" }],
-    apple: [{ url: "/logo-mark.png", sizes: "512x512" }]
+    apple: [{ url: "/icon-192.png", sizes: "192x192" }, { url: "/icon-512.png", sizes: "512x512" }]
   },
   openGraph: {
     title: "Arta Pedia ID — Nokos Termurah dan Fast",

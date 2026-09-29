@@ -17,6 +17,7 @@ import LogoLoader from "@/components/LogoLoader";
 import RevealOnScroll from "@/components/RevealOnScroll";
 import Depth3D from "@/components/Depth3D";
 import PanelTransition from "@/components/PanelTransition";
+import PasangAplikasi from "@/components/PasangAplikasi";
 
 export default function SiteChrome({ children }) {
   const pathname = usePathname();
@@ -97,6 +98,7 @@ export default function SiteChrome({ children }) {
       <Footer />
       <BottomNav />
       <SupportWidget channelInfo={channelInfo} csUsername={csUsername} />
+      <PasangAplikasi />
     </>
   );
 }

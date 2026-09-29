@@ -12,6 +12,15 @@ export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState("light");
 
   useEffect(() => {
+    // Tema tampilan dipasang lebih dulu, di efek yang sama dengan mode
+    // terang/gelap: dua efek terpisah berarti dua kali gambar ulang, dan
+    // warnanya berkedip di antaranya.
+    try {
+      const { bacaTema, pasangTema } = require("@/lib/tema");
+      const t = bacaTema();
+      pasangTema(t.id, t.warna);
+    } catch {}
+
     const saved = typeof window !== "undefined" ? localStorage.getItem(THEME_KEY) : null;
     setThemeState(saved === "dark" ? "dark" : "light");
   }, []);
