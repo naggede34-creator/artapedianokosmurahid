@@ -66,7 +66,9 @@ export async function POST(req) {
         code,
         amount: voucher.amount,
         token,
-        remainingUses: Math.max(0, claimed.maxUses - claimed.usedCount)
+        remainingUses: Math.max(0, claimed.maxUses - claimed.usedCount),
+        name: updatedUser?.name || null,
+        balance: updatedUser?.balance
       }),
       publik: voucherPublicNotif({ amount: voucher.amount, token })
     });

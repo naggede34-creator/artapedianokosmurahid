@@ -84,9 +84,10 @@ export async function POST(req) {
     });
 
     const userCount = await users.countDocuments();
-    // newUserNotif sudah menyamarkan kedua kode akun, jadi teks yang sama
-    // aman dipakai untuk channel.
-    const notifText = newUserNotif({ token, referredBy, userCount });
+    // Teks yang sama dipakai untuk admin dan channel: kode akun ditulis sebagai
+    // penanda, utuh di chat admin dan otomatis tersamar di channel.
+    const referrerDoc = referredBy ? await users.findOne({ token: referredBy }, { projection: { name: 1 } }) : null;
+    const notifText = newUserNotif({ token, referredBy, userCount, sumber: "Website", referrerName: referrerDoc?.name || null });
     umumkan({ jenis: "user_baru", admin: notifText, publik: notifText });
     sendMonitorLog(userLoginLog({ token, isNew: true }));
 

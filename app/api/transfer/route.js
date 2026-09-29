@@ -147,7 +147,7 @@ export async function POST(req) {
     // dibaca orang lain.
     umumkan({
       jenis: "transfer",
-      admin: transferNotif({ fromToken, toToken, amount, fee, fromBalance: debited.balance }),
+      admin: transferNotif({ fromToken, toToken, amount, fee, fromBalance: debited.balance, fromName: debited.name, toName: credited.name, toBalance: credited.balance, ref }),
       publik: transferPublicNotif({ amount, fee })
     });
 
