@@ -11,6 +11,12 @@ export const maxDuration = 60;
 export async function POST(req) {
   const body = await req.json().catch(() => ({}));
   const result = await placeOtpOrder(body);
-  if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+  if (!result.ok) {
+    const { kurang, harga, nominalTopup } = result;
+    return NextResponse.json(
+      { error: result.error, ...(kurang ? { kurang, harga, nominalTopup } : {}) },
+      { status: result.status }
+    );
+  }
   return NextResponse.json(result.order);
 }

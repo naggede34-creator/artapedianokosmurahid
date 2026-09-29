@@ -63,6 +63,14 @@ export default function DepositPage() {
   const [voucherBusy, setVoucherBusy] = useState(false);
   const [voucherMsg, setVoucherMsg] = useState(null);
 
+  // Datang dari tombol "Top-up sekarang" di lembar beli: nominalnya sudah terisi.
+  useEffect(() => {
+    try {
+      const n = Math.floor(Number(new URLSearchParams(window.location.search).get("nominal")));
+      if (Number.isFinite(n) && n > 0 && n <= 100000000) setAmount(String(n));
+    } catch {}
+  }, []);
+
   useEffect(() => {
     fetch("/api/settings/public")
       .then((r) => r.json())

@@ -44,6 +44,8 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   const [operatorTarget, setOperatorTarget] = useState(null); // { country, provider, operators }
   const [buyingKey, setBuyingKey] = useState(null);
   const [buyError, setBuyError] = useState("");
+  // Diisi saat order ditolak karena saldo kurang: nominal top-up yang menutup selisihnya.
+  const [topupNominal, setTopupNominal] = useState(0);
 
   // Daftar aplikasi & status loading milik server yang sedang dipilih.
   const isRemote = server !== null && server !== "rumahotp";
@@ -89,7 +91,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
         setCountries([]);
         setExpandedCountry(null);
         setOperatorTarget(null);
-        setBuyError("");
+        setBuyError(""); setTopupNominal(0);
       }, 250);
       return () => clearTimeout(t);
     }
@@ -116,7 +118,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   }, [countries, countrySearch, sortMode]);
 
   function chooseServer(key) {
-    setBuyError("");
+    setBuyError(""); setTopupNominal(0);
     setRemoteError("");
     setAppSearch("");
     setServer(key);
@@ -145,7 +147,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
     setCountries([]);
     setExpandedCountry(null);
     setCountriesLoading(true);
-    setBuyError("");
+    setBuyError(""); setTopupNominal(0);
     try {
       const params = new URLSearchParams({ service_id: svc.service_code, server: server || "rumahotp" });
       const res = await fetch(`/api/otp/countries?${params}`);
@@ -161,7 +163,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   }
 
   async function handleOrderClick(country, provider) {
-    setBuyError("");
+    setBuyError(""); setTopupNominal(0);
     setBuyingKey(provider.provider_id);
     try {
       const params =
@@ -185,7 +187,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   }
 
   async function submitOrder(country, provider, operatorId, operatorName) {
-    setBuyError("");
+    setBuyError(""); setTopupNominal(0);
     setBuyingKey(provider.provider_id);
     try {
       const body = {
@@ -211,7 +213,11 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
         body: JSON.stringify(body)
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal membeli nomor.");
+      if (!res.ok) {
+        const e = new Error(data.error || "Gagal membeli nomor.");
+        e.nominalTopup = Number(data.nominalTopup) || 0;
+        throw e;
+      }
       onoOrderSukses();
       onOrderCreated({
         orderId: data.orderId,
@@ -228,6 +234,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
       });
     } catch (err) {
       setBuyError(err.message);
+      setTopupNominal(err.nominalTopup || 0);
       setScreen("countries");
     } finally {
       setBuyingKey(null);
@@ -454,7 +461,19 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                 ))}
               </div>
 
-              {buyError && <p className="mt-3 rounded-xl bg-rose-soft px-3 py-2 text-sm text-rose">{buyError}</p>}
+              {buyError && (
+                <div className="mt-3 rounded-xl bg-rose-soft px-3 py-2 text-sm text-rose">
+                  <p>{buyError}</p>
+                  {topupNominal > 0 && (
+                    <a
+                      href={`/deposit?nominal=${topupNominal}`}
+                      className="mt-2 inline-flex items-center rounded-lg bg-rose px-3 py-1.5 text-xs font-bold text-white"
+                    >
+                      💳 Top-up Rp{topupNominal.toLocaleString("id-ID")} sekarang
+                    </a>
+                  )}
+                </div>
+              )}
 
               {countriesLoading ? (
                 <div className="mt-4 space-y-3">
@@ -638,7 +657,19 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
               <p className="mt-1 text-xs text-muted">
                 {operatorTarget.country.name} · Rp{Number(operatorTarget.provider.sell_price ?? operatorTarget.provider.price).toLocaleString("id-ID")}
               </p>
-              {buyError && <p className="mt-3 rounded-xl bg-rose-soft px-3 py-2 text-sm text-rose">{buyError}</p>}
+              {buyError && (
+                <div className="mt-3 rounded-xl bg-rose-soft px-3 py-2 text-sm text-rose">
+                  <p>{buyError}</p>
+                  {topupNominal > 0 && (
+                    <a
+                      href={`/deposit?nominal=${topupNominal}`}
+                      className="mt-2 inline-flex items-center rounded-lg bg-rose px-3 py-1.5 text-xs font-bold text-white"
+                    >
+                      💳 Top-up Rp{topupNominal.toLocaleString("id-ID")} sekarang
+                    </a>
+                  )}
+                </div>
+              )}
               <div className="mt-4 grid grid-cols-2 gap-2">
                 {operatorTarget.operators.map((op) => (
                   <button
