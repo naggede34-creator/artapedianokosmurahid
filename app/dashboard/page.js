@@ -54,7 +54,8 @@ const shortcuts = [
   { href: "/produk", label: "Toko Produk", icon: Icon.shop, badge: "Baru" },
   { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin, badge: "Baru" },
   { href: "/chat", label: "Grup Chat", icon: "💬", badge: "Live" },
-  { href: "/gateway", label: "QRIS Gateway", icon: "💸", badge: "Baru" }
+  { href: "/gateway", label: "QRIS Gateway", icon: "💸", badge: "Baru" },
+  { href: "/reseller", label: "Bot Reseller", icon: "🤖", badge: "Baru" }
 ];
 
 function WarrantyModal({ open, onClose, token }) {
@@ -531,6 +532,12 @@ export default function DashboardPage() {
             className="btn-3d flex items-center gap-1.5 rounded-xl border border-blue/40 bg-blue-soft px-4 py-2.5 text-sm font-semibold text-blue-bright transition-colors hover:bg-blue/10"
           >
             💸 QRIS Gateway
+          </Link>
+          <Link
+            href="/reseller"
+            className="btn-3d flex items-center gap-1.5 rounded-xl border border-amber/40 bg-amber-soft px-4 py-2.5 text-sm font-semibold text-amber-bright transition-colors hover:bg-amber/10"
+          >
+            🤖 Bot Reseller
           </Link>
           <button onClick={() => setModal(true)} className="btn-ghost px-4 py-2.5">
             {name ? "Info akun" : "Atur nama & kode akun"}

@@ -58,7 +58,20 @@ export async function POST(req, { params }) {
 
   try {
     await jalankanDenganBot(
-      { botId: bot.botId, token: bot.token, username: bot.username, nama: bot.nama },
+      {
+        botId: bot.botId,
+        token: bot.token,
+        username: bot.username,
+        nama: bot.nama,
+        // Bawaan "toko" untuk dokumen lama yang belum punya kolom jenis.
+        // Tanpa bawaan ini, bot toko yang sudah terdaftar sebelum fitur
+        // reseller ada akan jatuh ke cabang reseller dan kehilangan menunya.
+        jenis: bot.jenis || "toko",
+        pemilikToken: bot.pemilikToken || null,
+        ownerTelegramId: bot.ownerTelegramId || null,
+        ownerUsername: bot.ownerUsername || null,
+        markupPersen: Number(bot.markupPersen) || 0
+      },
       () => tanganiUpdate(update)
     );
   } catch (err) {
