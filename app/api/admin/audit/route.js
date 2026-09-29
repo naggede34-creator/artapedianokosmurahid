@@ -87,6 +87,19 @@ export async function GET(req) {
       if (!ada) terkreditTanpaCatatan.push({ orderId: d.orderId, token: d.token, amount: d.amount, createdAt: d.createdAt });
     }
 
+    // Saldo yang tercetak oleh bug "saldo kurang": sebelum diperbaiki, percobaan
+    // beli dengan saldo tidak cukup mengkredit jumlah hold ke saldo tanpa ada
+    // potongan. Jejaknya: mutasi "refund" berjudul "Saldo tidak cukup, tidak
+    // jadi dipotong". Hanya dilaporkan — tidak ada saldo yang diubah dari sini.
+    const tercetak = await logs
+      .aggregate([
+        { $match: { type: "refund", title: { $regex: "Saldo tidak cukup, tidak jadi dipotong" } } },
+        { $group: { _id: "$token", kali: { $sum: 1 }, total: { $sum: "$amount" }, pertama: { $min: "$createdAt" }, terakhir: { $max: "$createdAt" } } },
+        { $sort: { total: -1 } },
+        { $limit: 100 }
+      ])
+      .toArray();
+
     // Sekalian pastikan indeks pengamannya terpasang, dan laporkan kalau ia
     // tidak bisa dipasang karena datanya sudah punya duplikat.
     await ensureIndexes();
@@ -99,6 +112,13 @@ export async function GET(req) {
         totalMasuk: r.total
       })),
       terkreditTanpaCatatan: terkreditTanpaCatatan.slice(0, 50),
+      saldoTercetakBugSaldoKurang: tercetak.map((t) => ({
+        token: t._id,
+        kali: t.kali,
+        totalTercetak: t.total,
+        pertama: t.pertama,
+        terakhir: t.terakhir
+      })),
       kesimpulan:
         rangkap.length === 0 && terkreditTanpaCatatan.length === 0
           ? "Tidak ada kredit deposit yang rangkap. Kalau ada saldo yang terasa berlebih, kemungkinan besar ia datang dari bonus (kartu gores, mystery box, voucher, atau koreksi admin) — cek mutasi akunnya satu per satu lewat ?token=KODE_AKUN."
