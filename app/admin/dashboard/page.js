@@ -3421,7 +3421,15 @@ export default function AdminDashboardPage() {
                 {rsWd.map((w) => (
                   <div key={w.wdId} className="rounded-2xl border border-line bg-surface p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-lg font-black text-ink">{fmtRp(w.amount)}</p>
+                      <div>
+                        {/* Yang besar adalah yang harus DIKIRIM admin, bukan
+                            nominal kotornya. Admin membaca angka paling besar
+                            di kartu ini lalu mentransfer sebanyak itu. */}
+                        <p className="text-lg font-black text-ink">{fmtRp(w.diterima ?? w.amount)}</p>
+                        <p className="text-[11px] text-muted">
+                          dari {fmtRp(w.amount)} · biaya {fmtRp(w.biaya ?? 0)}
+                        </p>
+                      </div>
                       <span
                         className={`rounded-full px-2.5 py-0.5 text-[11px] font-black text-white ${
                           w.status === "pending" ? "bg-amber" : w.status === "selesai" ? "bg-success" : "bg-rose"

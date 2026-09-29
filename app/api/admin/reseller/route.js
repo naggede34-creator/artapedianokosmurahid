@@ -4,6 +4,9 @@ import { isAdminRequest } from "@/lib/adminAuth";
 import { botsCol, usersCol } from "@/lib/db";
 import { samarkanToken, lepasWebhook } from "@/lib/bots";
 import { daftarPenarikan, tolakPenarikan, selesaikanPenarikan } from "@/lib/resellerWd";
+import { botsCol as _botsCol } from "@/lib/db";
+import { kabariPemilikBot } from "@/lib/kirimReseller";
+import { resellerWdSelesaiNotif, resellerWdTolakNotif } from "@/lib/resellerNotif";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +62,24 @@ export async function GET(req) {
   }
 }
 
+/**
+ * Mengabarkan pemilik bot lewat botnya sendiri.
+ *
+ * Kegagalannya tidak pernah menggagalkan aksinya: uangnya sudah dikirim atau
+ * komisinya sudah dikembalikan, dan membatalkan itu karena notifikasi gagal
+ * jauh lebih buruk daripada notifikasi yang tidak sampai.
+ */
+async function kabariReseller(wd, buatTeks) {
+  try {
+    const col = await _botsCol();
+    const bot = await col.findOne({ botId: String(wd.botId) });
+    if (!bot?.token || !bot?.ownerTelegramId) return;
+    await kabariPemilikBot(bot, buatTeks(bot));
+  } catch (err) {
+    console.error("[admin/reseller] notif penarikan gagal:", err?.message || err);
+  }
+}
+
 export async function POST(req) {
   if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   let body;
@@ -73,12 +94,34 @@ export async function POST(req) {
     if (aksi === "wd-selesai") {
       const r = await selesaikanPenarikan(body.wdId);
       if (!r.ok) return NextResponse.json({ error: r.alasan }, { status: 400 });
-      return NextResponse.json({ ok: true, pesan: "Ditandai sudah dikirim." });
+      await kabariReseller(r.wd, (bot) =>
+        resellerWdSelesaiNotif({
+          botUsername: bot.username,
+          botNama: bot.nama,
+          ownerUsername: bot.ownerUsername,
+          // Yang dikirim adalah nominal BERSIH. Mengabarkan nominal kotor
+          // membuat resellernya mengira uangnya kurang saat mengecek
+          // e-walletnya.
+          diterima: r.wd.diterima ?? r.wd.amount,
+          ewalletNama: r.wd.ewalletNama,
+          nomor: r.wd.nomor
+        })
+      );
+      return NextResponse.json({ ok: true, pesan: "Ditandai sudah dikirim, resellernya dikabari." });
     }
     if (aksi === "wd-tolak") {
       const r = await tolakPenarikan(body.wdId, body.alasan);
       if (!r.ok) return NextResponse.json({ error: r.alasan }, { status: 400 });
-      return NextResponse.json({ ok: true, pesan: "Ditolak, komisi dikembalikan penuh." });
+      await kabariReseller(r.wd, (bot) =>
+        resellerWdTolakNotif({
+          botUsername: bot.username,
+          botNama: bot.nama,
+          ownerUsername: bot.ownerUsername,
+          amount: r.wd.amount,
+          alasan: r.wd.alasan
+        })
+      );
+      return NextResponse.json({ ok: true, pesan: "Ditolak, komisi dikembalikan penuh dan resellernya dikabari." });
     }
 
     const botId = String(body?.botId || "");
