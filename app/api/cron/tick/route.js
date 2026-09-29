@@ -11,6 +11,7 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol } from "@/lib/db";
 import { reconcileOtpOrder } from "@/lib/orderReconcile";
+import { periksaStokWatch } from "@/lib/stokWatch";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -49,6 +50,13 @@ export async function GET(req) {
     }
   } catch (err) {
     hasil.galat.push(`query: ${err?.message || err}`);
+  }
+
+  // "Kabari saya kalau stok ada": gagalnya tidak boleh mengganggu pekerjaan di atas.
+  try {
+    hasil.stok = await periksaStokWatch();
+  } catch (err) {
+    hasil.galat.push(`stok: ${err?.message || err}`);
   }
   return NextResponse.json({ ok: true, ...hasil });
 }

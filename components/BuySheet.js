@@ -56,6 +56,29 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
       .catch(() => {});
     try { setPakaiJaminan(localStorage.getItem("ap_jaminan") === "1"); } catch {}
   }, []);
+  // "Kabari saya kalau stok ada": tersimpan di server, dikabari lewat push web / bot.
+  const [pantau, setPantau] = useState({ sibuk: false, ok: false, pesan: "" });
+  useEffect(() => { setPantau({ sibuk: false, ok: false, pesan: "" }); }, [selectedService?.service_code, server]);
+  async function pantauStok() {
+    if (!selectedService || !token) return;
+    setPantau({ sibuk: true, ok: false, pesan: "" });
+    try {
+      const res = await fetch("/api/stok/watch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, server: server || "rumahotp", serviceId: selectedService.service_code, serviceName: selectedService.service_name })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Gagal menyimpan.");
+      setPantau({
+        sibuk: false,
+        ok: true,
+        pesan: "Aktifkan notifikasi di lonceng (🔔 di atas) supaya kabarnya masuk ke perangkat ini, atau kami kabari lewat bot Telegram."
+      });
+    } catch (e) {
+      setPantau({ sibuk: false, ok: false, pesan: e.message });
+    }
+  }
   function ubahJaminan(v) {
     setPakaiJaminan(v);
     try { localStorage.setItem("ap_jaminan", v ? "1" : "0"); } catch {}
@@ -514,7 +537,22 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                   ))}
                 </div>
               ) : filteredCountries.length === 0 ? (
-                <p className="mt-6 text-sm text-muted">Belum ada stok untuk layanan ini.</p>
+                <div className="mt-6">
+                  <p className="text-sm text-muted">Belum ada stok untuk layanan ini.</p>
+                  {countries.length === 0 && (
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        disabled={pantau.sibuk || pantau.ok}
+                        onClick={pantauStok}
+                        className="btn-3d rounded-xl border border-amber/40 bg-amber-soft px-4 py-2.5 text-sm font-bold text-amber-bright disabled:opacity-70"
+                      >
+                        {pantau.ok ? "✅ Oke, kami kabari kalau stok ada" : pantau.sibuk ? "Menyimpan…" : "🔔 Kabari saya kalau stok ada"}
+                      </button>
+                      {pantau.pesan && <p className="mt-2 text-xs text-muted">{pantau.pesan}</p>}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="mt-4 space-y-3">
                   {filteredCountries.map((c) => {
