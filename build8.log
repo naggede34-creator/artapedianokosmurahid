@@ -1,0 +1,229 @@
+
+> artapedia-web@1.0.0 build
+> next build
+
+  ▲ Next.js 14.2.15
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping linting
+   Checking validity of types ...
+   Collecting page data ...
+[db] MONGODB_URI belum diset di environment variables.
+[db] MONGODB_URI belum diset di environment variables.
+[db] MONGODB_URI belum diset di environment variables.
+   Generating static pages (0/52) ...
+B [Error]: Dynamic server usage: Route /api/referral/info couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (/home/user/artapedianokosmurahid/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:21777)
+    at Object.get (/home/user/artapedianokosmurahid/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:29137)
+    at d (/home/user/artapedianokosmurahid/.next/server/app/api/referral/info/route.js:1:651)
+    at /home/user/artapedianokosmurahid/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:36963
+    at /home/user/artapedianokosmurahid/node_modules/next/dist/server/lib/trace/tracer.js:140:36
+    at NoopContextManager.with (/home/user/artapedianokosmurahid/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/home/user/artapedianokosmurahid/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+    at NoopTracer.startActiveSpan (/home/user/artapedianokosmurahid/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
+    at ProxyTracer.startActiveSpan (/home/user/artapedianokosmurahid/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18854)
+    at /home/user/artapedianokosmurahid/node_modules/next/dist/server/lib/trace/tracer.js:122:103 {
+  description: "Route /api/referral/info couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (13/52) 
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+   Generating static pages (26/52) 
+   Generating static pages (39/52) 
+ ✓ Generating static pages (52/52)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    16.5 kB         115 kB
+├ ○ /_not-found                          876 B            88 kB
+├ ƒ /admin/dashboard                     57 kB           144 kB
+├ ○ /admin/login                         1.22 kB        88.3 kB
+├ ○ /api-docs                            8.45 kB         102 kB
+├ ƒ /api/achievements                    0 B                0 B
+├ ƒ /api/activity/ticker                 0 B                0 B
+├ ƒ /api/admin/activity                  0 B                0 B
+├ ƒ /api/admin/announcements             0 B                0 B
+├ ƒ /api/admin/announcements/delete      0 B                0 B
+├ ƒ /api/admin/announcements/toggle      0 B                0 B
+├ ƒ /api/admin/atlantic                  0 B                0 B
+├ ƒ /api/admin/audit                     0 B                0 B
+├ ƒ /api/admin/backup                    0 B                0 B
+├ ƒ /api/admin/banners                   0 B                0 B
+├ ƒ /api/admin/bots                      0 B                0 B
+├ ƒ /api/admin/broadcasts                0 B                0 B
+├ ƒ /api/admin/broadcasts/delete         0 B                0 B
+├ ƒ /api/admin/broadcasts/toggle         0 B                0 B
+├ ƒ /api/admin/config                    0 B                0 B
+├ ƒ /api/admin/deposits                  0 B                0 B
+├ ƒ /api/admin/dibanana                  0 B                0 B
+├ ƒ /api/admin/export                    0 B                0 B
+├ ƒ /api/admin/flashsale                 0 B                0 B
+├ ƒ /api/admin/gamification-stats        0 B                0 B
+├ ƒ /api/admin/gateway                   0 B                0 B
+├ ƒ /api/admin/giveaway                  0 B                0 B
+├ ƒ /api/admin/import                    0 B                0 B
+├ ƒ /api/admin/jobs                      0 B                0 B
+├ ƒ /api/admin/jobs/submissions          0 B                0 B
+├ ƒ /api/admin/leaderboard               0 B                0 B
+├ ƒ /api/admin/login                     0 B                0 B
+├ ƒ /api/admin/logout                    0 B                0 B
+├ ƒ /api/admin/lucky-hours               0 B                0 B
+├ ƒ /api/admin/notify                    0 B                0 B
+├ ƒ /api/admin/platform-markup           0 B                0 B
+├ ƒ /api/admin/products                  0 B                0 B
+├ ƒ /api/admin/reseller                  0 B                0 B
+├ ƒ /api/admin/security-scan             0 B                0 B
+├ ƒ /api/admin/settings                  0 B                0 B
+├ ƒ /api/admin/stats                     0 B                0 B
+├ ƒ /api/admin/stock-report              0 B                0 B
+├ ƒ /api/admin/support/tickets           0 B                0 B
+├ ƒ /api/admin/users                     0 B                0 B
+├ ƒ /api/admin/users/balance             0 B                0 B
+├ ƒ /api/admin/users/points              0 B                0 B
+├ ƒ /api/admin/users/suspend             0 B                0 B
+├ ƒ /api/admin/vouchers                  0 B                0 B
+├ ƒ /api/admin/vouchers/toggle           0 B                0 B
+├ ƒ /api/admin/warranty                  0 B                0 B
+├ ƒ /api/admin/warungnokos               0 B                0 B
+├ ƒ /api/admin/withdraw                  0 B                0 B
+├ ƒ /api/announcements/public            0 B                0 B
+├ ƒ /api/apikey                          0 B                0 B
+├ ƒ /api/banners/public                  0 B                0 B
+├ ƒ /api/bonus/welcome                   0 B                0 B
+├ ƒ /api/bot/setup                       0 B                0 B
+├ ƒ /api/bot/webhook                     0 B                0 B
+├ ƒ /api/bot/webhook/[botId]             0 B                0 B
+├ ƒ /api/broadcasts/public               0 B                0 B
+├ ƒ /api/challenge                       0 B                0 B
+├ ƒ /api/chat/ai-reply                   0 B                0 B
+├ ƒ /api/chat/delete                     0 B                0 B
+├ ƒ /api/chat/group-settings             0 B                0 B
+├ ƒ /api/chat/messages                   0 B                0 B
+├ ƒ /api/chat/pin                        0 B                0 B
+├ ƒ /api/chat/react                      0 B                0 B
+├ ƒ /api/chat/vote                       0 B                0 B
+├ ƒ /api/checkin                         0 B                0 B
+├ ƒ /api/cron/backup                     0 B                0 B
+├ ƒ /api/cron/cleanup                    0 B                0 B
+├ ƒ /api/cron/security-scan              0 B                0 B
+├ ƒ /api/cron/stock-report               0 B                0 B
+├ ƒ /api/cron/weekly-leaderboard         0 B                0 B
+├ ƒ /api/cs                              0 B                0 B
+├ ƒ /api/deposit/cancel                  0 B                0 B
+├ ƒ /api/deposit/confirm                 0 B                0 B
+├ ƒ /api/deposit/create                  0 B                0 B
+├ ƒ /api/deposit/detail                  0 B                0 B
+├ ƒ /api/deposit/fee                     0 B                0 B
+├ ƒ /api/deposit/history                 0 B                0 B
+├ ƒ /api/deposit/status                  0 B                0 B
+├ ƒ /api/deposit/webhook                 0 B                0 B
+├ ƒ /api/flashsale                       0 B                0 B
+├ ƒ /api/gateway                         0 B                0 B
+├ ƒ /api/gateway/apikey                  0 B                0 B
+├ ƒ /api/gateway/convert                 0 B                0 B
+├ ƒ /api/gateway/invoice                 0 B                0 B
+├ ƒ /api/gateway/withdraw                0 B                0 B
+├ ƒ /api/giveaway                        0 B                0 B
+├ ƒ /api/gw/v1/balance                   0 B                0 B
+├ ƒ /api/gw/v1/callback                  0 B                0 B
+├ ƒ /api/gw/v1/invoice                   0 B                0 B
+├ ƒ /api/gw/v1/invoice/[id]              0 B                0 B
+├ ƒ /api/jobs                            0 B                0 B
+├ ƒ /api/jobs/my-submissions             0 B                0 B
+├ ƒ /api/jobs/submit                     0 B                0 B
+├ ƒ /api/leaderboard-weekly              0 B                0 B
+├ ƒ /api/leaderboard/orders              0 B                0 B
+├ ƒ /api/levelup-check                   0 B                0 B
+├ ƒ /api/loyalty/info                    0 B                0 B
+├ ƒ /api/loyalty/redeem                  0 B                0 B
+├ ƒ /api/lucky-hours                     0 B                0 B
+├ ƒ /api/missions                        0 B                0 B
+├ ƒ /api/missions/claim                  0 B                0 B
+├ ƒ /api/mutasi                          0 B                0 B
+├ ƒ /api/mystery-box                     0 B                0 B
+├ ƒ /api/notifications                   0 B                0 B
+├ ƒ /api/otp/cancel                      0 B                0 B
+├ ƒ /api/otp/countries                   0 B                0 B
+├ ƒ /api/otp/history                     0 B                0 B
+├ ƒ /api/otp/operators                   0 B                0 B
+├ ƒ /api/otp/order                       0 B                0 B
+├ ƒ /api/otp/replace                     0 B                0 B
+├ ƒ /api/otp/servers                     0 B                0 B
+├ ƒ /api/otp/services                    0 B                0 B
+├ ƒ /api/otp/status                      0 B                0 B
+├ ƒ /api/pet                             0 B                0 B
+├ ƒ /api/points-shop                     0 B                0 B
+├ ƒ /api/points-shop/redeem              0 B                0 B
+├ ƒ /api/products                        0 B                0 B
+├ ƒ /api/products/buy                    0 B                0 B
+├ ƒ /api/products/orders                 0 B                0 B
+├ ƒ /api/referral/info                   0 B                0 B
+├ ƒ /api/referral/leaderboard            0 B                0 B
+├ ƒ /api/reseller                        0 B                0 B
+├ ƒ /api/scratch-card                    0 B                0 B
+├ ƒ /api/settings/public                 0 B                0 B
+├ ƒ /api/spinwheel                       0 B                0 B
+├ ƒ /api/stats/public                    0 B                0 B
+├ ƒ /api/stats/recent                    0 B                0 B
+├ ƒ /api/support/tickets                 0 B                0 B
+├ ƒ /api/support/tickets/reply           0 B                0 B
+├ ƒ /api/telegram/webhook                0 B                0 B
+├ ƒ /api/transfer                        0 B                0 B
+├ ƒ /api/user/init                       0 B                0 B
+├ ƒ /api/user/name                       0 B                0 B
+├ ƒ /api/user/stats                      0 B                0 B
+├ ƒ /api/user/tour-done                  0 B                0 B
+├ ƒ /api/v1/countries                    0 B                0 B
+├ ƒ /api/v1/me                           0 B                0 B
+├ ƒ /api/v1/order                        0 B                0 B
+├ ƒ /api/v1/orders                       0 B                0 B
+├ ƒ /api/v1/orders/status                0 B                0 B
+├ ƒ /api/v1/servers                      0 B                0 B
+├ ƒ /api/v1/services                     0 B                0 B
+├ ƒ /api/voucher/redeem                  0 B                0 B
+├ ƒ /api/warranty/claim                  0 B                0 B
+├ ƒ /api/winback                         0 B                0 B
+├ ○ /apikey                              2.76 kB         101 kB
+├ ○ /bonus                               6.99 kB         106 kB
+├ ○ /cara-pakai                          152 B          87.3 kB
+├ ○ /chat                                15.2 kB         102 kB
+├ ○ /dashboard                           20.1 kB         122 kB
+├ ○ /deposit                             11.4 kB         110 kB
+├ ○ /faq                                 2.72 kB        89.9 kB
+├ ○ /gateway                             7.02 kB         106 kB
+├ ○ /gateway/docs                        4.07 kB          98 kB
+├ ○ /giveaway                            4 kB             98 kB
+├ ○ /harga                               1.92 kB        89.1 kB
+├ ○ /informasi                           1.59 kB        88.7 kB
+├ ○ /leaderboard                         4.01 kB        91.1 kB
+├ ○ /loyalitas                           4.1 kB         91.2 kB
+├ ○ /manifest.webmanifest                0 B                0 B
+├ ○ /misi                                1.75 kB        93.6 kB
+├ ○ /mutasi                              1.75 kB        93.6 kB
+├ ○ /otp                                 10 kB           116 kB
+├ ○ /pasang-iklan                        4.31 kB        98.3 kB
+├ ○ /pet                                 2.82 kB         102 kB
+├ ○ /produk                              4.91 kB          92 kB
+├ ○ /referral                            4.49 kB        98.5 kB
+├ ○ /reseller                            5.76 kB        99.7 kB
+├ ○ /riwayat                             3.55 kB         106 kB
+├ ○ /saldo-gratis                        5.2 kB         92.3 kB
+├ ○ /syarat                              152 B          87.3 kB
+├ ○ /tampilan                            2.67 kB        96.6 kB
+├ ○ /toko-poin                           2.05 kB        93.9 kB
+├ ○ /transfer                            2.44 kB        94.3 kB
+└ ○ /vip                                 1.8 kB          101 kB
++ First Load JS shared by all            87.1 kB
+  ├ chunks/2117-f67e984e2c99e10b.js      31.6 kB
+  ├ chunks/fd9d1056-086b7441b74e56e4.js  53.6 kB
+  └ other shared chunks (total)          1.9 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
