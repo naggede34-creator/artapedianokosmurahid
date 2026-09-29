@@ -41,7 +41,7 @@ export async function POST(req) {
   if (!p) return NextResponse.json({ error: "Pengguna tidak ditemukan." }, { status: 404 });
   lupakanCache(p.token);
   if (warna) {
-    kirimPush(p.token, { judul: "Lencana verifikasi 🎖", isi: `Kamu mendapat lencana ${LENCANA[warna].label.toLowerCase()} di Room Chat!`, url: "/chat" }).catch(() => {});
+    kirimPush(p.token, { judul: "Lencana verifikasi 🎖", isi: `Kamu mendapat lencana ${LENCANA[warna].label.toLowerCase()} di WEARTA CHAT!`, url: "/chat" }).catch(() => {});
   }
   return NextResponse.json({ ok: true, pengguna: bentuk(p) });
 }

@@ -7,6 +7,7 @@ import { DAFTAR_PUBLIK, channelAktifUntuk } from "@/lib/channelNotifTypes";
 import AdminKonfigurasi, { PeringatanKodeAdmin } from "@/components/AdminKonfigurasi";
 import AdminReferral from "@/components/AdminReferral";
 import AdminAfiliasi from "@/components/AdminAfiliasi";
+import AdminLencana from "@/components/AdminLencana";
 import { CHANNEL_ID, CHANNEL_URL } from "@/lib/links";
 
 function fmtDate(d) {
@@ -29,6 +30,7 @@ const TABS = [
   { id: "gateway", label: "QRIS Gateway", icon: "💸" },
   { id: "referral", label: "Referral", icon: "🛡" },
   { id: "kreator", label: "Kreator", icon: "🎬" },
+  { id: "lencana", label: "Lencana", icon: "🎖" },
   { id: "konfigurasi", label: "Konfigurasi", icon: "🔑" },
   { id: "bot", label: "Bot Telegram", icon: "🤖" },
   { id: "reseller", label: "Bot Reseller", icon: "🏪" },
@@ -888,7 +890,7 @@ export default function AdminDashboardPage() {
   // Buka/tutup Room Chat. Penutupannya ditegakkan di server juga, jadi tombol
   // ini benar-benar menutup grupnya — bukan cuma mematikan kolom ketik.
   async function setChatClosed(closed) {
-    if (closed && !confirm("Tutup Room Chat? Semua pengguna tidak akan bisa mengirim pesan sampai dibuka lagi.")) return;
+    if (closed && !confirm("Tutup WEARTA CHAT? Semua pengguna tidak akan bisa mengirim pesan sampai dibuka lagi.")) return;
     setChatBusy(true);
     setChatSaveMsg("");
     try {
@@ -899,7 +901,7 @@ export default function AdminDashboardPage() {
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error);
-      setChatSaveMsg(closed ? "Room Chat ditutup." : "Room Chat dibuka.");
+      setChatSaveMsg(closed ? "WEARTA CHAT ditutup." : "WEARTA CHAT dibuka.");
       loadChatCfg();
     } catch (err) {
       setChatSaveMsg(err.message || "Gagal mengubah status.");
@@ -2598,7 +2600,7 @@ export default function AdminDashboardPage() {
 
           {/* Room Chat: buka / tutup */}
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
-            <h2 className="font-display text-base font-semibold text-ink">💬 Room Chat Grup</h2>
+            <h2 className="font-display text-base font-semibold text-ink">💬 WEARTA CHAT</h2>
             <p className="mt-1 text-xs leading-relaxed text-muted">
               Saat ditutup, <b>tidak ada pengguna yang bisa mengirim pesan</b> — penutupannya diperiksa di server,
               bukan cuma mematikan kolom ketik. Pesan lama tetap bisa dibaca, dan admin tetap bisa menulis.
@@ -2618,7 +2620,7 @@ export default function AdminDashboardPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold text-ink">
-                      {chatCfg.closed ? "Room Chat sedang DITUTUP" : "Room Chat sedang DIBUKA"}
+                      {chatCfg.closed ? "WEARTA CHAT sedang DITUTUP" : "WEARTA CHAT sedang DIBUKA"}
                     </p>
                     <p className="text-[11px] text-muted">
                       {chatCfg.closed
@@ -2633,7 +2635,7 @@ export default function AdminDashboardPage() {
                       chatCfg.closed ? "bg-teal" : "bg-rose"
                     }`}
                   >
-                    {chatBusy ? "…" : chatCfg.closed ? "🔓 Buka Room Chat" : "🔒 Tutup Room Chat"}
+                    {chatBusy ? "…" : chatCfg.closed ? "🔓 Buka WEARTA CHAT" : "🔒 Tutup WEARTA CHAT"}
                   </button>
                 </div>
 
@@ -2643,7 +2645,7 @@ export default function AdminDashboardPage() {
                     <input
                       value={chatMsgDraft}
                       onChange={(e) => setChatMsgDraft(e.target.value.slice(0, 200))}
-                      placeholder="Room Chat sedang ditutup admin. Coba lagi nanti ya."
+                      placeholder="WEARTA CHAT sedang ditutup admin. Coba lagi nanti ya."
                       className="min-w-[200px] flex-1 rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
                     />
                     <button
@@ -3169,6 +3171,7 @@ export default function AdminDashboardPage() {
       {activeTab === "konfigurasi" && <AdminKonfigurasi />}
       {activeTab === "referral" && <AdminReferral />}
       {activeTab === "kreator" && <AdminAfiliasi />}
+      {activeTab === "lencana" && <AdminLencana />}
 
       {activeTab === "giveaway" && (
         <div className="mt-5 space-y-5">

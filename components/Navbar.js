@@ -15,7 +15,7 @@ const links = [
   { href: "/deposit", label: "Deposit" },
   { href: "/produk", label: "Produk" },
   { href: "/riwayat", label: "Riwayat" },
-  { href: "/chat", label: "Room Chat" },
+  { href: "/chat", label: "WEARTA CHAT" },
   { href: "/harga", label: "Harga" }
 ];
 

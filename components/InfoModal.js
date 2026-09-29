@@ -39,8 +39,8 @@ const TUTORIAL = [
     body: "Masukkan nomor yang didapat ke aplikasi yang dituju. Kode OTP akan muncul sendiri di halaman pesanan."
   },
   {
-    title: "Pantau Room Chat Grup",
-    body: "Info stok, gangguan server, dan promo selalu diumumkan lebih dulu di Room Chat Grup. Biasakan mengeceknya sebelum membeli."
+    title: "Pantau WEARTA CHAT",
+    body: "Info stok, gangguan server, dan promo selalu diumumkan lebih dulu di WEARTA CHAT. Biasakan mengeceknya sebelum membeli."
   }
 ];
 
@@ -240,7 +240,7 @@ export default function InfoModal() {
           >
             <span className="text-lg">💬</span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-bold text-ink">Baca Room Chat Grup</span>
+              <span className="block text-sm font-bold text-ink">Buka WEARTA CHAT</span>
               <span className="block text-[11px] leading-relaxed text-muted">
                 Info stok, gangguan, dan promo diumumkan di sini lebih dulu. Cek sebelum beli.
               </span>

@@ -2,6 +2,7 @@ import { auth, tolakAuth, j } from "@/lib/wa/api";
 import { publik } from "@/lib/wa/inti";
 import { daftarRoom } from "@/lib/wa/room";
 import { jumlahStatusBaru } from "@/lib/wa/status";
+import { adminSahWa } from "@/lib/wa/admin";
 import { panggilanMasuk, bersihkanDering } from "@/lib/wa/call";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,8 @@ export async function GET(req) {
   try {
     await bersihkanDering();
     const [rooms, masuk, statusBaru] = await Promise.all([daftarRoom(me), panggilanMasuk(me), jumlahStatusBaru(me)]);
-    return j({ saya: { ...publik(me), blokir: me.blokir || [], sembunyiTerakhir: !!me.sembunyiTerakhir }, rooms, panggilanMasuk: masuk, statusBaru });
+    const admin = await adminSahWa(req);
+    return j({ admin, saya: { ...publik(me), blokir: me.blokir || [], sembunyiTerakhir: !!me.sembunyiTerakhir }, rooms, panggilanMasuk: masuk, statusBaru });
   } catch (err) {
     console.error("[wa/sinkron]", err?.message || err);
     return j({ error: "Gagal memuat obrolan." }, 500);

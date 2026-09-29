@@ -1,5 +1,5 @@
 import { auth, tolakAuth, j, galat, bacaBody, batasi, terlaluCepat } from "@/lib/wa/api";
-import { infoRoom, bukaPrivate, buatGrup, ubahGrup, tambahAnggota, keluarkanAnggota, aturAdmin, keluarGrup, gabungDenganKode, resetKodeUndang, aturPref } from "@/lib/wa/room";
+import { infoRoom, bukaPrivate, buatGrup, ubahGrup, tambahAnggota, keluarkanAnggota, aturAdmin, keluarGrup, gabungDenganKode, resetKodeUndang, aturPref, aturSementara } from "@/lib/wa/room";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +41,7 @@ export async function POST(req) {
     case "keluar": return hasil(await keluarGrup(me, String(body.roomId || "")));
     case "gabung": return hasil(await gabungDenganKode(me, String(body.kode || "")));
     case "reset-kode": return hasil(await resetKodeUndang(me, String(body.roomId || "")));
+    case "sementara": return hasil(await aturSementara(me, String(body.roomId || ""), body.ms));
     case "pref": return hasil(await aturPref(me, String(body.roomId || ""), { pinned: body.pinned, muted: body.muted, archived: body.archived }));
     default: return galat("Aksi tidak dikenal.");
   }

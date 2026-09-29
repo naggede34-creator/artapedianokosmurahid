@@ -63,7 +63,7 @@ const sections = [
     items: [
       { href: "/otp", label: "Beli Nokos (OTP)", icon: <Icon.phone width={19} height={19} /> },
       { href: "/harga", label: "Daftar Harga Nokos", icon: I.tag },
-      { href: "/chat", label: "Grup Chat", icon: <span style={{ fontSize: 17 }}>💬</span>, badge: "Live" }
+      { href: "/chat", label: "WEARTA CHAT", icon: <span style={{ fontSize: 17 }}>💬</span>, badge: "Live" }
     ]
   },
   {
