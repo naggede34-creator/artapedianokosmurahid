@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLembarTerbuka } from "@/lib/lembarTerbuka";
 import { useUser } from "@/app/providers";
 import SimCard from "@/components/SimCard";
-import AccountInfoModal from "@/components/AccountInfoModal";
 import OTPPriceWidget from "@/components/OTPPriceWidget";
 import FlashSaleTimer from "@/components/FlashSaleTimer";
 import LuckyHourBanner from "@/components/LuckyHourBanner";
@@ -363,7 +362,6 @@ export default function DashboardPage() {
   const [stats, setStats] = useState(null);
   const [loyalty, setLoyalty] = useState(null);
   const [board, setBoard] = useState(null);
-  const [modal, setModal] = useState(false);
   const [warrantyModal, setWarrantyModal] = useState(false);
   // Garansi bisa dimatikan admin. Bawaannya true supaya tombolnya tidak
   // berkedip hilang-muncul sebelum pengaturannya sempat terbaca.
@@ -540,9 +538,12 @@ export default function DashboardPage() {
           >
             🤖 Bot Reseller
           </Link>
-          <button onClick={() => setModal(true)} className="btn-ghost px-4 py-2.5">
-            {name ? "Info akun" : "Atur nama & kode akun"}
-          </button>
+          <Link
+            href="/profil"
+            className="btn-3d flex items-center gap-1.5 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-amber/60"
+          >
+            👤 Profil akun
+          </Link>
         </div>
       </div>
 
@@ -865,7 +866,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <AccountInfoModal open={modal} onClose={() => setModal(false)} token={token} balance={balance} joinedAt={joinedAt} />
       <WarrantyModal open={warrantyModal} onClose={() => setWarrantyModal(false)} token={token} />
     </div>
   );

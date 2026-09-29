@@ -111,6 +111,15 @@ export default function WaApp() {
     } catch {}
   }, []);
 
+  // ?profil=1 (dari halaman Profil Akun)
+  useEffect(() => {
+    if (!api) return;
+    if (new URLSearchParams(window.location.search).get("profil")) {
+      window.history.replaceState({}, "", "/chat");
+      setSheet({ tipe: "profil-saya" });
+    }
+  }, [api]);
+
   // ?gabung=kode
   useEffect(() => {
     if (!api) return;

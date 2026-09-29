@@ -75,6 +75,7 @@ export function UserProvider({ children }) {
     const data = await res.json();
     if (res.ok) {
       localStorage.setItem("artapedia_token", data.token);
+      try { localStorage.removeItem("artapedia_keluar"); } catch {}
       setToken(data.token);
       setBalance(data.balance);
       setDepositBalance(data.depositBalance ?? null);
@@ -123,7 +124,11 @@ export function UserProvider({ children }) {
           }
         }
       }
-      if (wajib) {
+      // Baru saja keluar dari akun: tampilkan gerbang masuk/daftar, jangan
+      // diam-diam membuatkan akun kosong yang baru.
+      let baruKeluar = false;
+      try { baruKeluar = localStorage.getItem("artapedia_keluar") === "1"; } catch {}
+      if (wajib || baruKeluar) {
         setPerluMasuk(true);
         return;
       }
@@ -163,9 +168,14 @@ export function UserProvider({ children }) {
     [init]
   );
 
+  // Keluar dari akun di perangkat ini. Akunnya tidak dihapus: kode akun tetap
+  // bisa dipakai masuk lagi kapan saja. Penanda "artapedia_keluar" membuat
+  // halaman berikutnya menampilkan gerbang masuk, bukan akun baru otomatis.
   const keluar = useCallback(() => {
     try {
       localStorage.removeItem("artapedia_token");
+      localStorage.setItem("artapedia_keluar", "1");
+      sessionStorage.removeItem("artapedia_ref");
     } catch {}
     window.location.href = "/";
   }, []);

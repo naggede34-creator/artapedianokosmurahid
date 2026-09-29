@@ -46,6 +46,7 @@ const sections = [
   {
     items: [
       { href: "/dashboard", label: "Beranda", icon: <Icon.home width={19} height={19} /> },
+      { href: "/profil", label: "Profil Akun", icon: <span className="text-[17px] leading-none">👤</span>, badge: "Baru" },
       // Tautan keluar ke channel Telegram. Ditaruh paling atas bersama Beranda,
       // bukan diselipkan di Bantuan: ini yang dipakai orang untuk memastikan
       // tokonya benar-benar jalan sebelum mereka mengisi saldo.
@@ -179,7 +180,7 @@ export default function Sidebar({ open, onClose }) {
           ))}
         </nav>
 
-        {loginWajib && token && (
+        {token && (
           <div className="border-t border-line px-5 py-3">
             <p className="text-[11px] font-bold uppercase tracking-wide text-muted">Kode akun</p>
             <div className="mt-1 flex items-center gap-2">
@@ -196,10 +197,10 @@ export default function Sidebar({ open, onClose }) {
             </div>
             <button
               type="button"
-              onClick={() => { if (window.confirm("Keluar dari akun ini? Pastikan kode akunmu sudah disimpan, karena itu satu-satunya cara masuk lagi.")) keluar(); }}
+              onClick={() => { onClose?.(); window.location.href = "/profil#keluar"; }}
               className="press mt-2 w-full rounded-xl border border-rose/40 bg-rose-soft px-3 py-2 text-xs font-black text-rose"
             >
-              🚪 Keluar
+              🚪 Keluar dari akun
             </button>
           </div>
         )}

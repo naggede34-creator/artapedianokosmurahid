@@ -37,6 +37,16 @@ export default function Navbar() {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [avatar, setAvatar] = useState("😊");
+
+  // Avatar pilihan pengguna (disimpan di perangkat, dipilih di halaman Profil Akun).
+  useEffect(() => {
+    if (!token) return;
+    const baca = () => { try { setAvatar(localStorage.getItem(`avatar-${token}`) || "😊"); } catch {} };
+    baca();
+    window.addEventListener("avatar-berubah", baca);
+    return () => window.removeEventListener("avatar-berubah", baca);
+  }, [token]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
@@ -103,6 +113,18 @@ export default function Navbar() {
           <NotificationBell token={token} />
           <InfoBell />
           <ThemeToggle className="hidden sm:inline-flex" />
+          {token && (
+            <Link
+              href="/profil"
+              aria-label="Profil akun"
+              title="Profil akun"
+              className={`press flex h-10 w-10 items-center justify-center rounded-full border-2 text-lg transition-colors ${
+                pathname === "/profil" ? "border-amber bg-amber-soft" : "border-line bg-surface hover:border-amber/60"
+              }`}
+            >
+              <span aria-hidden="true">{avatar}</span>
+            </Link>
+          )}
         </div>
       </div>
 

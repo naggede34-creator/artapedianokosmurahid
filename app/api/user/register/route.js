@@ -3,7 +3,7 @@
 // satu-satunya cara masuk lagi dari perangkat lain (tanpa email/password).
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
-import { loginWajib, periksaNama, buatAkunBaru } from "@/lib/webAuth";
+import { periksaNama, buatAkunBaru } from "@/lib/webAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +12,9 @@ export async function POST(req) {
     const body = await req.json().catch(() => ({}));
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 
-    // Hanya berlaku saat login diwajibkan. Saat mati, akun dibuat otomatis lewat
-    // /api/user/init dan pendaftaran manual tidak dipakai.
-    if (!(await loginWajib())) {
-      return NextResponse.json({ error: "Pendaftaran manual sedang tidak dipakai." }, { status: 403 });
-    }
+    // Pendaftaran dengan nama boleh kapan saja: saat login wajib menyala ini jalur
+    // utamanya, dan saat mati ia dipakai orang yang baru keluar dari akun dan
+    // ingin membuat akun baru dengan kode yang bisa disimpan.
 
     // Bucket yang SAMA dengan pembuatan akun otomatis: dua jalur tidak boleh
     // menggandakan jatah akun baru per koneksi.
