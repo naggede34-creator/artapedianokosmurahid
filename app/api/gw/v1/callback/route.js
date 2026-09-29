@@ -12,7 +12,7 @@
 import { NextResponse } from "next/server";
 import { periksaTagihan } from "@/lib/gateway";
 import { gatewayInvoicesCol } from "@/lib/db";
-import { kabariMerchant } from "@/lib/gatewayNotify";
+import { kabariMerchant, kabariAdmin, gwTagihanDibayarNotif } from "@/lib/gatewayNotify";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +38,24 @@ export async function POST(req) {
   const r = await periksaTagihan(invoiceId);
   if (r.ok && r.berubah && r.invoice.status === "paid") {
     kabariMerchant(sebelum.token, r.invoice).catch(() => {});
+    // Admin ikut dikabari DI SINI, bukan hanya di jalur polling.
+    //
+    // Callback inilah yang hampir selalu menang: ia datang beberapa detik
+    // sesudah dibayar, sedangkan polling dari peramban cuma jalan kalau
+    // halamannya masih terbuka. Karena `berubah` hanya benar sekali, jalur
+    // polling tidak akan pernah mengabarkan apa pun sesudah callback lewat —
+    // artinya sebelum ini admin praktis tidak pernah tahu ada tagihan gateway
+    // yang dibayar.
+    kabariAdmin(
+      gwTagihanDibayarNotif({
+        invoiceId: r.invoice.invoiceId,
+        token: sebelum.token,
+        amount: r.invoice.amount,
+        biaya: r.invoice.biaya,
+        diterima: r.invoice.diterima,
+        merchantRef: r.invoice.merchantRef
+      })
+    ).catch(() => {});
   }
   return NextResponse.json({ success: true });
 }

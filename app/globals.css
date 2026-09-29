@@ -415,6 +415,32 @@ input[type="number"] { -moz-appearance: textfield; }
 .btn-3d { transition: transform 0.1s ease, box-shadow 0.1s ease; }
 .btn-3d:active { transform: translate(4px, 4px); box-shadow: none; }
 
+/* ── Tekan tanpa menggeser kotak tombolnya ──────────────────────────────────
+ *
+ * `.press:active` dan `.btn-3d:active` menggeser tombolnya sendiri 4px. Pada
+ * sebagian tata letak, geseran itu jatuh TEPAT di antara tekan dan lepas:
+ * lepasnya jadi mendarat di elemen induk, dan peramban tidak pernah
+ * memunculkan peristiwa `click` sama sekali. Tombolnya terlihat hidup, animasi
+ * tekannya jalan, tapi tidak ada apa pun yang terjadi saat ditekan — dengan
+ * tetikus maupun sentuhan. Yang masih jalan cuma tombol Enter dari papan
+ * tombol, dan tidak ada yang menekan Enter di ponsel.
+ *
+ * `.tekan-isi` memberi efek tekan yang sama, tapi yang bergeser isinya. Kotak
+ * yang dipakai peramban untuk menentukan sasaran tidak pernah pindah, jadi
+ * tekan dan lepas selalu mendarat di tombol yang sama.
+ *
+ * Dipakai untuk tombol yang aksinya tidak boleh hilang. */
+.tekan-isi {
+  transition: box-shadow 0.1s ease;
+  transform: none !important;
+}
+.tekan-isi > .tekan-geser {
+  display: block;
+  transition: transform 0.1s ease;
+}
+.tekan-isi:active { box-shadow: none !important; }
+.tekan-isi:active > .tekan-geser { transform: translate(4px, 4px); }
+
 /* glass — navbar bawah & sidebar */
 .glass {
   background: rgb(var(--c-surface) / 0.94);

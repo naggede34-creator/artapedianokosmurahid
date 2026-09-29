@@ -34,17 +34,27 @@ export default function GiveawayPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  async function ikut(giveawayId) {
+  // Satu fungsi untuk dua arah, tapi arahnya dikirim eksplisit dari tombolnya
+  // masing-masing — bukan ditebak dari keadaan yang ada di layar. Keadaan di
+  // layar bisa basi (peserta lain baru mendaftar, giveaway baru ditutup), dan
+  // yang basi jangan sampai menentukan apa yang terjadi pada tiket orang.
+  async function kirim(giveawayId, aksi) {
     setBusy(giveawayId); setMsg(""); setErr("");
     try {
       const res = await fetch("/api/giveaway", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, giveawayId })
+        body: JSON.stringify({ token, giveawayId, aksi })
       });
       const d = await res.json();
-      if (!res.ok) { setErr(d.error || "Gagal ikut."); if (d.sudahIkut) load(); return; }
-      setMsg(d.pesan || "Berhasil ikut!");
+      if (!res.ok) {
+        setErr(d.error || (aksi === "batal" ? "Gagal membatalkan." : "Gagal ikut."));
+        // Pesan galatnya sendiri sudah menandakan layarnya tidak sesuai
+        // kenyataan, jadi dimuat ulang apa pun galatnya.
+        load();
+        return;
+      }
+      setMsg(d.pesan || "Berhasil!");
       load();
     } catch {
       setErr("Jaringan bermasalah, coba lagi.");
@@ -138,12 +148,34 @@ export default function GiveawayPage() {
                   {!token ? (
                     <p className="text-xs font-bold text-muted">Buka web dari akunmu dulu untuk bisa ikut.</p>
                   ) : ev.sudahIkut ? (
-                    <div className="rounded-xl border-2 border-success/40 bg-success-soft px-4 py-3 text-center text-sm font-black text-success">
-                      ✅ Kamu sudah ikut — tunggu pengumumannya
+                    <div className="space-y-2.5">
+                      <div className="rounded-xl border-2 border-success/40 bg-success-soft px-4 py-3 text-center text-sm font-black text-success">
+                        ✅ Kamu sudah ikut — tunggu pengumumannya
+                      </div>
+                      {/* Tombol mundur hanya selama pendaftarannya masih buka.
+                          Sesudah ditutup, daftar pesertanya adalah dasar
+                          undian; menariknya di situ sama saja mengubah hasil
+                          yang sudah ditunggu orang. */}
+                      {/* tekan-isi, bukan press: yang bergeser saat ditekan
+                          adalah isinya, bukan kotak tombolnya. Dengan `press`,
+                          geseran 4px itu jatuh di antara tekan dan lepas pada
+                          tata letak ini, dan tombolnya jadi tidak bisa ditekan
+                          sama sekali. */}
+                      {ev.fase === "buka" && (
+                        <button
+                          onClick={() => kirim(ev.giveawayId, "batal")}
+                          disabled={busy === ev.giveawayId}
+                          className="tekan-isi w-full rounded-xl border-2 border-rose/40 bg-rose-soft py-2.5 text-sm font-black text-rose disabled:opacity-50"
+                        >
+                          <span className="tekan-geser">
+                            {busy === ev.giveawayId ? "Membatalkan…" : "❌ TIDAK IKUT"}
+                          </span>
+                        </button>
+                      )}
                     </div>
                   ) : bisaIkut ? (
                     <button
-                      onClick={() => ikut(ev.giveawayId)}
+                      onClick={() => kirim(ev.giveawayId, "ikut")}
                       disabled={busy === ev.giveawayId}
                       className="btn-3d w-full rounded-xl bg-amber py-3 text-sm font-black text-white disabled:opacity-50"
                     >

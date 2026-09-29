@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, warrantyClaimsCol } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
+import { umumkan } from "@/lib/notifyHub";
+import { warrantyClaimedNotif } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +67,22 @@ export async function POST(req) {
       createdAt: new Date(),
       resolvedAt: null
     });
+
+    // Admin saja, tidak pernah ke channel: isinya nomor yang dibeli dan
+    // keluhan orangnya. Tidak di-await — klaimnya sudah tersimpan, dan
+    // menunggu Telegram cuma membuat halaman klaim terasa menggantung.
+    umumkan({
+      admin: warrantyClaimedNotif({
+        orderId,
+        serviceName: order.serviceName,
+        countryName: order.countryName,
+        phoneNumber: order.phoneNumber,
+        amount: Number(purchasePrice),
+        token,
+        description: description.trim(),
+        hasProof: !!screenshotData
+      })
+    }).catch(() => {});
 
     return NextResponse.json({ ok: true });
   } catch {
