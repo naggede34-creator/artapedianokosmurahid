@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useUser } from "@/app/providers";
+import PanelKreator from "@/components/PanelKreator";
 
 const REFERRAL_TIERS = [
   { name: "Starter", min: 0, max: 4, icon: "🌱", color: "border-ochre/40 bg-surface text-ink", badge: "text-muted", benefit: "Bonus standar per referral" },
@@ -190,6 +191,8 @@ export default function ReferralPage() {
           })}
         </div>
       </div>
+
+      <PanelKreator token={token} />
 
       <Link
         href="/leaderboard"
