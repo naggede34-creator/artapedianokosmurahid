@@ -12,6 +12,7 @@ import { NextResponse } from "next/server";
 import { getServices } from "@/lib/rumahotp";
 import { usersCol, depositsCol } from "@/lib/db";
 import { runCleanup } from "@/lib/cleanup";
+import { sapuHoldMacet } from "@/lib/saldoHold";
 import { sendMonitorLog, cronReportLog } from "@/lib/monitor";
 
 export const dynamic = "force-dynamic";
@@ -87,14 +88,27 @@ export async function GET(req) {
   const health = await Promise.all([checkMongo(), checkRumahOtp(), checkPakasir(), checkPendingDeposits()]);
   const cleanup = await runCleanup();
 
+  // Saldo yang tertahan tapi pesanannya tidak pernah jadi.
+  //
+  // Ini satu-satunya yang bisa menangani fungsi yang MATI di tengah jalan:
+  // saat itu terjadi, kode pengembalian di dalam permintaannya tidak pernah
+  // dijalankan, jadi tidak ada tempat lain yang bisa menutup kasus itu.
+  const hold = await sapuHoldMacet({ batas: 200 });
+  if (hold.dikembalikan > 0) {
+    console.warn(
+      `[cron/cleanup] ${hold.dikembalikan} hold macet dikembalikan, total Rp${hold.total.toLocaleString("id-ID")}`
+    );
+  }
+
   // Laporan hanya dikirim kalau ada yang perlu diketahui, supaya thread monitoring
   // tidak dibanjiri pesan identik setiap 5 menit.
   const noteworthy =
     health.some((h) => !h.ok || h.error) ||
     cleanup.errors.length > 0 ||
     cleanup.otpRefunded + cleanup.depositsCredited + cleanup.depositsDeleted + cleanup.broadcastsDeleted > 0 ||
+    hold.dikembalikan > 0 ||
     new URL(req.url).searchParams.get("report") === "1";
   if (noteworthy) sendMonitorLog(cronReportLog({ health, cleanup }));
 
-  return NextResponse.json({ ok: true, health, cleanup });
+  return NextResponse.json({ ok: true, health, cleanup, hold });
 }
