@@ -5,7 +5,7 @@
 // orang lain, jeda ini satu-satunya kesempatan menangkapnya sebelum uangnya
 // pergi dan tidak bisa ditarik kembali.
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { gatewayWithdrawalsCol, gatewayAccountsCol, usersCol } from "@/lib/db";
 import { tolakPenarikan, selesaikanPenarikan } from "@/lib/gateway";
 import { notifyBotUser } from "@/lib/shopBot";
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 const rp = (n) => `Rp${Number(n || 0).toLocaleString("id-ID")}`;
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const status = new URL(req.url).searchParams.get("status") || "pending";
   const col = await gatewayWithdrawalsCol();
@@ -61,7 +61,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const { wdId, aksi, alasan, catatan, token, beku } = await req.json().catch(() => ({}));
 

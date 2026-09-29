@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { vouchersCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const { code } = await req.json();
     if (!code) return NextResponse.json({ error: "Kode voucher wajib diisi." }, { status: 400 });

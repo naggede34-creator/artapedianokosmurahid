@@ -1,6 +1,6 @@
 // Giveaway untuk admin: buat, undi, batalkan.
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { daftarEvent, buatEvent, batalkanEvent } from "@/lib/giveaway";
 import { undiDanUmumkan, undiJatuhTempoDanUmumkan } from "@/lib/giveawayUndi";
 import { umumkan } from "@/lib/notifyHub";
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     // Event yang waktunya habis diundi dulu, supaya dasbor tidak menampilkan
     // "menunggu undian" untuk sesuatu yang seharusnya sudah selesai.
@@ -23,7 +23,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   let body;
   try {
     body = await req.json();

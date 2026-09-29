@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { usersCol, userNotificationsCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { sendTelegramNotif } from "@/lib/telegram";
 import { sendMonitorLog } from "@/lib/monitor";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const { token, suspend, reason } = await req.json().catch(() => ({}));
     if (!token) return NextResponse.json({ error: "Token wajib diisi." }, { status: 400 });

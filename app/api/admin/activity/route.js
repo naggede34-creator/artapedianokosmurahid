@@ -1,7 +1,7 @@
 // GET /api/admin/activity?token=&type=all|otp|deposit|balance&from=&to=&page=1
 import { NextResponse } from "next/server";
 import { otpOrdersCol, depositsCol, balanceLogsCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ function toWIB(date) {
 }
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token")?.trim() || "";

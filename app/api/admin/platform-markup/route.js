@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
 import { platformMarkupCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const col = await platformMarkupCol();
   const items = await col.find({}).toArray();
   return NextResponse.json({ items: items.map((i) => ({ id: i._id.toString(), platform: i.platform, markupPercent: i.markupPercent, active: i.active })) });
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
   const { action, id, platform, markupPercent } = body;
 

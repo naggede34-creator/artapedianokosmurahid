@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { diagnoseWarungNokos, warungNokosConfigured } from "@/lib/warungnokos";
 import { diagnoseDibanana } from "@/lib/dibanana";
 
@@ -8,15 +8,15 @@ export const dynamic = "force-dynamic";
 // Diagnosa koneksi provider dari sisi server. Tidak pernah membocorkan API key —
 // hanya melaporkan berhasil/gagal, saldo, dan penyebabnya.
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const provider = new URL(req.url).searchParams.get("provider") || "warungnokos";
   try {
     if (provider === "dibanana") return NextResponse.json(await diagnoseDibanana());
-    if (!warungNokosConfigured()) {
+    if (!(await warungNokosConfigured())) {
       return NextResponse.json({
         configured: false,
-        verdict: "WARUNGNOKOS_APIKEY belum diisi di environment variables Vercel."
+        verdict: "WARUNGNOKOS_APIKEY belum diisi (Dasbor Admin → Konfigurasi, atau Environment Variables Vercel)"
       });
     }
     const d = await diagnoseWarungNokos();

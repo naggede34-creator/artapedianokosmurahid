@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { ticketsCol } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const col = await ticketsCol();
   const tickets = await col.find({}).sort({ updatedAt: -1 }).toArray();
   const items = tickets.map((t) => ({
@@ -22,7 +22,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const body = await req.json().catch(() => ({}));
   const { ticketId, action, message } = body;
   if (!ticketId || !action) return NextResponse.json({ error: "ticketId dan action wajib." }, { status: 400 });

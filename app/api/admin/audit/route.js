@@ -8,7 +8,7 @@
 //
 // Hanya MEMBACA. Tidak ada satu pun saldo yang diubah dari sini.
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { balanceLogsCol, usersCol, depositsCol } from "@/lib/db";
 import { ensureIndexes } from "@/lib/indexes";
 
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const tokenDicari = searchParams.get("token");

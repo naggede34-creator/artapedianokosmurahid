@@ -11,7 +11,7 @@
 // ada sengketa, isinya masih bisa ditelusuri admin.
 import { NextResponse } from "next/server";
 import { chatMessagesCol, chatGroupSettingsCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,7 @@ export async function POST(req) {
     const msg = await col.findOne({ msgId });
     if (!msg) return NextResponse.json({ error: "Pesan tidak ditemukan." }, { status: 404 });
 
-    const admin = isAdminRequest(req);
+    const admin = await adminSah(req);
 
     // ── Sembunyikan untuk diri sendiri ─────────────────────────────────
     if (scope === "me") {

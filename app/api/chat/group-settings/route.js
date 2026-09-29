@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { chatGroupSettingsCol, chatMessagesCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { CHAT_DEFAULTS, CHAT_SETTINGS_ID, getChatSettings, chatClosedMessage } from "@/lib/chatSettings";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ const DEFAULTS = { _id: CHAT_SETTINGS_ID, ...CHAT_DEFAULTS };
 export async function GET(req) {
   try {
     const settings = await getChatSettings();
-    const isAdmin = isAdminRequest(req);
+    const isAdmin = await adminSah(req);
     return NextResponse.json({
       name: settings.name,
       desc: settings.desc,
@@ -27,7 +27,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const body = await req.json().catch(() => ({}));
     const { action, name, desc, photo, closed, closedMsg } = body;

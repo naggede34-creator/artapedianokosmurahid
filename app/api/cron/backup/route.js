@@ -90,15 +90,15 @@ export async function GET(req) {
     }
   }
 
-  const { token, asal } = tokenPengirim(settings);
+  const { token, asal } = await tokenPengirim(settings);
   if (!token) {
     return NextResponse.json(
-      { error: "Tidak ada token bot. Isi TELEGRAM_BOT_TOKEN atau SHOP_BOT_TOKEN di environment." },
+      { error: "Tidak ada token bot. Isi TELEGRAM_BOT_TOKEN atau SHOP_BOT_TOKEN di Dasbor Admin → Konfigurasi (atau Environment Variables Vercel)." },
       { status: 400 }
     );
   }
 
-  const { sah, ditolak } = tujuanBackup();
+  const { sah, ditolak } = await tujuanBackup();
   if (!sah.length) {
     return NextResponse.json(
       {

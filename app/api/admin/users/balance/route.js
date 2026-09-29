@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { usersCol, adminBalanceLogsCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { sendTelegramNotif, adminBalanceAdjustNotif } from "@/lib/telegram";
 import { logBalance } from "@/lib/ledger";
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const { token, amount, action, note } = await req.json();
     const nominal = Math.floor(Math.abs(Number(amount || 0)));

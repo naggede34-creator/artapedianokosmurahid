@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { chatMessagesCol, chatGroupSettingsCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const { msgId, unpin } = await req.json().catch(() => ({}));
     if (!msgId) return NextResponse.json({ error: "msgId diperlukan." }, { status: 400 });

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { broadcastsCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const { id } = await req.json().catch(() => ({}));
     if (!id || !ObjectId.isValid(String(id))) return NextResponse.json({ error: "ID broadcast wajib diisi." }, { status: 400 });

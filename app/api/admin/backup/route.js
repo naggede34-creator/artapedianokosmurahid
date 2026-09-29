@@ -5,7 +5,7 @@
 // pun yang membuka DevTools di dasbor admin bisa memicu seluruh cron situs ini
 // dari luar, termasuk yang menyentuh saldo.
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { getSettings, updateSettings } from "@/lib/settings";
 import { tokenPengirim, tujuanBackup } from "@/lib/kirimBerkas";
 
@@ -13,11 +13,11 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const settings = await getSettings();
-    const { token, asal } = tokenPengirim(settings);
-    const { sah, ditolak } = tujuanBackup();
+    const { token, asal } = await tokenPengirim(settings);
+    const { sah, ditolak } = await tujuanBackup();
     return NextResponse.json({
       aktif: settings.autoBackup !== false,
       jarakHari: settings.autoBackupHari === 2 ? 2 : 1,
@@ -38,7 +38,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   let body;
   try {

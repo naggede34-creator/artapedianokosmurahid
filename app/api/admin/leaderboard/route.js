@@ -1,7 +1,7 @@
 // Panel admin untuk Pembeli Terbanyak: lihat peringkat, cairkan hadiah minggu
 // lalu sekarang juga, atau kirim hadiah khusus ke satu peringkat kapan saja.
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { getSettings } from "@/lib/settings";
 import { weekRange, weekKey, topBuyers, prizesFrom, settleWeek, sendPrizeToRank } from "@/lib/leaderboard";
 import { weeklyBuyerLeaderboardCol } from "@/lib/db";
@@ -9,7 +9,7 @@ import { weeklyBuyerLeaderboardCol } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const offset = Number(new URL(req.url).searchParams.get("offset")) || 0;
   const settings = await getSettings();
@@ -33,7 +33,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
 

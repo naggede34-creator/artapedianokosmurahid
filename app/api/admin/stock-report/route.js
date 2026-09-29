@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { getSettings, serverDisplay } from "@/lib/settings";
 import { buildStockReport, DEFAULT_REPORT_SERVICES } from "@/lib/stockReport";
 import { stockReportNotif } from "@/lib/telegram";
 import { umumkan } from "@/lib/notifyHub";
+import { cfg, sumberCfg } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -19,19 +20,19 @@ function parseServices(input) {
 
 // Preview: admin bisa lihat isi laporan sebelum mengirim ke channel.
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const services = parseServices(new URL(req.url).searchParams.get("services"));
     const settings = await getSettings();
     const groups = await buildStockReport(settings, services);
-    const channel = settings.telegramChannelId || process.env.TELEGRAM_CHANNEL_ID || "";
+    const channel = await cfg("TELEGRAM_CHANNEL_ID");
     return NextResponse.json({
       services,
       groups,
       // Ditampilkan di panel admin supaya ketahuan kalau Channel ID belum tersimpan.
       channel,
-      channelSource: settings.telegramChannelId ? "pengaturan" : channel ? "env" : "kosong",
-      botConfigured: Boolean(settings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN),
+      channelSource: channel ? await sumberCfg("TELEGRAM_CHANNEL_ID") : "kosong",
+      botConfigured: Boolean(await cfg("TELEGRAM_BOT_TOKEN")),
       text: stockReportNotif(groups, { serverName: (key) => serverDisplay(settings, key).name })
     });
   } catch (err) {
@@ -41,13 +42,13 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const body = await req.json().catch(() => ({}));
     const services = parseServices(body.services);
     const settings = await getSettings();
-    const channel = settings.telegramChannelId || process.env.TELEGRAM_CHANNEL_ID || "";
-    const botToken = settings.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN || "";
+    const channel = await cfg("TELEGRAM_CHANNEL_ID");
+    const botToken = await cfg("TELEGRAM_BOT_TOKEN");
     if (!channel) {
       return NextResponse.json(
         {
@@ -59,7 +60,7 @@ export async function POST(req) {
     }
     if (!botToken) {
       return NextResponse.json(
-        { error: "Bot token Telegram belum diisi. Isi dulu di Pengaturan Situs." },
+        { error: "Bot token Telegram belum diisi. Isi dulu di Dasbor Admin → Konfigurasi." },
         { status: 400 }
       );
     }

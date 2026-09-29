@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { chatMessagesCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { getChatSettings, chatClosedMessage } from "@/lib/chatSettings";
 
 export const dynamic = "force-dynamic";
@@ -84,7 +84,7 @@ export async function POST(req) {
     // halamannya; permintaan langsung ke endpoint ini tetap lolos, dan grup
     // yang "ditutup" masih bisa dimasuki pesan.
     const chat = await getChatSettings();
-    if (chat.closed && !isAdminRequest(req)) {
+    if (chat.closed && !await adminSah(req)) {
       return NextResponse.json({ error: chatClosedMessage(chat), closed: true }, { status: 403 });
     }
     if (!displayName) return NextResponse.json({ error: "Nama tampilan diperlukan." }, { status: 400 });

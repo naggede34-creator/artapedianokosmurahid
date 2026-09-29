@@ -12,20 +12,21 @@ export async function POST(req) {
       return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi dalam 5 menit." }, { status: 429 });
     }
 
-    if (!code || !adminCodeMatches(code)) {
+    if (!code || !(await adminCodeMatches(code))) {
       sendMonitorLog(adminLoginLog({ success: false, ip }));
       return NextResponse.json({ error: "Kode admin salah." }, { status: 401 });
     }
 
     sendMonitorLog(adminLoginLog({ success: true, ip }));
 
-    if (adminCodeIsDefault()) {
+    const masihBawaan = await adminCodeIsDefault();
+    if (masihBawaan) {
       // Kode bawaan tertulis di repositori, jadi ia bukan rahasia siapa pun.
-      console.warn("[admin] ADMIN_CODE belum diisi — panel admin memakai kode bawaan yang ada di kode sumber.");
+      console.warn("[admin] Kode admin belum diisi (web maupun Vercel) — panel admin memakai kode bawaan yang ada di kode sumber.");
     }
 
-    const res = NextResponse.json({ ok: true, defaultCode: adminCodeIsDefault() });
-    res.cookies.set(ADMIN_COOKIE, createAdminSession(), adminCookieOptions());
+    const res = NextResponse.json({ ok: true, defaultCode: masihBawaan });
+    res.cookies.set(ADMIN_COOKIE, await createAdminSession(), adminCookieOptions());
     return res;
   } catch (err) {
     console.error(err);

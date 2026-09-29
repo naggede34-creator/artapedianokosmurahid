@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { vouchersCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { generateVoucherCode } from "@/lib/voucherCode";
 import { voucherCreatedNotif } from "@/lib/telegram";
 import { umumkan } from "@/lib/notifyHub";
@@ -8,7 +8,7 @@ import { umumkan } from "@/lib/notifyHub";
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const col = await vouchersCol();
   const list = await col.find({}).sort({ createdAt: -1 }).limit(100).toArray();
   return NextResponse.json({
@@ -24,7 +24,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const body = await req.json().catch(() => ({}));
     const amount = Math.abs(Number(body.amount || 0));

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { warrantyClaimsCol, usersCol, balanceLogsCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { ObjectId } from "mongodb";
 import { warrantyResolvedNotif, warrantyPublicNotif } from "@/lib/telegram";
 import { umumkan } from "@/lib/notifyHub";
@@ -8,7 +8,7 @@ import { umumkan } from "@/lib/notifyHub";
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) {
+  if (!await adminSah(req)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
@@ -35,7 +35,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) {
+  if (!await adminSah(req)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 

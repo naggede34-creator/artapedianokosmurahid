@@ -13,6 +13,7 @@ import {
   diagnoseShopWebhook
 } from "@/lib/botWebhook";
 import { shopBotConfigured, shopBotOwners } from "@/lib/shopBot";
+import { cfg } from "@/lib/config";
 
 // Set URL ini sebagai webhook bot di BotFather / API Telegram:
 // https://domainkamu.vercel.app/api/telegram/webhook
@@ -25,7 +26,7 @@ export async function POST(req) {
   try {
     // Kalau TELEGRAM_WEBHOOK_SECRET diisi, Telegram wajib mengirim header ini
     // supaya orang lain tidak bisa memanggil endpoint ini dari luar dan pura-pura jadi bot.
-    const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
+    const secret = (await cfg("TELEGRAM_WEBHOOK_SECRET"));
     if (secret) {
       const header = req.headers.get("x-telegram-bot-api-secret-token");
       if (header !== secret) {
@@ -42,7 +43,7 @@ export async function POST(req) {
     const chatId = message.chat.id;
     const text = message.text.trim();
 
-    if (!isOwner(chatId)) {
+    if (!(await isOwner(chatId))) {
       // Diam-diam diabaikan (tidak dibalas) supaya bot tidak "bocor" ke orang selain owner.
       return NextResponse.json({ ok: true });
     }
@@ -67,8 +68,8 @@ export async function POST(req) {
     } else if (cmd === "/statistik") {
       await handleStatistik(chatId, users);
     } else if (cmd === "/statuswarungnokos") {
-      if (!warungNokosConfigured()) {
-        await sendMessage(chatId, "WARUNGNOKOS_APIKEY belum diisi di environment.");
+      if (!(await warungNokosConfigured())) {
+        await sendMessage(chatId, "WARUNGNOKOS_APIKEY belum diisi (Dasbor Admin → Konfigurasi, atau Environment Variables Vercel)");
       } else {
         try {
           const d = await diagnoseWarungNokos();
@@ -259,13 +260,13 @@ async function handleStatistik(chatId, users) {
 function botBelumDiisi(chatId) {
   return sendMessage(
     chatId,
-    "SHOP_BOT_TOKEN belum diisi di Environment Variables Vercel.\n" +
-      "Isi dulu dengan token bot toko dari @BotFather, redeploy, lalu ulangi perintah ini."
+    "SHOP_BOT_TOKEN belum diisi (Dasbor Admin → Konfigurasi, atau Environment Variables Vercel)\n" +
+      "Isi dulu dengan token bot toko dari @BotFather (di tab Konfigurasi dasbor admin langsung berlaku; di Vercel perlu redeploy), lalu ulangi perintah ini."
   );
 }
 
-function catatanOwner() {
-  return shopBotOwners().length
+async function catatanOwner() {
+  return (await shopBotOwners()).length
     ? ""
     : "\n\n\u26A0\uFE0F SHOP_BOT_OWNER_IDS masih kosong — /admin dan /broadcast di bot toko akan ditolak.";
 }
@@ -291,7 +292,7 @@ async function handleLinkWebhook(chatId, origin) {
 }
 
 async function handlePasangWebhook(chatId, origin) {
-  if (!shopBotConfigured()) return botBelumDiisi(chatId);
+  if (!(await shopBotConfigured())) return botBelumDiisi(chatId);
 
   await sendMessage(chatId, "\u23F3 Memasang webhook bot toko...");
 
@@ -328,12 +329,12 @@ async function handlePasangWebhook(chatId, origin) {
       (r.terpasang
         ? `\nSekarang buka @${esc(id.username || "botmu")} lalu kirim /start.`
         : `\nTelegram menjawab "${esc(r.telegram)}" tapi alamatnya belum terbaca. Jalankan /diagnosabot.`) +
-      catatanOwner()
+      (await catatanOwner())
   );
 }
 
 async function handleCekWebhook(chatId, origin) {
-  if (!shopBotConfigured()) return botBelumDiisi(chatId);
+  if (!(await shopBotConfigured())) return botBelumDiisi(chatId);
 
   const id = await shopBotIdentity();
   const r = await shopWebhookInfo(origin);
@@ -348,12 +349,12 @@ async function handleCekWebhook(chatId, origin) {
       `Update menunggu: ${r.pending}\n` +
       (r.lastError ? `Error terakhir: <code>${esc(r.lastError)}</code>\n` : "") +
       (r.terpasang ? "" : `\nKirim /pasangwebhook untuk memasang.`) +
-      catatanOwner()
+      (await catatanOwner())
   );
 }
 
 async function handleLepasWebhook(chatId) {
-  if (!shopBotConfigured()) return botBelumDiisi(chatId);
+  if (!(await shopBotConfigured())) return botBelumDiisi(chatId);
   const r = await deleteShopWebhook();
   await sendMessage(
     chatId,
@@ -364,7 +365,7 @@ async function handleLepasWebhook(chatId) {
 }
 
 async function handleDiagnosaBot(chatId, origin) {
-  if (!shopBotConfigured()) return botBelumDiisi(chatId);
+  if (!(await shopBotConfigured())) return botBelumDiisi(chatId);
 
   await sendMessage(chatId, "\u23F3 Memeriksa webhook bot toko (butuh beberapa detik)...");
 

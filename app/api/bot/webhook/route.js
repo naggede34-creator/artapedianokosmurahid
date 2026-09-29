@@ -17,8 +17,8 @@ export const maxDuration = 60;
 // Memakai webhookSecret() yang sama dengan pemasang webhook: kalau secretnya
 // tidak sah, webhook dipasang TANPA secret, jadi di sini pun tidak boleh
 // menuntutnya — kalau berbeda, semua update akan ditolak 401 dan menumpuk.
-function verified(req) {
-  const expected = webhookSecret();
+async function verified(req) {
+  const expected = (await webhookSecret());
   if (!expected) return true;
   return req.headers.get("x-telegram-bot-api-secret-token") === expected;
 }
@@ -29,14 +29,14 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     endpoint: "webhook bot toko (bot pertama)",
-    tokenTerpasang: shopBotConfigured(),
+    tokenTerpasang: (await shopBotConfigured()),
     catatan: "Alamat ini menerima update dari Telegram lewat POST. Untuk memasangnya, buka /api/bot/setup"
   });
 }
 
 export async function POST(req) {
-  if (!shopBotConfigured()) return NextResponse.json({ ok: true });
-  if (!verified(req)) return NextResponse.json({ ok: false }, { status: 401 });
+  if (!(await shopBotConfigured())) return NextResponse.json({ ok: true });
+  if (!(await verified(req))) return NextResponse.json({ ok: false }, { status: 401 });
 
   let update;
   try {

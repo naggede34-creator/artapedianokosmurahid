@@ -8,7 +8,7 @@
 // Logika pemasangannya sendiri ada di lib/botWebhook.js supaya jalur tombol dan
 // jalur bot owner tidak punya versi masing-masing yang lama-lama berbeda.
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { shopBotConfigured, shopBotOwners, rawWebhookSecret, webhookSecretValid } from "@/lib/shopBot";
 import {
   shopBotIdentity,
@@ -20,8 +20,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-function authorize(req) {
-  if (isAdminRequest(req)) return { ok: true, via: "admin" };
+async function authorize(req) {
+  if (await adminSah(req)) return { ok: true, via: "admin" };
 
   const secret = (process.env.CRON_SECRET || "").trim();
   const given = new URL(req.url).searchParams.get("secret");
@@ -40,26 +40,26 @@ function authorize(req) {
   };
 }
 
-const catatanOwner = () =>
-  shopBotOwners().length ? null : "SHOP_BOT_OWNER_IDS masih kosong — /admin dan /broadcast tidak akan bisa dipakai.";
+const catatanOwner = async () =>
+  (await shopBotOwners()).length ? null : "SHOP_BOT_OWNER_IDS masih kosong — /admin dan /broadcast tidak akan bisa dipakai.";
 
-const peringatanSecret = () =>
-  rawWebhookSecret().length > 0 && !webhookSecretValid()
+const peringatanSecret = async () =>
+  (await rawWebhookSecret()).length > 0 && !(await webhookSecretValid())
     ? "SHOP_BOT_WEBHOOK_SECRET berisi karakter yang tidak diterima Telegram (hanya huruf, angka, _ dan -). Selama begitu, secretnya diabaikan dan webhook dipasang tanpa secret. Bot tetap jalan."
     : null;
 
 export async function GET(req) {
-  const auth = authorize(req);
+  const auth = await authorize(req);
   if (!auth.ok) return NextResponse.json({ error: auth.error, hint: auth.hint }, { status: 401 });
 
-  if (!shopBotConfigured()) {
+  if (!(await shopBotConfigured())) {
     return NextResponse.json(
       {
         error: "SHOP_BOT_TOKEN belum diisi.",
         langkah: [
-          "Buka Vercel → Settings → Environment Variables",
-          "Tambah SHOP_BOT_TOKEN berisi token dari @BotFather",
-          "Redeploy, lalu buka halaman ini lagi"
+          "Buka Dasbor Admin → tab Konfigurasi → isi SHOP_BOT_TOKEN dengan token dari @BotFather (langsung berlaku), ATAU",
+          "Vercel → Settings → Environment Variables → tambah SHOP_BOT_TOKEN, lalu redeploy",
+          "Kemudian buka halaman ini lagi"
         ]
       },
       { status: 400 }
@@ -140,10 +140,10 @@ export async function GET(req) {
       lastError: r.lastError,
       lastErrorAt: r.lastErrorAt,
       ownerTerdaftar: r.owners,
-      peringatanSecret: peringatanSecret(),
+      peringatanSecret: (await peringatanSecret()),
       // Kesalahan paling sering: owner id belum diisi, jadi /admin & /broadcast
       // ditolak padahal botnya sendiri sudah jalan.
-      catatan: catatanOwner()
+      catatan: (await catatanOwner())
     });
   }
 
@@ -193,9 +193,9 @@ export async function GET(req) {
     saran,
     pendingUpdates: r.pending,
     lastError: r.lastError,
-    ownerTerdaftar: shopBotOwners(),
-    catatan: catatanOwner(),
-    peringatanSecret: peringatanSecret(),
+    ownerTerdaftar: (await shopBotOwners()),
+    catatan: (await catatanOwner()),
+    peringatanSecret: (await peringatanSecret()),
     telegram: r.telegram,
     langkahSelanjutnya: `Buka Telegram, cari @${bot.username}, kirim /start`
   });

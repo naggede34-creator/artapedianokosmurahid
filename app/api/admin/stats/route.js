@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, depositsCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,7 @@ function dayKey(d) {
 }
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const days = 7;
     const todayKey = dayKey(new Date());

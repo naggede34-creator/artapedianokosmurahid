@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { jobsCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { sendTelegramNotif, jobCreatedNotif } from "@/lib/telegram";
 import { ObjectId } from "mongodb";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const col = await jobsCol();
     const items = await col.find({}).sort({ createdAt: -1 }).toArray();
@@ -18,7 +18,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const body = await req.json().catch(() => ({}));
     const { action } = body;

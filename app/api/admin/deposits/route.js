@@ -6,7 +6,7 @@
 // mengkreditkan transaksi yang sebetulnya belum dibayar.
 import { NextResponse } from "next/server";
 import { depositsCol, usersCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { creditDeposit } from "@/lib/depositService";
 import { MANUAL_DEPOSIT_KEY } from "@/lib/paymentProviders";
 import { sendTelegramNotif, manualDepositRejectedNotif } from "@/lib/telegram";
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 // Daftar deposit manual. status=review (bawaan) yang perlu dikerjakan admin;
 // status=all untuk menelusuri riwayatnya.
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status") || "review";
@@ -56,7 +56,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const { action, orderId, reason } = await req.json().catch(() => ({}));
   if (!orderId) return NextResponse.json({ error: "orderId wajib." }, { status: 400 });

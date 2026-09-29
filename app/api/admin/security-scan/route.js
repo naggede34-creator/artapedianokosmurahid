@@ -2,7 +2,7 @@
 // Deteksi spam order, deposit massal, saldo anomali, penyalahgunaan garansi, dll.
 import { NextResponse } from "next/server";
 import { usersCol, otpOrdersCol, depositsCol, userNotificationsCol, warrantyClaimsCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { sendTelegramNotif } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ function maskToken(token = "") {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const now = new Date();
   const users       = await usersCol();

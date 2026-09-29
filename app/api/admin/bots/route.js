@@ -5,10 +5,11 @@
 // mengambil alih botnya. Karena itu rute ini TIDAK PERNAH mengirim token asli
 // ke peramban — yang keluar hanya versi tersamarnya.
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { getSettings } from "@/lib/settings";
 import { daftarBot, tambahBot, hapusBot, setAktif, ambilBot, pasangWebhook, botsUpdateWebhook } from "@/lib/bots";
 import { calonBase } from "@/lib/webhookBase";
+import { cfg } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export const dynamic = "force-dynamic";
 // mengirim seluruh percakapan pembeli ke alamat orang lain.
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const settings = await getSettings();
     const calon = calonBase(settings);
@@ -37,8 +38,8 @@ export async function GET(req) {
       // botnya hilang.
       botPertama: {
         dariEnv: true,
-        terpasang: !!(process.env.SHOP_BOT_TOKEN || "").trim(),
-        catatan: "Bot pertama diatur lewat SHOP_BOT_TOKEN di environment, bukan dari sini."
+        terpasang: !!((await cfg("SHOP_BOT_TOKEN")) || "").trim(),
+        catatan: "Bot pertama diatur lewat SHOP_BOT_TOKEN — isi di tab Konfigurasi atau di Vercel, bukan dari sini."
       },
       items: await daftarBot()
     });
@@ -49,7 +50,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   let body;
   try {

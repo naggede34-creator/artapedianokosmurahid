@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { bannersCol } from "@/lib/db";
 import { ObjectId } from "mongodb";
 
@@ -19,14 +19,14 @@ function bersihkanGambar(value) {
 const pilihPlacement = (p) => (PLACEMENTS.includes(p) ? p : "homepage");
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const col = await bannersCol();
   const items = await col.find({}).sort({ sortOrder: 1, createdAt: -1 }).toArray();
   return NextResponse.json({ items: items.map((b) => ({ ...b, id: b._id.toString(), _id: undefined })) });
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const body = await req.json().catch(() => ({}));
   const col = await bannersCol();
   const now = new Date();

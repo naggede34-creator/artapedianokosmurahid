@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { announcementsCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { announcementCreatedNotif } from "@/lib/telegram";
 import { umumkan } from "@/lib/notifyHub";
 
@@ -13,7 +13,7 @@ const CATEGORY_ICON = {
 };
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const col = await announcementsCol();
   const list = await col.find({}).sort({ createdAt: -1 }).limit(100).toArray();
   return NextResponse.json({
@@ -30,7 +30,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const body = await req.json().catch(() => ({}));
     const title = String(body.title || "").trim().slice(0, 120);

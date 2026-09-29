@@ -6,6 +6,7 @@ import { createDibananaOrder, getDibananaPrices } from "@/lib/dibanana";
 import { otpPurchaseNotif, otpAutoRefundNotif, otpRefundPublicNotif } from "@/lib/telegram";
 import { umumkan } from "@/lib/notifyHub";
 import { logBalance } from "@/lib/ledger";
+import { cfg } from "@/lib/config";
 
 // Dipakai saat nomor yang dibeli kedaluwarsa tanpa kode OTP masuk. User bisa minta
 // nomor pengganti tanpa membayar lagi (memakai saldo yang sudah terpotong di order lama).
@@ -93,7 +94,7 @@ export async function POST(req) {
           };
         }
       } else {
-        const result = await createOrder(process.env.RUMAHOTP_APIKEY, {
+        const result = await createOrder((await cfg("RUMAHOTP_APIKEY")), {
           numberId: oldOrder.numberId,
           providerId: oldOrder.providerId,
           operatorId: oldOrder.operatorId

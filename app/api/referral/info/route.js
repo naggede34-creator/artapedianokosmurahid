@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
+import { cfg } from "@/lib/config";
 
 export async function GET(req) {
   try {
@@ -15,7 +16,7 @@ export async function GET(req) {
       token: user.token,
       referralCount: user.referralCount || 0,
       referralEarnings: user.referralEarnings || 0,
-      bonusPercent: Number(process.env.REFERRAL_BONUS_PERCENT || 0)
+      bonusPercent: Number((await cfg("REFERRAL_BONUS_PERCENT")) || 0)
     });
   } catch (err) {
     console.error(err);

@@ -25,8 +25,8 @@ export async function GET() {
     const settings = await getSettings();
     const { csUsername, maintenance, maintenanceMsg, maintenanceTitle, maintenanceButtonLabel, maintenanceButtonUrl, depositProviders, depositFeePercent, heroChars } = settings;
     const providers = { ...depositProviders };
-    if (!warungNokosConfigured()) providers.warungnokos = false;
-    if (rumahOtpConfigured()) {
+    if (!(await warungNokosConfigured())) providers.warungnokos = false;
+    if ((await rumahOtpConfigured())) {
       if (providers.rumahotp === undefined || providers.rumahotp === null) providers.rumahotp = true;
     } else {
       providers.rumahotp = false;
@@ -35,7 +35,7 @@ export async function GET() {
     // halaman: kalau cuma disembunyikan, siapa pun masih bisa memanggil
     // /api/deposit/create dengan metode itu dan mendapat error yang
     // membingungkan setelah mengisi nominal.
-    if (!atlanticConfigured()) providers.atlantic = false;
+    if (!(await atlanticConfigured())) providers.atlantic = false;
     if (!manualDepositReady(settings)) providers.manual = false;
 
     // Jam buka TIDAK mematikan providers.manual. Kalau dimatikan, metodenya
@@ -87,9 +87,9 @@ export async function GET() {
     return NextResponse.json({
       maintenance: false,
       depositProviders: {
-        warungnokos: warungNokosConfigured(),
+        warungnokos: (await warungNokosConfigured()),
         pakasir: true,
-        rumahotp: rumahOtpConfigured(),
+        rumahotp: (await rumahOtpConfigured()),
         atlantic: false,
         manual: false
       },

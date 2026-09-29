@@ -1,6 +1,6 @@
 // Admin web: semua bot reseller buatan pengguna + antrean penarikan komisinya.
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { botsCol, usersCol } from "@/lib/db";
 import { samarkanToken, lepasWebhook } from "@/lib/bots";
 import { daftarPenarikan, tolakPenarikan, selesaikanPenarikan } from "@/lib/resellerWd";
@@ -13,7 +13,7 @@ import { calonBase } from "@/lib/webhookBase";
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const status = new URL(req.url).searchParams.get("status") || "pending";
 
   try {
@@ -84,7 +84,7 @@ async function kabariReseller(wd, buatTeks) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   let body;
   try {
     body = await req.json();

@@ -9,7 +9,7 @@
 // berbahaya tapi tetap memakai API key yang sama.
 import { NextResponse } from "next/server";
 import { withdrawalsCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import {
   atlanticConfigured,
   atlanticBankList,
@@ -24,11 +24,11 @@ export const dynamic = "force-dynamic";
 
 const MIN_WITHDRAW = 10_000;
 
-function guard(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  if (!atlanticConfigured()) {
+async function guard(req) {
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!(await atlanticConfigured())) {
     return NextResponse.json(
-      { error: "ATLANTIC_APIKEY belum diisi di environment variables, jadi penarikan belum bisa dipakai." },
+      { error: "ATLANTIC_APIKEY belum diisi (Dasbor Admin → Konfigurasi, atau Environment Variables Vercel), jadi penarikan belum bisa dipakai." },
       { status: 400 }
     );
   }
@@ -36,12 +36,12 @@ function guard(req) {
 }
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const col = await withdrawalsCol();
   const items = await col.find({}).sort({ createdAt: -1 }).limit(50).toArray();
   return NextResponse.json({
-    configured: atlanticConfigured(),
+    configured: (await atlanticConfigured()),
     items: items.map((w) => ({
       refId: w.refId,
       providerId: w.providerId || null,
@@ -63,7 +63,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const blocked = guard(req);
+  const blocked = await guard(req);
   if (blocked) return blocked;
 
   const body = await req.json().catch(() => ({}));

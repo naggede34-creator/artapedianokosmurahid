@@ -15,6 +15,7 @@ import { runCleanup } from "@/lib/cleanup";
 import { sapuHoldMacet } from "@/lib/saldoHold";
 import { undiJatuhTempoDanUmumkan } from "@/lib/giveawayUndi";
 import { sendMonitorLog, cronReportLog } from "@/lib/monitor";
+import { cfg } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -32,8 +33,8 @@ function isAuthorized(req) {
 async function checkRumahOtp() {
   const start = Date.now();
   try {
-    if (!process.env.RUMAHOTP_APIKEY) return { name: "RumahOTP API", ok: false, error: "API key belum diset" };
-    await getServices(process.env.RUMAHOTP_APIKEY);
+    if (!(await cfg("RUMAHOTP_APIKEY"))) return { name: "RumahOTP API", ok: false, error: "API key belum diset" };
+    await getServices((await cfg("RUMAHOTP_APIKEY")));
     return { name: "RumahOTP API", ok: true, ms: Date.now() - start };
   } catch (err) {
     return { name: "RumahOTP API", ok: false, ms: Date.now() - start, error: err?.message || "gagal terhubung" };
@@ -43,8 +44,8 @@ async function checkRumahOtp() {
 async function checkPakasir() {
   const start = Date.now();
   try {
-    if (!process.env.PAKASIR_MERCHANT_ID) return { name: "Pakasir QRIS", ok: false, error: "PAKASIR_MERCHANT_ID belum diset" };
-    const res = await fetch(`https://api.pakasir.com/merchant/check/${process.env.PAKASIR_MERCHANT_ID}`, {
+    if (!(await cfg("PAKASIR_MERCHANT_ID"))) return { name: "Pakasir QRIS", ok: false, error: "PAKASIR_MERCHANT_ID belum diset" };
+    const res = await fetch(`https://api.pakasir.com/merchant/check/${(await cfg("PAKASIR_MERCHANT_ID"))}`, {
       signal: AbortSignal.timeout(8000)
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);

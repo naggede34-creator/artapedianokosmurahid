@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { jobSubmissionsCol, usersCol, jobsCol } from "@/lib/db";
 import { logBalance } from "@/lib/ledger";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { jobApprovedNotif, jobApprovedPublicNotif } from "@/lib/telegram";
 import { umumkan } from "@/lib/notifyHub";
 import { ObjectId } from "mongodb";
@@ -9,7 +9,7 @@ import { ObjectId } from "mongodb";
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") || "pending";
@@ -26,7 +26,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const { action, id, rejectionReason } = await req.json().catch(() => ({}));
     if (!id || !["approve", "reject"].includes(action)) {

@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
 import { flashSalesCol } from "@/lib/db";
-import { isAdminRequest } from "@/lib/adminAuth";
+import { adminSah } from "@/lib/adminAuth";
 import { ObjectId } from "mongodb";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const col = await flashSalesCol();
   const items = await col.find({}).sort({ createdAt: -1 }).limit(20).toArray();
   return NextResponse.json({ items: items.map((s) => ({ ...s, id: s._id.toString(), _id: undefined })) });
 }
 
 export async function POST(req) {
-  if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const body = await req.json();
   const col = await flashSalesCol();
 

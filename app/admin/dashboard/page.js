@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OTP_SERVERS } from "@/lib/otpServers";
 import { DAFTAR_PUBLIK, channelAktifUntuk } from "@/lib/channelNotifTypes";
+import AdminKonfigurasi, { PeringatanKodeAdmin } from "@/components/AdminKonfigurasi";
 import { CHANNEL_ID, CHANNEL_URL } from "@/lib/links";
 
 function fmtDate(d) {
@@ -24,6 +25,7 @@ const TABS = [
   { id: "depositmanual", label: "Deposit Manual", icon: "🔎" },
   { id: "tarik", label: "Tarik Saldo", icon: "🏦" },
   { id: "gateway", label: "QRIS Gateway", icon: "💸" },
+  { id: "konfigurasi", label: "Konfigurasi", icon: "🔑" },
   { id: "bot", label: "Bot Telegram", icon: "🤖" },
   { id: "reseller", label: "Bot Reseller", icon: "🏪" },
   { id: "giveaway", label: "Giveaway", icon: "🎁" },
@@ -376,10 +378,7 @@ export default function AdminDashboardPage() {
       // bisa menghapus isian (nilai kosong otomatis kembali ke env).
       const patch = {
         siteName: siteSettingsForm.siteName,
-        siteUrl: siteSettingsForm.siteUrl,
-        telegramBotToken: siteSettingsForm.telegramBotToken,
-        telegramChatId: siteSettingsForm.telegramChatId,
-        telegramChannelId: siteSettingsForm.telegramChannelId.trim()
+        siteUrl: siteSettingsForm.siteUrl
       };
       // Angka hanya dikirim kalau diisi; kosong berarti "biarkan seperti sekarang".
       if (siteSettingsForm.depositMin !== "") patch.depositMin = Number(siteSettingsForm.depositMin);
@@ -2113,6 +2112,8 @@ export default function AdminDashboardPage() {
         />
       </div>
 
+      <PeringatanKodeAdmin onBuka={() => setActiveTab("konfigurasi")} />
+
       {/* ── Tab navigation ── */}
       <div className="mt-4 sticky top-2 z-30 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-surface/95 p-1 shadow-soft backdrop-blur-sm">
         {TABS.map((tab) => (
@@ -3161,6 +3162,8 @@ export default function AdminDashboardPage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* TAB: QRIS GATEWAY                                             */}
       {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === "konfigurasi" && <AdminKonfigurasi />}
+
       {activeTab === "giveaway" && (
         <div className="mt-5 space-y-5">
           <div className="glass admin-card rounded-2xl p-5 shadow-soft sm:p-6">
@@ -3959,7 +3962,7 @@ export default function AdminDashboardPage() {
 
             {!wdData.configured && !wdLoading && (
               <p className="mt-3 rounded-lg border border-rose/40 bg-rose-soft px-3 py-2 text-xs text-rose">
-                ATLANTIC_APIKEY belum diisi di environment variables, jadi penarikan belum bisa dipakai.
+                ATLANTIC_APIKEY belum diisi (Dasbor Admin → Konfigurasi, atau Environment Variables Vercel), jadi penarikan belum bisa dipakai.
               </p>
             )}
 
@@ -6048,7 +6051,7 @@ export default function AdminDashboardPage() {
           {/* Pengaturan Situs */}
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
             <h2 className="font-display text-base font-semibold text-ink">🌐 Pengaturan Situs &amp; Env</h2>
-            <p className="mt-1 text-xs text-muted">Override variabel environment langsung dari dashboard — tidak perlu redeploy. Kosongkan untuk kembali ke nilai env Vercel.</p>
+            <p className="mt-1 text-xs text-muted">Nama, URL, dan batas deposit. Kunci API, token, dan kode admin ada di tab Konfigurasi.</p>
             <form onSubmit={saveSiteSettings}>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
@@ -6059,42 +6062,15 @@ export default function AdminDashboardPage() {
                   <label className="text-xs font-medium text-muted">URL Situs</label>
                   <input value={siteSettingsForm.siteUrl} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, siteUrl: e.target.value }))} placeholder="https://... (dari env)" className="mt-1.5 input w-full text-sm" />
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-muted">Telegram Bot Token</label>
-                  <input type="password" value={siteSettingsForm.telegramBotToken} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, telegramBotToken: e.target.value }))} placeholder="••• (dari env)" className="mt-1.5 input w-full text-sm" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted">Telegram Chat ID <span className="text-rose text-xs">(admin notif)</span></label>
-                  <input value={siteSettingsForm.telegramChatId} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, telegramChatId: e.target.value }))} placeholder="-100... (dari env)" className="mt-1.5 input w-full text-sm" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted">Telegram Channel ID <span className="text-amber text-xs">(semua notif publik)</span></label>
-                  <input value={siteSettingsForm.telegramChannelId} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, telegramChannelId: e.target.value }))} placeholder={`${CHANNEL_ID} (channel resmi)`} className="mt-1.5 input w-full text-sm" />
-                  {/* Kolom ini MENIMPA channel bawaan di kode. Kalau isinya masih
-                      channel lama, mengganti kode tidak akan berpengaruh sama
-                      sekali — notifnya tetap ke channel lama, tanpa error apa
-                      pun. Karena itu keadaannya ditulis apa adanya di sini, dan
-                      dikembalikan dalam sekali klik. */}
-                  {siteSettingsForm.telegramChannelId.trim() === CHANNEL_ID ? (
-                    <p className="mt-1.5 text-[11px] font-semibold text-success">
-                      ✅ Mengarah ke channel resmi ({CHANNEL_URL.replace("https://", "")})
-                    </p>
-                  ) : (
-                    <div className="mt-1.5 rounded-lg border border-amber/40 bg-amber-soft px-2.5 py-2">
-                      <p className="text-[11px] leading-relaxed text-ink">
-                        {siteSettingsForm.telegramChannelId.trim()
-                          ? <>⚠️ Isi kolom ini <b>menimpa</b> channel resmi. Selama masih terisi nilai lain, notif tidak akan masuk ke {CHANNEL_URL.replace("https://", "")}.</>
-                          : <>Kosong = otomatis pakai channel resmi <b>{CHANNEL_ID}</b>.</>}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setSiteSettingsForm((f) => ({ ...f, telegramChannelId: CHANNEL_ID }))}
-                        className="mt-1.5 rounded-lg bg-ink px-2.5 py-1 text-[11px] font-bold text-bg press"
-                      >
-                        Pakai channel resmi
-                      </button>
-                    </div>
-                  )}
+                <div className="sm:col-span-2 rounded-xl border border-line bg-surface2 px-3 py-2.5">
+                  <p className="text-xs font-bold text-ink">🤖 Token bot, Chat ID, dan Channel Telegram</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                    Sudah pindah ke tab <b>🔑 Konfigurasi</b>: satu tempat untuk semua kunci API dan token, dengan
+                    penyimpanan terenkripsi. Channel dikosongkan = pakai channel resmi bawaan.
+                  </p>
+                  <button type="button" onClick={() => setActiveTab("konfigurasi")} className="mt-2 rounded-lg bg-ink px-3 py-1.5 text-[11px] font-bold text-bg press">
+                    Buka Konfigurasi
+                  </button>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted">Min Deposit (Rp)</label>
@@ -6844,7 +6820,7 @@ function ExportSection() {
         <p className="mt-3 rounded-xl border border-rose/30 bg-rose-soft px-3 py-2 text-[11px] font-bold leading-relaxed text-rose">
           ⚠️ Berkasnya memuat <b>kode akun semua pengguna</b> — itu kredensial. Siapa pun yang
           memegangnya bisa membuka akun mana pun dan membelanjakan saldonya. Karena itu tujuannya
-          dikunci ke id chat <b>pribadi</b> di environment; id grup dan channel ditolak.
+          dikunci ke id chat <b>pribadi</b> (TELEGRAM_OWNER_IDS); id grup dan channel ditolak.
         </p>
 
         {abStatus && (
@@ -6866,7 +6842,7 @@ function ExportSection() {
 
         {abStatus && !abStatus.tujuan?.length && (
           <p className="mt-2 rounded-xl border border-amber/30 bg-amber-soft px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-bright">
-            Isi <code>TELEGRAM_OWNER_IDS</code> di environment Vercel dengan id chat pribadi kamu
+            Isi <code>TELEGRAM_OWNER_IDS</code> di tab Konfigurasi (atau Vercel) dengan id chat pribadi kamu
             (angka positif). Tanpa itu backup tidak punya tujuan dan tidak akan terkirim.
           </p>
         )}

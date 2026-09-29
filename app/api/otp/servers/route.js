@@ -9,10 +9,10 @@ export const dynamic = "force-dynamic";
 
 // Apakah kredensial providernya sudah terisi. Server tanpa kredensial tidak
 // pernah bisa dipakai walaupun admin menyalakannya.
-function providerReady(key) {
-  if (key === "rumahotp") return rumahOtpConfigured();
-  if (key === "dibanana") return dibananaConfigured();
-  if (key.startsWith("warungnokos")) return warungNokosConfigured();
+async function providerReady(key) {
+  if (key === "rumahotp") return (await rumahOtpConfigured());
+  if (key === "dibanana") return (await dibananaConfigured());
+  if (key.startsWith("warungnokos")) return (await warungNokosConfigured());
   return false;
 }
 
@@ -45,7 +45,7 @@ export async function GET() {
     const d = settings
       ? serverDisplay(settings, s.key)
       : { key: s.key, name: s.name, badge: s.badge, desc: s.desc, provider: s.provider, enabled: true, offlineMsg: "" };
-    const siap = providerReady(s.key) && d.enabled;
+    const siap = (await providerReady(s.key)) && d.enabled;
     if (!siap) continue;
     available[s.key] = true;
     items.push({
