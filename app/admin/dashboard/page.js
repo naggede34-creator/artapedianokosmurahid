@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { OTP_SERVERS } from "@/lib/otpServers";
 import { DAFTAR_PUBLIK, channelAktifUntuk } from "@/lib/channelNotifTypes";
 import AdminKonfigurasi, { PeringatanKodeAdmin } from "@/components/AdminKonfigurasi";
+import AdminReferral from "@/components/AdminReferral";
 import { CHANNEL_ID, CHANNEL_URL } from "@/lib/links";
 
 function fmtDate(d) {
@@ -25,6 +26,7 @@ const TABS = [
   { id: "depositmanual", label: "Deposit Manual", icon: "🔎" },
   { id: "tarik", label: "Tarik Saldo", icon: "🏦" },
   { id: "gateway", label: "QRIS Gateway", icon: "💸" },
+  { id: "referral", label: "Referral", icon: "🛡" },
   { id: "konfigurasi", label: "Konfigurasi", icon: "🔑" },
   { id: "bot", label: "Bot Telegram", icon: "🤖" },
   { id: "reseller", label: "Bot Reseller", icon: "🏪" },
@@ -3163,6 +3165,7 @@ export default function AdminDashboardPage() {
       {/* TAB: QRIS GATEWAY                                             */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === "konfigurasi" && <AdminKonfigurasi />}
+      {activeTab === "referral" && <AdminReferral />}
 
       {activeTab === "giveaway" && (
         <div className="mt-5 space-y-5">

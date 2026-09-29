@@ -5,6 +5,7 @@ import { newUserNotif } from "@/lib/telegram";
 import { umumkan } from "@/lib/notifyHub";
 import { sendMonitorLog, userLoginLog } from "@/lib/monitor";
 import { rateLimit } from "@/lib/rateLimit";
+import { sidikJari } from "@/lib/referralGuard";
 
 export async function POST(req) {
   try {
@@ -74,6 +75,8 @@ export async function POST(req) {
       referralCount: 0,
       referralEarnings: 0,
       referralBonusGiven: false,
+      // Hash IP + User-Agent saat daftar, untuk penjaga anti-farming referral.
+      ...sidikJari(req),
       points: 0,
       totalSpent: 0,
       cashbackTotal: 0,
