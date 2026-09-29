@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Ik, Avatar, NamaLencana, Lembar, Konfirmasi, useWa, kecilkanGambar, teksTerakhir, salin, labelHari } from "@/components/wa/kit";
 import { LENCANA } from "@/lib/wa/lencanaWarna";
+import PushToggle from "@/components/PushToggle";
 
 const fotoDari = (p) => (p?.fotoV ? `/api/wa/foto/${p.pid}?v=${p.fotoV}` : null);
 
@@ -170,7 +171,6 @@ export function SheetProfilSaya({ onTutup }) {
   const [sembunyi, setSembunyi] = useState(!!saya?.sembunyiTerakhir);
   const [simpan, setSimpan] = useState(false);
   const [blokir, setBlokir] = useState([]);
-  const [tanya, setTanya] = useState(false);
   const fileRef = useRef(null);
   const [fotoBaru, setFotoBaru] = useState(null);
 
@@ -256,6 +256,13 @@ export function SheetProfilSaya({ onTutup }) {
         <button className="wa-tombol utama" disabled={!berubah || simpan || nama.trim().length < 2} onClick={simpanProfil}>{simpan ? "Menyimpan…" : "Simpan perubahan"}</button>
 
         <div className="wa-form-grup">
+          <span>Notifikasi pesan & panggilan</span>
+          <div className="wa-kartu-info" style={{ padding: 0, overflow: "hidden" }}>
+            <PushToggle token={wa.token} />
+          </div>
+        </div>
+
+        <div className="wa-form-grup">
           <span>Kontak diblokir ({blokir.length})</span>
           {!blokir.length && <small>Tidak ada kontak yang diblokir.</small>}
           {blokir.map((p) => (
@@ -267,7 +274,6 @@ export function SheetProfilSaya({ onTutup }) {
           ))}
         </div>
       </div>
-      {tanya && <Konfirmasi judul="Keluar?" onTutup={() => setTanya(false)} />}
     </Lembar>
   );
 }

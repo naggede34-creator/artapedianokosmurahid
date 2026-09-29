@@ -36,24 +36,17 @@ export async function POST(req) {
     const update = {};
 
     if (action === "tagall") {
-      const msgCol = await chatMessagesCol();
-      const tagMsg = {
-        msgId: crypto.randomUUID(),
-        token: null,
-        displayName: "Admin",
-        message: "📢 @semua — Ada pengumuman penting dari admin!",
-        type: "text",
-        isSystem: true,
-        isAI: false,
-        reactions: {},
-        pinned: false,
-        pinnedBy: null,
-        mentions: ["semua"],
-        createdAt: new Date(),
-        deleted: false,
+      // Pengumuman masuk ke Grup Umum WEARTA CHAT (penyimpanan baru).
+      const { waPesanCol, waRoomCol } = await import("@/lib/db");
+      const sekarang = new Date();
+      const teks = "📢 @semua — Ada pengumuman penting dari admin!";
+      const pesan = {
+        msgId: crypto.randomUUID(), roomId: "umum", dari: null, namaDari: "Admin", jenis: "teks", teks, reaksi: {},
+        dihapusUntuk: [], readBy: [], deliveredTo: [], bintang: [], createdAt: sekarang
       };
-      await msgCol.insertOne(tagMsg);
-      return NextResponse.json({ ok: true, action: "tagall", msgId: tagMsg.msgId });
+      await (await waPesanCol()).insertOne(pesan);
+      await (await waRoomCol()).updateOne({ roomId: "umum" }, { $set: { lastAt: sekarang, lastPreview: { dari: null, jenis: "teks", teks: `Admin: ${teks}`.slice(0, 80), at: sekarang } } }, { upsert: false });
+      return NextResponse.json({ ok: true, action: "tagall", msgId: pesan.msgId });
     }
 
     if (name !== undefined) update.name = String(name).trim().slice(0, 50) || DEFAULTS.name;

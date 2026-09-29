@@ -465,7 +465,9 @@ export default function Percakapan({ roomId }) {
 
   // ───────────── status kepala ─────────────
   const namaJudul = info?.nama || rooms.find((r) => r.roomId === roomId)?.nama || "…";
-  const fotoKepala = info?.foto || rooms.find((r) => r.roomId === roomId)?.foto;
+  const dariDaftar = rooms.find((r) => r.roomId === roomId);
+  const fotoKepala = info?.foto || dariDaftar?.foto;
+  const fotoAda = info ? info.fotoAda : !!dariDaftar?.fotoAda;
   let subjudul = "";
   if (mengetik.length) subjudul = privat ? "sedang mengetik…" : `${mengetik.slice(0, 2).join(", ")} sedang mengetik…`;
   else if (privat && lawan) subjudul = teksTerakhir(lawan);
@@ -505,7 +507,7 @@ export default function Percakapan({ roomId }) {
       <header className="wa-kepala">
         <button className="wa-ikon wa-kembali" onClick={() => wa.tutupRoom()} aria-label="Kembali"><Ik n="back" s={22} /></button>
         <button className="wa-kepala-info" onClick={() => (privat && lawan ? wa.buka({ tipe: "user", pid: lawan.pid }) : info && wa.buka({ tipe: "room", roomId }))}>
-          <Avatar nama={namaJudul} foto={fotoKepala} ada={info ? info.fotoAda : true} size={42} online={privat && !!lawan?.online} umum={umum && !info?.fotoAda} />
+          <Avatar nama={namaJudul} foto={fotoKepala} ada={fotoAda} size={42} online={privat && !!lawan?.online} umum={umum && !info?.fotoAda} />
           <span className="wa-kepala-teks">
             <NamaLencana nama={namaJudul} lencana={info?.lencana} size={16} />
             <small className={mengetik.length ? "mengetik" : lawan?.online ? "online" : ""}>{subjudul || " "}</small>

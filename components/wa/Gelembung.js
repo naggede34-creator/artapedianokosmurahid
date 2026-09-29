@@ -168,7 +168,7 @@ function GelembungAsli({ m, grup, umum, pengirim, awalGrup, sorot, onMenu, onBal
       {!mine && (grup || umum) ? (
         <div className="wa-baris-avatar">
           {awalGrup && !m.isAI ? (
-            <button className="wa-mini-avatar" style={{ background: warnaNama(nama) }} onClick={() => onProfil?.(m.dari)} aria-label={`Profil ${nama}`}>
+            <button className="wa-mini-avatar" style={{ background: warnaNama(nama) }} onClick={() => m.dari && onProfil?.(m.dari)} aria-label={`Profil ${nama}`}>
               {profil?.fotoV ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={`/api/wa/foto/${m.dari}?v=${profil.fotoV}`} alt="" loading="lazy" />
@@ -199,7 +199,7 @@ function GelembungAsli({ m, grup, umum, pengirim, awalGrup, sorot, onMenu, onBal
 
         {tampilNama && (
           <div className="wa-gel-nama" style={{ color: m.isAI ? "#6366f1" : warnaNama(nama) }}>
-            <button onClick={() => !m.isAI && onProfil?.(m.dari)}>{nama}</button>
+            <button onClick={() => !m.isAI && m.dari && onProfil?.(m.dari)}>{nama}</button>
             {profil?.lencana ? <Lencana warna={profil.lencana} size={14} /> : null}
             {m.isAI ? <em>AI</em> : null}
           </div>

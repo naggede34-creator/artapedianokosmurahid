@@ -76,11 +76,16 @@ export default function VIPPage() {
 
   useEffect(() => {
     if (!token || !ready) return;
-    fetch(`/api/loyalty?token=${token}`).then((r) => r.json()).then((d) => setLoyalty(d));
+    fetch(`/api/loyalty/info?token=${encodeURIComponent(token)}`)
+      .then((r) => r.json())
+      .then((d) => { if (!d?.error) setLoyalty(d); })
+      .catch(() => {});
   }, [token, ready]);
 
   const currentTier = loyalty?.badge?.name || "Bronze";
-  const totalSpend = loyalty?.totalSpend || 0;
+  const totalSpend = loyalty?.totalSpent || 0;
+  // Awal tingkat sekarang: 0 untuk Bronze, ambang Silver untuk Silver, dst.
+  const dasarTingkat = loyalty?.badge?.key && loyalty.badgeThresholds ? Number(loyalty.badgeThresholds[loyalty.badge.key]) || 0 : 0;
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
@@ -111,7 +116,7 @@ export default function VIPPage() {
               <div className="h-2 rounded-full bg-surface2 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-amber transition-all"
-                  style={{ width: `${Math.min(100, ((totalSpend - loyalty.badge?.minSpend || 0) / (loyalty.next.minSpend - (loyalty.badge?.minSpend || 0))) * 100)}%` }}
+                  style={{ width: `${Math.max(0, Math.min(100, ((totalSpend - dasarTingkat) / Math.max(1, loyalty.next.target - dasarTingkat)) * 100))}%` }}
                 />
               </div>
             </div>
