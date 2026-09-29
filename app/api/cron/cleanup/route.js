@@ -13,6 +13,7 @@ import { getServices } from "@/lib/rumahotp";
 import { usersCol, depositsCol } from "@/lib/db";
 import { runCleanup } from "@/lib/cleanup";
 import { sapuHoldMacet } from "@/lib/saldoHold";
+import { undiYangJatuhTempo } from "@/lib/giveaway";
 import { sendMonitorLog, cronReportLog } from "@/lib/monitor";
 
 export const dynamic = "force-dynamic";
@@ -93,6 +94,12 @@ export async function GET(req) {
   // Ini satu-satunya yang bisa menangani fungsi yang MATI di tengah jalan:
   // saat itu terjadi, kode pengembalian di dalam permintaannya tidak pernah
   // dijalankan, jadi tidak ada tempat lain yang bisa menutup kasus itu.
+  // Giveaway yang waktunya habis diundi sendiri. Tanpa ini, event yang
+  // ditutup tengah malam menunggu sampai ada admin yang membuka dasbor —
+  // dan pesertanya menunggu tanpa tahu sampai kapan.
+  const gw = await undiYangJatuhTempo();
+  if (gw.length) console.warn(`[cron/cleanup] ${gw.length} giveaway diundi otomatis`);
+
   const hold = await sapuHoldMacet({ batas: 200 });
   if (hold.dikembalikan > 0) {
     console.warn(
@@ -107,8 +114,9 @@ export async function GET(req) {
     cleanup.errors.length > 0 ||
     cleanup.otpRefunded + cleanup.depositsCredited + cleanup.depositsDeleted + cleanup.broadcastsDeleted > 0 ||
     hold.dikembalikan > 0 ||
+    gw.length > 0 ||
     new URL(req.url).searchParams.get("report") === "1";
   if (noteworthy) sendMonitorLog(cronReportLog({ health, cleanup }));
 
-  return NextResponse.json({ ok: true, health, cleanup, hold });
+  return NextResponse.json({ ok: true, health, cleanup, hold, giveaway: gw.length });
 }

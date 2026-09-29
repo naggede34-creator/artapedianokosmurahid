@@ -72,6 +72,7 @@ const sections = [
       { href: "/deposit", label: "Isi Saldo (QRIS)", icon: <Icon.qris width={19} height={19} /> },
       { href: "/gateway", label: "QRIS Gateway", icon: <span className="text-[17px] leading-none">💸</span>, badge: "Baru" },
       { href: "/reseller", label: "Bot Reseller", icon: <span className="text-[17px] leading-none">🤖</span>, badge: "Baru" },
+      { href: "/giveaway", label: "Giveaway", icon: <span className="text-[17px] leading-none">🎁</span>, badge: "Baru" },
       { href: "/tampilan", label: "Tampilan & Tema", icon: <span className="text-[17px] leading-none">🎨</span>, badge: "Baru" },
       { href: "/transfer", label: "Transfer Saldo", icon: <Icon.transfer width={19} height={19} /> },
       { href: "/mutasi", label: "Mutasi Saldo", icon: <Icon.ledger width={19} height={19} /> },

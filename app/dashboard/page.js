@@ -55,7 +55,8 @@ const shortcuts = [
   { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin, badge: "Baru" },
   { href: "/chat", label: "Grup Chat", icon: "💬", badge: "Live" },
   { href: "/gateway", label: "QRIS Gateway", icon: "💸", badge: "Baru" },
-  { href: "/reseller", label: "Bot Reseller", icon: "🤖", badge: "Baru" }
+  { href: "/reseller", label: "Bot Reseller", icon: "🤖", badge: "Baru" },
+  { href: "/giveaway", label: "Giveaway", icon: "🎁", badge: "Baru" }
 ];
 
 function WarrantyModal({ open, onClose, token }) {

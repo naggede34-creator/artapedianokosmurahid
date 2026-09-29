@@ -26,6 +26,7 @@ const TABS = [
   { id: "gateway", label: "QRIS Gateway", icon: "💸" },
   { id: "bot", label: "Bot Telegram", icon: "🤖" },
   { id: "reseller", label: "Bot Reseller", icon: "🏪" },
+  { id: "giveaway", label: "Giveaway", icon: "🎁" },
   { id: "juara", label: "Pembeli Terbanyak", icon: "🏆" },
   { id: "produk", label: "Produk", icon: "🛍️" },
   { id: "job", label: "Job/Saldo", icon: "💰" },
@@ -441,6 +442,51 @@ export default function AdminDashboardPage() {
     } finally {
       setBusy(false);
       if (setMsg) setTimeout(() => setMsg(""), 3000);
+    }
+  }
+
+  // ── Giveaway ───────────────────────────────────────────────────────
+  const KOSONG_GW = {
+    judul: "", keterangan: "", jenisHadiah: "saldo", nilaiHadiah: "10000",
+    jumlahPemenang: "1", maksPeserta: "0", mulaiAt: "", selesaiAt: ""
+  };
+  const [gwList, setGwList] = useState([]);
+  const [gwForm, setGwForm] = useState(KOSONG_GW);
+  const [gwLoad2, setGwLoad2] = useState(false);
+  const [gwBusy2, setGwBusy2] = useState("");
+  const [gwMsg2, setGwMsg2] = useState("");
+  const [gwSalah, setGwSalah] = useState([]);
+
+  const loadGw2 = useCallback(async () => {
+    setGwLoad2(true);
+    try {
+      const res = await fetch("/api/admin/giveaway");
+      const d = await res.json();
+      if (res.ok) setGwList(d.items || []);
+    } catch {}
+    setGwLoad2(false);
+  }, []);
+
+  async function gwKirim(payload, label, tanya) {
+    if (tanya && !confirm(tanya)) return false;
+    setGwBusy2(label); setGwMsg2(""); setGwSalah([]);
+    try {
+      const res = await fetch("/api/admin/giveaway", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const d = await res.json();
+      if (!res.ok) { setGwSalah(d.salah?.length ? d.salah : [d.error || "Gagal."]); return false; }
+      setGwMsg2(d.pesan || "Selesai.");
+      loadGw2();
+      return true;
+    } catch (e) {
+      setGwSalah(["Jaringan bermasalah."]);
+      return false;
+    } finally {
+      setGwBusy2("");
+      setTimeout(() => setGwMsg2(""), 6000);
     }
   }
 
@@ -2080,6 +2126,7 @@ export default function AdminDashboardPage() {
               if (tab.id === "gateway") loadGateway();
               if (tab.id === "bot") loadBots();
               if (tab.id === "reseller") loadReseller();
+              if (tab.id === "giveaway") loadGw2();
             }}
             className={`relative flex-1 min-w-max rounded-xl px-3 py-2 text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === tab.id
@@ -3114,6 +3161,225 @@ export default function AdminDashboardPage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* TAB: QRIS GATEWAY                                             */}
       {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === "giveaway" && (
+        <div className="mt-5 space-y-5">
+          <div className="glass admin-card rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">🎁 Buat Giveaway</h2>
+            <p className="mt-1.5 text-xs leading-relaxed text-muted">
+              Begitu dibuat, langsung diumumkan ke channel dan muncul di menu Giveaway pengguna.
+              Pemenangnya diundi acak saat waktunya habis — otomatis lewat cron, atau langsung
+              lewat tombol Undi.
+            </p>
+
+            <label className="mt-4 block text-xs font-semibold text-muted">Judul</label>
+            <input
+              value={gwForm.judul}
+              onChange={(e) => setGwForm((f) => ({ ...f, judul: e.target.value }))}
+              placeholder="Giveaway Saldo Akhir Bulan"
+              className="input mt-1.5 w-full text-sm"
+            />
+
+            <label className="mt-3 block text-xs font-semibold text-muted">Keterangan (opsional)</label>
+            <textarea
+              value={gwForm.keterangan}
+              onChange={(e) => setGwForm((f) => ({ ...f, keterangan: e.target.value }))}
+              rows={2}
+              placeholder="Syarat, cara ikut, atau pesan apa pun."
+              className="input mt-1.5 w-full text-sm"
+            />
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-semibold text-muted">Jenis hadiah</label>
+                <div className="mt-1.5 flex gap-2">
+                  {[["saldo", "💰 Saldo"], ["poin", "⭐ Poin"]].map(([v, l]) => (
+                    <button
+                      key={v}
+                      onClick={() => setGwForm((f) => ({ ...f, jenisHadiah: v }))}
+                      className={`flex-1 rounded-xl border py-2 text-xs font-bold ${
+                        gwForm.jenisHadiah === v ? "border-amber bg-amber text-white" : "border-line text-muted"
+                      }`}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted">
+                  Nilai hadiah per pemenang
+                </label>
+                <input
+                  type="number"
+                  value={gwForm.nilaiHadiah}
+                  onChange={(e) => setGwForm((f) => ({ ...f, nilaiHadiah: e.target.value }))}
+                  className="input mt-1.5 w-full text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted">Jumlah pemenang</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={gwForm.jumlahPemenang}
+                  onChange={(e) => setGwForm((f) => ({ ...f, jumlahPemenang: e.target.value }))}
+                  className="input mt-1.5 w-full text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted">Maksimal peserta</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={gwForm.maksPeserta}
+                  onChange={(e) => setGwForm((f) => ({ ...f, maksPeserta: e.target.value }))}
+                  className="input mt-1.5 w-full text-sm"
+                />
+                <p className="mt-1 text-[11px] text-muted">0 = tanpa batas.</p>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted">Jam mulai</label>
+                <input
+                  type="datetime-local"
+                  value={gwForm.mulaiAt}
+                  onChange={(e) => setGwForm((f) => ({ ...f, mulaiAt: e.target.value }))}
+                  className="input mt-1.5 w-full text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted">Jam berakhir</label>
+                <input
+                  type="datetime-local"
+                  value={gwForm.selesaiAt}
+                  onChange={(e) => setGwForm((f) => ({ ...f, selesaiAt: e.target.value }))}
+                  className="input mt-1.5 w-full text-sm"
+                />
+              </div>
+            </div>
+
+            <p className="mt-3 rounded-xl border border-amber/30 bg-amber-soft px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-bright">
+              Hadiahnya dibagikan dari saldo toko. {gwForm.jumlahPemenang && gwForm.nilaiHadiah
+                ? `Total maksimal: ${fmtRp(Number(gwForm.nilaiHadiah || 0) * Number(gwForm.jumlahPemenang || 0))}${gwForm.jenisHadiah === "poin" ? " (dalam poin)" : ""}.`
+                : ""}
+            </p>
+
+            <button
+              onClick={async () => {
+                const ok = await gwKirim({ aksi: "buat", ...gwForm }, "buat");
+                if (ok) setGwForm(KOSONG_GW);
+              }}
+              disabled={gwBusy2 !== ""}
+              className="press mt-4 w-full rounded-xl bg-amber py-2.5 text-sm font-bold text-white disabled:opacity-50"
+            >
+              {gwBusy2 === "buat" ? "Membuat…" : "🎁 Buat & Umumkan"}
+            </button>
+
+            {gwMsg2 && <p className="mt-2.5 text-xs font-bold text-success">{gwMsg2}</p>}
+            {gwSalah.length > 0 && (
+              <ul className="mt-2.5 space-y-1">
+                {gwSalah.map((x) => (
+                  <li key={x} className="text-xs font-bold text-rose">• {x}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="glass admin-card rounded-2xl p-5 shadow-soft sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-base font-semibold text-ink">
+                Daftar Giveaway {gwList.length > 0 && `(${gwList.length})`}
+              </h2>
+              <button onClick={loadGw2} className="rounded-xl border border-line px-3 py-1.5 text-xs font-bold text-muted">
+                ↻ Muat ulang
+              </button>
+            </div>
+
+            {gwLoad2 ? (
+              <p className="mt-4 text-sm text-muted">Memuat…</p>
+            ) : gwList.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">Belum ada giveaway.</p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {gwList.map((ev) => (
+                  <div key={ev.giveawayId} className="rounded-2xl border border-line bg-surface p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <p className="text-sm font-black text-ink">{ev.judul}</p>
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-black text-white ${
+                          ev.fase === "buka" ? "bg-success"
+                            : ev.fase === "akan" ? "bg-amber"
+                            : ev.fase === "tutup" ? "bg-blue"
+                            : ev.fase === "batal" ? "bg-rose" : "bg-muted"
+                        }`}
+                      >
+                        {ev.fase}
+                      </span>
+                    </div>
+
+                    <dl className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+                      <dt className="text-muted">Hadiah</dt>
+                      <dd className="font-black text-ink">
+                        {ev.jenisHadiah === "poin" ? `${ev.nilaiHadiah} poin` : fmtRp(ev.nilaiHadiah)} × {ev.jumlahPemenang}
+                      </dd>
+                      <dt className="text-muted">Peserta</dt>
+                      <dd className="font-bold text-ink">
+                        {ev.jumlahPeserta}{ev.maksPeserta > 0 ? ` / ${ev.maksPeserta}` : ""}
+                      </dd>
+                      <dt className="text-muted">Tutup</dt>
+                      <dd className="text-ink">
+                        {new Date(ev.selesaiAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}
+                      </dd>
+                    </dl>
+
+                    {ev.pemenang.length > 0 && (
+                      <div className="mt-2.5 rounded-lg border border-amber/30 bg-amber-soft px-2.5 py-2">
+                        <p className="text-[11px] font-black text-amber-bright">Pemenang</p>
+                        {ev.pemenang.map((p, i) => (
+                          <p key={p.token + i} className="text-[11px] text-ink">
+                            {i + 1}. {p.nama} · <span className="font-mono">{p.token}</span>
+                          </p>
+                        ))}
+                      </div>
+                    )}
+
+                    {ev.status === "berjalan" && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          onClick={() =>
+                            gwKirim(
+                              { aksi: "undi", giveawayId: ev.giveawayId },
+                              "u" + ev.giveawayId,
+                              `Undi sekarang?\n\n${ev.jumlahPeserta} peserta, ${ev.jumlahPemenang} pemenang. Hadiahnya langsung masuk ke akun pemenang dan TIDAK bisa dibatalkan.`
+                            )
+                          }
+                          disabled={gwBusy2 !== ""}
+                          className="press flex-1 rounded-xl bg-success py-2 text-xs font-black text-white disabled:opacity-50"
+                        >
+                          🎲 Undi Sekarang
+                        </button>
+                        <button
+                          onClick={() =>
+                            gwKirim(
+                              { aksi: "batal", giveawayId: ev.giveawayId },
+                              "b" + ev.giveawayId,
+                              `Batalkan "${ev.judul}"?\n\nTidak ada hadiah yang dibagikan.`
+                            )
+                          }
+                          disabled={gwBusy2 !== ""}
+                          className="press rounded-xl border border-rose/40 bg-rose-soft px-4 py-2 text-xs font-black text-rose disabled:opacity-50"
+                        >
+                          Batalkan
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {activeTab === "reseller" && (
         <div className="mt-5 space-y-5">
           {/* Antrean penarikan komisi */}
