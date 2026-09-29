@@ -3,7 +3,7 @@
 // Layar percakapan: pesan, penulis pesan, rekam suara, emoji/stiker, lampiran,
 // balas/ubah/hapus/teruskan/bintang/sematkan, pencarian, dan status lawan bicara.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Ik, Avatar, NamaLencana, Lembar, Konfirmasi, useWa, jam, labelHari, teksTerakhir, kecilkanGambar, salin, useInterval } from "@/components/wa/kit";
+import { Ik, Avatar, NamaLencana, Lembar, Konfirmasi, useWa, jam, labelHari, teksTerakhir, kecilkanGambar, salin, useInterval, tautanKontak } from "@/components/wa/kit";
 import { Gelembung, EMOJI_REAKSI } from "@/components/wa/Gelembung";
 
 const GRUP_EMOJI = [
@@ -248,6 +248,13 @@ export default function Percakapan({ roomId }) {
       buatTmp({ teks: t, balas: b ? { msgId: b.id, nama: b.nama, preview: b.preview } : null }),
       { jenis: "teks", teks: t, ...(b ? { balasId: b.id } : {}) }
     );
+  }
+
+  // Kontak dibagikan sebagai TAUTAN (bukan kartu kontak): penerima mengetuknya untuk mulai chat.
+  function bagikanKontak(p) {
+    const teksKontak = `👤 Kontak: ${p.nama}\n${tautanKontak(p.pid)}`;
+    setPanel(null);
+    kirimKe(buatTmp({ teks: teksKontak }), { jenis: "teks", teks: teksKontak });
   }
 
   function kirimStiker(s) {
@@ -669,7 +676,8 @@ export default function Percakapan({ roomId }) {
             <div className="wa-lampir">
               <button onClick={() => fileFoto.current?.click()}><span style={{ background: "#8b5cf6" }}><Ik n="image" s={24} /></span>Foto</button>
               <button onClick={() => fileKamera.current?.click()}><span style={{ background: "#ec4899" }}><Ik n="camera" s={24} /></span>Kamera</button>
-              <button onClick={() => { setLampir(false); setPoll(true); }}><span style={{ background: "#14b8a6" }}><Ik n="poll" s={24} /></span>Jajak pendapat</button>
+              <button onClick={() => { setLampir(false); setPoll(true); }}><span style={{ background: "#14b8a6" }}><Ik n="poll" s={24} /></span>Jajak</button>
+              <button onClick={() => { setLampir(false); wa.buka({ tipe: "kontak", mode: "bagikan", onPilih: bagikanKontak }); }}><span style={{ background: "#0ea5e9" }}><Ik n="user" s={24} /></span>Kontak</button>
               <button onClick={() => { setLampir(false); setPanel("stiker"); }}><span style={{ background: "#f77c22" }}><Ik n="sticker" s={24} /></span>Stiker</button>
             </div>
           )}

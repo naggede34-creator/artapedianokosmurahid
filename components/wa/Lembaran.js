@@ -2,7 +2,7 @@
 
 // Lembar-lembar: kontak, grup baru, profil, info grup, teruskan, tambah anggota.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Ik, Avatar, NamaLencana, Lembar, Konfirmasi, useWa, kecilkanGambar, teksTerakhir, salin, labelHari } from "@/components/wa/kit";
+import { Ik, Avatar, NamaLencana, Lembar, Konfirmasi, useWa, kecilkanGambar, teksTerakhir, salin, labelHari, tautanKontak, bagikanTautan } from "@/components/wa/kit";
 import { LENCANA } from "@/lib/wa/lencanaWarna";
 import PushToggle from "@/components/PushToggle";
 
@@ -64,11 +64,12 @@ function DaftarKontak({ multi, kecuali = [], pilih, setPilih, onKetuk, atas = nu
   );
 }
 
-export function SheetKontak({ onTutup, mode = "chat" }) {
+export function SheetKontak({ onTutup, mode = "chat", onPilih = null }) {
   const wa = useWa();
   const [buka, setBuka] = useState(false);
   async function mulai(p) {
     if (mode === "panggil") { onTutup(); wa.buka({ tipe: "user", pid: p.pid }); return; }
+    if (mode === "bagikan") { onTutup(); onPilih?.(p); return; }
     const r = await wa.api.post("/api/wa/room", { aksi: "private", pid: p.pid });
     if (!r.ok) { wa.toast(r.error || "Gagal membuka obrolan."); return; }
     onTutup();
@@ -76,10 +77,10 @@ export function SheetKontak({ onTutup, mode = "chat" }) {
   }
   if (buka) return <SheetGrupBaru onTutup={onTutup} />;
   return (
-    <Lembar judul={mode === "panggil" ? "Pilih siapa yang ditelepon" : "Chat baru"} onTutup={onTutup}>
+    <Lembar judul={mode === "panggil" ? "Pilih siapa yang ditelepon" : mode === "bagikan" ? "Bagikan kontak (lewat tautan)" : "Chat baru"} onTutup={onTutup}>
       <DaftarKontak
         onKetuk={mulai}
-        atas={mode === "panggil" ? null : (
+        atas={mode === "panggil" || mode === "bagikan" ? null : (
           <button className="wa-baris-daftar aksi" onClick={() => setBuka(true)}>
             <span className="wa-ikon-bulat besar hijau"><Ik n="users" s={24} /></span>
             <span className="wa-baris-teks"><b className="wa-nama-teks">Grup baru</b><small>Ngobrol bareng banyak teman</small></span>
@@ -235,6 +236,15 @@ export function SheetProfilSaya({ onTutup }) {
           <textarea value={bio} maxLength={140} rows={2} onChange={(e) => setBio(e.target.value)} placeholder="Ceritakan sedikit tentangmu…" />
           <small>{bio.length}/140</small>
         </label>
+        <div className="wa-kartu-info">
+          <small>Tautan chat-ku</small>
+          <p className="wa-tautan-undang">{saya?.pid ? tautanKontak(saya.pid) : ""}</p>
+          <p style={{ fontSize: 12, color: "var(--wa-redup)", marginTop: 2 }}>Bagikan tautan ini ke teman supaya mereka bisa langsung mengobrol denganmu — tanpa membagikan nomor atau kode akun.</p>
+          <div className="wa-form-baris" style={{ marginTop: 8 }}>
+            <button type="button" className="wa-tombol kecil" onClick={() => wa.bagikanSaya?.()}><Ik n="link" s={16} /> Bagikan</button>
+            <button type="button" className="wa-tombol polos kecil" onClick={async () => toast((await salin(tautanKontak(saya.pid))) ? "Tautan disalin." : "Gagal menyalin.")}><Ik n="copy" s={16} /> Salin</button>
+          </div>
+        </div>
         <div className="wa-lencana-info">
           {lb ? (
             <>
@@ -320,6 +330,9 @@ export function SheetUser({ pid, onTutup }) {
         </div>
       </div>
       <div className="wa-kartu-info"><small>Info</small><p>{p.bio || "—"}</p></div>
+      <button className="wa-tombol lebar" style={{ marginTop: 10 }} onClick={async () => { const r = await bagikanTautan({ judul: `Kontak ${p.nama}`, teks: `Kontak WEARTA CHAT: ${p.nama}`, url: tautanKontak(p.pid) }); if (r === "salin") toast("Tautan kontak disalin."); else if (r === "gagal") toast("Gagal menyalin tautan."); }}>
+        <Ik n="link" s={18} /> Bagikan kontak ini (tautan)
+      </button>
       {lb && <div className="wa-kartu-info"><small>Verifikasi</small><p><NamaLencana nama={`Terverifikasi (${lb.label.toLowerCase()})`} lencana={p.lencana} size={18} /></p></div>}
       <button className="wa-tombol bahaya lebar" onClick={blokir}><Ik n="block" s={18} /> {d.diblokir ? "Buka blokir" : "Blokir"} {p.nama}</button>
       {lihat && (

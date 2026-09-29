@@ -227,6 +227,23 @@ export async function kecilkanGambar(file, { sisi = 1280, maksBytes = 800_000, p
   throw new Error("Gambar terlalu besar.");
 }
 
+// ─────────────────────────── TAUTAN KONTAK ───────────────────────────
+/** Tautan pribadi seseorang: membuka chat dengannya (menggantikan kartu kontak). */
+export const tautanKontak = (pid) => `${typeof window !== "undefined" ? window.location.origin : ""}/chat?u=${encodeURIComponent(pid)}`;
+
+/** Bagikan lewat menu bagikan perangkat; jika tak ada, salin ke papan klip. Mengembalikan "bagikan" | "salin" | "gagal". */
+export async function bagikanTautan({ judul, teks, url }) {
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: judul, text: teks, url });
+      return "bagikan";
+    }
+  } catch (err) {
+    if (err?.name === "AbortError") return "batal";
+  }
+  return (await salin(`${teks ? teks + "\n" : ""}${url}`)) ? "salin" : "gagal";
+}
+
 // ─────────────────────────── UMUM ───────────────────────────
 export function useInterval(fn, ms, aktif = true) {
   const ref = useRef(fn);

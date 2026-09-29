@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/app/providers";
-import { Ik, Avatar, NamaLencana, Lembar, Konfirmasi, WaCtx, useWa, bikinApi, useInterval, waktuDaftar, jam, durasiTeks } from "@/components/wa/kit";
+import { Ik, Avatar, NamaLencana, Lembar, Konfirmasi, WaCtx, useWa, bikinApi, useInterval, waktuDaftar, jam, durasiTeks, tautanKontak, bagikanTautan } from "@/components/wa/kit";
 import Percakapan from "@/components/wa/Percakapan";
 import TabStatus from "@/components/wa/Status";
 import LayarPanggilan from "@/components/wa/Panggilan";
@@ -23,11 +23,12 @@ function previewTeks(r) {
 
 export default function WaApp() {
   const router = useRouter();
-  const { token, ready } = useUser();
+  const { token, ready, updateName } = useUser();
   const api = useMemo(() => (token ? bikinApi(token) : null), [token]);
 
   const [saya, setSaya] = useState(null);
   const [admin, setAdmin] = useState(false);
+  const [perluNama, setPerluNama] = useState(false);
   const [rooms, setRooms] = useState([]);
   const [statusBaru, setStatusBaru] = useState(0);
   const [muat, setMuat] = useState(true);
@@ -64,6 +65,7 @@ export default function WaApp() {
       setGalat("");
       setSaya(r.data.saya);
       setAdmin(!!r.data.admin);
+      setPerluNama(!!r.data.perluNama);
       setRooms(r.data.rooms || []);
       setStatusBaru(r.data.statusBaru || 0);
       const masuk = r.data.panggilanMasuk;
@@ -120,23 +122,50 @@ export default function WaApp() {
     }
   }, [api]);
 
-  // ?gabung=kode
-  useEffect(() => {
+  // Tautan dalam: ?u=<id kontak> (buka chat dengannya) dan ?gabung=<kode> (undangan grup).
+  // Diproses setelah nama diatur; tautan dari pesan lain dikirim lewat event "wa-tautan".
+  const prosesTautan = useCallback(async (search) => {
     if (!api) return;
-    const kode = new URLSearchParams(window.location.search).get("gabung");
-    if (!kode) return;
-    (async () => {
-      const r = await api.get(`/api/wa/room?kode=${encodeURIComponent(kode)}`);
-      window.history.replaceState({}, "", "/chat");
-      if (!r.ok) { toast(r.error || "Tautan undangan tidak berlaku."); return; }
-      if (r.data.sudah) { toast("Kamu sudah ada di grup ini."); }
+    const u = new URLSearchParams(search);
+    const pid = u.get("u");
+    const kode = u.get("gabung");
+    if (!pid && !kode) return;
+    try { window.history.replaceState({}, "", "/chat"); } catch {}
+    if (pid) {
+      if (pid === saya?.pid) { toast("Ini tautan chat-mu sendiri."); return; }
+      const r = await api.get(`/api/wa/profil?pid=${encodeURIComponent(pid)}`);
+      if (!r.ok) { toast(r.error || "Kontak tidak ditemukan."); return; }
+      const p = r.data.profil;
       setTanya({
-        judul: `Gabung ke “${r.data.nama}”?`,
-        isi: `${r.data.anggota} anggota${r.data.deskripsi ? ` · ${r.data.deskripsi}` : ""}`,
-        tombol: [{ label: "Gabung grup", gaya: "utama", onClick: async () => { setTanya(null); const g = await api.post("/api/wa/room", { aksi: "gabung", kode }); if (g.ok) { sinkron(); bukaRoom(g.data.roomId); toast("Kamu bergabung ke grup."); } else toast(g.error || "Gagal bergabung."); } }]
+        judul: `Mulai chat dengan ${p.nama}?`,
+        isi: p.bio || "Kamu membuka tautan kontak.",
+        tombol: [{ label: "Mulai chat", gaya: "utama", onClick: async () => { setTanya(null); const g = await api.post("/api/wa/room", { aksi: "private", pid }); if (g.ok) { sinkron(); bukaRoom(g.data.roomId); } else toast(g.error || "Gagal membuka obrolan."); } }]
       });
-    })();
-  }, [api]); // eslint-disable-line react-hooks/exhaustive-deps
+      return;
+    }
+    const r = await api.get(`/api/wa/room?kode=${encodeURIComponent(kode)}`);
+    if (!r.ok) { toast(r.error || "Tautan undangan tidak berlaku."); return; }
+    if (r.data.sudah) { toast("Kamu sudah ada di grup ini."); }
+    setTanya({
+      judul: `Gabung ke “${r.data.nama}”?`,
+      isi: `${r.data.anggota} anggota${r.data.deskripsi ? ` · ${r.data.deskripsi}` : ""}`,
+      tombol: [{ label: "Gabung grup", gaya: "utama", onClick: async () => { setTanya(null); const g = await api.post("/api/wa/room", { aksi: "gabung", kode }); if (g.ok) { sinkron(); bukaRoom(g.data.roomId); toast("Kamu bergabung ke grup."); } else toast(g.error || "Gagal bergabung."); } }]
+    });
+  }, [api, saya, toast, sinkron, bukaRoom]);
+
+  // Saat halaman dibuka lewat tautan: tunggu profil termuat dan nama sudah diatur.
+  const tautanAwal = useRef(true);
+  useEffect(() => {
+    if (!api || !saya || perluNama || !tautanAwal.current) return;
+    tautanAwal.current = false;
+    prosesTautan(window.location.search);
+  }, [api, saya, perluNama, prosesTautan]);
+  // Tautan yang diketuk dari dalam pesan.
+  useEffect(() => {
+    const f = (e) => { if (!perluNama) prosesTautan(String(e.detail || "")); };
+    window.addEventListener("wa-tautan", f);
+    return () => window.removeEventListener("wa-tautan", f);
+  }, [prosesTautan, perluNama]);
 
   // ───────────── panggilan ─────────────
   const telepon = useCallback((lawan, jenis) => {
@@ -155,11 +184,19 @@ export default function WaApp() {
     sinkron();
   }, [sinkron]);
 
+  // Bagikan tautan chat pribadiku (pengganti kartu kontak).
+  const bagikanSaya = useCallback(async () => {
+    if (!saya) return;
+    const r = await bagikanTautan({ judul: "Chat denganku di WEARTA CHAT", teks: `Chat denganku (${saya.nama}) di WEARTA CHAT:`, url: tautanKontak(saya.pid) });
+    if (r === "salin") toast("Tautan chat-mu disalin. Tempel ke mana saja untuk dibagikan.");
+    else if (r === "gagal") toast("Gagal menyalin tautan.");
+  }, [saya, toast]);
+
   // ───────────── sheet ─────────────
   const buka = useCallback((s) => setSheet(s), []);
   const tutupSheet = useCallback(() => setSheet(null), []);
 
-  const ctx = useMemo(() => ({ token, api, me: saya, saya, admin, rooms, toast, bukaRoom, tutupRoom, buka, telepon, muatUlang: sinkron }), [token, api, saya, admin, rooms, toast, bukaRoom, tutupRoom, buka, telepon, sinkron]);
+  const ctx = useMemo(() => ({ token, api, me: saya, saya, admin, rooms, toast, bukaRoom, tutupRoom, buka, telepon, muatUlang: sinkron, bagikanSaya }), [token, api, saya, admin, rooms, toast, bukaRoom, tutupRoom, buka, telepon, sinkron, bagikanSaya]);
 
   // ───────────── daftar ─────────────
   const diarsip = rooms.filter((r) => r.archived);
@@ -240,6 +277,7 @@ export default function WaApp() {
                     <div className="wa-menu-tutup" onClick={() => setMenuUtama(false)} />
                     <div className="wa-menu-pop" role="menu">
                       <button onClick={() => { setMenuUtama(false); buka({ tipe: "grup-baru" }); }}><Ik n="users" s={18} /> Grup baru</button>
+                      <button onClick={() => { setMenuUtama(false); bagikanSaya(); }}><Ik n="link" s={18} /> Bagikan tautan chat-ku</button>
                       <button onClick={() => { setMenuUtama(false); buka({ tipe: "profil-saya" }); }}><Ik n="user" s={18} /> Profil saya</button>
                       <button onClick={() => { setMenuUtama(false); setArsip(true); setTab("chat"); }}><Ik n="archive" s={18} /> Chat diarsipkan{diarsip.length ? ` (${diarsip.length})` : ""}</button>
                       <button onClick={() => { setMenuUtama(false); sinkron(); toast("Diperbarui."); }}><Ik n="refresh" s={18} /> Segarkan</button>
@@ -326,7 +364,7 @@ export default function WaApp() {
         </main>
 
         {/* ───────── lapisan ───────── */}
-        {sheet?.tipe === "kontak" && <SheetKontak mode={sheet.mode} onTutup={tutupSheet} />}
+        {sheet?.tipe === "kontak" && <SheetKontak mode={sheet.mode} onPilih={sheet.onPilih} onTutup={tutupSheet} />}
         {sheet?.tipe === "grup-baru" && <SheetGrupBaru onTutup={tutupSheet} />}
         {sheet?.tipe === "profil-saya" && <SheetProfilSaya onTutup={tutupSheet} />}
         {sheet?.tipe === "user" && <SheetUser pid={sheet.pid} onTutup={tutupSheet} />}
@@ -345,11 +383,68 @@ export default function WaApp() {
 
         {panggilan && <LayarPanggilan key={panggilan.callId || "keluar"} sesi={panggilan} onSelesai={selesaiPanggilan} />}
 
+        {perluNama && (
+          <GerbangNama
+            awal=""
+            onKeluar={() => router.push("/")}
+            onSimpan={async (nama) => {
+              const r = await api.post("/api/wa/profil", { nama });
+              if (!r.ok) return r.error || "Gagal menyimpan nama.";
+              try { await updateName(nama); } catch {}
+              await sinkron();
+              return null;
+            }}
+          />
+        )}
+
         <div className="wa-toasts" aria-live="polite">
           {toasts.map((t) => <div key={t.id} className="wa-toast">{t.teks}</div>)}
         </div>
       </div>
     </WaCtx.Provider>
+  );
+}
+
+// Gerbang nama: chat tidak bisa dipakai sebelum nama diatur.
+function GerbangNama({ onSimpan, onKeluar }) {
+  const [nama, setNama] = useState("");
+  const [sibuk, setSibuk] = useState(false);
+  const [err, setErr] = useState("");
+  const sah = nama.trim().length >= 2;
+  async function kirim(e) {
+    e.preventDefault();
+    if (!sah || sibuk) return;
+    setSibuk(true);
+    setErr("");
+    const hasil = await onSimpan(nama.trim());
+    if (hasil) { setErr(hasil); setSibuk(false); }
+  }
+  return (
+    <div className="wa-lembar-latar wa-gerbang" role="dialog" aria-modal="true" aria-label="Atur nama">
+      <form className="wa-konfirmasi wa-gerbang-kartu" onSubmit={kirim}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/maskot-sm.webp" alt="" className="wa-gerbang-maskot" />
+        <h3>Siapa namamu?</h3>
+        <p>Atur nama dulu sebelum masuk WEARTA CHAT. Nama ini tampil ke teman-temanmu di chat, grup, dan status.</p>
+        <input
+          id="wa-nama-awal"
+          className="wa-gerbang-input"
+          value={nama}
+          onChange={(e) => setNama(e.target.value)}
+          maxLength={24}
+          placeholder="Contoh: Budi"
+          autoComplete="nickname"
+          autoFocus
+          aria-label="Nama kamu"
+        />
+        <small className="wa-gerbang-catatan">2–24 karakter. Bisa diganti kapan saja di Profil.</small>
+        {err && <p className="wa-gerbang-galat" role="alert">{err}</p>}
+        <div className="wa-konfirmasi-tombol">
+          <button type="submit" className="wa-tombol utama" disabled={!sah || sibuk}>{sibuk ? "Menyimpan…" : "Simpan & mulai chat"}</button>
+          <button type="button" className="wa-tombol polos" onClick={onKeluar}>Nanti saja, kembali</button>
+        </div>
+      </form>
+    </div>
   );
 }
 

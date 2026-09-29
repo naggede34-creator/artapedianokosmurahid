@@ -17,9 +17,21 @@ function Teks({ teks }) {
         if (i % 2 === 1) {
           const bersih = b.replace(/[.,;:!?)]+$/, "");
           const sisa = b.slice(bersih.length);
+          // Tautan ke WEARTA CHAT sendiri (?u= kontak, ?gabung= grup) dibuka di dalam aplikasi.
+          let dalam = null;
+          try {
+            const u = new URL(bersih);
+            if (typeof window !== "undefined" && u.origin === window.location.origin && u.pathname === "/chat" && (u.searchParams.get("u") || u.searchParams.get("gabung"))) dalam = u.search;
+          } catch {}
           return (
             <span key={i}>
+              {dalam ? (
+                <a href={bersih} className="wa-tautan wa-tautan-dalam" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new CustomEvent("wa-tautan", { detail: dalam })); }}>
+                  {dalam.includes("u=") ? "👤 Buka kontak" : "👥 Gabung grup"}
+                </a>
+              ) : (
               <a href={bersih} target="_blank" rel="noopener noreferrer nofollow" className="wa-tautan" onClick={(e) => e.stopPropagation()}>{bersih}</a>
+              )}
               {sisa}
             </span>
           );

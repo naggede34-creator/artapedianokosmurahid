@@ -407,7 +407,7 @@
 .wa-stiker-isi h4 { margin: 8px 4px 4px; font-size: 12px; font-weight: 800; color: var(--wa-redup); text-transform: uppercase; letter-spacing: .06em; }
 .wa-stiker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 4px; }
 .wa-stiker-grid button { font-size: 38px; padding: 4px 0; border-radius: 12px; text-align: center; }
-.wa-lampir { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 10px; padding: 12px 6px; border-radius: 16px; background: var(--wa-kertas2); border: 2px solid var(--wa-ink); box-shadow: var(--wa-bayang); }
+.wa-lampir { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 0 0 10px; padding: 12px 6px; border-radius: 16px; background: var(--wa-kertas2); border: 2px solid var(--wa-ink); box-shadow: var(--wa-bayang); }
 .wa-lampir button { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; text-align: center; }
 .wa-lampir button span { width: 52px; height: 52px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; border: 2.5px solid var(--wa-ink-tegas); box-shadow: 0 4px 0 var(--wa-ink-tegas); }
 .wa-lampir button:active span { transform: translateY(4px); box-shadow: none; }
@@ -575,3 +575,15 @@ label.wa-saklar { display: flex; }
   .wa-judul { font-size: 22px; }
   .wa-gel { max-width: 84%; }
 }
+
+/* ───────── gerbang nama & tautan dalam ───────── */
+.wa-gerbang { z-index: 110; align-items: center; padding: 20px; background: rgb(6 12 30 / .82); }
+.wa-gerbang-kartu { text-align: center; max-width: 380px; }
+.wa-gerbang-maskot { width: 92px; height: 92px; object-fit: contain; margin: -54px auto 6px; display: block; filter: drop-shadow(3px 3px 0 rgb(0 0 0 / .3)); animation: wa-lompat 2.2s ease-in-out infinite; }
+.wa-gerbang-kartu p { margin: 0 0 12px; }
+.wa-gerbang-input { width: 100%; padding: 13px 14px; border-radius: 14px; background: var(--wa-kertas2); border: 2.5px solid var(--wa-ink-tegas); box-shadow: inset 2px 2px 0 rgb(0 0 0 / .08); outline: 0; font-size: 18px; font-weight: 800; text-align: center; color: var(--wa-teks); }
+.wa-gerbang-input:focus { border-color: var(--wa-biru); }
+.wa-gerbang-catatan { display: block; margin-top: 6px; color: var(--wa-redup); }
+.wa-gerbang-galat { color: rgb(var(--c-danger)); font-weight: 800; margin: 8px 0 0 !important; }
+.wa-tautan-dalam { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 99px; text-decoration: none; background: rgb(var(--c-blue) / .15); border: 2px solid var(--wa-ink); font-weight: 800; }
+.wa-kartu-info .wa-tautan-undang { user-select: all; }
