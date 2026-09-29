@@ -25,6 +25,7 @@ const TABS = [
   { id: "tarik", label: "Tarik Saldo", icon: "🏦" },
   { id: "gateway", label: "QRIS Gateway", icon: "💸" },
   { id: "bot", label: "Bot Telegram", icon: "🤖" },
+  { id: "reseller", label: "Bot Reseller", icon: "🏪" },
   { id: "juara", label: "Pembeli Terbanyak", icon: "🏆" },
   { id: "produk", label: "Produk", icon: "🛍️" },
   { id: "job", label: "Job/Saldo", icon: "💰" },
@@ -440,6 +441,51 @@ export default function AdminDashboardPage() {
     } finally {
       setBusy(false);
       if (setMsg) setTimeout(() => setMsg(""), 3000);
+    }
+  }
+
+  // ── Bot reseller buatan pengguna ───────────────────────────────────
+  const [rsBots, setRsBots] = useState([]);
+  const [rsWd, setRsWd] = useState([]);
+  const [rsPending, setRsPending] = useState(0);
+  const [rsFilter, setRsFilter] = useState("pending");
+  const [rsLoading, setRsLoading] = useState(false);
+  const [rsBusy, setRsBusy] = useState("");
+  const [rsMsg, setRsMsg] = useState("");
+
+  const loadReseller = useCallback(async () => {
+    setRsLoading(true);
+    try {
+      const res = await fetch(`/api/admin/reseller?status=${rsFilter}`);
+      const d = await res.json();
+      if (res.ok) {
+        setRsBots(d.bots || []);
+        setRsWd(d.penarikan || []);
+        setRsPending(d.pending || 0);
+      }
+    } catch {}
+    setRsLoading(false);
+  }, [rsFilter]);
+
+  async function rsAksi(payload, label, tanya) {
+    if (tanya && !confirm(tanya)) return;
+    setRsBusy(label);
+    setRsMsg("");
+    try {
+      const res = await fetch("/api/admin/reseller", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Gagal.");
+      setRsMsg(d.pesan || "Selesai.");
+      loadReseller();
+    } catch (e) {
+      setRsMsg(e.message || "Gagal.");
+    } finally {
+      setRsBusy("");
+      setTimeout(() => setRsMsg(""), 5000);
     }
   }
 
@@ -2033,6 +2079,7 @@ export default function AdminDashboardPage() {
               if (tab.id === "juara") loadLeaderboard(lbOffset);
               if (tab.id === "gateway") loadGateway();
               if (tab.id === "bot") loadBots();
+              if (tab.id === "reseller") loadReseller();
             }}
             className={`relative flex-1 min-w-max rounded-xl px-3 py-2 text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === tab.id
@@ -3067,6 +3114,206 @@ export default function AdminDashboardPage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* TAB: QRIS GATEWAY                                             */}
       {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === "reseller" && (
+        <div className="mt-5 space-y-5">
+          {/* Antrean penarikan komisi */}
+          <div className="glass admin-card rounded-2xl p-5 shadow-soft sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-base font-semibold text-ink">🏦 Penarikan Komisi Reseller</h2>
+              {rsPending > 0 && (
+                <span className="rounded-full bg-rose px-2.5 py-0.5 text-[11px] font-black text-white">
+                  {rsPending} menunggu
+                </span>
+              )}
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {["pending", "selesai", "ditolak", "all"].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => { setRsFilter(v); setTimeout(loadReseller, 0); }}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-bold ${
+                    rsFilter === v ? "bg-ink text-bg" : "border border-line text-muted"
+                  }`}
+                >
+                  {v === "all" ? "semua" : v}
+                </button>
+              ))}
+              <button onClick={loadReseller} className="ml-auto rounded-xl border border-line px-3 py-1.5 text-xs font-bold text-muted">
+                ↻ Muat ulang
+              </button>
+            </div>
+
+            {rsMsg && <p className="mt-2.5 text-xs font-bold text-success">{rsMsg}</p>}
+
+            {rsLoading ? (
+              <p className="mt-4 text-sm text-muted">Memuat…</p>
+            ) : rsWd.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">Tidak ada penarikan dengan status ini.</p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {rsWd.map((w) => (
+                  <div key={w.wdId} className="rounded-2xl border border-line bg-surface p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-lg font-black text-ink">{fmtRp(w.amount)}</p>
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-black text-white ${
+                          w.status === "pending" ? "bg-amber" : w.status === "selesai" ? "bg-success" : "bg-rose"
+                        }`}
+                      >
+                        {w.status}
+                      </span>
+                    </div>
+
+                    <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+                      <dt className="text-muted">Bot</dt>
+                      <dd className="font-bold text-ink">@{w.botUsername}</dd>
+                      <dt className="text-muted">Pemilik</dt>
+                      <dd className="font-bold text-ink">{w.pemilikNama || "tanpa nama"}</dd>
+                      <dt className="text-muted">E-wallet</dt>
+                      <dd className="font-bold text-ink">{w.ewalletNama}</dd>
+                      <dt className="text-muted">Nomor</dt>
+                      <dd className="font-mono font-bold text-ink">{w.nomor}</dd>
+                      <dt className="text-muted">Atas nama</dt>
+                      <dd className="font-bold text-ink">{w.atasNama}</dd>
+                      <dt className="text-muted">Diajukan</dt>
+                      <dd className="text-ink">
+                        {new Date(w.createdAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}
+                      </dd>
+                    </dl>
+
+                    {w.status === "ditolak" && w.alasan && (
+                      <p className="mt-2 rounded-lg border border-rose/30 bg-rose-soft px-2.5 py-1.5 text-[11px] font-semibold text-rose">
+                        {w.alasan}
+                      </p>
+                    )}
+
+                    {w.status === "pending" && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          onClick={() => navigator.clipboard?.writeText(w.nomor)}
+                          className="press rounded-xl border border-line px-3 py-2 text-xs font-bold text-ink"
+                        >
+                          📋 Salin nomor
+                        </button>
+                        <button
+                          onClick={() =>
+                            rsAksi(
+                              { aksi: "wd-selesai", wdId: w.wdId },
+                              "wd" + w.wdId,
+                              "Tandai SUDAH DIKIRIM?\n\nTekan ini hanya SETELAH uangnya benar-benar kamu transfer. Komisinya sudah dipotong sejak diajukan."
+                            )
+                          }
+                          disabled={rsBusy !== ""}
+                          className="press flex-1 rounded-xl bg-success py-2 text-xs font-black text-white disabled:opacity-50"
+                        >
+                          ✅ Sudah Dikirim
+                        </button>
+                        <button
+                          onClick={() => {
+                            const alasan = prompt("Alasan penolakan (dibaca resellernya):", "Nomor e-wallet tidak aktif");
+                            if (alasan) rsAksi({ aksi: "wd-tolak", wdId: w.wdId, alasan }, "wd" + w.wdId);
+                          }}
+                          disabled={rsBusy !== ""}
+                          className="press rounded-xl border border-rose/40 bg-rose-soft px-4 py-2 text-xs font-black text-rose disabled:opacity-50"
+                        >
+                          ❌ Tolak
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Semua bot reseller */}
+          <div className="glass admin-card rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">
+              🏪 Semua Bot Reseller {rsBots.length > 0 && `(${rsBots.length})`}
+            </h2>
+            <p className="mt-1.5 text-xs leading-relaxed text-muted">
+              Bot yang dibuat pengguna dari halaman Bot Reseller. Membekukan menghentikan
+              penarikan komisinya <b>tanpa menghapus komisinya</b> — uang yang sudah jadi hak
+              orang tidak dihapus karena dugaan.
+            </p>
+
+            {rsBots.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">Belum ada pengguna yang membuat bot.</p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {rsBots.map((b) => (
+                  <div key={b.botId} className="rounded-2xl border border-line bg-surface p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a
+                        href={`https://t.me/${b.username}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm font-black text-ink underline decoration-dotted"
+                      >
+                        @{b.username}
+                      </a>
+                      <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-black text-white ${b.aktif ? "bg-success" : "bg-rose"}`}>
+                        {b.aktif ? "ON" : "OFF"}
+                      </span>
+                      {b.dibekukan && (
+                        <span className="rounded-full bg-rose px-2.5 py-0.5 text-[11px] font-black text-white">DIBEKUKAN</span>
+                      )}
+                    </div>
+
+                    <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+                      <dt className="text-muted">Pemilik</dt>
+                      <dd className="font-bold text-ink">{b.pemilikNama || "tanpa nama"}</dd>
+                      <dt className="text-muted">Kode akun</dt>
+                      <dd className="font-mono text-ink">{b.pemilikToken}</dd>
+                      <dt className="text-muted">Owner TG</dt>
+                      <dd className="font-bold text-ink">@{b.ownerUsername || "-"}</dd>
+                      <dt className="text-muted">Markup</dt>
+                      <dd className="font-bold text-ink">{b.markupPersen}%</dd>
+                      <dt className="text-muted">Komisi</dt>
+                      <dd className="font-black text-ink">{fmtRp(b.komisi)}</dd>
+                      <dt className="text-muted">Terjual / pembeli</dt>
+                      <dd className="font-bold text-ink">{b.jumlahTerjual} / {b.jumlahPembeli}</dd>
+                    </dl>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        onClick={() =>
+                          rsAksi(
+                            { aksi: b.dibekukan ? "cairkan" : "beku", botId: b.botId },
+                            "b" + b.botId,
+                            b.dibekukan ? null : `Bekukan @${b.username}?\n\nPenarikan komisinya dihentikan. Komisinya TIDAK dihapus.`
+                          )
+                        }
+                        disabled={rsBusy !== ""}
+                        className={`press flex-1 rounded-xl py-2 text-xs font-black text-white disabled:opacity-50 ${b.dibekukan ? "bg-success" : "bg-amber"}`}
+                      >
+                        {b.dibekukan ? "🔓 Cabut Pembekuan" : "🧊 Bekukan"}
+                      </button>
+                      {b.aktif && (
+                        <button
+                          onClick={() =>
+                            rsAksi(
+                              { aksi: "matikan", botId: b.botId },
+                              "m" + b.botId,
+                              `Matikan @${b.username}?\n\nWebhooknya dilepas, botnya berhenti menjawab pembeli.`
+                            )
+                          }
+                          disabled={rsBusy !== ""}
+                          className="press rounded-xl border border-rose/40 bg-rose-soft px-4 py-2 text-xs font-black text-rose disabled:opacity-50"
+                        >
+                          ⏸ Matikan
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {activeTab === "bot" && (
         <div className="mt-5 space-y-5">
           {/* Tambah bot baru */}
