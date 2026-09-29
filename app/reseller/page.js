@@ -16,6 +16,9 @@ export default function ResellerPage() {
   const [markupMaks, setMarkupMaks] = useState(100);
   const [tarikMin, setTarikMin] = useState(15000);
   const [loading, setLoading] = useState(true);
+  const [paket, setPaket] = useState(null);
+  const [level, setLevel] = useState(null);
+  const [saldo, setSaldo] = useState(0);
 
   const [form, setForm] = useState(KOSONG);
   const [buka, setBuka] = useState(false);
@@ -34,6 +37,9 @@ export default function ResellerPage() {
         setMaks(d.maks || 3);
         setMarkupMaks(d.markupMaks || 100);
         setTarikMin(d.tarikMin || 15000);
+        setPaket(d.paket || null);
+        setLevel(d.level || null);
+        setSaldo(d.saldo || 0);
       }
     } catch {}
     setLoading(false);
@@ -104,6 +110,83 @@ export default function ResellerPage() {
           ))}
         </div>
       </div>
+
+      {/* Paket & level */}
+      {paket && level && (
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border-2 border-ink/10 bg-surface p-5 shadow-soft">
+            <p className="text-xs font-black uppercase tracking-wide text-muted">🏅 Level reseller</p>
+            <p className="mt-1 text-2xl font-black text-ink">
+              {level.level > 0 ? `Level ${level.level}` : "Belum ada level"}
+              {level.diskonGrosir > 0 && <span className="ml-2 text-sm font-bold text-success">potongan grosir {level.diskonGrosir}%</span>}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              Omzet bulan ini <b className="text-ink">{rp(level.omzetIni)}</b> (yang kodenya masuk). Level bulan lalu tetap berlaku sampai bulan ini berakhir.
+            </p>
+            {level.berikutnya ? (
+              <div className="mt-3">
+                <div className="h-2 overflow-hidden rounded-full bg-surface2">
+                  <div className="h-full rounded-full bg-amber" style={{ width: `${Math.min(100, (level.omzetIni / level.berikutnya.omzet) * 100)}%` }} />
+                </div>
+                <p className="mt-1.5 text-[11px] text-muted">
+                  {rp(level.berikutnya.kurang)} lagi ke level berikutnya: potongan grosir {level.berikutnya.diskon}%
+                  {level.berikutnya.bonus > 0 && <> + bonus <b className="text-ink">{rp(level.berikutnya.bonus)}</b> ke saldo</>}.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-2 text-[11px] font-bold text-success">Level tertinggi tercapai 🎉</p>
+            )}
+          </div>
+
+          <div className="rounded-2xl border-2 border-ink/10 bg-surface p-5 shadow-soft">
+            <p className="text-xs font-black uppercase tracking-wide text-muted">⭐ Paket &amp; slot</p>
+            <p className="mt-1 text-xs text-muted">Saldo kamu {rp(saldo)}</p>
+
+            {paket.premiumHarga > 0 && (
+              <div className="mt-3 rounded-xl border border-amber/30 bg-amber-soft p-3">
+                <p className="text-sm font-black text-amber-bright">
+                  Premium {paket.premium ? "· AKTIF" : ""}
+                </p>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-muted">
+                  +{paket.premiumSlot} slot bot, markup sampai {paket.premiumMarkupMaks}%, potongan grosir +{paket.premiumDiskon}%.{" "}
+                  {paket.premium && paket.premiumSampai && <>Aktif sampai {new Date(paket.premiumSampai).toLocaleDateString("id-ID")}. </>}
+                </p>
+                <button
+                  onClick={() => kirim({ aksi: "beli_premium" }, "premium")}
+                  disabled={busy === "premium"}
+                  className="btn-3d mt-2 rounded-lg bg-amber px-4 py-2 text-xs font-black text-ink disabled:opacity-60"
+                >
+                  {busy === "premium" ? "Memproses…" : `${paket.premium ? "Perpanjang" : "Ambil"} ${paket.premiumHari} hari · ${rp(paket.premiumHarga)}`}
+                </button>
+              </div>
+            )}
+
+            {paket.slotHarga > 0 && (
+              <div className="mt-3">
+                <p className="text-[11px] text-muted">
+                  Slot tambahan dibeli {paket.slotTambahan}/{paket.slotMaks} · permanen.
+                </p>
+                <button
+                  onClick={() => kirim({ aksi: "beli_slot" }, "slot")}
+                  disabled={busy === "slot" || !paket.slotBisaDibeli}
+                  className="btn-3d mt-1.5 rounded-lg border-2 border-blue bg-blue-soft px-4 py-2 text-xs font-black text-blue-bright disabled:opacity-50"
+                >
+                  {busy === "slot" ? "Memproses…" : paket.slotBisaDibeli ? `➕ Tambah 1 slot bot · ${rp(paket.slotHarga)}` : "Slot tambahan penuh"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {msg && <p className="mt-3 rounded-xl border border-success/30 bg-success-soft px-3 py-2.5 text-sm font-bold text-success">{msg}</p>}
+      {!buka && salah.length > 0 && (
+        <ul className="mt-3 space-y-1 rounded-xl border border-rose/30 bg-rose-soft px-3 py-2.5">
+          {salah.map((x) => (
+            <li key={x} className="text-xs font-bold leading-relaxed text-rose">• {x}</li>
+          ))}
+        </ul>
+      )}
 
       {/* Daftar bot */}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
@@ -189,8 +272,6 @@ export default function ResellerPage() {
           )}
         </form>
       )}
-
-      {msg && <p className="mt-3 rounded-xl border border-success/30 bg-success-soft px-3 py-2.5 text-sm font-bold text-success">{msg}</p>}
 
       {loading ? (
         <p className="mt-5 text-sm text-muted">Memuat…</p>

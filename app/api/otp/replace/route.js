@@ -4,6 +4,7 @@ import { beliNomorPengganti, bisaDiganti } from "@/lib/gantiNomor";
 import { otpPurchaseNotif, otpAutoRefundNotif, otpRefundPublicNotif } from "@/lib/telegram";
 import { umumkan } from "@/lib/notifyHub";
 import { logBalance } from "@/lib/ledger";
+import { tarikKomisi } from "@/lib/resellerKomisi";
 
 // Dipakai saat nomor yang dibeli kedaluwarsa tanpa kode OTP masuk. User bisa minta
 // nomor pengganti tanpa membayar lagi (memakai saldo yang sudah terpotong di order lama).
@@ -54,6 +55,8 @@ export async function POST(req) {
         { $inc: { balance: totalRefund } },
         { returnDocument: "after" }
       );
+      // Pembeli dapat uangnya kembali, jadi komisi resellernya (kalau ada) ikut ditarik.
+      await tarikKomisi(oldOrder.komisiOrderId || oldOrder.orderId);
       await logBalance({
         token,
         type: "otp_refund",
@@ -97,6 +100,7 @@ export async function POST(req) {
       phoneNumber: fresh.phoneNumber,
       price: oldOrder.price,
       ...(oldOrder.jaminanBiaya ? { jaminanBiaya: oldOrder.jaminanBiaya, jaminanGanti: true } : {}),
+      ...(oldOrder.resellerBotId ? { resellerBotId: oldOrder.resellerBotId, komisiOrderId: oldOrder.komisiOrderId || oldOrder.orderId } : {}),
       status: "pending",
       otpCode: null,
       otpMsg: null,

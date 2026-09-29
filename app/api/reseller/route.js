@@ -11,10 +11,10 @@ import {
   setMarkupReseller,
   setAktifReseller,
   hapusBotReseller,
-  MAKS_BOT_PER_AKUN,
-  MARKUP_MAKS,
+  batasUntukPemilik,
   WD_RESELLER_MIN
 } from "@/lib/resellerBot";
+import { konfigPaket, ringkasLevel, beliSlot, beliPremium } from "@/lib/resellerPaket";
 import { umumkan } from "@/lib/notifyHub";
 import { botResellerBaruNotif } from "@/lib/resellerNotif";
 
@@ -24,7 +24,7 @@ export const maxDuration = 60;
 async function pemilik(token) {
   if (!token) return null;
   const users = await usersCol();
-  return users.findOne({ token }, { projection: { token: 1, name: 1, suspended: 1 } });
+  return users.findOne({ token }, { projection: { token: 1, name: 1, suspended: 1, balance: 1, slotTambahan: 1, premiumSampai: 1 } });
 }
 
 export async function GET(req) {
@@ -32,11 +32,29 @@ export async function GET(req) {
   const user = await pemilik(token);
   if (!user) return NextResponse.json({ error: "Kode akun tidak dikenali." }, { status: 401 });
 
+  const batas = await batasUntukPemilik(user.token);
+  const k = await konfigPaket();
   return NextResponse.json({
     items: await botMilik(user.token),
-    maks: MAKS_BOT_PER_AKUN,
-    markupMaks: MARKUP_MAKS,
-    tarikMin: WD_RESELLER_MIN
+    maks: batas.maksBot,
+    markupMaks: batas.markupMaks,
+    tarikMin: WD_RESELLER_MIN,
+    saldo: Number(user.balance) || 0,
+    // Paket & level: harga, status Premium, dan kemajuan menuju level berikutnya.
+    paket: {
+      slotTambahan: Number(user.slotTambahan) || 0,
+      slotHarga: k.slotHarga,
+      slotMaks: k.slotMaks,
+      slotBisaDibeli: k.slotHarga > 0 && (Number(user.slotTambahan) || 0) < k.slotMaks,
+      premium: batas.premium,
+      premiumSampai: user.premiumSampai || null,
+      premiumHarga: k.premiumHarga,
+      premiumHari: k.premiumHari,
+      premiumSlot: k.premiumSlot,
+      premiumMarkupMaks: k.premiumMarkupMaks,
+      premiumDiskon: k.premiumDiskon
+    },
+    level: await ringkasLevel(user.token)
   });
 }
 
@@ -99,6 +117,17 @@ export async function POST(req) {
           ? `Bot @${r.bot.username} siap! Kirim /start ke botnya untuk mencoba.`
           : `Bot @${r.bot.username} tersimpan, tapi webhooknya belum terpasang: ${r.webhook?.alasan || "gagal"}`
       });
+    }
+
+    if (aksi === "beli_slot") {
+      const r = await beliSlot(user.token);
+      if (!r.ok) return NextResponse.json({ error: r.alasan, kurang: r.kurang }, { status: 400 });
+      return NextResponse.json({ ok: true, pesan: "Slot bot bertambah satu.", saldo: r.saldo, slotTambahan: r.slotTambahan });
+    }
+    if (aksi === "beli_premium") {
+      const r = await beliPremium(user.token);
+      if (!r.ok) return NextResponse.json({ error: r.alasan, kurang: r.kurang }, { status: 400 });
+      return NextResponse.json({ ok: true, pesan: "Paket Premium aktif.", saldo: r.saldo, premiumSampai: r.premiumSampai });
     }
 
     const botId = String(body?.botId || "");
