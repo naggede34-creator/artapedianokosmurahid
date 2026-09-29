@@ -60,6 +60,9 @@ export function UserProvider({ children }) {
   const [joinedAt, setJoinedAt] = useState(null);
   const [tourDone, setTourDone] = useState(false);
   const [ready, setReady] = useState(false);
+  // true = admin mewajibkan daftar/masuk dan pengunjung belum punya akun aktif.
+  const [perluMasuk, setPerluMasuk] = useState(false);
+  const [loginWajib, setLoginWajib] = useState(false);
 
   const init = useCallback(async (existingToken, ref) => {
     const body = existingToken ? { token: existingToken } : {};
@@ -80,16 +83,91 @@ export function UserProvider({ children }) {
       setTourDone(data.tourDone === true);
       return data;
     }
-    throw new Error(data.error || "Gagal memuat akun.");
+    const err = new Error(data.error || "Gagal memuat akun.");
+    err.status = res.status;
+    throw err;
   }, []);
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("artapedia_token") : null;
     const ref = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("ref") : null;
-    init(saved || undefined, ref || undefined)
-      .catch(() => init())
-      .finally(() => setReady(true));
+    // Kode undangan diingat sampai benar-benar daftar: pengunjung yang dibawa
+    // link ?ref= biasanya membaca dulu sebelum mengisi nama.
+    try { if (ref) sessionStorage.setItem("artapedia_ref", ref); } catch {}
+
+    (async () => {
+      // Status saklar dibaca DULU. Dengan login wajib, akun tidak boleh dibuat
+      // otomatis — yang tersimpan di perangkat tetap dicoba (pengguna lama).
+      let wajib = false;
+      try {
+        const r = await fetch("/api/settings/public", { cache: "no-store" });
+        wajib = !!(await r.json()).loginWajib;
+      } catch {}
+      setLoginWajib(wajib);
+
+      if (saved) {
+        try {
+          await init(saved);
+          return;
+        } catch (e) {
+          // Login wajib: minta masuk. Kode tersimpan HANYA dibuang kalau server
+          // bilang tidak dikenal (404); gangguan jaringan atau batas percobaan
+          // tidak boleh menghapus kode milik pengguna lama.
+          // Tidak wajib: perilaku lama, buat akun baru.
+          if (wajib) {
+            if (e?.status === 404) {
+              try { localStorage.removeItem("artapedia_token"); } catch {}
+            }
+            setPerluMasuk(true);
+            return;
+          }
+        }
+      }
+      if (wajib) {
+        setPerluMasuk(true);
+        return;
+      }
+      await init(undefined, ref || undefined).catch((e) => {
+        // Saklar ternyata menyala (status tak terbaca di atas): tampilkan gerbang.
+        if (e?.status === 403) {
+          setLoginWajib(true);
+          setPerluMasuk(true);
+        }
+      });
+    })().finally(() => setReady(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Pendaftaran: mengembalikan { token, name } TANPA langsung masuk, supaya
+  // layar "simpan kode akun" sempat tampil sebelum halaman berganti.
+  const daftar = useCallback(async (namaBaru) => {
+    let ref = null;
+    try { ref = sessionStorage.getItem("artapedia_ref"); } catch {}
+    const res = await fetch("/api/user/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: namaBaru, ...(ref ? { ref } : {}) })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Gagal mendaftar.");
+    return data;
+  }, []);
+
+  // Masuk dengan kode akun (juga dipakai setelah daftar).
+  const masuk = useCallback(
+    async (kode) => {
+      const data = await init(String(kode || "").trim().toUpperCase());
+      setPerluMasuk(false);
+      return data;
+    },
+    [init]
+  );
+
+  const keluar = useCallback(() => {
+    try {
+      localStorage.removeItem("artapedia_token");
+    } catch {}
+    window.location.href = "/";
   }, []);
 
   const refreshBalance = useCallback(async () => {
@@ -141,7 +219,7 @@ export function UserProvider({ children }) {
 
   return (
     <UserContext.Provider
-      value={{ token, balance, depositBalance, name, joinedAt, tourDone, ready, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
+      value={{ token, balance, depositBalance, name, joinedAt, tourDone, ready, perluMasuk, loginWajib, daftar, masuk, keluar, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
     >
       {children}
     </UserContext.Provider>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { CHANNEL_URL } from "@/lib/links";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useUser } from "@/app/providers";
 import { Icon } from "@/components/ui";
@@ -105,7 +105,8 @@ const sections = [
 
 export default function Sidebar({ open, onClose }) {
   const pathname = usePathname();
-  const { balance, ready, name } = useUser();
+  const { balance, ready, name, token, loginWajib, keluar } = useUser();
+  const [kodeTersalin, setKodeTersalin] = useState(false);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -177,6 +178,31 @@ export default function Sidebar({ open, onClose }) {
             </div>
           ))}
         </nav>
+
+        {loginWajib && token && (
+          <div className="border-t border-line px-5 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-muted">Kode akun</p>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="min-w-0 flex-1 truncate font-mono text-xs font-bold text-ink">{token}</span>
+              <button
+                type="button"
+                onClick={async () => {
+                  try { await navigator.clipboard.writeText(token); setKodeTersalin(true); setTimeout(() => setKodeTersalin(false), 1800); } catch {}
+                }}
+                className="press rounded-lg border border-line px-2.5 py-1 text-[11px] font-bold text-ink"
+              >
+                {kodeTersalin ? "✅" : "Salin"}
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => { if (window.confirm("Keluar dari akun ini? Pastikan kode akunmu sudah disimpan, karena itu satu-satunya cara masuk lagi.")) keluar(); }}
+              className="press mt-2 w-full rounded-xl border border-rose/40 bg-rose-soft px-3 py-2 text-xs font-black text-rose"
+            >
+              🚪 Keluar
+            </button>
+          </div>
+        )}
 
         <div className="flex items-center justify-between border-t border-line px-5 py-4">
           <span className="text-sm font-medium text-muted">Mode gelap</span>

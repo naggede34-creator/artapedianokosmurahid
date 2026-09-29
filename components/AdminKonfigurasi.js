@@ -187,6 +187,33 @@ export default function AdminKonfigurasi() {
                       <p className="mt-2 rounded-lg bg-surface2 px-3 py-2 text-[11px] font-bold text-muted">
                         {st.terisi ? "✅ Terisi di Vercel." : "Belum diisi di Vercel."} Hanya bisa diubah lewat Vercel.
                       </p>
+                    ) : k.saklar ? (
+                      <div className="mt-2 flex items-center gap-3">
+                        {(() => {
+                          const nyala = String(st.tampil || k.bawaan || "0") === "1";
+                          return (
+                            <>
+                              <button
+                                type="button"
+                                role="switch"
+                                aria-checked={nyala}
+                                disabled={busy !== "" || !data.terbaca}
+                                onClick={() => kirim({ aksi: "simpan", nama: k.nama, nilai: nyala ? "0" : "1" }, k.nama)}
+                                className={`relative h-8 w-14 shrink-0 rounded-full border-2 transition-colors disabled:opacity-50 ${
+                                  nyala ? "border-success bg-success" : "border-line bg-surface2"
+                                }`}
+                              >
+                                <span
+                                  className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${nyala ? "left-[26px]" : "left-0.5"}`}
+                                />
+                              </button>
+                              <span className={`text-sm font-black ${nyala ? "text-success" : "text-muted"}`}>
+                                {kunciBusy ? "Menyimpan…" : nyala ? "NYALA" : "MATI"}
+                              </span>
+                            </>
+                          );
+                        })()}
+                      </div>
                     ) : k.khusus === "kodeAdmin" ? (
                       <div className="mt-2 space-y-2">
                         <p className="text-[11px] font-bold text-muted">

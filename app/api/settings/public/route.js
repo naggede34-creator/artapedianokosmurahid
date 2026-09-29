@@ -13,6 +13,7 @@ import { rumahOtpConfigured } from "@/lib/rumahotp";
 import { atlanticConfigured } from "@/lib/atlantic";
 import { CHANNEL_URL } from "@/lib/links";
 import { infoJaminan } from "@/lib/jaminan";
+import { loginWajib } from "@/lib/webAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,8 @@ export async function GET() {
     const jam = manualDepositHours(settings);
     return NextResponse.json({
       maintenance: !!maintenance,
+      // Saklar admin: true = pengunjung wajib daftar/masuk.
+      loginWajib: await loginWajib().catch(() => false),
       csUsername: csUsername || "teatlas",
       maintenanceMsg,
       maintenanceTitle: maintenanceTitle || "Sedang Maintenance",

@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
-import { generateUserToken } from "@/lib/token";
-import { newUserNotif } from "@/lib/telegram";
-import { umumkan } from "@/lib/notifyHub";
 import { sendMonitorLog, userLoginLog } from "@/lib/monitor";
 import { rateLimit } from "@/lib/rateLimit";
-import { sidikJari } from "@/lib/referralGuard";
+import { loginWajib, buatAkunBaru } from "@/lib/webAuth";
 
 export async function POST(req) {
   try {
@@ -21,7 +18,7 @@ export async function POST(req) {
       if (!rateLimit(`${ip}:user-init`, 30, 60_000)) {
         return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi sebentar lagi." }, { status: 429 });
       }
-      const existing = await users.findOne({ token: body.token });
+      const existing = await users.findOne({ token: String(body.token).trim().toUpperCase() });
       if (existing) {
         sendMonitorLog(userLoginLog({ token: existing.token, isNew: false }));
         return NextResponse.json({
@@ -36,6 +33,12 @@ export async function POST(req) {
       return NextResponse.json({ error: "Kode akun tidak ditemukan." }, { status: 404 });
     }
 
+    // Login diwajibkan: akun tidak boleh dibuat diam-diam. Pengunjung tanpa
+    // kode diarahkan ke pendaftaran (nama saja) atau masuk dengan kode akun.
+    if (await loginWajib()) {
+      return NextResponse.json({ error: "Daftar atau masuk dulu untuk memakai website.", loginWajib: true }, { status: 403 });
+    }
+
     // Pembuatan akun dibatasi lebih ketat daripada pembacaannya: akun baru
     // berhak atas bonus sambutan, jadi membuat akun massal adalah mencetak
     // saldo. Sepuluh per jam masih jauh di atas kebutuhan orang sungguhan yang
@@ -47,50 +50,7 @@ export async function POST(req) {
       );
     }
 
-    let token;
-    for (let i = 0; i < 5; i++) {
-      const candidate = generateUserToken();
-      const found = await users.findOne({ token: candidate });
-      if (!found) {
-        token = candidate;
-        break;
-      }
-    }
-    if (!token) throw new Error("Gagal membuat kode akun, coba lagi.");
-
-    // Kalau user baru datang dari link undangan teman (?ref=TOKEN), catat siapa yang mengundang.
-    // Bonusnya baru dicairkan ke pengundang saat user ini deposit pertama kali (lihat deposit/webhook).
-    let referredBy = null;
-    const refCandidate = typeof body.ref === "string" ? body.ref.trim() : "";
-    if (refCandidate && refCandidate !== token) {
-      const referrer = await users.findOne({ token: refCandidate });
-      if (referrer) referredBy = referrer.token;
-    }
-
-    const createdAt = new Date();
-    await users.insertOne({
-      token,
-      balance: 0,
-      referredBy,
-      referralCount: 0,
-      referralEarnings: 0,
-      referralBonusGiven: false,
-      // Hash IP + User-Agent saat daftar, untuk penjaga anti-farming referral.
-      ...sidikJari(req),
-      points: 0,
-      totalSpent: 0,
-      cashbackTotal: 0,
-      createdAt
-    });
-
-    const userCount = await users.countDocuments();
-    // Teks yang sama dipakai untuk admin dan channel: kode akun ditulis sebagai
-    // penanda, utuh di chat admin dan otomatis tersamar di channel.
-    const referrerDoc = referredBy ? await users.findOne({ token: referredBy }, { projection: { name: 1 } }) : null;
-    const notifText = newUserNotif({ token, referredBy, userCount, sumber: "Website", referrerName: referrerDoc?.name || null });
-    umumkan({ jenis: "user_baru", admin: notifText, publik: notifText });
-    sendMonitorLog(userLoginLog({ token, isNew: true }));
-
+    const { token, createdAt } = await buatAkunBaru({ req, ref: body.ref, sumber: "Website" });
     return NextResponse.json({ token, balance: 0, createdAt, tourDone: false });
   } catch (err) {
     console.error(err);

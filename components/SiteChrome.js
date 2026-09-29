@@ -18,10 +18,18 @@ import RevealOnScroll from "@/components/RevealOnScroll";
 import Depth3D from "@/components/Depth3D";
 import PanelTransition from "@/components/PanelTransition";
 import PasangAplikasi from "@/components/PasangAplikasi";
+import AuthGate from "@/components/AuthGate";
+import { useUser } from "@/app/providers";
+
+// Halaman yang tetap terbuka tanpa akun saat login diwajibkan: informasi umum.
+const TANPA_LOGIN = ["/syarat", "/informasi", "/faq", "/cara-pakai", "/api-docs", "/gateway"];
 
 export default function SiteChrome({ children }) {
   const pathname = usePathname();
+  const { perluMasuk } = useUser();
   const isAdmin = pathname?.startsWith("/admin");
+  // Login wajib menyala dan belum punya akun: gerbang menutup halaman.
+  const tampilGerbang = perluMasuk && !TANPA_LOGIN.some((p) => pathname === p || pathname?.startsWith(`${p}/`));
   // Room Chat itu satu layar penuh ala aplikasi chat: navbar, footer, dan
   // bottom nav situs tidak ikut ditampilkan. Sebelumnya ketiganya tetap
   // dirender di belakang overlay-nya — tidak terlihat, tapi ikut menambah
@@ -77,21 +85,28 @@ export default function SiteChrome({ children }) {
   // Tanpa RevealOnScroll di sini: halaman ini tidak memakai kelas animasi
   // masuk apa pun, dan pengamat mutasinya justru akan bekerja terus-menerus
   // di DOM chat yang isinya berubah setiap pesan datang.
-  if (isChat) return <>{children}</>;
+  if (isChat) return <>{tampilGerbang && <AuthGate />}{children}</>;
 
   return (
     <>
+      {tampilGerbang && <AuthGate />}
       <RevealOnScroll />
       <Depth3D />
       <PanelTransition />
       <LogoLoader />
       {/* Sapaan maskot & popup pembuka menunggu animasi loading selesai
           (lihat lib/introGate.js) supaya tidak tertimbun di belakangnya. */}
-      <ComicIntro />
-      <MascotNudge />
-      <MascotGreeting />
-      <InfoModal />
-      <WelcomeBonusPopup />
+      {/* Selama gerbang daftar/masuk tampil, popup pembuka ditunda: jangan
+          bertumpuk di depan layar yang harus diisi dulu. */}
+      {!tampilGerbang && (
+        <>
+          <ComicIntro />
+          <MascotNudge />
+          <MascotGreeting />
+          <InfoModal />
+          <WelcomeBonusPopup />
+        </>
+      )}
       <BroadcastBar />
       <Navbar />
       <main className="pb-24 md:pb-0">{children}</main>
