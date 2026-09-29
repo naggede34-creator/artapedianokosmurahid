@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import PushToggle from "@/components/PushToggle";
 
 /* ── accent per type ───────────────────────────────────────── */
 const TYPE_META = {
@@ -314,6 +315,8 @@ export default function NotificationBell({ token }) {
                 </button>
               )}
             </div>
+
+            <PushToggle token={token} />
 
             {/* Filter chips */}
             {types.length > 1 && (

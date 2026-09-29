@@ -26,3 +26,42 @@ self.addEventListener("fetch", (e) => {
   if (r.method !== "GET" || r.mode !== "navigate") return;
   e.respondWith(fetch(r).catch(() => caches.match(OFFLINE)));
 });
+
+// ── Notifikasi push ──────────────────────────────────────────────────────────
+// Isi push dikirim server (lib/webPush.js): { judul, isi, url, tag }. Kode OTP
+// sengaja tidak ikut di dalamnya — layar kunci bisa dilihat siapa saja.
+self.addEventListener("push", (e) => {
+  let d = {};
+  try {
+    d = e.data ? e.data.json() : {};
+  } catch {
+    d = { isi: e.data ? e.data.text() : "" };
+  }
+  e.waitUntil(
+    self.registration.showNotification(d.judul || "ARTA PEDIA", {
+      body: d.isi || "",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      tag: d.tag || undefined,
+      renotify: Boolean(d.tag),
+      data: { url: d.url || "/" }
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || "/";
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((ws) => {
+      for (const w of ws) {
+        // Tab yang sudah terbuka dipakai ulang, bukan membuka tab baru.
+        if ("focus" in w) {
+          w.navigate && w.navigate(url);
+          return w.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});
