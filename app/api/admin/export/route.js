@@ -4,30 +4,9 @@
 // type=deposits → CSV deposit
 // type=transactions → CSV transaksi OTP
 import { NextResponse } from "next/server";
-import {
-  usersCol,
-  depositsCol,
-  otpOrdersCol,
-  balanceLogsCol,
-  adminBalanceLogsCol,
-  settingsCol,
-  vouchersCol,
-  dailyActivitiesCol,
-  missionsCol,
-  scratchCardsCol,
-  mysteryBoxCol,
-  weeklyChallengesCol,
-  userNotificationsCol,
-  otpFavoritesCol,
-  userTelegramCol,
-  productOrdersCol,
-  jobSubmissionsCol,
-  warrantyClaimsCol,
-  ticketsCol,
-  botSessionsCol,
-  petsCol
-} from "@/lib/db";
+import { usersCol, depositsCol, otpOrdersCol, petsCol } from "@/lib/db";
 import { isAdminRequest } from "@/lib/adminAuth";
+import { bangunBackupPenuh, barisAkun, PROYEKSI_AKUN, KETERANGAN_AKUN } from "@/lib/backupData";
 
 export const dynamic = "force-dynamic";
 
@@ -107,7 +86,7 @@ export async function GET(req) {
 
       const cursor = users
         .find({})
-        .project({ _id: 0, token: 1, name: 1, balance: 1, coins: 1, points: 1 })
+        .project(PROYEKSI_AKUN)
         .limit(BATAS);
 
       const enc = new TextEncoder();
@@ -125,10 +104,10 @@ export async function GET(req) {
                   `  "batasBaris": ${BATAS},\n` +
                   `  "totalDiDatabase": ${total},\n` +
                   `  "terpotong": ${total > BATAS},\n` +
-                  '  "isi": "token, nama, saldo, koin, poin, pet",\n' +
-                  '  "tidakDisertakan": "riwayat pembelian, deposit, mutasi, nomor telepon, kode OTP",\n' +
-                  '  "peringatan": "token adalah kredensial akun. Siapa pun yang memegang berkas ini bisa membuka akun mana pun di dalamnya.",\n' +
-                  '  "catatanKoin": "Situs ini belum punya mata uang koin terpisah dari poin, jadi koin bernilai 0 untuk semua akun sampai fiturnya ada.",\n' +
+                  `  "isi": ${JSON.stringify(KETERANGAN_AKUN.isi)},\n` +
+                  `  "tidakDisertakan": ${JSON.stringify(KETERANGAN_AKUN.tidakDisertakan)},\n` +
+                  `  "peringatan": ${JSON.stringify(KETERANGAN_AKUN.peringatan)},\n` +
+                  `  "catatanKoin": ${JSON.stringify(KETERANGAN_AKUN.catatanKoin)},\n` +
                   '  "users": ['
               )
             );
@@ -136,22 +115,10 @@ export async function GET(req) {
             let n = 0;
             for await (const u of cursor) {
               const p = petMap.get(u.token);
-              const baris = {
-                token: u.token,
-                nama: u.name || "",
-                saldo: u.balance || 0,
-                koin: u.coins || 0,
-                poin: u.points || 0,
-                pet: p
-                  ? {
-                      nama: p.nama || "",
-                      level: p.level || 0,
-                      xp: p.xp || 0,
-                      totalHariDirawat: p.totalHariDirawat || 0,
-                      bornAt: p.bornAt ? new Date(p.bornAt).toISOString() : null
-                    }
-                  : null
-              };
+              // barisAkun() dipakai bersama backup otomatis: kalau kolomnya
+              // ditentukan dua kali, suatu saat yang satu ikut menyertakan apa
+              // yang di satu lagi sengaja dibuang.
+              const baris = barisAkun(u, p);
               controller.enqueue(enc.encode((n === 0 ? "\n    " : ",\n    ") + JSON.stringify(baris)));
               n += 1;
             }
@@ -177,86 +144,11 @@ export async function GET(req) {
       });
 
     } else if (type === "backup") {
-      // Backup penuh = SEMUA koleksi, bukan cuma user.
-      //
-      // Versi sebelumnya hanya menyalin koleksi users. Dokumen user memang
-      // sudah lengkap di situ (saldo, poin, totalSpent, cashback, semuanya),
-      // tapi kalau datanya benar-benar hilang, yang tidak ikut terselamatkan
-      // adalah riwayat pesanan, deposit, dan mutasi saldo — justru bagian yang
-      // tidak bisa dibangun ulang dari mana pun.
-      //
-      // Tiap koleksi dibatasi jumlahnya, dan kalau kena batas itu DITULIS di
-      // dalam berkasnya. Backup yang diam-diam terpotong lebih berbahaya
-      // daripada backup yang gagal, karena baru ketahuan saat dipakai.
-      const BATAS = 50000;
-
-      const daftar = [
-        ["users", usersCol],
-        ["deposits", depositsCol],
-        ["otp_orders", otpOrdersCol],
-        ["balance_logs", balanceLogsCol],
-        ["admin_balance_logs", adminBalanceLogsCol],
-        ["settings", settingsCol],
-        ["vouchers", vouchersCol],
-        ["daily_activities", dailyActivitiesCol],
-        ["missions", missionsCol],
-        ["scratch_cards", scratchCardsCol],
-        ["mystery_box", mysteryBoxCol],
-        ["weekly_challenges", weeklyChallengesCol],
-        ["user_notifications", userNotificationsCol],
-        ["otp_favorites", otpFavoritesCol],
-        ["user_telegram", userTelegramCol],
-        ["product_orders", productOrdersCol],
-        ["job_submissions", jobSubmissionsCol],
-        ["warranty_claims", warrantyClaimsCol],
-        ["tickets", ticketsCol],
-        ["bot_sessions", botSessionsCol]
-      ];
-
-      const data = {};
-      const ringkasan = {};
-      const terpotong = [];
-      let users = [];
-
-      for (const [nama, ambil] of daftar) {
-        try {
-          const col = await ambil();
-          const total = await col.countDocuments({});
-          const rows = await col.find({}).limit(BATAS).toArray();
-          const bersih = rows.map(({ _id, ...sisa }) => ({ _id: _id?.toString(), ...sisa }));
-          if (nama === "users") users = bersih;
-          else data[nama] = bersih;
-          ringkasan[nama] = { disimpan: rows.length, totalDiDatabase: total };
-          if (total > rows.length) terpotong.push(nama);
-        } catch (e) {
-          // Satu koleksi yang gagal dibaca tidak boleh menggagalkan seluruh
-          // backup — sisanya tetap jauh lebih berharga daripada tidak ada.
-          console.error(`[backup] koleksi ${nama} gagal:`, e?.message || e);
-          if (nama !== "users") data[nama] = [];
-          ringkasan[nama] = { disimpan: 0, totalDiDatabase: null, gagal: String(e?.message || e) };
-        }
-      }
-
-      const json = JSON.stringify(
-        {
-          version: 2,
-          exportedAt: new Date().toISOString(),
-          batasPerKoleksi: BATAS,
-          koleksiTerpotong: terpotong,
-          ringkasan,
-          // users SENGAJA ditaruh di tingkat atas, bukan di dalam `data`:
-          // /api/admin/import membacanya dari sana, jadi berkas versi 2 tetap
-          // bisa di-restore alat yang sudah ada. Dan karena tidak disalin dua
-          // kali, koleksi terbesar tidak menggandakan ukuran berkasnya.
-          count: users.length,
-          users,
-          data
-        },
-        null,
-        2
-      );
-
-      return new NextResponse(json, {
+      // Dibangun lib/backupData.js, yang SAMA dipakai backup otomatis lewat
+      // bot. Dua kode terpisah akan berbeda pelan-pelan, dan yang berbeda di
+      // sini adalah kolom mana yang ikut dibawa keluar.
+      const { teks } = await bangunBackupPenuh();
+      return new NextResponse(teks, {
         status: 200,
         headers: {
           "Content-Type": "application/json; charset=utf-8",

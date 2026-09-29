@@ -6156,6 +6156,67 @@ function ExportSection() {
     }
   }
 
+  // ── Backup otomatis lewat bot ──────────────────────────────────────
+  const [abStatus, setAbStatus] = useState(null);
+  const [abBusy, setAbBusy] = useState("");
+  const [abMsg, setAbMsg] = useState("");
+  const [abErr, setAbErr] = useState("");
+
+  const loadAutoBackup = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/backup");
+      const d = await res.json();
+      if (res.ok) setAbStatus(d);
+    } catch {}
+  }, []);
+
+  useEffect(() => { loadAutoBackup(); }, [loadAutoBackup]);
+
+  async function abSimpan(patch) {
+    setAbBusy("simpan"); setAbMsg(""); setAbErr("");
+    try {
+      const res = await fetch("/api/admin/backup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          aksi: "simpan",
+          aktif: patch.aktif !== undefined ? patch.aktif : abStatus?.aktif !== false,
+          jarakHari: patch.jarakHari !== undefined ? patch.jarakHari : abStatus?.jarakHari || 1
+        })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Gagal menyimpan.");
+      setAbMsg(d.pesan || "Tersimpan.");
+      loadAutoBackup();
+    } catch (e) {
+      setAbErr(e.message);
+    } finally {
+      setAbBusy("");
+      setTimeout(() => { setAbMsg(""); setAbErr(""); }, 5000);
+    }
+  }
+
+  async function abKirim() {
+    if (!confirm("Kirim backup sekarang ke chat pemilik?\n\nBerkasnya memuat KODE AKUN SEMUA PENGGUNA. Pastikan chat tujuannya benar-benar chat kamu sendiri.")) return;
+    setAbBusy("kirim"); setAbMsg(""); setAbErr("");
+    try {
+      const res = await fetch("/api/admin/backup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aksi: "kirim" })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Gagal mengirim.");
+      setAbMsg(d.pesan || "Selesai.");
+      loadAutoBackup();
+    } catch (e) {
+      setAbErr(e.message);
+    } finally {
+      setAbBusy("");
+      setTimeout(() => { setAbMsg(""); setAbErr(""); }, 8000);
+    }
+  }
+
   async function doAkun() {
     setAkunLoading(true);
     try {
@@ -6231,6 +6292,105 @@ function ExportSection() {
         <button onClick={doExport} disabled={loading} className="w-full rounded-xl bg-teal-bright text-white py-2.5 text-sm font-bold press disabled:opacity-50 border border-teal">
           {loading ? "Menyiapkan…" : "⬇️ Download CSV"}
         </button>
+      </div>
+
+      {/* Backup otomatis lewat bot */}
+      <div className="glass rounded-2xl p-5 shadow-soft border border-success/20">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-base font-bold text-ink">🤖 Backup Otomatis lewat Bot</h2>
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-[11px] font-black text-white ${
+              abStatus?.aktif ? "bg-success" : "bg-rose"
+            }`}
+          >
+            {abStatus?.aktif ? "ON" : "OFF"}
+          </span>
+        </div>
+        <p className="mt-1.5 text-xs leading-relaxed text-muted">
+          <b>Backup Penuh</b> dan <b>Database Akun</b> dikirim otomatis ke chat Telegram pemilik,
+          sudah dimampatkan jadi <code>.gz</code> supaya muat.
+        </p>
+
+        <p className="mt-3 rounded-xl border border-rose/30 bg-rose-soft px-3 py-2 text-[11px] font-bold leading-relaxed text-rose">
+          ⚠️ Berkasnya memuat <b>kode akun semua pengguna</b> — itu kredensial. Siapa pun yang
+          memegangnya bisa membuka akun mana pun dan membelanjakan saldonya. Karena itu tujuannya
+          dikunci ke id chat <b>pribadi</b> di environment; id grup dan channel ditolak.
+        </p>
+
+        {abStatus && (
+          <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+            <dt className="text-muted">Dikirim lewat</dt>
+            <dd className="font-bold text-ink">{abStatus.botSiap ? abStatus.lewatBot : "— belum ada token bot"}</dd>
+            <dt className="text-muted">Chat tujuan</dt>
+            <dd className="font-mono text-ink">
+              {abStatus.tujuan?.length ? abStatus.tujuan.join(", ") : "— belum diisi"}
+            </dd>
+            <dt className="text-muted">Backup terakhir</dt>
+            <dd className="font-bold text-ink">
+              {abStatus.terakhir
+                ? new Date(abStatus.terakhir).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })
+                : "belum pernah"}
+            </dd>
+          </dl>
+        )}
+
+        {abStatus && !abStatus.tujuan?.length && (
+          <p className="mt-2 rounded-xl border border-amber/30 bg-amber-soft px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-bright">
+            Isi <code>TELEGRAM_OWNER_IDS</code> di environment Vercel dengan id chat pribadi kamu
+            (angka positif). Tanpa itu backup tidak punya tujuan dan tidak akan terkirim.
+          </p>
+        )}
+        {abStatus?.ditolak?.length > 0 && (
+          <p className="mt-2 rounded-xl border border-rose/30 bg-rose-soft px-3 py-2 text-[11px] font-semibold leading-relaxed text-rose">
+            Ditolak sebagai tujuan: <code>{abStatus.ditolak.join(", ")}</code>. Id negatif berarti grup
+            atau channel — mengirim backup ke sana sama dengan membagikan semua akun ke anggotanya.
+          </p>
+        )}
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            onClick={() => abSimpan({ aktif: !(abStatus?.aktif !== false) })}
+            disabled={abBusy !== ""}
+            className={`press flex-1 rounded-xl py-2.5 text-sm font-bold text-white disabled:opacity-50 ${
+              abStatus?.aktif ? "bg-rose" : "bg-success"
+            }`}
+          >
+            {abBusy === "simpan" ? "…" : abStatus?.aktif ? "⏸ Matikan" : "▶ Nyalakan"}
+          </button>
+        </div>
+
+        <label className="mt-4 block text-xs font-semibold text-muted">Kirim setiap</label>
+        <div className="mt-1.5 flex gap-2">
+          {[1, 2].map((h) => (
+            <button
+              key={h}
+              onClick={() => abSimpan({ jarakHari: h })}
+              disabled={abBusy !== ""}
+              className={`press flex-1 rounded-xl border py-2 text-xs font-bold disabled:opacity-50 ${
+                (abStatus?.jarakHari || 1) === h
+                  ? "border-success bg-success text-white"
+                  : "border-line text-muted"
+              }`}
+            >
+              {h} hari
+            </button>
+          ))}
+        </div>
+        <p className="mt-1.5 text-[11px] leading-relaxed text-muted">
+          Cron-nya jalan tiap hari karena paket Vercel cuma membolehkan itu; jarak 1 atau 2 hari
+          ditegakkan di kodenya, bukan di jadwalnya.
+        </p>
+
+        <button
+          onClick={abKirim}
+          disabled={abBusy !== "" || !abStatus?.botSiap || !abStatus?.tujuan?.length}
+          className="press mt-4 w-full rounded-xl border border-line bg-surface py-2.5 text-sm font-bold text-ink disabled:opacity-50"
+        >
+          {abBusy === "kirim" ? "Membuat & mengirim… (bisa sampai 1 menit)" : "📤 Kirim Sekarang (uji coba)"}
+        </button>
+
+        {abMsg && <p className="mt-2.5 text-xs font-bold text-success">{abMsg}</p>}
+        {abErr && <p className="mt-2.5 text-xs font-bold text-rose">{abErr}</p>}
       </div>
 
       {/* Database akun saja (JSON ringkas) */}
