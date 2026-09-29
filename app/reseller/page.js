@@ -323,9 +323,15 @@ function KartuBot({ bot, busy, kirim, markupMaks, tarikMin, rp }) {
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
+        {bot.dimatikanAdmin && (
+          <p className="w-full rounded-xl border border-rose/30 bg-rose-soft px-3 py-2 text-xs font-bold text-rose">
+            ⛔ Bot ini dimatikan oleh admin, jadi tidak bisa dinyalakan atau dihapus. Komisimu tetap aman —
+            hubungi admin kalau merasa ini keliru.
+          </p>
+        )}
         <button
           onClick={() => kirim({ aksi: bot.aktif ? "nonaktif" : "aktif", botId: bot.botId }, "aktif" + bot.botId)}
-          disabled={busy !== ""}
+          disabled={busy !== "" || (bot.dimatikanAdmin && !bot.aktif)}
           className={`btn-3d flex-1 rounded-xl py-2 text-xs font-black text-white disabled:opacity-50 ${bot.aktif ? "bg-rose" : "bg-success"}`}
         >
           {bot.aktif ? "⏸ Matikan" : "▶ Nyalakan"}
@@ -336,7 +342,7 @@ function KartuBot({ bot, busy, kirim, markupMaks, tarikMin, rp }) {
               kirim({ aksi: "hapus", botId: bot.botId }, "hapus" + bot.botId);
             }
           }}
-          disabled={busy !== ""}
+          disabled={busy !== "" || bot.dimatikanAdmin}
           className="btn-3d rounded-xl border border-rose/40 bg-rose-soft px-4 py-2 text-xs font-black text-rose disabled:opacity-50"
         >
           🗑 Hapus

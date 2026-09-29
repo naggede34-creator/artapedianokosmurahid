@@ -112,7 +112,7 @@ export async function POST(req) {
 
     if (aksi === "aktif" || aksi === "nonaktif") {
       const r = await setAktifReseller(user.token, botId, aksi === "aktif");
-      if (!r.ok) return NextResponse.json({ error: r.alasan }, { status: 404 });
+      if (!r.ok) return NextResponse.json({ error: r.alasan }, { status: r.terkunci ? 403 : 404 });
       // Menyalakan kembali berarti memasang ulang webhooknya: saat dimatikan
       // webhooknya dilepas, jadi tanpa ini botnya tetap bisu meski tertulis aktif.
       if (aksi === "aktif" && r.token) {

@@ -1,10 +1,10 @@
 // Giveaway untuk admin: buat, undi, batalkan.
 import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/adminAuth";
-import { daftarEvent, buatEvent, undiPemenang, batalkanEvent } from "@/lib/giveaway";
+import { daftarEvent, buatEvent, batalkanEvent } from "@/lib/giveaway";
+import { undiDanUmumkan, undiJatuhTempoDanUmumkan } from "@/lib/giveawayUndi";
 import { umumkan } from "@/lib/notifyHub";
-import { giveawayBaruNotif, giveawayMenangNotif } from "@/lib/giveawayNotif";
-import { notifyBotUser } from "@/lib/shopBot";
+import { giveawayBaruNotif } from "@/lib/giveawayNotif";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -12,6 +12,9 @@ export const maxDuration = 120;
 export async function GET(req) {
   if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
+    // Event yang waktunya habis diundi dulu, supaya dasbor tidak menampilkan
+    // "menunggu undian" untuk sesuatu yang seharusnya sudah selesai.
+    await undiJatuhTempoDanUmumkan();
     return NextResponse.json({ items: await daftarEvent({ batas: 100 }) });
   } catch (err) {
     console.error("[admin/giveaway GET]", err?.message || err);
@@ -38,24 +41,8 @@ export async function POST(req) {
     }
 
     if (aksi === "undi") {
-      const r = await undiPemenang(body?.giveawayId);
+      const r = await undiDanUmumkan(body?.giveawayId);
       if (!r.berubah) return NextResponse.json({ ok: true, pesan: r.alasan || "Sudah pernah diundi." });
-
-      const teks = giveawayMenangNotif({ event: r.event, pemenang: r.pemenang });
-      umumkan({ jenis: "giveaway_menang", admin: teks, publik: teks });
-
-      // Tiap pemenang dikabari di chat botnya sendiri. Pengumuman di channel
-      // saja tidak cukup: tidak semua orang membacanya, dan hadiah yang masuk
-      // tanpa keterangan terbaca seperti saldo yang muncul entah dari mana.
-      for (const p of r.pemenang.filter((x) => !x.gagal)) {
-        notifyBotUser(
-          p.token,
-          `🎉 <b>SELAMAT, KAMU MENANG!</b>\n\n` +
-            `Giveaway: <b>${r.event.judul}</b>\n` +
-            `Hadiah: <b>${r.event.jenisHadiah === "poin" ? `${r.event.nilaiHadiah} poin` : `Rp${r.event.nilaiHadiah.toLocaleString("id-ID")}`}</b>\n\n` +
-            `Sudah masuk ke akunmu. Cek sekarang!`
-        );
-      }
 
       return NextResponse.json({
         ok: true,

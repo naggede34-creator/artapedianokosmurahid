@@ -2,12 +2,20 @@
 import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
 import { daftarEvent, ikutGiveaway, batalIkutGiveaway } from "@/lib/giveaway";
+import { undiJatuhTempoDanUmumkan } from "@/lib/giveawayUndi";
 
 export const dynamic = "force-dynamic";
+// Memicu undian bisa berarti mengirim DM ke puluhan pemenang satu per satu.
+export const maxDuration = 60;
 
 export async function GET(req) {
   const token = new URL(req.url).searchParams.get("token") || null;
   try {
+    // Cron cuma jalan berkala, dan undian yang menunggu cron berarti pemenang
+    // baru tahu berjam-jam sesudah waktunya. Siapa pun yang membuka halaman
+    // giveaway ikut memicunya — murah kalau tidak ada yang jatuh tempo (satu
+    // kueri), dan aman kalau dipicu bersamaan (klaimnya atomik).
+    await undiJatuhTempoDanUmumkan();
     return NextResponse.json({ items: await daftarEvent({ token, hanyaAktif: true }) });
   } catch (err) {
     console.error("[giveaway GET]", err?.message || err);

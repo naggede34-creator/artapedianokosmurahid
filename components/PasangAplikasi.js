@@ -14,6 +14,13 @@ export default function PasangAplikasi() {
   const [kejadian, setKejadian] = useState(null);
   const [tampil, setTampil] = useState(false);
 
+  // Didaftarkan tanpa syarat, sebelum urusan ajakan pasang. Pengguna yang
+  // pernah menolak ajakan tetap perlu halaman offline-nya.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }, []);
+
   useEffect(() => {
     let ditolak = false;
     try {

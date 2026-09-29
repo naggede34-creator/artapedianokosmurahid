@@ -6,7 +6,7 @@
 // dari luar, termasuk yang menyentuh saldo.
 import { NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/adminAuth";
-import { getSettings, saveSettings } from "@/lib/settings";
+import { getSettings, updateSettings } from "@/lib/settings";
 import { tokenPengirim, tujuanBackup } from "@/lib/kirimBerkas";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +49,7 @@ export async function POST(req) {
 
   try {
     if (body?.aksi === "simpan") {
-      await saveSettings({
+      await updateSettings({
         autoBackup: body.aktif === true,
         autoBackupHari: Number(body.jarakHari) === 2 ? 2 : 1
       });

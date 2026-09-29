@@ -13,7 +13,7 @@ import { getServices } from "@/lib/rumahotp";
 import { usersCol, depositsCol } from "@/lib/db";
 import { runCleanup } from "@/lib/cleanup";
 import { sapuHoldMacet } from "@/lib/saldoHold";
-import { undiYangJatuhTempo } from "@/lib/giveaway";
+import { undiJatuhTempoDanUmumkan } from "@/lib/giveawayUndi";
 import { sendMonitorLog, cronReportLog } from "@/lib/monitor";
 
 export const dynamic = "force-dynamic";
@@ -97,7 +97,7 @@ export async function GET(req) {
   // Giveaway yang waktunya habis diundi sendiri. Tanpa ini, event yang
   // ditutup tengah malam menunggu sampai ada admin yang membuka dasbor —
   // dan pesertanya menunggu tanpa tahu sampai kapan.
-  const gw = await undiYangJatuhTempo();
+  const gw = await undiJatuhTempoDanUmumkan();
   if (gw.length) console.warn(`[cron/cleanup] ${gw.length} giveaway diundi otomatis`);
 
   const hold = await sapuHoldMacet({ batas: 200 });

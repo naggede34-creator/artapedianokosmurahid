@@ -6,7 +6,9 @@ import { samarkanToken, lepasWebhook } from "@/lib/bots";
 import { daftarPenarikan, tolakPenarikan, selesaikanPenarikan } from "@/lib/resellerWd";
 import { botsCol as _botsCol } from "@/lib/db";
 import { kabariPemilikBot } from "@/lib/kirimReseller";
-import { resellerWdSelesaiNotif, resellerWdTolakNotif } from "@/lib/resellerNotif";
+import { resellerWdSelesaiNotif, resellerWdTolakNotif, resellerDimatikanNotif, resellerDinyalakanNotif } from "@/lib/resellerNotif";
+import { getSettings } from "@/lib/settings";
+import { calonBase } from "@/lib/webhookBase";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +42,7 @@ export async function GET(req) {
         nama: b.nama,
         aktif: b.aktif !== false,
         dibekukan: !!b.dibekukan,
+        dimatikanAdmin: !!b.dimatikanAdmin,
         // Token tidak pernah dikirim utuh, bahkan ke admin: dasbor ini sering
         // dibuka sambil berbagi layar, dan token bot itu kunci penuh botnya.
         tokenSamar: samarkanToken(b.token),
@@ -142,9 +145,42 @@ export async function POST(req) {
     if (aksi === "matikan") {
       const b = await col.findOne({ botId, jenis: "reseller" });
       if (!b) return NextResponse.json({ error: "Bot tidak ditemukan." }, { status: 404 });
+      // Kabar dikirim SEBELUM webhooknya dilepas: mengirim pesan hanya butuh
+      // token, tapi urutannya begini supaya tidak ada jendela di mana bot
+      // sudah bisu dan pemiliknya belum diberi tahu apa pun.
+      await kabariPemilikBot(
+        b,
+        resellerDimatikanNotif({ botUsername: b.username, botNama: b.nama, ownerUsername: b.ownerUsername })
+      ).catch(() => {});
       await lepasWebhook(b.token);
-      await col.updateOne({ botId }, { $set: { aktif: false, updatedAt: new Date() } });
-      return NextResponse.json({ ok: true, pesan: "Bot dimatikan dan webhooknya dilepas." });
+      // dimatikanAdmin membedakan "dimatikan admin" dari "dimatikan pemiliknya
+      // sendiri". Tanpanya pemilik bisa menyalakan lagi dari halaman web,
+      // mendaftar ulang tokennya, atau menghapus lalu membuat ulang — dan
+      // keputusan admin tidak pernah berlaku.
+      await col.updateOne({ botId }, { $set: { aktif: false, dimatikanAdmin: true, updatedAt: new Date() } });
+      return NextResponse.json({ ok: true, pesan: "Bot dimatikan dan webhooknya dilepas. Pemiliknya tidak bisa menyalakannya lagi." });
+    }
+
+    if (aksi === "nyalakan") {
+      const b = await col.findOne({ botId, jenis: "reseller" });
+      if (!b) return NextResponse.json({ error: "Bot tidak ditemukan." }, { status: 404 });
+      await col.updateOne(
+        { botId },
+        { $set: { aktif: true, updatedAt: new Date() }, $unset: { dimatikanAdmin: "" } }
+      );
+      // Webhooknya dipasang ulang: saat dimatikan ia dilepas, jadi tanpa ini
+      // botnya tetap bisu meski tertulis aktif.
+      const { pasangWebhook, botsUpdateWebhook } = await import("@/lib/bots");
+      const w = await pasangWebhook(b.token, botId, calonBase(await getSettings()));
+      await botsUpdateWebhook(botId, w);
+      await kabariPemilikBot(
+        b,
+        resellerDinyalakanNotif({ botUsername: b.username, botNama: b.nama, ownerUsername: b.ownerUsername })
+      ).catch(() => {});
+      return NextResponse.json({
+        ok: true,
+        pesan: w?.ok === false ? "Dinyalakan, tapi webhook belum terpasang — cek Site URL." : "Bot dinyalakan kembali."
+      });
     }
 
     return NextResponse.json({ error: "Aksi tidak dikenali." }, { status: 400 });

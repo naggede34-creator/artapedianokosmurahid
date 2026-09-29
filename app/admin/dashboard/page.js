@@ -3564,13 +3564,22 @@ export default function AdminDashboardPage() {
                       >
                         {b.dibekukan ? "🔓 Cabut Pembekuan" : "🧊 Bekukan"}
                       </button>
+                      {!b.aktif && b.dimatikanAdmin && (
+                        <button
+                          onClick={() => rsAksi({ aksi: "nyalakan", botId: b.botId }, "n" + b.botId, `Nyalakan lagi @${b.username}?`)}
+                          disabled={rsBusy !== ""}
+                          className="press rounded-xl bg-success px-4 py-2 text-xs font-black text-white disabled:opacity-50"
+                        >
+                          ▶ Nyalakan
+                        </button>
+                      )}
                       {b.aktif && (
                         <button
                           onClick={() =>
                             rsAksi(
                               { aksi: "matikan", botId: b.botId },
                               "m" + b.botId,
-                              `Matikan @${b.username}?\n\nWebhooknya dilepas, botnya berhenti menjawab pembeli.`
+                              `Matikan @${b.username}?\n\nWebhooknya dilepas, botnya berhenti menjawab pembeli, dan pemiliknya TIDAK bisa menyalakannya lagi sendiri.`
                             )
                           }
                           disabled={rsBusy !== ""}

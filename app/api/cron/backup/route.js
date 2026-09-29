@@ -24,7 +24,7 @@
 // terkirim.
 // ─────────────────────────────────────────────────────────────────────────
 import { NextResponse } from "next/server";
-import { getSettings, saveSettings } from "@/lib/settings";
+import { getSettings, updateSettings } from "@/lib/settings";
 import { bangunBackupPenuh, bangunDatabaseAkun } from "@/lib/backupData";
 import {
   tokenPengirim,
@@ -193,7 +193,7 @@ export async function GET(req) {
   const adaTerkirim = hasil.some((h) => h.ok);
   if (adaTerkirim) {
     try {
-      await saveSettings({ autoBackupTerakhir: new Date().toISOString() });
+      await updateSettings({ autoBackupTerakhir: new Date().toISOString() });
     } catch (e) {
       console.error("[cron/backup] gagal menyimpan waktu backup:", e?.message || e);
     }
