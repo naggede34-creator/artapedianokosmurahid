@@ -221,7 +221,7 @@ export function UserProvider({ children }) {
     window.addEventListener("focus", saatFokus);
     document.addEventListener("visibilitychange", saatFokus);
     window.addEventListener("artapedia:saldo", saatEvent);
-    const id = setInterval(() => segar(false), 15000);
+    const id = setInterval(() => segar(false), 30000);
     return () => {
       window.removeEventListener("focus", saatFokus);
       document.removeEventListener("visibilitychange", saatFokus);

@@ -132,7 +132,7 @@ function Bola({ n, jalur, dx, rowH, top, onMendarat, onPasak, cepat }) {
       if (i !== iTerakhir.current) {
         iTerakhir.current = i;
         let k = 0; for (let a = 0; a < i; a++) k += jalur[a];
-        onPasak?.(i, k);
+        if (i < jalur.length) onPasak?.(i, k); // baris terakhir = kotak hadiah, bukan pasak
       }
       const px = x0 + (x1 - x0) * u, py = y0 + (i < jalur.length ? u * rowH : 0) - (i < jalur.length ? loncat : 0);
       jejak.current = [...jejak.current.slice(-6), { x: px, y: py }];

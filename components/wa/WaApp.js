@@ -31,6 +31,9 @@ export default function WaApp() {
   const [saya, setSaya] = useState(null);
   const [admin, setAdmin] = useState(false);
   const [perluNama, setPerluNama] = useState(false);
+  // Halaman dibuka lewat tautan game (?game=…): gerbang nama memakai kalimat khusus game.
+  const [maksudGame, setMaksudGame] = useState(false);
+  useEffect(() => { try { if (new URLSearchParams(window.location.search).get("game")) setMaksudGame(true); } catch {} }, []);
   const [gameInfo, setGameInfo] = useState({ undangan: [], berjalan: [], selesai: [] });
   const [gameAktif, setGameAktif] = useState(null);
   const gameTerlihat = useRef(null);
@@ -231,7 +234,7 @@ export default function WaApp() {
   const bukaGame = useCallback((id) => { setSheet(null); setGameAktif(id); }, []);
   const tutupSheet = useCallback(() => setSheet(null), []);
 
-  const ctx = useMemo(() => ({ token, api, me: saya, saya, admin, rooms, toast, bukaRoom, tutupRoom, buka, telepon, muatUlang: sinkron, bagikanSaya, bukaGame }), [token, api, saya, admin, rooms, toast, bukaRoom, tutupRoom, buka, telepon, sinkron, bagikanSaya, bukaGame]);
+  const ctx = useMemo(() => ({ token, api, perluNama, me: saya, saya, admin, rooms, toast, bukaRoom, tutupRoom, buka, telepon, muatUlang: sinkron, bagikanSaya, bukaGame }), [token, api, perluNama, saya, admin, rooms, toast, bukaRoom, tutupRoom, buka, telepon, sinkron, bagikanSaya, bukaGame]);
 
   // ───────────── daftar ─────────────
   const diarsip = rooms.filter((r) => r.archived);
@@ -431,6 +434,7 @@ export default function WaApp() {
 
         {perluNama && (
           <GerbangNama
+            untukGame={maksudGame || tab === "game" || !!gameAktif}
             awal=""
             onKeluar={() => router.push("/")}
             onSimpan={async (nama) => {
@@ -458,7 +462,7 @@ export default function WaApp() {
 }
 
 // Gerbang nama: chat tidak bisa dipakai sebelum nama diatur.
-function GerbangNama({ onSimpan, onKeluar }) {
+function GerbangNama({ onSimpan, onKeluar, untukGame = false }) {
   const [nama, setNama] = useState("");
   const [sibuk, setSibuk] = useState(false);
   const [err, setErr] = useState("");
@@ -477,7 +481,9 @@ function GerbangNama({ onSimpan, onKeluar }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/maskot-sm.webp" alt="" className="wa-gerbang-maskot" />
         <h3>Siapa namamu?</h3>
-        <p>Atur nama dulu sebelum masuk WEARTA CHAT. Nama ini tampil ke teman-temanmu di chat, grup, dan status.</p>
+        <p>{untukGame
+          ? "Atur nama dulu sebelum masuk Game. Nama ini tampil ke lawanmu di duel, lobi, dan papan hasil. Cukup sekali — kalau sudah diisi, kamu langsung masuk."
+          : "Atur nama dulu sebelum masuk WEARTA CHAT. Nama ini tampil ke teman-temanmu di chat, grup, dan status."}</p>
         <input
           id="wa-nama-awal"
           className="wa-gerbang-input"
@@ -492,7 +498,7 @@ function GerbangNama({ onSimpan, onKeluar }) {
         <small className="wa-gerbang-catatan">2–24 karakter. Bisa diganti kapan saja di Profil.</small>
         {err && <p className="wa-gerbang-galat" role="alert">{err}</p>}
         <div className="wa-konfirmasi-tombol">
-          <button type="submit" className="wa-tombol utama" disabled={!sah || sibuk}>{sibuk ? "Menyimpan…" : "Simpan & mulai chat"}</button>
+          <button type="submit" className="wa-tombol utama" disabled={!sah || sibuk}>{sibuk ? "Menyimpan…" : untukGame ? "Simpan & masuk game" : "Simpan & mulai chat"}</button>
           <button type="button" className="wa-tombol polos" onClick={onKeluar}>Nanti saja, kembali</button>
         </div>
       </form>

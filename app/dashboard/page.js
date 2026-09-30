@@ -577,7 +577,7 @@ export default function DashboardPage() {
 
       {/* ── Dua dompet terpisah ── */}
       <SectionTitle icon="👛" title="Dompet" hint="Saldo nokos & saldo game dipisah" />
-      <div className="grid gap-4 md:grid-cols-2" data-testid="dompet-ganda">
+      <div className="grid gap-3 md:mx-auto md:max-w-xl" data-testid="dompet-ganda">
         <SimCard />
         <GameWallet />
       </div>

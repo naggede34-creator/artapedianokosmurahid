@@ -203,6 +203,13 @@ export function TabGame() {
   }, [api, d]);
   useEffect(() => { muat(); refreshBalance?.(); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // Memberi tahu server bahwa pengguna masuk dasbor game (admin dikabari; server membatasi 1× per 30 menit).
+  const sudahMasuk = useRef(false);
+  useEffect(() => {
+    if (sudahMasuk.current || wa.perluNama || !wa.saya) return;
+    sudahMasuk.current = true;
+    api.post("/api/game", { aksi: "masuk" });
+  }, [api, wa.perluNama, wa.saya]);
   useInterval(() => { if (document.visibilityState === "visible") muat(); }, 4000);
 
   async function terima(g) {

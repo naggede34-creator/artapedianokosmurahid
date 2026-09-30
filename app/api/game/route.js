@@ -1,4 +1,6 @@
 import { auth, tolakAuth, j, galat, bacaBody, batasi, terlaluCepat } from "@/lib/wa/api";
+import { perluNama } from "@/lib/wa/inti";
+import { catatAktivitas } from "@/lib/game/aktivitas";
 import { daftarGame, ambilGame, buatDuel, gabungDuel, tolakDuel, batalDuel, mainAksi, menyerah } from "@/lib/game/inti";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +34,13 @@ export async function POST(req) {
       if (!batasi(me, "game-buat", 10, 60_000)) return terlaluCepat();
       const r = await buatDuel(me, { jenis: String(body.jenis || ""), taruhan: body.taruhan, undangPid: body.undang ? String(body.undang) : null });
       return r.ok ? j({ ok: true, gameId: r.gameId }) : galat(r.alasan);
+    }
+    if (aksi === "masuk") {
+      // Pengguna membuka dasbor game: admin dikabari (sekali per 30 menit per pengguna). Tanpa nama → tidak dicatat.
+      if (!batasi(me, "game-masuk", 20, 60_000)) return terlaluCepat();
+      if (perluNama(me)) return j({ ok: true, perluNama: true });
+      await catatAktivitas(me, "masuk");
+      return j({ ok: true });
     }
     if (!batasi(me, "game-aksi", 240, 60_000)) return terlaluCepat();
     const id = String(body.id || "");
