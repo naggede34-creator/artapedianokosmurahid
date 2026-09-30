@@ -7,7 +7,7 @@
 import { NextResponse } from "next/server";
 import { depositsCol, usersCol } from "@/lib/db";
 import { adminSah } from "@/lib/adminAuth";
-import { creditDeposit } from "@/lib/depositService";
+import { approveManualDeposit } from "@/lib/depositOrderService";
 import { MANUAL_DEPOSIT_KEY } from "@/lib/paymentProviders";
 import { sendTelegramNotif, manualDepositRejectedNotif } from "@/lib/telegram";
 
@@ -44,6 +44,10 @@ export async function GET(req) {
       // Bukti bayarnya bisa ratusan kilobita per transaksi. Di daftar cukup
       // ditandai ada atau tidak; gambarnya diambil satu-satu lewat ?orderId=.
       hasProof: Boolean(d.proofImage),
+      kodeUnik: d.kodeUnik || 0,
+      // Hasil baca OCR (tanpa teks mentah) — ditampilkan sebagai lencana di panel admin.
+      ocr: d.ocr ? { setuju: !!d.ocr.setuju, alasan: d.ocr.alasan || [], cek: d.ocr.cek || null, keyakinan: d.ocr.keyakinan ?? null, refId: d.ocr.refId || null, ganda: !!d.ocr.ganda } : null,
+      otomatis: d.autoOcr === true,
       userNote: d.userNote || "",
       adminNote: d.adminNote || "",
       createdAt: d.createdAt,
@@ -71,24 +75,14 @@ export async function POST(req) {
   }
 
   if (action === "approve") {
-    // Yang boleh disetujui hanya yang sedang menunggu dicek. Syaratnya ikut di
-    // dalam filter supaya dua klik beruntun tidak pernah jadi dua kali kredit;
-    // creditDeposit juga punya kunci sendiri, dan dua lapis di sini murah.
-    const claimed = await deposits.findOneAndUpdate(
-      { orderId, provider: MANUAL_DEPOSIT_KEY, status: "review" },
-      { $set: { reviewedAt: new Date(), reviewedBy: "admin", adminNote: String(reason || "").slice(0, 300) } },
-      { returnDocument: "after" }
-    );
-    if (!claimed) {
-      const ada = await deposits.findOne({ orderId });
-      if (!ada) return NextResponse.json({ error: "Transaksi tidak ditemukan." }, { status: 404 });
-      return NextResponse.json({ error: `Transaksi ini sudah berstatus "${ada.status}".` }, { status: 409 });
+    // Yang boleh disetujui hanya yang sedang menunggu dicek (klaim atomik di approveManualDeposit),
+    // dan kreditnya lewat jalur yang sama dengan deposit otomatis.
+    const r = await approveManualDeposit(orderId, { oleh: "admin", catatan: reason });
+    if (!r.ok) {
+      if (r.tidakAda) return NextResponse.json({ error: "Transaksi tidak ditemukan." }, { status: 404 });
+      return NextResponse.json({ error: `Transaksi ini sudah berstatus "${r.status}".` }, { status: 409 });
     }
-
-    // Kredit saldo + cashback + bonus referral + semua notifnya lewat jalur yang
-    // sama dengan deposit otomatis, jadi tidak ada perlakuan berbeda di mutasi.
-    const credit = await creditDeposit(claimed);
-    return NextResponse.json({ ok: true, credited: Boolean(credit), credit });
+    return NextResponse.json({ ok: true, credited: r.credited, credit: r.credit });
   }
 
   if (action === "reject") {

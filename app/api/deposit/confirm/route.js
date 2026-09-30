@@ -8,6 +8,8 @@ import { confirmManualDeposit } from "@/lib/depositOrderService";
 import { rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
+// Membaca bukti dengan OCR bisa memakan beberapa detik (pemuatan pertama lebih lama).
+export const maxDuration = 60;
 
 export async function POST(req) {
   try {
@@ -20,7 +22,7 @@ export async function POST(req) {
     const result = await confirmManualDeposit({ token, orderId, proofImage, note });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
-    return NextResponse.json({ ok: true, status: result.status });
+    return NextResponse.json({ ok: true, status: result.status, otomatis: Boolean(result.otomatis), alasan: result.alasan || [] });
   } catch (err) {
     console.error("[deposit/confirm]", err?.message || err);
     return NextResponse.json({ error: "Gagal mengirim konfirmasi. Coba lagi." }, { status: 500 });

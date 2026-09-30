@@ -4,12 +4,16 @@ const nextConfig = {
   // Exclude native/WASM packages from Next.js bundling so Node.js resolves them
   // directly at runtime (required for @resvg/resvg-js and satori's HarfBuzz WASM).
   experimental: {
-    serverComponentsExternalPackages: ["@resvg/resvg-js", "satori", "harfbuzzjs"],
+    serverComponentsExternalPackages: ["@resvg/resvg-js", "satori", "harfbuzzjs", "tesseract.js", "tesseract.js-core"],
     // Banner sambutan bot dikirim ke Telegram sebagai berkas, bukan lewat URL,
     // supaya tidak bergantung pada alamat situs yang bisa salah isi. Berkas di
     // public/ tidak ikut terbawa ke fungsi serverless kecuali disebut di sini.
     outputFileTracingIncludes: {
-      "/api/bot/webhook": ["./public/bot-welcome.jpg"],
+      // OCR bukti transfer: pekerja tesseract, inti WASM, dan data bahasa dimuat lewat path dinamis,
+      // jadi harus disebut agar ikut terbawa ke fungsi serverless.
+      "/api/deposit/confirm": ["./node_modules/tesseract.js/**/*", "./node_modules/tesseract.js-core/**/*", "./lib/ocr/data/*"],
+      "/api/bot/webhook/[botId]": ["./node_modules/tesseract.js/**/*", "./node_modules/tesseract.js-core/**/*", "./lib/ocr/data/*"],
+      "/api/bot/webhook": ["./public/bot-welcome.jpg", "./node_modules/tesseract.js/**/*", "./node_modules/tesseract.js-core/**/*", "./lib/ocr/data/*"],
     },
   },
   // Browser bawaan Telegram (dibuka lewat tombol link biasa, bukan web_app) suka

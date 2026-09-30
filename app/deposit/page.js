@@ -12,7 +12,9 @@ const QUICK = [10000, 20000, 50000, 100000, 200000, 500000];
 const FINAL = ["completed", "canceled", "expired", "failed"];
 // Bukti bayar dikecilkan di browser dulu. Mengirim foto 4 MB apa adanya lewat
 // koneksi seluler adalah cara paling mudah membuat konfirmasi gagal di tengah.
-const PROOF_MAX_SIDE = 1100;
+// Bukti dibaca mesin (OCR), jadi resolusinya dijaga setinggi mungkin selama muat di batas ukuran server.
+const PROOF_MAX_SIDE = 2400;
+const PROOF_MAX_CHARS = 780_000;
 
 function countdown(ms) {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -55,6 +57,8 @@ export default function DepositPage() {
   // memutuskan. Tidak ada provider yang bisa ditanya.
   const [manualInfoOpen, setManualInfoOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Alasan verifikasi otomatis (OCR) belum lolos — ditampilkan di layar "sedang dicek admin".
+  const [ocrAlasan, setOcrAlasan] = useState([]);
   const [proof, setProof] = useState(null);
   const [proofNote, setProofNote] = useState("");
   const [confirming, setConfirming] = useState(false);
@@ -275,12 +279,18 @@ export default function DepositPage() {
     reader.onload = (ev) => {
       const img = new window.Image();
       img.onload = () => {
-        const ratio = Math.min(PROOF_MAX_SIDE / img.width, PROOF_MAX_SIDE / img.height, 1);
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(img.width * ratio);
-        canvas.height = Math.round(img.height * ratio);
-        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-        setProof(canvas.toDataURL("image/jpeg", 0.8));
+        // Coba resolusi & kualitas tertinggi dulu; turunkan bertahap sampai muat di batas server.
+        let hasil = null;
+        for (const [sisi, mutu] of [[PROOF_MAX_SIDE, 0.85], [PROOF_MAX_SIDE, 0.7], [1800, 0.75], [1400, 0.75], [1100, 0.7], [900, 0.6]]) {
+          const ratio = Math.min(sisi / img.width, sisi / img.height, 1);
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * ratio);
+          canvas.height = Math.round(img.height * ratio);
+          canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+          hasil = canvas.toDataURL("image/jpeg", mutu);
+          if (hasil.length <= PROOF_MAX_CHARS) break;
+        }
+        setProof(hasil);
         setError("");
       };
       img.onerror = () => setError("Berkas itu bukan gambar yang bisa dibaca.");
@@ -305,8 +315,12 @@ export default function DepositPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal mengirim konfirmasi.");
+      setOcrAlasan(Array.isArray(data.alasan) ? data.alasan : []);
       setStatus(data.status || "review");
       setConfirmOpen(false);
+      // Lolos verifikasi otomatis → sama seperti pembayaran otomatis lain: ambil cashback,
+      // segarkan saldo, dan buka kartu gores.
+      if (data.status === "completed") pollStatus(order.orderId);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -321,6 +335,7 @@ export default function DepositPage() {
     setAmount("");
     setError("");
     setConfirmOpen(false);
+    setOcrAlasan([]);
     setProof(null);
     setProofNote("");
     setStep("amount");
@@ -431,7 +446,11 @@ export default function DepositPage() {
             <div className="mt-3 rounded-2xl border-2 border-warn/30 bg-warn-soft/40 p-4">
               <p className="text-sm font-extrabold text-warn">! Kekurangan</p>
               <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-ink">
-                <li>⏳ <b>Tidak otomatis.</b> Saldo masuk setelah admin mencocokkan pembayaranmu — biasanya 5–15 menit, bukan hitungan detik.</li>
+                {cfg.manual?.ocrAktif ? (
+                  <li>⚡ <b>Bisa otomatis.</b> Bukti transfermu dibaca mesin: bila nama penerima, nominal (termasuk kode unik), jam, dan nomor referensi cocok, saldo masuk dalam hitungan detik. Kalau ada yang tidak cocok, admin mengeceknya manual (5–15 menit).</li>
+                ) : (
+                  <li>⏳ <b>Tidak otomatis.</b> Saldo masuk setelah admin mencocokkan pembayaranmu — biasanya 5–15 menit, bukan hitungan detik.</li>
+                )}
                 <li>📎 <b>Wajib unggah bukti transfer.</b> Tanpa bukti, konfirmasinya tidak bisa dikirim.</li>
                 {cfg.manual?.hoursLabel && (
                   <li>🕘 <b>Ada jam layanan:</b> {cfg.manual.hoursLabel}. Di luar jam itu metodenya tutup.</li>
@@ -612,6 +631,13 @@ export default function DepositPage() {
                   {rupiah(amt + estFee)}
                 </Row>
               </div>
+              {provider === "manual" && cfg.manual?.ocrAktif && (
+                <p className="mt-2 rounded-xl border border-amber/40 bg-amber-soft px-3 py-2 text-[11px] font-semibold text-amber-bright" data-testid="info-kode-unik">
+                  ⚡ Verifikasi otomatis aktif: nominal transfer ditambah <b>kode unik 1–999</b> (ikut jadi saldomu) supaya
+                  pembayaranmu dikenali. Bayar persis sesuai total, lalu unggah tangkapan layar bukti yang menampilkan
+                  nama penerima{cfg.manual?.accountName ? ` (${cfg.manual.accountName})` : ""}, nominal, jam, dan nomor referensi.
+                </p>
+              )}
               <p className="mt-2 text-[11px] text-muted">
                 {feeIsExact
                   ? "Biaya ini diambil langsung dari Pakasir, jadi sudah angka pasti."
@@ -675,6 +701,13 @@ export default function DepositPage() {
                     <span className="text-2xl">🔎</span>
                   </span>
                   <h2 className="mt-4 text-xl font-extrabold text-ink">Sedang dicek admin</h2>
+                  {ocrAlasan.length > 0 && (
+                    <div className="mx-auto mt-3 max-w-sm rounded-xl border border-amber/40 bg-amber-soft px-3 py-2 text-left text-xs text-amber-bright" data-testid="alasan-ocr">
+                      <p className="font-extrabold">Belum bisa diverifikasi otomatis:</p>
+                      <ul className="mt-1 list-disc space-y-0.5 pl-4">{ocrAlasan.map((a) => <li key={a}>{a}</li>)}</ul>
+                      <p className="mt-1 text-[11px] font-semibold">Tenang — admin akan mengeceknya manual.</p>
+                    </div>
+                  )}
                   <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">
                     Konfirmasi kamu sudah masuk. Admin mencocokkan pembayaran {rupiah(order.amount)} dengan mutasi QRIS,
                     biasanya dalam 5–15 menit. Saldo masuk otomatis begitu disetujui — halaman ini ikut berubah sendiri.
@@ -734,7 +767,12 @@ export default function DepositPage() {
                       <p className="text-3xl font-extrabold tabular-nums tracking-tight text-ink">{rupiah(payTotal)}</p>
                       <CopyButton value={payTotal} label="" />
                     </div>
-                    {payTotal !== Number(order.amount) && (
+                    {order.manualInfo?.kodeUnik > 0 && (
+                      <p className="mt-1 text-xs font-semibold text-amber-bright" data-testid="kode-unik">
+                        Sudah termasuk kode unik Rp{order.manualInfo.kodeUnik} — ikut masuk ke saldomu.
+                      </p>
+                    )}
+                    {payTotal !== Number(order.amount) && !(order.manualInfo?.kodeUnik > 0) && (
                       <p className="mt-1 text-xs text-warn">Bayar persis sesuai nominal ini supaya terdeteksi otomatis.</p>
                     )}
                     {order.qrImage ? (
@@ -844,7 +882,7 @@ export default function DepositPage() {
                               className="btn-primary flex-[2]"
                             >
                               {confirming ? <Spinner /> : null}
-                              {confirming ? "Mengirim…" : proof ? "Saya sudah TF, kirim" : "Unggah bukti dulu"}
+                              {confirming ? (cfg.manual?.ocrAktif ? "Memeriksa bukti…" : "Mengirim…") : proof ? "Saya sudah TF, kirim" : "Unggah bukti dulu"}
                             </button>
                           </div>
                         </div>

@@ -69,6 +69,10 @@ export async function GET() {
         accountName: settings.manualDeposit?.accountName || "",
         accountLabel: settings.manualDeposit?.accountLabel || "",
         instructions: settings.manualDeposit?.instructions || "",
+        // Verifikasi otomatis bukti transfer (OCR) menyala? Dipakai halaman deposit untuk
+        // menjelaskan kode unik & proses pengecekan ke user.
+        ocrAktif: Boolean(settings.manualDeposit?.ocrAktif),
+        ocrMaks: Number(settings.manualDeposit?.ocrMaks) || 0,
         open: jam.open,
         openHour: jam.openHour,
         closeHour: jam.closeHour,

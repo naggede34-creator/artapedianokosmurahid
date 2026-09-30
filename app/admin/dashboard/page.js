@@ -146,7 +146,11 @@ export default function AdminDashboardPage() {
     ttlMinutes: "60",
     openHour: "9",
     closeHour: "1",
-    cashbackPercent: "3"
+    cashbackPercent: "3",
+    ocrAktif: false,
+    ocrNama: "NAWA CELL",
+    ocrMaks: "200000",
+    ocrHarian: "500000"
   });
   const [savingManual, setSavingManual] = useState(false);
   // Notif mana saja yang ikut diumumkan ke channel Telegram.
@@ -866,7 +870,7 @@ export default function AdminDashboardPage() {
       const res = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ manualDeposit: { ...manualForm, ttlMinutes: Number(manualForm.ttlMinutes) || 60 } })
+        body: JSON.stringify({ manualDeposit: { ...manualForm, ttlMinutes: Number(manualForm.ttlMinutes) || 60, ocrAktif: Boolean(manualForm.ocrAktif), ocrMaks: Number(manualForm.ocrMaks) || 200000, ocrHarian: Number(manualForm.ocrHarian) || 500000 } })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -1401,6 +1405,10 @@ export default function AdminDashboardPage() {
       ttlMinutes: String(data.manualDeposit?.ttlMinutes ?? 60),
       openHour: String(data.manualDeposit?.openHour ?? 9),
       closeHour: String(data.manualDeposit?.closeHour ?? 1),
+      ocrAktif: Boolean(data.manualDeposit?.ocrAktif),
+      ocrNama: data.manualDeposit?.ocrNama ?? "NAWA CELL",
+      ocrMaks: String(data.manualDeposit?.ocrMaks ?? 200000),
+      ocrHarian: String(data.manualDeposit?.ocrHarian ?? 500000),
       cashbackPercent:
         data.manualDeposit?.cashbackPercent === null || data.manualDeposit?.cashbackPercent === undefined
           ? ""
@@ -3089,6 +3097,15 @@ export default function AdminDashboardPage() {
                           Dibuat {fmtDate(d.createdAt)}
                           {d.confirmedAt ? ` · dikonfirmasi ${fmtDate(d.confirmedAt)}` : ""}
                         </p>
+                        {d.otomatis && (
+                          <p className="mt-1 inline-block rounded-full bg-teal-soft px-2 py-0.5 text-[11px] font-bold text-teal-bright" data-testid="chip-otomatis">
+                            🤖 Disetujui otomatis (OCR){d.ocr?.refId ? ` · ref ${d.ocr.refId}` : ""} — cocokkan dengan mutasi
+                          </p>
+                        )}
+                        {!d.otomatis && d.ocr && !d.ocr.setuju && d.ocr.alasan?.length > 0 && (
+                          <p className="mt-1 text-[11px] text-amber-bright" data-testid="chip-ocr-gagal">🤖 OCR tidak lolos: {d.ocr.alasan.join(" ")}</p>
+                        )}
+                        {d.kodeUnik > 0 && <p className="mt-0.5 text-[11px] text-muted">Kode unik Rp{d.kodeUnik}</p>}
                         {d.userNote && <p className="mt-1 text-xs text-ink">📝 {d.userNote}</p>}
                         {d.adminNote && <p className="mt-1 text-xs text-rose">Catatan admin: {d.adminNote}</p>}
                       </div>
@@ -5362,6 +5379,57 @@ export default function AdminDashboardPage() {
                           hari. Jam buka sama dengan jam tutup berarti buka 24 jam. Di luar jam ini metodenya tetap
                           terlihat di halaman deposit tapi ditandai tutup, dan tagihannya tidak bisa dibuat.
                         </p>
+                      </div>
+                      <div className="sm:col-span-2 rounded-xl border-2 border-amber/40 bg-amber-soft/40 p-3" data-testid="ocr-pengaturan">
+                        <label className="flex items-center gap-2 text-sm font-extrabold text-ink">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(manualForm.ocrAktif)}
+                            onChange={(e) => setManualForm((f) => ({ ...f, ocrAktif: e.target.checked }))}
+                            data-testid="ocr-aktif"
+                          />
+                          🤖 Verifikasi otomatis bukti transfer (OCR)
+                        </label>
+                        <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                          Bukti yang diunggah dibaca mesin. Bila nama penerima, nominal (dengan kode unik 1–999), status berhasil,
+                          jam transfer, dan nomor referensi unik semuanya cocok, saldo masuk otomatis; selain itu tetap masuk
+                          antrean cek admin. <b>Perhatian:</b> OCR hanya membaca teks di gambar — gambar rekayasa bisa memuat teks yang sama.
+                          Karena itu ada batas nominal &amp; harian; tetap cocokkan dengan mutasi QRIS aslimu.
+                        </p>
+                        <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                          <div className="sm:col-span-3">
+                            <label className="text-[11px] font-medium text-muted">Nama penerima yang harus terbaca (pisahkan koma bila lebih dari satu)</label>
+                            <input
+                              value={manualForm.ocrNama}
+                              onChange={(e) => setManualForm((f) => ({ ...f, ocrNama: e.target.value }))}
+                              placeholder="NAWA CELL"
+                              className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                              data-testid="ocr-nama"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-muted">Maks. per deposit (Rp)</label>
+                            <input
+                              type="number"
+                              min="1000"
+                              value={manualForm.ocrMaks}
+                              onChange={(e) => setManualForm((f) => ({ ...f, ocrMaks: e.target.value }))}
+                              className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                              data-testid="ocr-maks"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-muted">Maks. per user per hari (Rp)</label>
+                            <input
+                              type="number"
+                              min="1000"
+                              value={manualForm.ocrHarian}
+                              onChange={(e) => setManualForm((f) => ({ ...f, ocrHarian: e.target.value }))}
+                              className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
+                              data-testid="ocr-harian"
+                            />
+                          </div>
+                        </div>
                       </div>
                       <div className="sm:col-span-2">
                         <label className="text-[11px] font-medium text-muted">Cara bayar (dilihat user)</label>
