@@ -6,8 +6,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 const rp = (n) => `Rp${Number(n || 0).toLocaleString("id-ID")}`;
-const NAMA = { catur: "♟ Catur", uno: "🃏 UNO", remi: "🂡 Remi", mahjong: "🀄 Mahjong" };
-const NAMA_SOLO = { plinko: "🔮 Plinko", slot: "🀄 Mahjong Spin 1024" };
+const NAMA = { catur: "♟ Catur", uno: "🃏 UNO", remi: "🂡 Remi", mahjong: "🀄 Mahjong", gaple: "⚃ Domino Gaple" };
+const NAMA_SOLO = { plinko: "🔮 Plinko", slot: "🀄 Mahjong Spin 1024", dadu: "🎲 Dadu Naga", keno: "🎱 Keno Hoki", roda: "🎡 Roda Hoki" };
 const STATUS = { menunggu: "Menunggu lawan", gabung: "Bergabung", main: "Berjalan", selesai: "Selesai", batal: "Batal" };
 
 export default function AdminGame() {
@@ -88,6 +88,24 @@ export default function AdminGame() {
           {d && !(d.solo?.ringkas || []).length && <p className="text-sm text-muted">Belum ada ronde solo.</p>}
         </div>
         {d?.solo?.tertunda > 0 && <p className="mt-2 text-xs font-bold text-rose">⚠ {d.solo.tertunda} ronde menunggu penyelesaian — jalankan penyapu.</p>}
+      </div>
+
+      <div className="card p-4" data-testid="admin-anticurang">
+        <h3 className="text-base font-extrabold text-ink">🛡️ Anti-curang game</h3>
+        <p className="mt-1 text-xs leading-relaxed text-muted">
+          Mendeteksi akun ganda pada satu perangkat/jaringan, duel antar-akun yang sama perangkat/IP, pasangan yang terlalu sering bertaruh, dan duel bertaruh yang selesai tanpa langkah.
+          Temuan dikabari ke Telegram admin. Akun yang di-ban otomatis bisa dibuka lewat tab <b>Pengguna → Aktifkan</b>. Saklar: <b>GAME_ANTICURANG_AKTIF</b> dan <b>GAME_ANTICURANG_BAN</b> (Konfigurasi → Website).
+          Status: pemeriksaan <b>{d?.anticurang ? (d.anticurang.aktif ? "aktif" : "mati") : "…"}</b>, ban otomatis <b>{d?.anticurang ? (d.anticurang.banAktif ? "aktif" : "mati (hanya kabar)") : "…"}</b> · 7 hari: <b>{d?.anticurang?.ban7hari ?? 0}</b> ban, <b>{d?.anticurang?.peringatan7hari ?? 0}</b> peringatan.
+        </p>
+        <div className="mt-3 space-y-1.5">
+          {d?.anticurang && !d.anticurang.terbaru.length && <p className="text-sm text-muted">Belum ada temuan. 👍</p>}
+          {(d?.anticurang?.terbaru || []).map((x, i) => (
+            <div key={i} className="rounded-xl border border-line bg-surface px-3 py-2 text-xs">
+              <p className="font-bold text-ink">{{ ban: "🚫 Ban otomatis", strike: "🟡 Peringatan", peringatan: "⚠️ Peringatan", "ip-ramai": "🌐 Banyak akun satu IP", "duel-ip-sama": "⚔️ Duel satu IP", "kolusi-perangkat": "🚨 Duel satu perangkat", "pasangan-sering": "🔁 Pasangan terlalu sering", "duel-terlalu-cepat": "⏱ Duel terlalu cepat" }[x.jenis] || x.jenis}{x.token ? ` · ${x.token}` : ""}</p>
+              <p className="text-muted">{x.alasan || ""}{x.ip ? ` · IP ${x.ip}` : ""} · {new Date(x.at).toLocaleString("id-ID")}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="card p-4">

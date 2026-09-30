@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { infoDompet, tukarKeNokos, isiPoinDariNokos, ajukanTarik, batalTarik } from "@/lib/game/dompet";
 import { rateLimit } from "@/lib/rateLimit";
+import { jagaGame } from "@/lib/anticurang";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,9 @@ export async function POST(req) {
   if (!token) return j({ error: "Kode akun kosong." }, 400);
   if (!rateLimit(`${ip(req)}:dompet-aksi`, 20, 60_000)) return j({ error: "Terlalu banyak percobaan. Tunggu sebentar." }, 429);
   try {
+    // Akun yang dibekukan (mis. anti-curang) tidak boleh menukar/menarik poin; pemeriksaan perangkat ikut berjalan.
+    const blok = await jagaGame({ token }, req);
+    if (blok) return j({ error: blok.alasan }, blok.status);
     let r;
     if (b.aksi === "tukar") r = await tukarKeNokos(token, b.poin);
     else if (b.aksi === "isi-nokos") r = await isiPoinDariNokos(token, b.poin);

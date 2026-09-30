@@ -45,7 +45,7 @@ export async function POST(req) {
       );
     } else {
       await users.updateOne({ token }, {
-        $unset: { suspended: "", suspendedAt: "", suspendReason: "", securityFlags: "" }
+        $set: { anticurangBebas: true }, $unset: { suspended: "", suspendedAt: "", suspendReason: "", securityFlags: "", autoBanGame: "", strikeGame: "" }
       });
 
       sendMonitorLog(

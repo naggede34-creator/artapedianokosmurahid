@@ -1,5 +1,6 @@
 import { auth, tolakAuth, j, galat, bacaBody, batasi, terlaluCepat } from "@/lib/wa/api";
-import { infoSolo, mainSolo, isiUlangKoin } from "@/lib/game/solo";
+import { infoSolo, mainSolo, isiUlangKoin, NAMA_GAME } from "@/lib/game/solo";
+import { jagaGame } from "@/lib/anticurang";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -23,12 +24,14 @@ export async function POST(req) {
   if (!me) return tolakAuth();
   const aksi = String(body.aksi || "");
   try {
+    const blok = await jagaGame(me, req);
+    if (blok) return galat(blok.alasan, blok.status);
     if (aksi === "isi-ulang") {
       if (!batasi(me, "solo-isi", 6, 60_000)) return terlaluCepat();
       const r = await isiUlangKoin(me);
       return r.ok ? j({ ok: true, koin: r.koin }) : galat(r.alasan);
     }
-    if (aksi === "plinko" || aksi === "slot") {
+    if (Object.prototype.hasOwnProperty.call(NAMA_GAME, aksi)) {
       if (!batasi(me, "solo-main", 90, 60_000)) return terlaluCepat();
       const { aksi: _a, token: _t, ...sisa } = body; void _a; void _t;
       const r = await mainSolo(me, { ...sisa, game: aksi });

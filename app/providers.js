@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { pasangPenyadapPerangkat } from "@/lib/perangkatKlien";
 
 const THEME_KEY = "artapedia_theme";
 const ThemeContext = createContext(null);
@@ -52,6 +53,9 @@ export function useTheme() {
 }
 
 const UserContext = createContext(null);
+
+// Setiap permintaan /api/ membawa sidik perangkat (deteksi akun ganda untuk keamanan game).
+if (typeof window !== "undefined") pasangPenyadapPerangkat();
 
 export function UserProvider({ children }) {
   const [token, setToken] = useState(null);

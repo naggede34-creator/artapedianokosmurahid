@@ -11,17 +11,20 @@ import { TombolSuara, useMusik, bunyiKlik } from "@/components/wa/Suara";
 import { efek as bunyi } from "@/lib/suara";
 
 // Nominal saldo game tampil sebagai poin + padanan rupiah (2 poin = Rp1.000).
-const rp = (n) => teksPoinRp(n);
-const fmtX = (x) => `×${Number(x).toLocaleString("id-ID", { maximumFractionDigits: 2 })}`;
-const tidur = (ms) => new Promise((r) => setTimeout(r, ms));
+export const rp = (n) => teksPoinRp(n);
+export const fmtX = (x) => `×${Number(x).toLocaleString("id-ID", { maximumFractionDigits: 2 })}`;
+export const tidur = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const KATALOG_SOLO = [
   { kode: "plinko", nama: "Plinko", ikon: "🔮", ringkas: "Jatuhkan bola, pilih risiko. Hingga ×1000." },
-  { kode: "slot", nama: "Mahjong Spin 1024", ikon: "🀄", ringkas: "1024 jalur, kaskade kombo & putaran gratis." }
+  { kode: "slot", nama: "Mahjong Spin 1024", ikon: "🀄", ringkas: "1024 jalur, kaskade kombo & putaran gratis." },
+  { kode: "dadu", nama: "Dadu Naga", ikon: "🎲", ringkas: "Tebak bawah/atas, atur peluang sendiri. Hingga ×19,2." },
+  { kode: "keno", nama: "Keno Hoki", ikon: "🎱", ringkas: "Pilih angka, 10 bola diundi. Hingga ×1000." },
+  { kode: "roda", nama: "Roda Hoki", ikon: "🎡", ringkas: "Putar roda, tiga tingkat risiko. Hingga ×17,4." }
 ];
 
 // ═════════════════════════ DATA & DOMPET ═════════════════════════
-function useSolo() {
+export function useSolo() {
   const { api, toast } = useWa();
   const { refreshBalance } = useUser();
   const [info, setInfo] = useState(null);
@@ -52,7 +55,7 @@ function useSolo() {
   return { info, mode, bet, setBet, batas, dompet, saldo, ...set, main, muat, refreshBalance };
 }
 
-function PanelDompet({ s, kunci = false }) {
+export function PanelDompet({ s, kunci = false }) {
   const { info, bet, setBet, batas, dompet } = s;
   if (!info) return null;
   // Taruhan diketik dalam POIN, disimpan/dikirim dalam rupiah (2 poin = Rp1.000).
@@ -83,7 +86,7 @@ function PanelDompet({ s, kunci = false }) {
   );
 }
 
-function Pengingat() {
+export function Pengingat() {
   return (
     <p className="ws-peringatan">
       ⚠️ Taruhan memakai poin game milikmu — bisa kalah, dan poin berkurang saat bola/putaran dimulai. Main sebatas kemampuan; RTP ≈ 96% (rumah untung jangka panjang). Bukan cara mencari uang.
@@ -310,7 +313,7 @@ const RTP_TAMPIL = 0.96;
 
 // ═════════════════════════ MAHJONG SPIN 1024 ═════════════════════════
 /** Angka yang menghitung naik (efek "koin berhitung" saat menang besar). */
-function CacahAngka({ nilai, format }) {
+export function CacahAngka({ nilai, format }) {
   const [v, setV] = useState(0);
   useEffect(() => {
     const t0 = performance.now(), dur = 1500;

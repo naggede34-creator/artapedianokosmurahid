@@ -1,5 +1,6 @@
 import { auth, tolakAuth, j, galat, bacaBody, batasi, terlaluCepat } from "@/lib/wa/api";
 import { perluNama } from "@/lib/wa/inti";
+import { jagaGame } from "@/lib/anticurang";
 import { catatAktivitas } from "@/lib/game/aktivitas";
 import { daftarGame, ambilGame, buatDuel, gabungDuel, tolakDuel, batalDuel, mainAksi, menyerah } from "@/lib/game/inti";
 
@@ -30,6 +31,8 @@ export async function POST(req) {
   if (!me) return tolakAuth();
   const aksi = String(body.aksi || "");
   try {
+    const blok = await jagaGame(me, req);
+    if (blok) return galat(blok.alasan, blok.status);
     if (aksi === "buat") {
       if (!batasi(me, "game-buat", 10, 60_000)) return terlaluCepat();
       const r = await buatDuel(me, { jenis: String(body.jenis || ""), taruhan: body.taruhan, undangPid: body.undang ? String(body.undang) : null });
@@ -46,7 +49,7 @@ export async function POST(req) {
     const id = String(body.id || "");
     if (aksi === "gabung") {
       if (!batasi(me, "game-gabung", 20, 60_000)) return terlaluCepat();
-      const r = await gabungDuel(me, id);
+      const r = await gabungDuel(me, id, req);
       return r.ok ? j({ ok: true, gameId: r.gameId }) : galat(r.alasan);
     }
     if (aksi === "tolak") { const r = await tolakDuel(me, id); return r.ok ? j({ ok: true }) : galat(r.alasan || "Gagal."); }

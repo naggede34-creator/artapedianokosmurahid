@@ -348,4 +348,72 @@ export function HasilMahjong({ selesai }) {
   );
 }
 
+// ═════════════════════════════ DOMINO GAPLE ═════════════════════════════
+const TITIK = { 0: [], 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+function Sisi({ n, tegak }) {
+  // 6 titik diletakkan berbeda supaya rapi di sisi panjang/pendek.
+  const posisi = n === 6 && !tegak ? [0, 1, 2, 6, 7, 8] : TITIK[n];
+  return <span className="gp-sisi">{Array.from({ length: 9 }, (_, i) => <i key={i} className={posisi.includes(i) ? "on" : ""} />)}</span>;
+}
+/** Satu kartu domino. `tegak` = kartu berdiri (balak di rantai); selain itu rebah. */
+export function Domino({ a, b, tegak = false, kecil = false, dipilih = false, redup = false, sorot = false, onClick, label }) {
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag className={`gp-domino${tegak ? " tegak" : ""}${kecil ? " kecil" : ""}${dipilih ? " dipilih" : ""}${redup ? " redup" : ""}${sorot ? " sorot" : ""}`} onClick={onClick} disabled={onClick ? false : undefined} aria-label={label || `Domino ${a}-${b}`}>
+      <Sisi n={a} tegak={tegak} /><em /><Sisi n={b} tegak={tegak} />
+    </Tag>
+  );
+}
+
+export function PapanGaple({ papan, onAksi, sibuk }) {
+  const [pilih, setPilih] = useState(null);
+  const bisa = Object.fromEntries((papan.bisa || []).map((x) => [x.ubin, x]));
+  const tekan = (k) => {
+    const x = bisa[k];
+    if (!papan.giliranSaya || !x || sibuk) return;
+    if (x.kiri && x.kanan) { setPilih(pilih === k ? null : k); return; }
+    setPilih(null);
+    onAksi({ tipe: "main", ubin: k, sisi: x.kiri ? "kiri" : "kanan" });
+  };
+  const sisiPilih = pilih ? bisa[pilih] : null;
+  return (
+    <div className="gp-meja">
+      <div className="gp-lawan" aria-label="Kartu lawan"><span className="gp-tutup-kartu">{Array.from({ length: papan.jumlahLawan }).map((_, i) => <i key={i} />)}</span><small>{papan.jumlahLawan} kartu</small></div>
+      <div className="gp-rantai" data-testid="gaple-rantai" role="list" aria-label="Rantai domino">
+        <div className="gp-rantai-isi">
+          {papan.rantai.map(([a, b], i) => <span role="listitem" key={i}><Domino a={a} b={b} tegak={a === b} kecil sorot={i === 0 || i === papan.rantai.length - 1} /></span>)}
+        </div>
+      </div>
+      <div className="gp-ujung">{papan.ujung && <>Ujung: <b>{papan.ujung[0]}</b> ⟷ <b>{papan.ujung[1]}</b></>} · tidur {papan.tidur} kartu</div>
+      <div className="wg-remi-info">
+        {papan.giliranSaya && !papan.selesai && (pilih ? "Pilih sisi untuk memasang kartu." : papan.bisa.length ? "Ketuk kartu yang menyala untuk memasangnya." : "Tak ada kartu cocok — giliran dilewati.")}
+        {!papan.giliranSaya && !papan.selesai && "Menunggu lawan…"}
+      </div>
+      <div className="gp-tangan" role="list" aria-label="Kartumu" data-testid="gaple-tangan">
+        {papan.tangan.map((k) => { const [a, b] = k.split("-").map(Number); const ok = !!bisa[k]; return (
+          <span role="listitem" key={k}><Domino a={a} b={b} tegak dipilih={pilih === k} redup={papan.giliranSaya && !ok && !papan.selesai} sorot={papan.giliranSaya && ok} onClick={papan.giliranSaya && ok ? () => tekan(k) : undefined} label={`Domino ${k}`} /></span>
+        ); })}
+      </div>
+      <div className="gp-skor">Titik di tanganmu: <b>{papan.titikSaya}</b></div>
+      {pilih && sisiPilih && (
+        <div className="wg-aksi-bawah wrap">
+          {sisiPilih.kiri && <button className="wa-tombol kecil utama" onClick={() => { onAksi({ tipe: "main", ubin: pilih, sisi: "kiri" }); setPilih(null); }} disabled={sibuk} data-testid="gaple-kiri">◀ Pasang kiri ({papan.ujung?.[0]})</button>}
+          {sisiPilih.kanan && <button className="wa-tombol kecil utama" onClick={() => { onAksi({ tipe: "main", ubin: pilih, sisi: "kanan" }); setPilih(null); }} disabled={sibuk} data-testid="gaple-kanan">Pasang kanan ({papan.ujung?.[1]}) ▶</button>}
+          <button className="wa-tombol kecil polos" onClick={() => setPilih(null)}>Batal</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function HasilGaple({ selesai }) {
+  if (!selesai?.tanganLawan) return null;
+  return (
+    <div className="wg-remi-hasil">
+      <b>{selesai.alasan}</b>
+      <div className="baris"><span className="grup">{selesai.tanganLawan.length ? selesai.tanganLawan.map((k) => { const [a, b] = k.split("-").map(Number); return <Domino key={k} a={a} b={b} tegak kecil redup />; }) : <small>Kartu lawan habis</small>}</span></div>
+    </div>
+  );
+}
+
 export { Ik };

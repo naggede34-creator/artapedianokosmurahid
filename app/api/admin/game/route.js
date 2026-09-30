@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { adminSah } from "@/lib/adminAuth";
 import { ringkasanAdmin, batalkanPaksa, sapuGame } from "@/lib/game/inti";
 import { ringkasanSolo } from "@/lib/game/solo";
+import { ringkasanAntiCurang } from "@/lib/anticurang";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,8 @@ export async function GET(req) {
   if (!(await adminSah(req))) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   await sapuGame({ batas: 20 }).catch(() => {});
   const solo = await ringkasanSolo().catch(() => null);
-  return NextResponse.json({ ...(await ringkasanAdmin()), solo });
+  const anticurang = await ringkasanAntiCurang().catch(() => null);
+  return NextResponse.json({ ...(await ringkasanAdmin()), solo, anticurang });
 }
 
 export async function POST(req) {

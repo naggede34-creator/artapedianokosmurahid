@@ -11,6 +11,7 @@ import TabStatus from "@/components/wa/Status";
 import LayarPanggilan from "@/components/wa/Panggilan";
 import { TabGame, LayarGame, DialogDuel, BannerGame } from "@/components/wa/Game";
 import { LayarPlinko, LayarSlot } from "@/components/wa/GameSolo";
+import { LayarDadu, LayarKeno, LayarRoda } from "@/components/wa/GameSolo2";
 import { SheetKontak, SheetGrupBaru, SheetProfilSaya, SheetUser, SheetRoom, SheetTambahAnggota, SheetTeruskan } from "@/components/wa/Lembaran";
 import "@/components/wa/wa.css";
 
@@ -428,7 +429,10 @@ export default function WaApp() {
 
         {gameAktif === "plinko" && <LayarPlinko onTutup={() => setGameAktif(null)} />}
         {gameAktif === "slot" && <LayarSlot onTutup={() => setGameAktif(null)} />}
-        {gameAktif && gameAktif !== "plinko" && gameAktif !== "slot" && <LayarGame key={gameAktif} id={gameAktif} onTutup={() => { setGameAktif(null); sinkron(); }} />}
+        {gameAktif === "dadu" && <LayarDadu onTutup={() => setGameAktif(null)} />}
+        {gameAktif === "keno" && <LayarKeno onTutup={() => setGameAktif(null)} />}
+        {gameAktif === "roda" && <LayarRoda onTutup={() => setGameAktif(null)} />}
+        {gameAktif && !["plinko", "slot", "dadu", "keno", "roda"].includes(gameAktif) && <LayarGame key={gameAktif} id={gameAktif} onTutup={() => { setGameAktif(null); sinkron(); }} />}
 
         {panggilan && <LayarPanggilan key={panggilan.callId || "keluar"} sesi={panggilan} onSelesai={selesaiPanggilan} />}
 

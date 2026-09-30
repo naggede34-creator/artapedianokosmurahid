@@ -8,7 +8,7 @@ import { KatalogSolo } from "@/components/wa/GameSolo";
 import { teksPoinRp, POIN_RP } from "@/lib/poinGame";
 import { TombolSuara, useMusik, bunyiKlik } from "@/components/wa/Suara";
 import { efek as bunyi } from "@/lib/suara";
-import { PapanCatur, PapanUno, PapanRemi, PapanMahjong, HasilRemi, HasilMahjong } from "@/components/wa/GameBoards";
+import { PapanCatur, PapanUno, PapanRemi, PapanMahjong, PapanGaple, HasilRemi, HasilMahjong, HasilGaple } from "@/components/wa/GameBoards";
 
 // Nominal game tampil sebagai poin + padanan rupiah (2 poin = Rp1.000).
 const rupiah = (n) => teksPoinRp(n);
@@ -45,6 +45,17 @@ export const ATURAN = {
       "Nilai sisa: As 1, 2–9 angkanya, 10/J/Q/K = 10. Bila poin sisa ≤ 10, kamu boleh TUTUP (buang satu kartu & buka tangan). Sisa 0 = Gin.",
       "Poin sisamu lebih kecil dari lawan (setelah lawan menempelkan kartunya ke susunanmu) → kamu menang. Sama atau lebih besar → lawan menang (undercut).",
       "Batas waktu 90 detik per giliran."
+    ]
+  },
+  gaple: {
+    judul: "Domino Gaple",
+    ringkas: "Habiskan kartu domino duluan.",
+    poin: [
+      "28 kartu domino (0-0 hingga 6-6). Tiap pemain 7 kartu; 14 sisanya tidur dan tidak dipakai.",
+      "Pembuka: pemilik balak (kartu kembar) tertinggi, atau kartu dengan titik terbanyak — dipasang otomatis.",
+      "Tiap giliran pasang satu kartu yang angkanya sama dengan salah satu ujung rantai (kiri/kanan). Tak ada yang cocok = otomatis lewat.",
+      "Kartu habis duluan = menang. Bila kedua pemain buntu (tutup), sisa titik paling sedikit menang; sama = seri.",
+      "Batas waktu 45 detik per giliran."
     ]
   },
   mahjong: {
@@ -185,7 +196,7 @@ export function DialogDuel({ jenis: jenisAwal = "catur", undang: undangAwal = nu
   );
 }
 
-const IKON = { catur: "♟", uno: "🃏", remi: "🂡", mahjong: "🀄" };
+const IKON = { catur: "♟", uno: "🃏", remi: "🂡", mahjong: "🀄", gaple: "⚃" };
 
 // ═════════════════════════ TAB GAME (LOBI) ═════════════════════════
 export function TabGame() {
@@ -329,7 +340,7 @@ export function LayarGame({ id, onTutup }) {
     const prev = sebelum.current;
     if (prev) {
       if (prev.status === "menunggu" && data.status === "main") bunyi("notif");
-      else if (data.status === "main" && sig !== prev.sig) bunyi({ catur: "langkah", uno: "kartu", remi: "kartu", mahjong: "ubin" }[data.jenis] || "klik");
+      else if (data.status === "main" && sig !== prev.sig) bunyi({ catur: "langkah", uno: "kartu", remi: "kartu", mahjong: "ubin", gaple: "ubin" }[data.jenis] || "klik");
       if (data.status === "main" && data.giliranSaya && !prev.giliran) setTimeout(() => bunyi("giliran"), 220);
       if (["selesai", "batal"].includes(data.status) && prev.status !== data.status) {
         const h = data.hasil?.saya;
@@ -386,7 +397,7 @@ export function LayarGame({ id, onTutup }) {
   const selesai = g && (g.status === "selesai" || g.status === "batal");
   const saya = g?.pemain?.find((p) => p.pid === wa.saya?.pid);
   const lawan = g?.lawan;
-  const Papan = { catur: PapanCatur, uno: PapanUno, remi: PapanRemi, mahjong: PapanMahjong }[g?.jenis];
+  const Papan = { catur: PapanCatur, uno: PapanUno, remi: PapanRemi, mahjong: PapanMahjong, gaple: PapanGaple }[g?.jenis];
 
   return (
     <div className="wg-layar" role="dialog" aria-label="Duel permainan" onClickCapture={bunyiKlik}>
@@ -476,6 +487,7 @@ export function LayarGame({ id, onTutup }) {
               )}
               {g.papan?.selesai?.tanganPenutup && <HasilRemi selesai={g.papan.selesai} />}
               {g.papan?.selesai?.tanganMenang && <HasilMahjong selesai={g.papan.selesai} />}
+              {g.jenis === "gaple" && g.papan?.selesai && <HasilGaple selesai={g.papan.selesai} />}
               <div className="wg-aksi">
                 {lawan && g.status === "selesai" && <button className="wa-tombol utama" onClick={revans}>🔁 Revans</button>}
                 <button className="wa-tombol" onClick={onTutup}>Tutup</button>
@@ -485,7 +497,8 @@ export function LayarGame({ id, onTutup }) {
 
           {main && (
             <div className="wg-kaki">
-              <button className="wa-tombol kecil bahaya" onClick={() => setTanya({ judul: "Menyerah?", isi: g.taruhan ? `Kamu akan kalah dan taruhan ${rupiah(g.taruhan)} hangus.` : "Kamu akan dianggap kalah.", tombol: [{ label: "Ya, menyerah", gaya: "bahaya", onClick: async () => { setTanya(null); await cepat("menyerah"); } }] })} disabled={sibuk}>🏳 Menyerah</button>
+              <button className="wa-tombol kecil bahaya" onClick={() => setTanya({ judul: "Menyerah?", isi: g.taruhan ? `Kamu akan kalah dan taruhan ${rupiah(g.taruhan)} hangus.` : "Kamu akan dianggap kalah.", tombol: [{ label: "Ya, menyerah", gaya: "bahaya", onClick: async () => { setTanya(null); await cepat("menyerah"); } }] })} disabled={sibuk || (g.menyerah && !g.menyerah.boleh)} data-testid="tombol-menyerah" title={g.menyerah && !g.menyerah.boleh ? "Belum bisa menyerah di awal duel bertaruhan" : ""}>🏳 Menyerah</button>
+              {g.menyerah && !g.menyerah.boleh && <small className="wg-catatan-menyerah" data-testid="catatan-menyerah">Menyerah dibuka setelah {[g.menyerah.detik > 0 ? `${g.menyerah.detik} detik` : "", g.menyerah.langkah > 0 ? `${g.menyerah.langkah} langkah lagi` : ""].filter(Boolean).join(" & ")} — demi keamanan duel bertaruhan.</small>}
             </div>
           )}
         </div>

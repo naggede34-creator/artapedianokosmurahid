@@ -259,7 +259,7 @@ export default function Percakapan({ roomId }) {
 
   // Tantangan main dikirim ke chat sebagai tautan yang dibuka di dalam aplikasi.
   function kirimTantangan({ gameId, jenis, taruhan }) {
-    const nama = { catur: "Catur", uno: "UNO", remi: "Remi", mahjong: "Mahjong" }[jenis] || jenis;
+    const nama = { catur: "Catur", uno: "UNO", remi: "Remi", mahjong: "Mahjong", gaple: "Domino Gaple" }[jenis] || jenis;
     const teksTantang = `🎮 Aku menantangmu main ${nama}${taruhan ? ` (taruhan Rp${Number(taruhan).toLocaleString("id-ID")})` : ""}!\n${window.location.origin}/chat?game=${gameId}`;
     kirimKe(buatTmp({ teks: teksTantang }), { jenis: "teks", teks: teksTantang });
   }

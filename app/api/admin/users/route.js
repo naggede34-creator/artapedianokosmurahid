@@ -31,6 +31,9 @@ export async function GET(req) {
         depositTotal: u.depositTotal || 0,
         referralCount: u.referralCount || 0,
         referralEarnings: u.referralEarnings || 0,
+        suspended: u.suspended === true,
+        suspendReason: u.suspendReason || null,
+        autoBanGame: u.autoBanGame === true,
         createdAt: u.createdAt
       })),
       total,
