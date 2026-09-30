@@ -80,7 +80,7 @@ export default function PoinGamePage() {
             <p className="text-sm font-extrabold text-ink">Tentang Poin Game</p>
             <ul className="mt-2 list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-muted">
               <li><b>2 poin = Rp1.000.</b> Isi minimal {info?.topup.minPoin ?? 2} poin, maksimal {(info?.topup.maksPoin ?? 20000).toLocaleString("id-ID")} poin sekali isi.</li>
-              <li>Tukar poin ke <b>saldo nokos</b> (dipakai beli nomor) — instan.</li>
+              <li>Tukar <b>dua arah</b>: poin → saldo nokos (dipakai beli nomor) atau saldo nokos → poin — instan.</li>
               <li>Tarik poin ke <b>e-wallet</b> minimal {info ? rupiah(info.tarik.minRp) : "Rp10.000"}. {info?.tarik.jam}</li>
               <li>Ada syarat perputaran (harus main dulu) supaya aman dari penyalahgunaan.</li>
               <li>Main dengan bijak — ada batas taruhan dan batas rugi harian.</li>
@@ -321,43 +321,69 @@ function TabIsi({ token, info, manual, segarkan }) {
   );
 }
 
-// ───────────────────────── TUKAR KE SALDO NOKOS ─────────────────────────
+// ───────────────────────── TUKAR: POIN ⇄ SALDO NOKOS ─────────────────────────
 function TabTukar({ token, info, segarkan }) {
+  const [arah, setArah] = useState("keNokos"); // keNokos: poin → saldo nokos | keGame: saldo nokos → poin
   const [poin, setPoin] = useState("");
   const [sibuk, setSibuk] = useState(false);
   const [pesan, setPesan] = useState(null);
   const p = Math.floor(Number(poin) || 0);
   const kotor = keRupiah(p);
-  const potongan = info ? Math.floor((kotor * info.tukar.feePersen) / 100) : 0;
-  async function tukar(e) {
+  const keNokos = arah === "keNokos";
+  const feeNokos = info ? Math.floor((kotor * info.tukar.feePersen) / 100) : 0;
+  const feeGame = info ? Math.ceil((kotor * info.isiNokos.feePersen) / 100) : 0;
+  const aktif = info ? (keNokos ? info.tukar.aktif : info.isiNokos.aktif) : true;
+  async function kirim(e) {
     e.preventDefault();
     if (sibuk) return;
     setSibuk(true); setPesan(null);
     try {
-      const r = await fetch("/api/game/dompet", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, aksi: "tukar", poin: p }) });
+      const r = await fetch("/api/game/dompet", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, aksi: keNokos ? "tukar" : "isi-nokos", poin: p }) });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Gagal menukar.");
-      setPesan({ ok: true, teks: `Berhasil! ${teksPoin(d.rp)} → ${rupiah(d.bersih)} masuk ke saldo nokos.` });
+      setPesan({ ok: true, teks: keNokos ? `Berhasil! ${teksPoin(d.rp)} → ${rupiah(d.bersih)} masuk ke saldo nokos.` : `Berhasil! ${rupiah(d.bayar)} saldo nokos → ${teksPoin(d.rp)} masuk ke poin game.` });
       setPoin(""); segarkan();
     } catch (err) { setPesan({ ok: false, teks: err.message }); } finally { setSibuk(false); }
   }
-  if (info && !info.tukar.aktif) return <Alert>Tukar poin ke saldo nokos sedang dinonaktifkan admin.</Alert>;
+  const semua = () => info && setPoin(String(keNokos ? Math.floor(info.saldoRp / POIN_RP) : Math.floor(info.saldoNokos / (POIN_RP * (1 + info.isiNokos.feePersen / 100)))));
   return (
-    <form onSubmit={tukar} data-testid="form-tukar">
-      <p className="text-sm text-muted">Ubah poin game jadi <b>saldo nokos</b> untuk membeli nomor. Kurs: 1 poin = Rp{POIN_RP}{info?.tukar.feePersen ? `, potongan ${info.tukar.feePersen}%` : ", tanpa potongan"}.</p>
-      <label className="label mt-4" htmlFor="tk-poin">Poin yang ditukar</label>
-      <div className="field-3d flex items-center px-4">
-        <input id="tk-poin" inputMode="numeric" value={poin} onChange={(e) => setPoin(e.target.value.replace(/\D/g, ""))} placeholder="0" className="w-full bg-transparent px-2 py-3 text-2xl font-extrabold tabular-nums text-ink outline-none" />
-        <button type="button" onClick={() => info && setPoin(String(Math.floor(info.saldoRp / POIN_RP)))} className="rounded-lg border border-line px-2 py-1 text-[11px] font-black text-ink">Semua</button>
+    <form onSubmit={kirim} data-testid="form-tukar">
+      <div className="mb-4 grid grid-cols-2 gap-1 rounded-2xl border border-line bg-surface p-1" role="radiogroup" aria-label="Arah penukaran">
+        <button type="button" role="radio" aria-checked={keNokos} onClick={() => { setArah("keNokos"); setPesan(null); }} data-testid="arah-ke-nokos" className={`rounded-xl px-2 py-2 text-xs font-extrabold ${keNokos ? "bg-ink text-bg" : "text-muted"}`}>🎲 Poin → Saldo nokos</button>
+        <button type="button" role="radio" aria-checked={!keNokos} onClick={() => { setArah("keGame"); setPesan(null); }} data-testid="arah-ke-game" className={`rounded-xl px-2 py-2 text-xs font-extrabold ${!keNokos ? "bg-ink text-bg" : "text-muted"}`}>📱 Saldo nokos → Poin</button>
       </div>
-      <div className="panel-3d mt-3 divide-y divide-line px-4 text-sm">
-        <div className="flex justify-between py-2"><span className="text-muted">Poin ditukar</span><b>{p ? teksPoinRp(kotor) : "—"}</b></div>
-        {potongan > 0 && <div className="flex justify-between py-2"><span className="text-muted">Potongan</span><b>−{rupiah(potongan)}</b></div>}
-        <div className="flex justify-between py-2"><span className="text-muted">Masuk saldo nokos</span><b className="text-success" data-testid="tukar-bersih">{p ? rupiah(kotor - potongan) : "—"}</b></div>
-      </div>
-      {pesan && <Alert tone={pesan.ok ? "green" : "red"} className="mt-3"><span data-testid="tukar-pesan">{pesan.teks}</span></Alert>}
-      <button type="submit" disabled={sibuk || p < 2} className="btn-primary mt-4 w-full" data-testid="tukar-kirim">{sibuk ? <Spinner /> : null}{sibuk ? "Menukar…" : "Tukar ke saldo nokos"}</button>
-      <p className="mt-2 text-center text-[11px] text-muted">Minimal 2 poin. Saldo nokos saat ini {info ? rupiah(info.saldoNokos) : "…"}.</p>
+      {!aktif ? <Alert>{keNokos ? "Tukar poin ke saldo nokos" : "Ubah saldo nokos ke poin"} sedang dinonaktifkan admin.</Alert> : (
+        <>
+          <p className="text-sm text-muted">
+            {keNokos
+              ? <>Ubah poin game jadi <b>saldo nokos</b> untuk membeli nomor. Kurs: 1 poin = Rp{POIN_RP}{info?.tukar.feePersen ? `, potongan ${info.tukar.feePersen}%` : ", tanpa potongan"}.</>
+              : <>Ubah <b>saldo nokos</b> jadi poin game. Kurs: Rp{POIN_RP} = 1 poin{info?.isiNokos.feePersen ? `, potongan ${info.isiNokos.feePersen}%` : ", tanpa potongan"}. Poin hasil ubahan harus <b>diputar dulu</b> di game sebelum bisa ditukar balik atau ditarik.</>}
+          </p>
+          <label className="label mt-4" htmlFor="tk-poin">{keNokos ? "Poin yang ditukar" : "Poin yang ingin didapat"}</label>
+          <div className="field-3d flex items-center px-4">
+            <input id="tk-poin" inputMode="numeric" value={poin} onChange={(e) => setPoin(e.target.value.replace(/\D/g, ""))} placeholder="0" className="w-full bg-transparent px-2 py-3 text-2xl font-extrabold tabular-nums text-ink outline-none" />
+            <button type="button" onClick={semua} className="rounded-lg border border-line px-2 py-1 text-[11px] font-black text-ink">Maks</button>
+          </div>
+          <div className="panel-3d mt-3 divide-y divide-line px-4 text-sm">
+            {keNokos ? (
+              <>
+                <div className="flex justify-between py-2"><span className="text-muted">Poin ditukar</span><b>{p ? teksPoinRp(kotor) : "—"}</b></div>
+                {feeNokos > 0 && <div className="flex justify-between py-2"><span className="text-muted">Potongan</span><b>−{rupiah(feeNokos)}</b></div>}
+                <div className="flex justify-between py-2"><span className="text-muted">Masuk saldo nokos</span><b className="text-success" data-testid="tukar-bersih">{p ? rupiah(kotor - feeNokos) : "—"}</b></div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between py-2"><span className="text-muted">Saldo nokos dipotong</span><b data-testid="isi-nokos-bayar">{p ? rupiah(kotor + feeGame) : "—"}</b></div>
+                {feeGame > 0 && <div className="flex justify-between py-2"><span className="text-muted">Termasuk potongan</span><b>{rupiah(feeGame)}</b></div>}
+                <div className="flex justify-between py-2"><span className="text-muted">Poin diterima</span><b className="text-success" data-testid="isi-nokos-poin">{p ? teksPoin(kotor) : "—"}</b></div>
+              </>
+            )}
+          </div>
+          {pesan && <Alert tone={pesan.ok ? "green" : "red"} className="mt-3"><span data-testid="tukar-pesan">{pesan.teks}</span></Alert>}
+          <button type="submit" disabled={sibuk || p < 2} className="btn-primary mt-4 w-full" data-testid={keNokos ? "tukar-kirim" : "isi-nokos-kirim"}>{sibuk ? <Spinner /> : null}{sibuk ? "Memproses…" : keNokos ? "Tukar ke saldo nokos" : "Ubah ke poin game"}</button>
+          <p className="mt-2 text-center text-[11px] text-muted">Minimal 2 poin (Rp1.000). Saldo nokos saat ini {info ? rupiah(info.saldoNokos) : "…"} · poin game {info ? teksPoin(info.saldoRp) : "…"}.</p>
+        </>
+      )}
     </form>
   );
 }

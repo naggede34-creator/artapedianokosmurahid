@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { infoDompet, tukarKeNokos, ajukanTarik, batalTarik } from "@/lib/game/dompet";
+import { infoDompet, tukarKeNokos, isiPoinDariNokos, ajukanTarik, batalTarik } from "@/lib/game/dompet";
 import { rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,7 @@ const ip = (req) => req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
 const j = (data, status = 200) => NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
 
 // GET  ?token=  → saldo poin game, batas, syarat perputaran, riwayat tarikan
-// POST { token, aksi: "tukar" | "tarik" | "batal", poin, ewallet, nomor, nama, id }
+// POST { token, aksi: "tukar" (poin→saldo nokos) | "isi-nokos" (saldo nokos→poin) | "tarik" | "batal", poin, ewallet, nomor, nama, id }
 export async function GET(req) {
   const token = new URL(req.url).searchParams.get("token");
   if (!token) return j({ error: "Kode akun kosong." }, 400);
@@ -25,6 +25,7 @@ export async function POST(req) {
   try {
     let r;
     if (b.aksi === "tukar") r = await tukarKeNokos(token, b.poin);
+    else if (b.aksi === "isi-nokos") r = await isiPoinDariNokos(token, b.poin);
     else if (b.aksi === "tarik") r = await ajukanTarik(token, { poin: b.poin, ewallet: b.ewallet, nomor: b.nomor, nama: b.nama });
     else if (b.aksi === "batal") r = await batalTarik(token, b.id);
     else return j({ error: "Aksi tidak dikenal." }, 400);
