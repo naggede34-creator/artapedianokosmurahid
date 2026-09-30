@@ -257,6 +257,13 @@ export default function Percakapan({ roomId }) {
     kirimKe(buatTmp({ teks: teksKontak }), { jenis: "teks", teks: teksKontak });
   }
 
+  // Tantangan main dikirim ke chat sebagai tautan yang dibuka di dalam aplikasi.
+  function kirimTantangan({ gameId, jenis, taruhan }) {
+    const nama = { catur: "Catur", uno: "UNO", remi: "Remi", mahjong: "Mahjong" }[jenis] || jenis;
+    const teksTantang = `🎮 Aku menantangmu main ${nama}${taruhan ? ` (taruhan Rp${Number(taruhan).toLocaleString("id-ID")})` : ""}!\n${window.location.origin}/chat?game=${gameId}`;
+    kirimKe(buatTmp({ teks: teksTantang }), { jenis: "teks", teks: teksTantang });
+  }
+
   function kirimStiker(s) {
     setPanel(null);
     kirimKe(buatTmp({ jenis: "stiker", stiker: s }), { jenis: "stiker", stiker: s });
@@ -535,6 +542,7 @@ export default function Percakapan({ roomId }) {
                 <div className="wa-menu-tutup" onClick={() => setMenuKepala(false)} />
                 <div className="wa-menu-pop" role="menu">
                   <button onClick={() => { setMenuKepala(false); privat && lawan ? wa.buka({ tipe: "user", pid: lawan.pid }) : wa.buka({ tipe: "room", roomId }); }}><Ik n="info" s={18} /> {privat ? "Lihat kontak" : "Info grup"}</button>
+                  {privat && lawan && <button onClick={() => { setMenuKepala(false); wa.buka({ tipe: "duel-baru", undang: lawan, onBuat: kirimTantangan }); }}><Ik n="game" s={18} /> Tantang main game</button>}
                   <button onClick={bukaBerbintang}><Ik n="star" s={18} /> Pesan berbintang</button>
                   <button onClick={() => { setMenuKepala(false); ubahPref("muted"); }}><Ik n={info?.pref?.muted ? "bell" : "mute"} s={18} /> {info?.pref?.muted ? "Aktifkan notifikasi" : "Bisukan notifikasi"}</button>
                   <button onClick={() => { setMenuKepala(false); ubahPref("pinned"); }}><Ik n="pin" s={18} /> {info?.pref?.pinned ? "Lepas sematan chat" : "Sematkan chat"}</button>
@@ -677,6 +685,7 @@ export default function Percakapan({ roomId }) {
               <button onClick={() => fileFoto.current?.click()}><span style={{ background: "#8b5cf6" }}><Ik n="image" s={24} /></span>Foto</button>
               <button onClick={() => fileKamera.current?.click()}><span style={{ background: "#ec4899" }}><Ik n="camera" s={24} /></span>Kamera</button>
               <button onClick={() => { setLampir(false); setPoll(true); }}><span style={{ background: "#14b8a6" }}><Ik n="poll" s={24} /></span>Jajak</button>
+              {privat && lawan && <button onClick={() => { setLampir(false); wa.buka({ tipe: "duel-baru", undang: lawan, onBuat: kirimTantangan }); }}><span style={{ background: "#ef4444" }}><Ik n="game" s={24} /></span>Tantang</button>}
               <button onClick={() => { setLampir(false); wa.buka({ tipe: "kontak", mode: "bagikan", onPilih: bagikanKontak }); }}><span style={{ background: "#0ea5e9" }}><Ik n="user" s={24} /></span>Kontak</button>
               <button onClick={() => { setLampir(false); setPanel("stiker"); }}><span style={{ background: "#f77c22" }}><Ik n="sticker" s={24} /></span>Stiker</button>
             </div>

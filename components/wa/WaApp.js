@@ -9,6 +9,7 @@ import { Ik, Avatar, NamaLencana, Lembar, Konfirmasi, WaCtx, useWa, bikinApi, us
 import Percakapan from "@/components/wa/Percakapan";
 import TabStatus from "@/components/wa/Status";
 import LayarPanggilan from "@/components/wa/Panggilan";
+import { TabGame, LayarGame, DialogDuel, BannerGame } from "@/components/wa/Game";
 import { SheetKontak, SheetGrupBaru, SheetProfilSaya, SheetUser, SheetRoom, SheetTambahAnggota, SheetTeruskan } from "@/components/wa/Lembaran";
 import "@/components/wa/wa.css";
 
@@ -29,6 +30,9 @@ export default function WaApp() {
   const [saya, setSaya] = useState(null);
   const [admin, setAdmin] = useState(false);
   const [perluNama, setPerluNama] = useState(false);
+  const [gameInfo, setGameInfo] = useState({ undangan: [], berjalan: [] });
+  const [gameAktif, setGameAktif] = useState(null);
+  const gameTerlihat = useRef(null);
   const [rooms, setRooms] = useState([]);
   const [statusBaru, setStatusBaru] = useState(0);
   const [muat, setMuat] = useState(true);
@@ -66,6 +70,19 @@ export default function WaApp() {
       setSaya(r.data.saya);
       setAdmin(!!r.data.admin);
       setPerluNama(!!r.data.perluNama);
+      // Notifikasi dalam aplikasi: tantangan baru, duel dimulai, giliranku.
+      const gi = r.data.game || { undangan: [], berjalan: [] };
+      setGameInfo(gi);
+      const lalu = gameTerlihat.current;
+      const peta = { u: new Set(gi.undangan.map((x) => x.id)), b: new Map(gi.berjalan.map((x) => [x.id, x.giliranSaya])) };
+      if (lalu) {
+        for (const u of gi.undangan) if (!lalu.u.has(u.id)) { toast(`${u.ikon} ${u.dari} menantangmu main ${u.nama}!`); navigator.vibrate?.(60); }
+        for (const b of gi.berjalan) {
+          if (!lalu.b.has(b.id)) toast(`${b.ikon} Duel ${b.nama} vs ${b.lawan} dimulai!`);
+          else if (b.giliranSaya && !lalu.b.get(b.id)) toast(`${b.ikon} Giliranmu di ${b.nama} vs ${b.lawan}`);
+        }
+      }
+      gameTerlihat.current = peta;
       setRooms(r.data.rooms || []);
       setStatusBaru(r.data.statusBaru || 0);
       const masuk = r.data.panggilanMasuk;
@@ -129,6 +146,12 @@ export default function WaApp() {
     const u = new URLSearchParams(search);
     const pid = u.get("u");
     const kode = u.get("gabung");
+    const game = u.get("game");
+    if (game) {
+      try { window.history.replaceState({}, "", "/chat"); } catch {}
+      if (game === "1") setTab("game"); else setGameAktif(game);
+      return;
+    }
     if (!pid && !kode) return;
     try { window.history.replaceState({}, "", "/chat"); } catch {}
     if (pid) {
@@ -194,9 +217,10 @@ export default function WaApp() {
 
   // ───────────── sheet ─────────────
   const buka = useCallback((s) => setSheet(s), []);
+  const bukaGame = useCallback((id) => { setSheet(null); setGameAktif(id); }, []);
   const tutupSheet = useCallback(() => setSheet(null), []);
 
-  const ctx = useMemo(() => ({ token, api, me: saya, saya, admin, rooms, toast, bukaRoom, tutupRoom, buka, telepon, muatUlang: sinkron, bagikanSaya }), [token, api, saya, admin, rooms, toast, bukaRoom, tutupRoom, buka, telepon, sinkron, bagikanSaya]);
+  const ctx = useMemo(() => ({ token, api, me: saya, saya, admin, rooms, toast, bukaRoom, tutupRoom, buka, telepon, muatUlang: sinkron, bagikanSaya, bukaGame }), [token, api, saya, admin, rooms, toast, bukaRoom, tutupRoom, buka, telepon, sinkron, bagikanSaya, bukaGame]);
 
   // ───────────── daftar ─────────────
   const diarsip = rooms.filter((r) => r.archived);
@@ -289,6 +313,8 @@ export default function WaApp() {
             </div>
           </header>
 
+          <BannerGame game={gameInfo} />
+
           {tab === "chat" && (
             <div className="wa-tab-isi ada-fab">
               {arsip ? (
@@ -330,6 +356,7 @@ export default function WaApp() {
           )}
           {tab === "status" && <TabStatus />}
           {tab === "panggilan" && <TabPanggilan />}
+          {tab === "game" && <TabGame />}
 
           <nav className="wa-tab-bawah" aria-label="Navigasi">
             <button className={tab === "chat" ? "aktif" : ""} onClick={() => setTab("chat")}>
@@ -340,6 +367,9 @@ export default function WaApp() {
             </button>
             <button className={tab === "panggilan" ? "aktif" : ""} onClick={() => setTab("panggilan")}>
               <span><Ik n="phone" s={22} /></span>Panggilan
+            </button>
+            <button className={tab === "game" ? "aktif" : ""} onClick={() => setTab("game")}>
+              <span><Ik n="game" s={24} />{(gameInfo.undangan.length + gameInfo.berjalan.filter((x) => x.giliranSaya).length) > 0 && <b>{gameInfo.undangan.length + gameInfo.berjalan.filter((x) => x.giliranSaya).length}</b>}</span>Game
             </button>
             <button onClick={() => buka({ tipe: "profil-saya" })}>
               <span><Avatar nama={saya?.nama} foto={fotoDari(saya)} ada={!!saya?.fotoV} size={26} /></span>Saya
@@ -369,6 +399,7 @@ export default function WaApp() {
         {sheet?.tipe === "profil-saya" && <SheetProfilSaya onTutup={tutupSheet} />}
         {sheet?.tipe === "user" && <SheetUser pid={sheet.pid} onTutup={tutupSheet} />}
         {sheet?.tipe === "room" && <SheetRoom roomId={sheet.roomId} onTutup={tutupSheet} />}
+        {sheet?.tipe === "duel-baru" && <DialogDuel jenis={sheet.jenis} undang={sheet.undang} onBuat={sheet.onBuat} onTutup={tutupSheet} />}
         {sheet?.tipe === "tambah-anggota" && <SheetTambahAnggota roomId={sheet.roomId} sudah={sheet.sudah} onTutup={tutupSheet} />}
         {sheet?.tipe === "teruskan" && <SheetTeruskan room={sheet.room} msg={sheet.msg} onTutup={tutupSheet} />}
 
@@ -380,6 +411,8 @@ export default function WaApp() {
           </Lembar>
         )}
         {tanya && <Konfirmasi judul={tanya.judul} isi={tanya.isi} tombol={tanya.tombol} onTutup={() => setTanya(null)} />}
+
+        {gameAktif && <LayarGame key={gameAktif} id={gameAktif} onTutup={() => { setGameAktif(null); sinkron(); }} />}
 
         {panggilan && <LayarPanggilan key={panggilan.callId || "keluar"} sesi={panggilan} onSelesai={selesaiPanggilan} />}
 

@@ -19,6 +19,7 @@ import Depth3D from "@/components/Depth3D";
 import PanelTransition from "@/components/PanelTransition";
 import PasangAplikasi from "@/components/PasangAplikasi";
 import AuthGate from "@/components/AuthGate";
+import PembaruanModal from "@/components/PembaruanModal";
 import { useUser } from "@/app/providers";
 
 // Halaman yang tetap terbuka tanpa akun saat login diwajibkan: informasi umum.
@@ -85,7 +86,7 @@ export default function SiteChrome({ children }) {
   // Tanpa RevealOnScroll di sini: halaman ini tidak memakai kelas animasi
   // masuk apa pun, dan pengamat mutasinya justru akan bekerja terus-menerus
   // di DOM chat yang isinya berubah setiap pesan datang.
-  if (isChat) return <>{tampilGerbang && <AuthGate />}{children}</>;
+  if (isChat) return <>{tampilGerbang && <AuthGate />}{!tampilGerbang && <PembaruanModal langsung />}{children}</>;
 
   return (
     <>
@@ -104,6 +105,7 @@ export default function SiteChrome({ children }) {
           <MascotNudge />
           <MascotGreeting />
           <InfoModal />
+          <PembaruanModal />
           <WelcomeBonusPopup />
         </>
       )}

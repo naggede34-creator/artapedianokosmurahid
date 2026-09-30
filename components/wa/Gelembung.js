@@ -21,13 +21,13 @@ function Teks({ teks }) {
           let dalam = null;
           try {
             const u = new URL(bersih);
-            if (typeof window !== "undefined" && u.origin === window.location.origin && u.pathname === "/chat" && (u.searchParams.get("u") || u.searchParams.get("gabung"))) dalam = u.search;
+            if (typeof window !== "undefined" && u.origin === window.location.origin && u.pathname === "/chat" && (u.searchParams.get("u") || u.searchParams.get("gabung") || u.searchParams.get("game"))) dalam = u.search;
           } catch {}
           return (
             <span key={i}>
               {dalam ? (
                 <a href={bersih} className="wa-tautan wa-tautan-dalam" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new CustomEvent("wa-tautan", { detail: dalam })); }}>
-                  {dalam.includes("u=") ? "👤 Buka kontak" : "👥 Gabung grup"}
+                  {dalam.includes("game=") ? "🎮 Buka duel" : dalam.includes("u=") ? "👤 Buka kontak" : "👥 Gabung grup"}
                 </a>
               ) : (
               <a href={bersih} target="_blank" rel="noopener noreferrer nofollow" className="wa-tautan" onClick={(e) => e.stopPropagation()}>{bersih}</a>

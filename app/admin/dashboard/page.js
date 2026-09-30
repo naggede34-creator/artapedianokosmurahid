@@ -8,6 +8,7 @@ import AdminKonfigurasi, { PeringatanKodeAdmin } from "@/components/AdminKonfigu
 import AdminReferral from "@/components/AdminReferral";
 import AdminAfiliasi from "@/components/AdminAfiliasi";
 import AdminLencana from "@/components/AdminLencana";
+import AdminGame from "@/components/AdminGame";
 import { CHANNEL_ID, CHANNEL_URL } from "@/lib/links";
 
 function fmtDate(d) {
@@ -31,6 +32,7 @@ const TABS = [
   { id: "referral", label: "Referral", icon: "🛡" },
   { id: "kreator", label: "Kreator", icon: "🎬" },
   { id: "lencana", label: "Lencana", icon: "🎖" },
+  { id: "game", label: "Game", icon: "🎮" },
   { id: "konfigurasi", label: "Konfigurasi", icon: "🔑" },
   { id: "bot", label: "Bot Telegram", icon: "🤖" },
   { id: "reseller", label: "Bot Reseller", icon: "🏪" },
@@ -3172,6 +3174,7 @@ export default function AdminDashboardPage() {
       {activeTab === "referral" && <AdminReferral />}
       {activeTab === "kreator" && <AdminAfiliasi />}
       {activeTab === "lencana" && <AdminLencana />}
+      {activeTab === "game" && <AdminGame />}
 
       {activeTab === "giveaway" && (
         <div className="mt-5 space-y-5">

@@ -47,6 +47,7 @@ const sections = [
     items: [
       { href: "/dashboard", label: "Beranda", icon: <Icon.home width={19} height={19} /> },
       { href: "/profil", label: "Profil Akun", icon: <span className="text-[17px] leading-none">👤</span>, badge: "Baru" },
+      { href: "/chat?game=1", label: "Duel Game (UNO, Catur…)", icon: <span className="text-[17px] leading-none">🎮</span>, badge: "Baru" },
       // Tautan keluar ke channel Telegram. Ditaruh paling atas bersama Beranda,
       // bukan diselipkan di Bantuan: ini yang dipakai orang untuk memastikan
       // tokonya benar-benar jalan sebelum mereka mengisi saldo.
@@ -204,6 +205,14 @@ export default function Sidebar({ open, onClose }) {
             </button>
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={() => { onClose?.(); setTimeout(() => window.dispatchEvent(new Event("buka-pembaruan")), 250); }}
+          className="press flex items-center gap-2 border-t border-line px-5 py-3 text-left text-sm font-bold text-amber-bright"
+        >
+          ✨ Yang baru di Artapedia
+        </button>
 
         <div className="flex items-center justify-between border-t border-line px-5 py-4">
           <span className="text-sm font-medium text-muted">Mode gelap</span>
