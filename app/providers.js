@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 const THEME_KEY = "artapedia_theme";
 const ThemeContext = createContext(null);
@@ -185,14 +186,50 @@ export function UserProvider({ children }) {
 
   const refreshBalance = useCallback(async () => {
     if (!token) return;
-    const res = await fetch("/api/user/init", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token })
-    });
-    const data = await res.json();
-    if (res.ok) { setBalance(data.balance); setGameBalance(data.saldoGame ?? 0); }
+    try {
+      const res = await fetch("/api/user/saldo", {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      });
+      const data = await res.json();
+      if (res.ok) { setBalance(data.balance); setGameBalance(data.saldoGame ?? 0); if (data.depositBalance !== undefined) setDepositBalance(data.depositBalance); }
+    } catch {}
   }, [token]);
+
+  // Saldo yang tampil (terutama POIN GAME) harus selalu sama dengan server: game memotong/menambah poin
+  // di server, sedangkan konteks ini hidup terus selama pengguna berpindah halaman. Karena itu disegarkan
+  // saat pindah halaman, saat tab kembali aktif, berkala, dan ketika game memberi tahu lewat event.
+  const pathname = usePathname();
+  const terakhirSegar = useRef(0);
+  useEffect(() => {
+    if (!token) return undefined;
+    let tunda = null;
+    const segar = (paksa) => {
+      if (document.visibilityState !== "visible") return;
+      const kini = Date.now();
+      const sisa = 1500 - (kini - terakhirSegar.current);
+      // Terlalu rapat → jangan dibuang, jadwalkan satu kali susulan supaya perubahan terakhir tetap terbaca.
+      if (!paksa && sisa > 0) { if (!tunda) tunda = setTimeout(() => { tunda = null; segar(true); }, sisa + 30); return; }
+      terakhirSegar.current = kini;
+      refreshBalance();
+    };
+    segar(true);
+    const saatFokus = () => segar(false);
+    const saatEvent = () => segar(true);
+    window.addEventListener("focus", saatFokus);
+    document.addEventListener("visibilitychange", saatFokus);
+    window.addEventListener("artapedia:saldo", saatEvent);
+    const id = setInterval(() => segar(false), 15000);
+    return () => {
+      window.removeEventListener("focus", saatFokus);
+      document.removeEventListener("visibilitychange", saatFokus);
+      window.removeEventListener("artapedia:saldo", saatEvent);
+      clearInterval(id);
+      if (tunda) clearTimeout(tunda);
+    };
+  }, [token, pathname, refreshBalance]);
 
   const restoreToken = useCallback(
     async (candidate) => {

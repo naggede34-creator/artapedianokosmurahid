@@ -6,6 +6,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useUser } from "@/app/providers";
 import { Ik, Lembar, useWa } from "@/components/wa/kit";
 import { teksPoinRp, POIN_RP } from "@/lib/poinGame";
+import { Ubin, WILD, SCATTER } from "@/components/wa/UbinSlot";
+import { TombolSuara, useMusik, bunyiKlik } from "@/components/wa/Suara";
+import { efek as bunyi } from "@/lib/suara";
 
 // Nominal saldo game tampil sebagai poin + padanan rupiah (2 poin = Rp1.000).
 const rp = (n) => teksPoinRp(n);
@@ -108,8 +111,10 @@ function Pengingat({ mode }) {
 // ═════════════════════════ PLINKO ═════════════════════════
 const warnaSel = (m) => (m >= 100 ? "#dc2626" : m >= 26 ? "#ea580c" : m >= 5 ? "#f59e0b" : m >= 1.5 ? "#eab308" : m >= 1 ? "#84cc16" : "#64748b");
 
-function Bola({ n, jalur, dx, rowH, top, onMendarat, cepat }) {
-  const [p, setP] = useState({ x: 0, y: 0 });
+function Bola({ n, jalur, dx, rowH, top, onMendarat, onPasak, cepat }) {
+  const [p, setP] = useState({ x: 0, y: 0, jejak: [] });
+  const jejak = useRef([]);
+  const iTerakhir = useRef(-1);
   useEffect(() => {
     const per = cepat ? 70 : 150; // ms per baris
     const total = per * (jalur.length + 1);
@@ -124,7 +129,14 @@ function Bola({ n, jalur, dx, rowH, top, onMendarat, cepat }) {
       const x0 = pos(i), x1 = i < jalur.length ? pos(i + 1) : x0;
       const y0 = top + i * rowH;
       const loncat = Math.abs(Math.sin(u * Math.PI)) * rowH * 0.45; // pantul kecil di tiap pasak
-      setP({ x: x0 + (x1 - x0) * u, y: y0 + (i < jalur.length ? u * rowH : 0) - (i < jalur.length ? loncat : 0) });
+      if (i !== iTerakhir.current) {
+        iTerakhir.current = i;
+        let k = 0; for (let a = 0; a < i; a++) k += jalur[a];
+        onPasak?.(i, k);
+      }
+      const px = x0 + (x1 - x0) * u, py = y0 + (i < jalur.length ? u * rowH : 0) - (i < jalur.length ? loncat : 0);
+      jejak.current = [...jejak.current.slice(-6), { x: px, y: py }];
+      setP({ x: px, y: py, jejak: jejak.current });
       if (e < total) id = requestAnimationFrame(langkah);
       else onMendarat(n);
     };
@@ -132,7 +144,13 @@ function Bola({ n, jalur, dx, rowH, top, onMendarat, cepat }) {
     return () => cancelAnimationFrame(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  return <circle cx={p.x} cy={p.y} r={Math.max(5, dx * 0.2)} className="ws-bola" />;
+  const r = Math.max(5, dx * 0.2);
+  return (
+    <g>
+      {p.jejak.slice(0, -1).map((q, i, a) => <circle key={i} cx={q.x} cy={q.y} r={r * (0.35 + 0.5 * ((i + 1) / a.length))} className="ws-jejak" opacity={0.08 + 0.3 * ((i + 1) / a.length)} />)}
+      <circle cx={p.x} cy={p.y} r={r} className="ws-bola" />
+    </g>
+  );
 }
 
 export function LayarPlinko({ onTutup }) {
@@ -153,7 +171,18 @@ export function LayarPlinko({ onTutup }) {
   const autoRef = useRef(0);
   const hidup = useRef(true);
   const tertunda = useRef({});
+  const [nyala, setNyala] = useState({}); // pasak yang baru terkena bola → menyala sebentar
+  const [ledakan, setLedakan] = useState(null); // { sel, n, x }
+  const [goyang, setGoyang] = useState(false);
   useEffect(() => () => { hidup.current = false; }, []);
+  useMusik("lounge");
+
+  const pasakKena = useCallback((i, k) => {
+    bunyi("pasak", { baris: i });
+    const kunci = `${i}-${k}`;
+    setNyala((m) => ({ ...m, [kunci]: (m[kunci] || 0) + 1 }));
+    setTimeout(() => hidup.current && setNyala((m) => { if (!m[kunci]) return m; const b = { ...m }; b[kunci] = (b[kunci] || 1) - 1; if (b[kunci] <= 0) delete b[kunci]; return b; }), 260);
+  }, []);
 
   const tabel = info?.plinko.meta[risiko]?.[baris]?.tabel || [];
   const rtp = info?.plinko.meta[risiko]?.[baris]?.rtp;
@@ -169,6 +198,9 @@ export function LayarPlinko({ onTutup }) {
     setBola((b) => b.filter((x) => x.n !== n));
     if (!t || !hidup.current) return;
     setSorot({ sel: t.hasil.sel, n });
+    bunyi("mendarat", { pengali: t.pengali });
+    if (t.pengali >= 1.5) { setLedakan({ sel: t.hasil.sel, n, x: t.pengali }); setTimeout(() => hidup.current && setLedakan((l) => (l?.n === n ? null : l)), 1300); }
+    if (t.pengali >= 26) { setGoyang(true); setTimeout(() => hidup.current && setGoyang(false), 700); }
     setTimeout(() => hidup.current && setSorot((x) => (x?.n === n ? null : x)), 900);
     setRiwayat((r) => [{ x: t.pengali, untung: t.untung, id: n }, ...r].slice(0, 12));
     setTerakhir(t);
@@ -208,10 +240,11 @@ export function LayarPlinko({ onTutup }) {
   const kunci = bola.length > 0 || auto > 0;
 
   return (
-    <div className="wg-layar ws-layar" role="dialog" aria-label="Plinko">
+    <div className="wg-layar ws-layar" role="dialog" aria-label="Plinko" onClickCapture={bunyiKlik}>
       <header className="wa-kepala wg-kepala">
         <button className="wa-ikon" onClick={onTutup} aria-label="Kembali"><Ik n="back" s={22} /></button>
         <div className="wg-judul"><b>🔮 Plinko</b><small>Solo · RTP ≈ {rtp ? (rtp * 100).toFixed(1) : "96"}% · maks {tabel.length ? fmtX(Math.max(...tabel)) : "…"}</small></div>
+        <TombolSuara />
         <button className="wa-ikon" onClick={() => setAturan(true)} aria-label="Cara main"><Ik n="info" s={22} /></button>
       </header>
       <div className="wg-isi ws-isi">
@@ -230,10 +263,10 @@ export function LayarPlinko({ onTutup }) {
               </div>
             </div>
 
-            <div className="ws-plinko" data-testid="plinko-papan">
+            <div className={`ws-plinko${goyang ? " goyang" : ""}`} data-testid="plinko-papan">
               <svg viewBox={`${-W / 2} 0 ${W} ${H}`} role="img" aria-label="Papan Plinko">
                 {Array.from({ length: baris }, (_, i) => Array.from({ length: i + 1 }, (_, j) => (
-                  <circle key={`${i}-${j}`} cx={(j - i / 2) * dx} cy={top + i * rowH} r={Math.max(2.2, dx * 0.07)} className="ws-pasak" />
+                  <circle key={`${i}-${j}`} cx={(j - i / 2) * dx} cy={top + i * rowH} r={Math.max(2.2, dx * 0.07) * (nyala[`${i}-${j}`] ? 1.9 : 1)} className={`ws-pasak${nyala[`${i}-${j}`] ? " nyala" : ""}`} />
                 )))}
                 {tabel.map((m, k) => (
                   <g key={k} transform={`translate(${(k - baris / 2) * dx},${top + baris * rowH + 12})`} className={sorot?.sel === k ? "ws-sel on" : "ws-sel"}>
@@ -241,7 +274,15 @@ export function LayarPlinko({ onTutup }) {
                     <text y={22} textAnchor="middle" fontSize={dx > 34 ? 13 : 10} fontWeight="900" fill="#fff">{m >= 100 ? Math.round(m) : m}</text>
                   </g>
                 ))}
-                {bola.map((b) => <Bola key={b.n} n={b.n} jalur={b.jalur} dx={dx} rowH={rowH} top={top - 14} onMendarat={mendarat} cepat={turbo} />)}
+                {ledakan && (
+                  <g key={ledakan.n} transform={`translate(${(ledakan.sel - baris / 2) * dx},${top + baris * rowH + 12})`} className="ws-ledakan" aria-hidden="true">
+                    {Array.from({ length: ledakan.x >= 26 ? 14 : 8 }, (_, i) => {
+                      const a = (Math.PI * (i + 0.5)) / (ledakan.x >= 26 ? 14 : 8);
+                      return <circle key={i} r={4.5} cx={0} cy={0} style={{ "--dx": `${-Math.cos(a) * (40 + (i % 3) * 22)}px`, "--dy": `${-Math.sin(a) * (70 + (i % 4) * 26)}px`, animationDelay: `${(i % 4) * 30}ms` }} />;
+                    })}
+                  </g>
+                )}
+                {bola.map((b) => <Bola key={b.n} n={b.n} jalur={b.jalur} dx={dx} rowH={rowH} top={top - 14} onMendarat={mendarat} onPasak={pasakKena} cepat={turbo} />)}
               </svg>
             </div>
 
@@ -285,19 +326,17 @@ export function LayarPlinko({ onTutup }) {
 const RTP_TAMPIL = 0.96;
 
 // ═════════════════════════ MAHJONG SPIN 1024 ═════════════════════════
-const HURUF = ["中", "發", "白", "東", "南", "西", "萬", "筒", "索"];
-const WILD = 9, SCATTER = 10;
-
-function Ubin({ sel, kelas = "", gaya }) {
-  if (!sel) return <div className="sl-ubin kosong" />;
-  const [s, emas] = sel;
-  const jenis = s === WILD ? "wild" : s === SCATTER ? "scatter" : `s${s}`;
-  return (
-    <div className={`sl-ubin ${jenis}${emas ? " emas" : ""} ${kelas}`} style={gaya} data-s={s} data-emas={emas ? 1 : 0}>
-      <span className="sl-huruf">{s === WILD ? "WILD" : s === SCATTER ? "福" : HURUF[s]}</span>
-      {emas ? <i className="sl-kilau" /> : null}
-    </div>
-  );
+/** Angka yang menghitung naik (efek "koin berhitung" saat menang besar). */
+function CacahAngka({ nilai, format }) {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    const t0 = performance.now(), dur = 1500;
+    let id;
+    const f = (t) => { const u = Math.min(1, (t - t0) / dur); setV(Math.round(nilai * (1 - (1 - u) ** 3))); if (u < 1) id = requestAnimationFrame(f); };
+    id = requestAnimationFrame(f);
+    return () => cancelAnimationFrame(id);
+  }, [nilai]);
+  return <em>+{format(v)}</em>;
 }
 
 const gridKosong = () => Array.from({ length: 5 }, () => Array.from({ length: 4 }, () => null));
@@ -317,28 +356,59 @@ export function LayarSlot({ onTutup }) {
   const [turbo, setTurbo] = useState(false);
   const [aturan, setAturan] = useState(false);
   const [bayarTabel, setBayarTabel] = useState(false);
+  const [berputar, setBerputar] = useState(() => new Set()); // gulungan yang masih berputar
+  const [tekan, setTekan] = useState(() => new Set()); // gulungan yang baru berhenti (efek hentak)
+  const [naga, setNaga] = useState(0); // naga terbang melintas (kunci animasi)
+  const [hujan, setHujan] = useState(0); // hujan koin emas (kunci animasi)
+  const [banner, setBanner] = useState(null); // { teks, tingkat, nilai }
+  const [goyang, setGoyang] = useState(false);
   const lewati = useRef(false);
   const hidup = useRef(true);
   useEffect(() => () => { hidup.current = false; }, []);
+  useMusik("oriental");
   const jeda = (ms) => (lewati.current ? Promise.resolve() : tidur(turbo ? ms * 0.45 : ms));
   const kunci = putar;
 
   const kunciSel = (cs) => new Set(cs.map(([c, r]) => `${c}-${r}`));
 
+  const acakKolom = () => Array.from({ length: 4 }, () => [Math.floor(Math.random() * 9), 0]);
+  /** Gulungan berputar lalu berhenti satu per satu dari kiri (seperti mesin slot sungguhan). */
+  async function gulung(awal) {
+    if (lewati.current) { setGrid(awal); return; }
+    bunyi("putar");
+    setBerputar(new Set([0, 1, 2, 3, 4]));
+    const henti = new Set();
+    const iv = setInterval(() => setGrid((g) => g.map((k, c) => (henti.has(c) ? k : acakKolom()))), 85);
+    try {
+      for (let c = 0; c < 5 && hidup.current; c++) {
+        await jeda(c === 0 ? 430 : 170);
+        henti.add(c);
+        setGrid((g) => g.map((k, i) => (i === c ? awal[c] : k)));
+        setBerputar((x) => { const n = new Set(x); n.delete(c); return n; });
+        setTekan((x) => new Set(x).add(c));
+        setTimeout(() => hidup.current && setTekan((x) => { const n = new Set(x); n.delete(c); return n; }), 320);
+        bunyi("berhenti", { kolom: c });
+      }
+    } finally { clearInterval(iv); setBerputar(new Set()); }
+    setGrid(awal);
+  }
+  const terbangkanNaga = (suara = true) => { setNaga((n) => n + 1); if (suara) bunyi("naga"); };
+
   async function animasi(data) {
     const { putaran } = data.hasil;
+    let nagaEmas = false;
     let kumpul = 0;
     const totalFs = putaran.length - 1;
     for (let p = 0; p < putaran.length && hidup.current; p++) {
       const pt = putaran[p];
       if (p === 0) setGratis(null);
       else setGratis({ no: p, dari: totalFs, tipe: "gratis" });
-      if (p === 1) { setPesan(`🎁 PUTARAN GRATIS! ${totalFs} putaran`); await jeda(1500); }
+      if (p === 1) { setPesan(`🎁 PUTARAN GRATIS! ${totalFs} putaran`); bunyi("gratis"); terbangkanNaga(false); await jeda(1700); }
       setKombo(-1);
-      setEfek({ menang: new Set(), hilang: new Set(), jatuh: new Set(Array.from({ length: 20 }, (_, i) => `${Math.floor(i / 4)}-${i % 4}`)), berubah: new Set() });
-      setGrid(pt.awal);
-      await jeda(p === 0 ? 700 : 500);
-      if (pt.scatter >= 3 && p === 0) { setPesan(`🎁 ${pt.scatter} SCATTER — putaran gratis!`); await jeda(900); }
+      setEfek({ menang: new Set(), hilang: new Set(), jatuh: new Set(), berubah: new Set() });
+      await gulung(pt.awal);
+      await jeda(p === 0 ? 350 : 300);
+      if (pt.scatter >= 3 && p === 0) { setPesan(`🎁 ${pt.scatter} SCATTER — putaran gratis!`); bunyi("scatter"); await jeda(900); }
       if (pt.tahap.length === 0 && p > 0) await jeda(250);
       for (let t = 0; t < pt.tahap.length && hidup.current; t++) {
         const th = pt.tahap[t];
@@ -346,11 +416,14 @@ export function LayarSlot({ onTutup }) {
         // Sel yang menang = sel yang hilang atau berubah jadi wild.
         [...th.hapus, ...th.emas].forEach(([c, r]) => ikut.add(`${c}-${r}`));
         setKombo(t);
+        bunyi("kombo", { level: t });
         setEfek({ menang: ikut, hilang: new Set(), jatuh: new Set(), berubah: new Set() });
         kumpul += th.tambah; setTotal(kumpul);
         setPesan(`+${th.tambah.toLocaleString("id-ID", { maximumFractionDigits: 2 })}× (kombo ×${th.mult})`);
         await jeda(850);
         setEfek({ menang: ikut, hilang: kunciSel(th.hapus), jatuh: new Set(), berubah: kunciSel(th.emas) });
+        bunyi("pecah");
+        if (th.emas.length && !nagaEmas) { nagaEmas = true; terbangkanNaga(true); } else if (th.emas.length) bunyi("pop");
         await jeda(420);
         // Ubin emas berubah jadi wild di tempat; sel lain jatuh.
         const jatuh = new Set();
@@ -359,6 +432,7 @@ export function LayarSlot({ onTutup }) {
           if (hapusBaris.length) { const maks = Math.max(...hapusBaris); for (let r = 0; r <= maks; r++) jatuh.add(`${c}-${r}`); }
         }
         setGrid(th.grid);
+        bunyi("jatuh");
         setEfek({ menang: new Set(), hilang: new Set(), jatuh, berubah: new Set() });
         await jeda(650);
       }
@@ -385,6 +459,18 @@ export function LayarSlot({ onTutup }) {
     setAkhir(d);
     setPesan("");
     setPutar(false);
+    // Perayaan kemenangan: makin besar makin meriah.
+    const tingkat = d.pengali >= 500 ? 4 : d.pengali >= 100 ? 3 : d.pengali >= 30 ? 2 : d.pengali >= 10 ? 1 : 0;
+    if (tingkat > 0) {
+      const teks = ["BIG WIN", "MEGA WIN", "SUPER WIN", "LEGENDARY WIN"][tingkat - 1];
+      bunyi("menangBesar");
+      setBanner({ teks, tingkat, nilai: d.bayar, kunci: Date.now() });
+      setHujan((n) => n + 1);
+      terbangkanNaga(false);
+      setGoyang(true);
+      setTimeout(() => hidup.current && setGoyang(false), 900);
+      setTimeout(() => hidup.current && setBanner(null), 3800);
+    } else if (d.bayar > 0) bunyi("menang");
   }
 
   const info2 = info?.slot;
@@ -393,10 +479,11 @@ export function LayarSlot({ onTutup }) {
   const ladder = gratis ? info2?.ladderGratis : info2?.ladderDasar;
 
   return (
-    <div className="wg-layar ws-layar ws-slot" role="dialog" aria-label="Mahjong Spin 1024">
+    <div className={`wg-layar ws-layar ws-slot${goyang ? " goyang" : ""}`} role="dialog" aria-label="Mahjong Spin 1024" onClickCapture={bunyiKlik}>
       <header className="wa-kepala wg-kepala">
         <button className="wa-ikon" onClick={onTutup} aria-label="Kembali" disabled={putar}><Ik n="back" s={22} /></button>
         <div className="wg-judul"><b>🀄 Mahjong Spin 1024</b><small>Solo · RTP ≈ 96% · maks ×{info2?.maksPengali ?? 5000}</small></div>
+        <TombolSuara />
         <button className="wa-ikon" onClick={() => setBayarTabel(true)} aria-label="Tabel bayar"><Ik n="info" s={22} /></button>
       </header>
       <div className="wg-isi ws-isi">
@@ -404,6 +491,7 @@ export function LayarSlot({ onTutup }) {
         {info && !info.aktif && <div className="wa-galat-blok"><span>🀄</span><p>Game solo sedang ditutup admin.</p></div>}
         {info?.aktif && (
           <>
+            <div className="sl-judul" aria-hidden="true"><span className="naga">🐉</span><b><em>麻雀</em> MAHJONG WAYS</b><span className="naga kanan">🐉</span></div>
             <div className="sl-kombo" aria-label="Pengali kombo">
               {ladder?.map((m, i) => <span key={i} className={kombo >= 0 && i === Math.min(kombo, ladder.length - 1) ? "on" : ""}>×{m}</span>)}
               {gratis && <em className="sl-gratis" data-testid="slot-gratis">Gratis {gratis.no}/{gratis.dari}</em>}
@@ -411,10 +499,10 @@ export function LayarSlot({ onTutup }) {
 
             <div className={`sl-papan${gratis ? " gratis" : ""}`} data-testid="slot-papan">
               {grid.map((kol, c) => (
-                <div key={c} className="sl-kol">
+                <div key={c} className={`sl-kol${berputar.has(c) ? " putar" : ""}`}>
                   {kol.map((sel, r) => {
                     const k = `${c}-${r}`;
-                    const kelas = [efek.menang.has(k) ? "menang" : "", efek.hilang.has(k) ? "hilang" : "", efek.jatuh.has(k) ? "jatuh" : "", efek.berubah.has(k) ? "berubah" : ""].join(" ");
+                    const kelas = [efek.menang.has(k) ? "menang" : "", efek.hilang.has(k) ? "hilang" : "", efek.jatuh.has(k) ? "jatuh" : "", efek.berubah.has(k) ? "berubah" : "", tekan.has(c) ? "tekan" : ""].join(" ");
                     return <Ubin key={`${k}-${efek.jatuh.has(k) ? "j" : "n"}-${sel?.[0]}-${sel?.[1]}`} sel={sel} kelas={kelas} gaya={efek.jatuh.has(k) ? { animationDelay: `${c * 55}ms` } : undefined} />;
                   })}
                 </div>
@@ -431,6 +519,15 @@ export function LayarSlot({ onTutup }) {
               {total > 0 && putar && <small data-testid="slot-total">Total ×{total.toLocaleString("id-ID", { maximumFractionDigits: 2 })}</small>}
             </div>
             {besar && !putar && <div className="wg-konfeti ws-konfeti" aria-hidden="true">{Array.from({ length: 16 }, (_, i) => <i key={i} style={{ "--i": i }} />)}</div>}
+            {hujan > 0 && <div key={hujan} className="sl-hujan" aria-hidden="true">{Array.from({ length: 26 }, (_, i) => <span key={i} style={{ "--i": i, "--x": `${(i * 37) % 100}%`, "--d": `${(i % 9) * 0.12}s` }}>🪙</span>)}</div>}
+            {naga > 0 && <div key={`n${naga}`} className="sl-naga" aria-hidden="true">🐉</div>}
+            {banner && (
+              <div key={banner.kunci} className={`sl-banner t${banner.tingkat}`} role="status" data-testid="slot-banner" onClick={() => setBanner(null)}>
+                <small>🪙 🪙 🪙</small>
+                <b>{banner.teks}</b>
+                <CacahAngka nilai={banner.nilai} format={koinTeks} />
+              </div>
+            )}
 
             <PanelDompet s={s} kunci={kunci} />
             <div className="ws-aksi">

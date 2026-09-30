@@ -886,3 +886,72 @@ label.wa-saklar { display: flex; }
 @media (prefers-reduced-motion: reduce) { .sl-ubin.jatuh, .sl-ubin.menang, .sl-papan.gratis, .sl-kilau { animation: none; } }
 
 .wg-isi-saldo { display: inline-block; margin-top: 8px; padding: 7px 14px; border-radius: 12px; font-weight: 900; font-size: 13px; color: #422006; background: #fde047; border: 2.5px solid var(--wa-ink-tegas); box-shadow: 0 3px 0 var(--wa-ink-tegas); text-decoration: none; }
+
+/* ═══════════ Mahjong Ways gaya asli: ubin bergambar, naga & emas ═══════════ */
+.ws-slot .wg-isi { background-image: radial-gradient(120% 60% at 50% 0%, #7f1d1d22, transparent 70%); }
+.sl-judul { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 -2px; }
+.sl-judul b { font-size: 17px; letter-spacing: 2px; font-weight: 900; color: #b45309; text-shadow: 0 1px 0 #fef3c7, 0 0 14px #fbbf2455; display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
+.sl-judul em { font-style: normal; font-size: 12px; letter-spacing: 6px; color: #b91c1c; }
+.sl-judul .naga { font-size: 30px; filter: drop-shadow(0 0 8px #f59e0b99); animation: sl-naga-mengambang 2.6s ease-in-out infinite; }
+.sl-judul .naga.kanan { transform: scaleX(-1); animation-delay: -1.3s; }
+@keyframes sl-naga-mengambang { 50% { translate: 0 -4px; } }
+
+.sl-papan { position: relative; background: linear-gradient(180deg, #7f1d1d, #450a0a); border: 3px solid #fbbf24; box-shadow: 0 0 0 3px #78350f, 4px 6px 0 #1c1917, inset 0 0 34px #00000088, 0 0 22px #f59e0b44; overflow: hidden; }
+.sl-papan::before { content: "🐉"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 190px; opacity: .1; pointer-events: none; filter: sepia(1) saturate(4) hue-rotate(-10deg); }
+.sl-papan.gratis { background: linear-gradient(180deg, #92400e, #451a03); border-color: #fde047; animation: sl-denyut-emas 1.6s ease-in-out infinite; }
+@keyframes sl-denyut-emas { 50% { box-shadow: 0 0 0 3px #78350f, 4px 6px 0 #1c1917, inset 0 0 34px #00000088, 0 0 34px #fde047aa; } }
+.sl-kol { position: relative; z-index: 1; }
+.sl-ubin { background: linear-gradient(165deg, #fffdf5, #f6ead0 62%, #e6d3a8); border: 2px solid #3f2d14; box-shadow: 0 5px 0 #0f766e, 0 6px 0 #042f2e, inset 0 1px 0 #fff; border-radius: 9px; }
+.sl-ubin.kosong { background: #0000002e; box-shadow: none; border-style: dashed; }
+.sl-gambar { width: 92%; height: 92%; display: block; filter: drop-shadow(0 1px 0 #ffffffaa); }
+.sl-ubin.wild { background: linear-gradient(165deg, #fef08a, #f59e0b 60%, #b45309); border-color: #78350f; box-shadow: 0 5px 0 #7c2d12, 0 6px 0 #431407, 0 0 14px #fbbf24aa, inset 0 0 0 2px #fef9c3; }
+.sl-ubin.scatter { background: radial-gradient(circle at 50% 45%, #fde68a, #f59e0b 70%, #92400e); border-color: #78350f; box-shadow: 0 5px 0 #7c2d12, 0 6px 0 #431407, 0 0 16px #f59e0bcc; animation: sl-goyang-koin 1.6s ease-in-out infinite; }
+@keyframes sl-goyang-koin { 50% { transform: rotate(-4deg) scale(1.04); } }
+.sl-ubin.emas { border-color: #a16207; background: linear-gradient(165deg, #fef9c3, #fcd34d 55%, #d97706); box-shadow: 0 5px 0 #78350f, 0 6px 0 #431407, 0 0 14px #fbbf24cc, inset 0 0 0 2px #fffbeb; }
+.sl-ubin.emas .sl-gambar { filter: drop-shadow(0 0 3px #fff7); }
+.sl-kol.putar .sl-ubin { filter: blur(1.6px) brightness(.96); transform: translateY(2px); }
+.sl-kol.putar { animation: sl-gulung .16s linear infinite; }
+@keyframes sl-gulung { from { translate: 0 -6px; } to { translate: 0 6px; } }
+.sl-ubin.tekan { animation: sl-tekan .3s cubic-bezier(.3,1.6,.5,1); }
+@keyframes sl-tekan { 0% { transform: translateY(-9px); } 60% { transform: translateY(3px); } 100% { transform: none; } }
+
+.sl-hujan { position: fixed; inset: 0; pointer-events: none; z-index: 40; overflow: hidden; }
+.sl-hujan.dalam { position: absolute; z-index: 3; }
+.sl-hujan span { position: absolute; top: -40px; left: var(--x); font-size: 26px; animation: sl-koin-jatuh 2.2s cubic-bezier(.4,.1,.7,1) var(--d) both; filter: drop-shadow(0 2px 3px #0006); }
+@keyframes sl-koin-jatuh { 0% { transform: translateY(0) rotateY(0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(105vh) rotateY(900deg); opacity: 1; } }
+.sl-naga { position: fixed; top: 22%; left: -30%; z-index: 41; pointer-events: none; font-size: 96px; filter: drop-shadow(0 0 18px #f59e0b) drop-shadow(0 6px 6px #0008); animation: sl-naga-terbang 2.1s cubic-bezier(.4,.05,.6,.95) both; }
+@keyframes sl-naga-terbang { 0% { left: -30%; top: 34%; rotate: -12deg; opacity: 0; } 12% { opacity: 1; } 50% { top: 16%; rotate: 8deg; } 100% { left: 115%; top: 30%; rotate: -8deg; opacity: 1; } }
+.sl-banner { position: fixed; left: 50%; top: 32%; translate: -50% 0; z-index: 42; min-width: 250px; padding: 16px 30px 18px; border-radius: 22px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px; background: radial-gradient(circle at 50% 0%, #fde047, #f59e0b 55%, #b45309); color: #450a0a; border: 4px solid #fff7ed; box-shadow: 0 0 0 4px #7c2d12, 0 14px 34px #000a, 0 0 60px #fbbf24aa; animation: sl-banner-masuk .5s cubic-bezier(.3,1.7,.5,1) both; cursor: pointer; }
+.sl-banner b { font-size: 34px; letter-spacing: 2px; font-weight: 900; text-shadow: 0 2px 0 #fff8, 0 0 12px #fff8; }
+.sl-banner em { font-style: normal; font-size: 24px; font-weight: 900; font-variant-numeric: tabular-nums; color: #7f1d1d; }
+.sl-banner small { font-size: 16px; letter-spacing: 6px; }
+.sl-banner.t2 { background: radial-gradient(circle at 50% 0%, #fca5a5, #ef4444 55%, #991b1b); color: #fff7ed; } .sl-banner.t2 em { color: #fde047; }
+.sl-banner.t3 { background: radial-gradient(circle at 50% 0%, #e9d5ff, #a855f7 55%, #581c87); color: #fff7ed; } .sl-banner.t3 em { color: #fde047; }
+.sl-banner.t4 { background: linear-gradient(120deg, #fde047, #f472b6, #60a5fa, #34d399, #fde047); background-size: 300% 100%; animation: sl-banner-masuk .5s cubic-bezier(.3,1.7,.5,1) both, sl-pelangi 2s linear infinite; }
+@keyframes sl-banner-masuk { from { transform: scale(.2) rotate(-8deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes sl-pelangi { to { background-position: 300% 0; } }
+.ws-slot.goyang, .ws-plinko.goyang { animation: sl-goyang .7s ease-in-out; }
+@keyframes sl-goyang { 0%,100% { transform: none; } 15% { transform: translate(-6px, 3px); } 30% { transform: translate(6px, -3px); } 45% { transform: translate(-5px, -2px); } 60% { transform: translate(5px, 2px); } 80% { transform: translate(-2px, 1px); } }
+
+/* Plinko: pasak menyala, jejak bola, ledakan koin */
+.ws-pasak { transition: r .12s, fill .12s; }
+.ws-pasak.nyala { fill: #fde047; filter: drop-shadow(0 0 6px #fde047); }
+.ws-jejak { fill: #fbbf24; }
+.ws-ledakan circle { fill: #fde047; stroke: #b45309; stroke-width: 1.4; animation: ws-ledak 1.1s cubic-bezier(.2,.7,.4,1) both; }
+@keyframes ws-ledak { 0% { transform: translate(0,0) scale(.4); opacity: 1; } 70% { opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(1); opacity: 0; } }
+
+/* Dasbor game & tombol suara */
+.wg-bar-suara { display: flex; align-items: center; justify-content: space-between; margin: 0 0 6px; font-weight: 900; }
+.sw-suara { display: inline-flex; gap: 4px; }
+.sw-suara button { width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center; font-size: 16px; background: var(--wa-kertas); border: 2px solid var(--wa-ink-tegas); box-shadow: 0 2px 0 var(--wa-ink-tegas); opacity: .65; }
+.sw-suara button.on { opacity: 1; background: #fde047; }
+.sw-suara.tunggu button[data-testid="suara-musik"] { animation: sw-denyut 1.2s ease-in-out infinite; }
+@keyframes sw-denyut { 50% { transform: scale(1.18); box-shadow: 0 0 0 5px #fde04766; } }
+.wg-kartu-utama { position: relative; overflow: hidden; transition: transform .12s; }
+.wg-kartu-utama:active { transform: scale(.95); }
+.wg-kartu-utama::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 40%, #ffffff55 50%, transparent 60%); translate: -120% 0; animation: sl-kilau 4.5s ease-in-out infinite; pointer-events: none; }
+.wg-chip-pemain.aktif { animation: wg-giliran 1.4s ease-in-out infinite; }
+@keyframes wg-giliran { 50% { box-shadow: 0 0 0 4px #fde04788, var(--wa-bayang); } }
+.wg-hasil.kalah { animation: sl-goyang .7s ease-in-out; }
+.wg-hasil.menang { animation: sl-banner-masuk .45s cubic-bezier(.3,1.7,.5,1) both; }
+@media (prefers-reduced-motion: reduce) { .sl-naga, .sl-hujan, .sl-kol.putar, .sl-judul .naga { animation: none; } .sl-naga, .sl-hujan { display: none; } }

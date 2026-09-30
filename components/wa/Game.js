@@ -6,6 +6,8 @@ import { useUser } from "@/app/providers";
 import { Ik, Avatar, NamaLencana, Lembar, Konfirmasi, useWa, useInterval, salin, waktuDaftar } from "@/components/wa/kit";
 import { KatalogSolo } from "@/components/wa/GameSolo";
 import { teksPoinRp, POIN_RP } from "@/lib/poinGame";
+import { TombolSuara, useMusik, bunyiKlik } from "@/components/wa/Suara";
+import { efek as bunyi } from "@/lib/suara";
 import { PapanCatur, PapanUno, PapanRemi, PapanMahjong, HasilRemi, HasilMahjong } from "@/components/wa/GameBoards";
 
 // Nominal game tampil sebagai poin + padanan rupiah (2 poin = Rp1.000).
@@ -193,6 +195,7 @@ export function TabGame() {
   const [d, setD] = useState(null);
   const [aturan, setAturan] = useState(null);
   const [sibuk, setSibuk] = useState("");
+  useMusik("lounge"); // musik latar santai selama di dasbor game
 
   const muat = useCallback(async () => {
     const r = await api.get("/api/game");
@@ -213,7 +216,8 @@ export function TabGame() {
 
   const k = d?.konfig || {};
   return (
-    <div className="wa-tab-isi">
+    <div className="wa-tab-isi wg-lobi" onClickCapture={bunyiKlik}>
+      <div className="wg-bar-suara"><span>🎰 Dasbor Game</span><TombolSuara /></div>
       <div className="wg-saldo" data-testid="wg-saldo-game">
         <span>Poin game</span><b>{rupiah(d?.saldoGame ?? 0)}</b>
         <a className="wg-isi-saldo" href="/game-deposit" data-testid="isi-saldo-game">➕ Isi poin</a>
@@ -309,8 +313,23 @@ export function LayarGame({ id, onTutup }) {
   const [aturan, setAturan] = useState(false);
   const batas = useRef(0);
   const statusAwal = useRef(null);
+  const sebelum = useRef(null);
+  useMusik("lounge");
 
   const terapkan = useCallback((data) => {
+    // Suara: langkah lawan/saya, giliran, lawan bergabung, dan hasil akhir.
+    const sig = data.papan ? JSON.stringify(data.papan) : "";
+    const prev = sebelum.current;
+    if (prev) {
+      if (prev.status === "menunggu" && data.status === "main") bunyi("notif");
+      else if (data.status === "main" && sig !== prev.sig) bunyi({ catur: "langkah", uno: "kartu", remi: "kartu", mahjong: "ubin" }[data.jenis] || "klik");
+      if (data.status === "main" && data.giliranSaya && !prev.giliran) setTimeout(() => bunyi("giliran"), 220);
+      if (["selesai", "batal"].includes(data.status) && prev.status !== data.status) {
+        const h = data.hasil?.saya;
+        bunyi(h === "menang" ? (data.taruhan > 0 ? "menangBesar" : "menang") : h === "kalah" ? "kalah" : "seri");
+      }
+    }
+    sebelum.current = { sig, giliran: !!data.giliranSaya, status: data.status };
     setG(data);
     batas.current = data.sisaMs != null ? Date.now() + data.sisaMs : 0;
     if (statusAwal.current === null) statusAwal.current = data.status;
@@ -363,13 +382,14 @@ export function LayarGame({ id, onTutup }) {
   const Papan = { catur: PapanCatur, uno: PapanUno, remi: PapanRemi, mahjong: PapanMahjong }[g?.jenis];
 
   return (
-    <div className="wg-layar" role="dialog" aria-label="Duel permainan">
+    <div className="wg-layar" role="dialog" aria-label="Duel permainan" onClickCapture={bunyiKlik}>
       <header className="wa-kepala wg-kepala">
         <button className="wa-ikon" onClick={onTutup} aria-label="Kembali"><Ik n="back" s={22} /></button>
         <div className="wg-judul">
           <b>{g ? `${g.ikon} ${g.nama}` : "Duel"}</b>
           <small>{g ? (g.taruhan ? `Taruhan ${rupiah(g.taruhan)} · hadiah ${rupiah(g.hadiah)}` : "Main santai") : "Memuat…"}</small>
         </div>
+        <TombolSuara />
         {g && <button className="wa-ikon" onClick={() => setAturan(true)} aria-label="Cara main"><Ik n="info" s={22} /></button>}
       </header>
 
@@ -429,6 +449,7 @@ export function LayarGame({ id, onTutup }) {
           {selesai && (
             <div className={`wg-hasil ${g.hasil?.saya || ""}`} role="status" data-testid="wg-hasil">
               {g.hasil.saya === "menang" && <div className="wg-konfeti" aria-hidden="true">{Array.from({ length: 16 }, (_, i) => <i key={i} style={{ "--i": i }} />)}</div>}
+              {g.hasil.saya === "menang" && g.taruhan > 0 && <div className="sl-hujan dalam" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <span key={i} style={{ "--i": i, "--x": `${(i * 43) % 100}%`, "--d": `${(i % 7) * 0.15}s` }}>🪙</span>)}</div>}
               <div className="wg-hasil-judul">
                 {g.hasil.saya === "menang" ? "🏆 KAMU MENANG!" : g.hasil.saya === "kalah" ? "😵 Kamu kalah" : g.hasil.saya === "seri" ? "🤝 Seri" : "Duel dibatalkan"}
               </div>

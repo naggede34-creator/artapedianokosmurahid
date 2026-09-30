@@ -170,6 +170,8 @@ export function bikinApi(token) {
     try {
       const r = await fetch(path, { cache: "no-store", ...opsi });
       const data = await r.json().catch(() => null);
+      // Setiap aksi game/dompet mengubah saldo di server → minta provider menyegarkan tampilan saldo.
+      if (opsi.method === "POST" && /^\/api\/game/.test(path)) { try { window.dispatchEvent(new Event("artapedia:saldo")); } catch {} }
       return { ok: r.ok && !data?.error, status: r.status, data: data || {}, error: data?.error || (r.ok ? null : "Gagal terhubung.") };
     } catch {
       return { ok: false, status: 0, data: {}, error: "Tidak ada koneksi." };
