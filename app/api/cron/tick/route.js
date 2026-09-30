@@ -12,6 +12,7 @@ import { NextResponse } from "next/server";
 import { otpOrdersCol } from "@/lib/db";
 import { reconcileOtpOrder } from "@/lib/orderReconcile";
 import { periksaStokWatch } from "@/lib/stokWatch";
+import { sapuGame } from "@/lib/game/inti";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -57,6 +58,12 @@ export async function GET(req) {
     hasil.stok = await periksaStokWatch();
   } catch (err) {
     hasil.galat.push(`stok: ${err?.message || err}`);
+  }
+  // Duel permainan: waktu habis, tantangan basi, pembayaran tertunda.
+  try {
+    hasil.game = await sapuGame();
+  } catch (err) {
+    hasil.galat.push(`game: ${err?.message || err}`);
   }
   return NextResponse.json({ ok: true, ...hasil });
 }
