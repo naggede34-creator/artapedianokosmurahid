@@ -10,6 +10,7 @@ import Percakapan from "@/components/wa/Percakapan";
 import TabStatus from "@/components/wa/Status";
 import LayarPanggilan from "@/components/wa/Panggilan";
 import { TabGame, LayarGame, DialogDuel, BannerGame } from "@/components/wa/Game";
+import { LayarPlinko, LayarSlot } from "@/components/wa/GameSolo";
 import { SheetKontak, SheetGrupBaru, SheetProfilSaya, SheetUser, SheetRoom, SheetTambahAnggota, SheetTeruskan } from "@/components/wa/Lembaran";
 import "@/components/wa/wa.css";
 
@@ -30,7 +31,7 @@ export default function WaApp() {
   const [saya, setSaya] = useState(null);
   const [admin, setAdmin] = useState(false);
   const [perluNama, setPerluNama] = useState(false);
-  const [gameInfo, setGameInfo] = useState({ undangan: [], berjalan: [] });
+  const [gameInfo, setGameInfo] = useState({ undangan: [], berjalan: [], selesai: [] });
   const [gameAktif, setGameAktif] = useState(null);
   const gameTerlihat = useRef(null);
   const [rooms, setRooms] = useState([]);
@@ -54,11 +55,13 @@ export default function WaApp() {
   const toastN = useRef(0);
   panggilanRef.current = panggilan;
 
+  // `teks` boleh berupa string atau kartu kaya: { ikon, judul, isi, warna, buka }.
   const toast = useCallback((teks) => {
     if (!teks) return;
     const id = ++toastN.current;
-    setToasts((t) => [...t.slice(-2), { id, teks }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
+    const kaya = typeof teks === "object";
+    setToasts((t) => [...t.slice(-2), { id, teks, kaya }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), kaya ? 6000 : 3200);
   }, []);
 
   // ───────────── sinkron ─────────────
@@ -74,12 +77,20 @@ export default function WaApp() {
       const gi = r.data.game || { undangan: [], berjalan: [] };
       setGameInfo(gi);
       const lalu = gameTerlihat.current;
-      const peta = { u: new Set(gi.undangan.map((x) => x.id)), b: new Map(gi.berjalan.map((x) => [x.id, x.giliranSaya])) };
+      const peta = { u: new Set(gi.undangan.map((x) => x.id)), b: new Map(gi.berjalan.map((x) => [x.id, x.giliranSaya])), s: new Set((gi.selesai || []).map((x) => x.id)) };
       if (lalu) {
-        for (const u of gi.undangan) if (!lalu.u.has(u.id)) { toast(`${u.ikon} ${u.dari} menantangmu main ${u.nama}!`); navigator.vibrate?.(60); }
+        const rp = (n) => `Rp${Number(n || 0).toLocaleString("id-ID")}`;
+        for (const u of gi.undangan) if (!lalu.u.has(u.id)) {
+          toast({ ikon: "⚔️", warna: "#f43f5e", judul: `${u.dari} menantangmu main ${u.nama}!`, isi: u.taruhan ? `Taruhan ${rp(u.taruhan)} per pemain. Ketuk untuk menjawab.` : "Main santai tanpa taruhan. Ketuk untuk menjawab.", buka: u.id });
+          navigator.vibrate?.(60);
+        }
         for (const b of gi.berjalan) {
-          if (!lalu.b.has(b.id)) toast(`${b.ikon} Duel ${b.nama} vs ${b.lawan} dimulai!`);
-          else if (b.giliranSaya && !lalu.b.get(b.id)) toast(`${b.ikon} Giliranmu di ${b.nama} vs ${b.lawan}`);
+          if (!lalu.b.has(b.id)) toast({ ikon: b.ikon, warna: "#38bdf8", judul: `Duel ${b.nama} dimulai!`, isi: `Kamu 🆚 ${b.lawan}${b.taruhan ? ` · taruhan ${rp(b.taruhan)}` : " · tanpa taruhan"}. ${b.giliranSaya ? "Kamu jalan duluan!" : `${b.lawan} jalan duluan.`}`, buka: b.id });
+          else if (b.giliranSaya && !lalu.b.get(b.id)) toast({ ikon: "⏱", warna: "#f59e0b", judul: `Giliranmu di ${b.nama}`, isi: `Lawanmu ${b.lawan} sudah jalan — jangan sampai kehabisan waktu.`, buka: b.id });
+        }
+        for (const s of gi.selesai || []) if (!lalu.s.has(s.id)) {
+          const T = { menang: ["🏆", "#22c55e", `Kamu menang lawan ${s.lawan}!`], kalah: ["😵", "#f43f5e", `Kamu kalah dari ${s.lawan}`], seri: ["🤝", "#f59e0b", `Seri melawan ${s.lawan}`] }[s.saya];
+          toast({ ikon: T[0], warna: T[1], judul: `${s.nama}: ${T[2]}`, isi: `${s.alasan}.${s.saya === "menang" && s.hadiah ? ` Hadiah ${rp(s.hadiah)} masuk saldo.` : s.saya === "kalah" && s.taruhan ? ` Taruhan ${rp(s.taruhan)} hangus.` : s.saya === "seri" && s.taruhan ? " Taruhan dikembalikan." : ""}`, buka: s.id });
         }
       }
       gameTerlihat.current = peta;
@@ -412,7 +423,9 @@ export default function WaApp() {
         )}
         {tanya && <Konfirmasi judul={tanya.judul} isi={tanya.isi} tombol={tanya.tombol} onTutup={() => setTanya(null)} />}
 
-        {gameAktif && <LayarGame key={gameAktif} id={gameAktif} onTutup={() => { setGameAktif(null); sinkron(); }} />}
+        {gameAktif === "plinko" && <LayarPlinko onTutup={() => setGameAktif(null)} />}
+        {gameAktif === "slot" && <LayarSlot onTutup={() => setGameAktif(null)} />}
+        {gameAktif && gameAktif !== "plinko" && gameAktif !== "slot" && <LayarGame key={gameAktif} id={gameAktif} onTutup={() => { setGameAktif(null); sinkron(); }} />}
 
         {panggilan && <LayarPanggilan key={panggilan.callId || "keluar"} sesi={panggilan} onSelesai={selesaiPanggilan} />}
 
@@ -431,7 +444,13 @@ export default function WaApp() {
         )}
 
         <div className="wa-toasts" aria-live="polite">
-          {toasts.map((t) => <div key={t.id} className="wa-toast">{t.teks}</div>)}
+          {toasts.map((t) => t.kaya ? (
+            <button key={t.id} type="button" className="wa-toast wa-toast-kaya" data-testid="toast-game" style={{ "--tw": t.teks.warna || "#38bdf8" }}
+              onClick={() => { setToasts((x) => x.filter((y) => y.id !== t.id)); if (t.teks.buka) bukaGame(t.teks.buka); }}>
+              <span className="wa-toast-ikon">{t.teks.ikon}</span>
+              <span className="wa-toast-teks"><b>{t.teks.judul}</b>{t.teks.isi && <em>{t.teks.isi}</em>}</span>
+            </button>
+          ) : <div key={t.id} className="wa-toast">{t.teks}</div>)}
         </div>
       </div>
     </WaCtx.Provider>

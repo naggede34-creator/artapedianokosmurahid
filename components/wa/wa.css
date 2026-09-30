@@ -774,3 +774,113 @@ label.wa-saklar { display: flex; }
 /* Tombol papan tetap penuh warna saat "disabled" (bukan giliranmu): redupnya diatur kelas .redup, bukan atribut disabled. */
 .wa .wg-petak:disabled, .wa .wg-uno:disabled, .wa .wg-remi:disabled, .wa .wg-mj:disabled { opacity: 1; }
 .wa .wg-uno.redup:disabled, .wa .wg-remi.redup:disabled, .wa .wg-mj.redup:disabled { opacity: .5; }
+
+/* ───────── toast kaya (notifikasi game) ───────── */
+.wa-toast-kaya { pointer-events: auto; display: flex; align-items: center; gap: 12px; width: min(94vw, 420px); text-align: left; cursor: pointer; background: #0a1e50; border-color: #000; border-left: 8px solid var(--tw, #38bdf8); animation: wa-toast-masuk .28s cubic-bezier(.2,1.4,.4,1); font-family: inherit; }
+.wa-toast-kaya .wa-toast-ikon { flex: none; width: 44px; height: 44px; display: grid; place-items: center; font-size: 24px; border-radius: 14px; background: color-mix(in srgb, var(--tw, #38bdf8) 25%, #0a1e50); border: 2px solid var(--tw, #38bdf8); }
+.wa-toast-kaya .wa-toast-teks { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.wa-toast-kaya b { font-size: 14px; line-height: 1.25; }
+.wa-toast-kaya em { font-style: normal; font-weight: 600; font-size: 12px; line-height: 1.35; opacity: .85; }
+@keyframes wa-toast-masuk { from { transform: translateY(24px) scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ───────── hasil duel: rincian + konfeti ───────── */
+.wg-hasil { position: relative; overflow: hidden; }
+.wg-hasil-rincian { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 8px 0; }
+.wg-hasil-rincian span { display: flex; flex-direction: column; padding: 4px 12px; border-radius: 12px; background: rgb(255 255 255 / .55); border: 2px solid var(--wa-ink-tegas); }
+.wg-hasil-rincian small { font-size: 10px; font-weight: 800; opacity: .7; text-transform: uppercase; letter-spacing: .5px; }
+.wg-hasil-rincian b { font-size: 14px; }
+.wg-konfeti { position: absolute; inset: 0; pointer-events: none; }
+.wg-konfeti i { position: absolute; top: -10px; left: calc(var(--i) * 6.4%); width: 8px; height: 14px; border-radius: 2px; background: hsl(calc(var(--i) * 47) 90% 55%); animation: wg-jatuh 1.9s ease-in calc(var(--i) * .07s) both; }
+@keyframes wg-jatuh { to { transform: translateY(260px) rotate(540deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .wg-konfeti { display: none; } }
+
+/* ═════════ GAME SOLO: Plinko & Mahjong Spin 1024 ═════════ */
+.ws-kecil { font-weight: 700; text-transform: none; letter-spacing: 0; opacity: .7; margin-left: 6px; }
+.ws-kartu .wg-kartu-utama { position: relative; }
+.ws-lencana { position: absolute; top: 6px; right: 6px; font-style: normal; font-size: 9px; font-weight: 900; padding: 2px 7px; border-radius: 99px; background: #fde047; color: #422006; border: 2px solid var(--wa-ink-tegas); }
+.ws-isi { display: flex; flex-direction: column; gap: 10px; padding-bottom: 28px; }
+.ws-pilih { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.ws-seg { display: inline-flex; align-items: center; gap: 4px; padding: 4px; border-radius: 14px; background: var(--wa-kertas); border: 2.5px solid var(--wa-ink-tegas); }
+.ws-seg button { min-width: 34px; padding: 6px 10px; border-radius: 10px; font-weight: 900; font-size: 13px; text-transform: capitalize; background: transparent; color: var(--wa-teks); border: 2px solid transparent; }
+.ws-seg button.on { background: #fde047; color: #422006; border-color: var(--wa-ink-tegas); box-shadow: 0 2px 0 var(--wa-ink-tegas); }
+.ws-seg button.on.r-tinggi { background: #fca5a5; color: #450a0a; }
+.ws-seg button.on.r-rendah { background: #bbf7d0; color: #052e16; }
+.ws-seg button:disabled { opacity: .5; }
+.ws-seg small { padding: 0 8px 0 4px; font-size: 10px; font-weight: 800; text-transform: uppercase; opacity: .6; }
+
+.ws-plinko { border-radius: 18px; padding: 6px 4px; background: radial-gradient(120% 90% at 50% 0%, #1e3a8a, #0a1e50 70%); border: 3px solid var(--wa-ink-tegas); box-shadow: 4px 4px 0 var(--wa-ink-tegas); }
+.ws-plinko svg { display: block; width: 100%; height: auto; max-height: 56vh; }
+.ws-pasak { fill: #e0f2fe; opacity: .9; }
+.ws-bola { fill: #fbbf24; stroke: #78350f; stroke-width: 2; filter: drop-shadow(0 0 6px #fbbf24aa); }
+.ws-sel { transition: transform .15s; }
+.ws-sel.on { animation: ws-kedip .45s ease-in-out 2; }
+@keyframes ws-kedip { 50% { filter: brightness(1.6) drop-shadow(0 0 8px #fff); } }
+.ws-riwayat { display: flex; gap: 5px; min-height: 28px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.ws-riwayat span { padding: 3px 9px; border-radius: 99px; font-size: 12px; font-weight: 900; color: #fff; border: 2px solid var(--wa-ink-tegas); }
+.ws-riwayat .ws-kosong { background: transparent; color: var(--wa-redup); border: 0; font-weight: 700; }
+.ws-hasil-baris { text-align: center; margin: 0; font-weight: 900; font-size: 18px; }
+.ws-hasil-baris.menang { color: #15803d; }
+.ws-hasil-baris.kalah { color: #b91c1c; }
+
+.ws-dompet { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 16px; background: var(--wa-kertas); border: 2.5px solid var(--wa-ink-tegas); box-shadow: 3px 3px 0 var(--wa-ink-tegas); }
+.ws-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ws-mode button { padding: 8px; border-radius: 12px; font-weight: 800; font-size: 13px; background: var(--wa-kertas2); color: var(--wa-teks); border: 2px solid var(--wa-ink-tegas); }
+.ws-mode button.on { background: #38bdf8; color: #082f49; box-shadow: 0 3px 0 var(--wa-ink-tegas); }
+.ws-mode button:disabled { opacity: .55; }
+.ws-saldo { display: flex; justify-content: space-between; align-items: baseline; font-weight: 700; }
+.ws-saldo b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.ws-bet { display: flex; gap: 6px; align-items: end; }
+.ws-bet button { padding: 9px 12px; border-radius: 12px; font-weight: 900; background: var(--wa-kertas2); color: var(--wa-teks); border: 2px solid var(--wa-ink-tegas); }
+.ws-bet label { flex: 1; display: flex; flex-direction: column; }
+.ws-bet label small { font-size: 10px; font-weight: 800; text-transform: uppercase; opacity: .65; }
+.ws-bet input { width: 100%; padding: 8px 10px; border-radius: 12px; font-weight: 900; font-size: 16px; text-align: center; background: #fff; color: #111; border: 2px solid var(--wa-ink-tegas); }
+.ws-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.ws-chips button { flex: 1; min-width: 44px; padding: 6px 4px; border-radius: 99px; font-weight: 900; font-size: 12px; background: var(--wa-kertas2); color: var(--wa-teks); border: 2px solid var(--wa-ink-tegas); }
+.ws-chips button.on { background: #fde047; color: #422006; }
+.ws-catatan { margin: 0; font-size: 11px; font-weight: 700; opacity: .7; }
+.ws-aksi { display: flex; gap: 8px; flex-wrap: wrap; }
+.ws-aksi .ws-besar { flex: 1 1 160px; min-height: 50px; font-size: 17px; }
+.ws-peringatan { margin: 0; font-size: 11px; line-height: 1.45; font-weight: 700; color: var(--wa-redup); text-align: center; }
+
+/* ── Mahjong Spin 1024 ── */
+.ws-slot .wg-isi { position: relative; }
+.sl-kombo { display: flex; gap: 6px; align-items: center; justify-content: center; }
+.sl-kombo span { padding: 3px 12px; border-radius: 99px; font-weight: 900; font-size: 13px; background: var(--wa-kertas); border: 2px solid var(--wa-ink-tegas); opacity: .6; transition: transform .2s, opacity .2s; }
+.sl-kombo span.on { opacity: 1; background: #fde047; color: #422006; transform: scale(1.18); box-shadow: 0 3px 0 var(--wa-ink-tegas); }
+.sl-gratis { margin-left: 6px; font-style: normal; font-weight: 900; font-size: 12px; padding: 3px 10px; border-radius: 99px; background: #f472b6; color: #500724; border: 2px solid var(--wa-ink-tegas); }
+.sl-papan { --u: min(15.5vw, 66px); display: flex; gap: 5px; justify-content: center; padding: 10px; border-radius: 18px; margin: 0 auto; background: linear-gradient(180deg, #14532d, #052e16); border: 3px solid var(--wa-ink-tegas); box-shadow: 4px 4px 0 var(--wa-ink-tegas), inset 0 0 30px #00000066; }
+.sl-papan.gratis { background: linear-gradient(180deg, #831843, #3b0764); animation: sl-denyut 2s ease-in-out infinite; }
+@keyframes sl-denyut { 50% { box-shadow: 4px 4px 0 var(--wa-ink-tegas), 0 0 26px #f472b6aa; } }
+.sl-kol { display: flex; flex-direction: column; gap: 5px; }
+.sl-ubin { position: relative; width: var(--u); height: calc(var(--u) * 1.12); display: grid; place-items: center; border-radius: 10px; background: linear-gradient(160deg, #fffbeb, #fde68a 60%, #f5d38a); border: 2.5px solid #1c1917; box-shadow: 0 4px 0 #78350f, inset 0 -6px 0 #16a34a55; font-family: "Noto Serif CJK SC", "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", serif; overflow: hidden; }
+.sl-ubin.kosong { background: #0000002e; box-shadow: none; border-style: dashed; }
+.sl-huruf { font-size: calc(var(--u) * .56); font-weight: 900; line-height: 1; }
+.sl-ubin.s0 .sl-huruf { color: #dc2626; } .sl-ubin.s1 .sl-huruf { color: #15803d; } .sl-ubin.s2 .sl-huruf { color: #1d4ed8; }
+.sl-ubin.s3 .sl-huruf { color: #ea580c; } .sl-ubin.s4 .sl-huruf { color: #7c3aed; } .sl-ubin.s5 .sl-huruf { color: #0f766e; }
+.sl-ubin.s6 .sl-huruf { color: #9f1239; } .sl-ubin.s7 .sl-huruf { color: #166534; } .sl-ubin.s8 .sl-huruf { color: #334155; }
+.sl-ubin.wild { background: linear-gradient(160deg, #a7f3d0, #34d399 60%, #059669); }
+.sl-ubin.wild .sl-huruf { font-size: calc(var(--u) * .26); color: #064e3b; letter-spacing: .5px; }
+.sl-ubin.scatter { background: linear-gradient(160deg, #fecaca, #f87171 55%, #b91c1c); }
+.sl-ubin.scatter .sl-huruf { color: #fde047; text-shadow: 1px 1px 0 #450a0a; }
+.sl-ubin.emas { border-color: #a16207; background: linear-gradient(160deg, #fef9c3, #fcd34d 55%, #d97706); box-shadow: 0 4px 0 #78350f, 0 0 12px #fbbf24aa, inset 0 0 0 2px #fffbeb; }
+.sl-kilau { position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, #ffffffaa 50%, transparent 65%); animation: sl-kilau 1.8s linear infinite; }
+@keyframes sl-kilau { from { transform: translateX(-120%); } to { transform: translateX(120%); } }
+.sl-ubin.menang { animation: sl-menang .42s ease-in-out infinite alternate; z-index: 2; }
+@keyframes sl-menang { from { transform: scale(1); filter: brightness(1); } to { transform: scale(1.09); filter: brightness(1.25) drop-shadow(0 0 8px #fde047); } }
+.sl-ubin.hilang { animation: sl-hilang .4s ease-in forwards; }
+@keyframes sl-hilang { to { transform: scale(.1) rotate(25deg); opacity: 0; } }
+.sl-ubin.berubah { animation: sl-balik .5s ease-in-out; }
+@keyframes sl-balik { 50% { transform: rotateY(90deg) scale(1.1); } }
+.sl-ubin.jatuh { animation: sl-jatuh .5s cubic-bezier(.3,1.4,.5,1) both; }
+@keyframes sl-jatuh { from { transform: translateY(-160%); opacity: .2; } to { transform: none; opacity: 1; } }
+.sl-status { min-height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; font-weight: 800; }
+.sl-status b { font-size: 18px; }
+.sl-status b.menang { color: #15803d; } .sl-status b.kalah { color: var(--wa-redup); }
+.sl-status small { font-weight: 800; opacity: .75; }
+.ws-konfeti { position: fixed; inset: 0; z-index: 3; }
+.sl-tabel { display: flex; flex-direction: column; gap: 6px; }
+.sl-tabel .baris { display: grid; grid-template-columns: 52px repeat(3, 1fr); gap: 6px; align-items: center; }
+.sl-tabel .baris .sl-ubin { --u: 44px; box-shadow: 0 3px 0 #78350f; }
+.sl-tabel .baris span { display: flex; flex-direction: column; font-weight: 900; }
+.sl-tabel .baris small { font-size: 10px; font-weight: 700; opacity: .65; }
+@media (prefers-reduced-motion: reduce) { .sl-ubin.jatuh, .sl-ubin.menang, .sl-papan.gratis, .sl-kilau { animation: none; } }

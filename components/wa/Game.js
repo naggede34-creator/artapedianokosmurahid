@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@/app/providers";
 import { Ik, Avatar, NamaLencana, Lembar, Konfirmasi, useWa, useInterval, salin, waktuDaftar } from "@/components/wa/kit";
+import { KatalogSolo } from "@/components/wa/GameSolo";
 import { PapanCatur, PapanUno, PapanRemi, PapanMahjong, HasilRemi, HasilMahjong } from "@/components/wa/GameBoards";
 
 const rupiah = (n) => `Rp${Number(n || 0).toLocaleString("id-ID")}`;
@@ -228,6 +229,9 @@ export function TabGame() {
       </div>
       {k.aktif === false && <p className="wa-kosong-kecil">Duel permainan sedang ditutup admin.</p>}
 
+      <h3 className="wa-subjudul">Game solo <small className="ws-kecil">main sendiri · koin latihan</small></h3>
+      <KatalogSolo onBuka={(kode) => wa.bukaGame(kode)} />
+
       {d?.milik?.length > 0 && (
         <>
           <h3 className="wa-subjudul">Duel kamu</h3>
@@ -417,7 +421,8 @@ export function LayarGame({ id, onTutup }) {
           )}
 
           {selesai && (
-            <div className={`wg-hasil ${g.hasil?.saya || ""}`} role="status">
+            <div className={`wg-hasil ${g.hasil?.saya || ""}`} role="status" data-testid="wg-hasil">
+              {g.hasil.saya === "menang" && <div className="wg-konfeti" aria-hidden="true">{Array.from({ length: 16 }, (_, i) => <i key={i} style={{ "--i": i }} />)}</div>}
               <div className="wg-hasil-judul">
                 {g.hasil.saya === "menang" ? "🏆 KAMU MENANG!" : g.hasil.saya === "kalah" ? "😵 Kamu kalah" : g.hasil.saya === "seri" ? "🤝 Seri" : "Duel dibatalkan"}
               </div>
@@ -426,6 +431,14 @@ export function LayarGame({ id, onTutup }) {
                 <p className="wg-hasil-uang">
                   {g.hasil.saya === "menang" ? <>+{rupiah(g.hasil.dibayar)} masuk ke saldomu <small>(potongan admin {rupiah(g.hasil.fee)})</small></> : g.hasil.saya === "kalah" ? <>Taruhan {rupiah(g.taruhan)} hangus</> : <>Taruhan {rupiah(g.taruhan)} dikembalikan utuh</>}
                 </p>
+              )}
+              {["menang", "kalah", "seri"].includes(g.hasil.saya) && (
+                <div className="wg-hasil-rincian">
+                  {lawan && <span><small>Lawan</small><b>{lawan.nama}</b></span>}
+                  {g.taruhan > 0 && <span><small>Taruhan</small><b>{rupiah(g.taruhan)}</b></span>}
+                  {g.taruhan > 0 && g.hasil.saya === "menang" && <span><small>Hadiah</small><b>{rupiah(g.hasil.dibayar)}</b></span>}
+                  {g.taruhan > 0 && g.hasil.saya === "kalah" && <span><small>Kehilangan</small><b>−{rupiah(g.taruhan)}</b></span>}
+                </div>
               )}
               {g.papan?.selesai?.tanganPenutup && <HasilRemi selesai={g.papan.selesai} />}
               {g.papan?.selesai?.tanganMenang && <HasilMahjong selesai={g.papan.selesai} />}

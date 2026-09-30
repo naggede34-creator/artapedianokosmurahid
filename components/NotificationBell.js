@@ -14,6 +14,18 @@ const TYPE_META = {
   promo:     { glow: "#f43f5e", bar: "#f43f5e", icon: "🔥", label: "Promo"     },
   otp:       { glow: "#06b6d4", bar: "#06b6d4", icon: "🔑", label: "OTP"       },
   winback:   { glow: "#fb923c", bar: "#fb923c", icon: "🎉", label: "Bonus"     },
+  game_tantangan: { glow: "#f43f5e", bar: "#f43f5e", icon: "⚔️", label: "Tantangan" },
+  game_mulai:     { glow: "#38bdf8", bar: "#38bdf8", icon: "🎮", label: "Duel"      },
+  game_giliran:   { glow: "#f59e0b", bar: "#f59e0b", icon: "⏱",  label: "Giliranmu" },
+  game_hasil:     { glow: "#a855f7", bar: "#a855f7", icon: "🏁", label: "Hasil"     },
+  game_tolak:     { glow: "#94a3b8", bar: "#64748b", icon: "🚫", label: "Ditolak"   },
+  game_solo:      { glow: "#22c55e", bar: "#22c55e", icon: "🎰", label: "Game Solo" },
+};
+const HASIL_GAME = {
+  menang: { warna: "#22c55e", teks: "MENANG", ikon: "🏆" },
+  kalah:  { warna: "#f43f5e", teks: "KALAH",  ikon: "😵" },
+  seri:   { warna: "#f59e0b", teks: "SERI",   ikon: "🤝" },
+  batal:  { warna: "#94a3b8", teks: "BATAL",  ikon: "🛑" },
 };
 
 function getMeta(type) { return TYPE_META[type] || TYPE_META.system; }
@@ -126,13 +138,52 @@ function WinbackDetail({ n }) {
   );
 }
 
+/* ── Game notification: hasil, lawan, taruhan, hadiah, saldo ── */
+function GameDetail({ n }) {
+  const m = n.meta;
+  if (!m) return null;
+  const h = HASIL_GAME[m.hasil];
+  const kotak = [
+    m.lawan && ["Lawan", m.lawan],
+    m.taruhan ? ["Taruhan", fmtRp(m.taruhan)] : null,
+    m.hadiah ? ["Hadiah", fmtRp(m.hadiah)] : null,
+    m.total ? ["Total main", `${m.total}×`] : null,
+    m.batasDetik ? ["Batas giliran", `${m.batasDetik} dtk`] : null,
+    m.berlakuMenit ? ["Berlaku", `${m.berlakuMenit} mnt`] : null,
+    m.durasi ? ["Durasi", m.durasi] : null,
+    m.saldo != null ? ["Saldo", fmtRp(m.saldo)] : null
+  ].filter(Boolean);
+  return (
+    <div className="mt-2 space-y-1.5" data-testid="notif-game-detail">
+      {h && (
+        <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-black"
+          style={{ background: `${h.warna}22`, color: h.warna, border: `1px solid ${h.warna}55` }}>
+          {h.ikon} {h.teks}{m.game ? ` · ${m.game}` : ""}
+        </span>
+      )}
+      {kotak.length > 0 && (
+        <div className="grid grid-cols-2 gap-1">
+          {kotak.map(([k, v]) => (
+            <div key={k} className="rounded-lg px-2 py-1 text-[10px]" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <p style={{ color: "#6b7280" }}>{k}</p>
+              <p className="truncate font-black" style={{ color: "#e5e7eb" }}>{v}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      {n.url && <p className="text-[10px] font-black" style={{ color: "#38bdf8" }}>{n.type === "game_hasil" ? "Lihat hasil & revans →" : n.type === "game_tantangan" ? "Terima atau tolak →" : "Buka →"}</p>}
+    </div>
+  );
+}
+
 /* ── Single notification card ────────────────────────────── */
 function NotifCard({ n, onMark }) {
   const meta = getMeta(n.type);
   const isUnread = !n.read;
 
+  const game = typeof n.type === "string" && n.type.startsWith("game_");
   return (
-    <button onClick={() => onMark(n.id)}
+    <button onClick={() => { onMark(n.id); if (game && n.url && typeof n.url === "string" && n.url.startsWith("/")) window.location.assign(n.url); }}
       className="group w-full text-left transition-all duration-200"
       style={{
         background: isUnread ? "rgba(255,255,255,0.03)" : "transparent",
@@ -175,9 +226,13 @@ function NotifCard({ n, onMark }) {
           </p>
 
           {/* Generic body (if no special detail) */}
-          {n.body && n.type !== "otp" && (
+          {n.body && n.type !== "otp" && !game && (
             <p className="text-xs mt-0.5 leading-relaxed line-clamp-2" style={{ color: "#6b7280" }}>{n.body}</p>
           )}
+          {n.body && game && (
+            <p className="text-xs mt-0.5 leading-relaxed whitespace-pre-line" style={{ color: "#9ca3af" }}>{n.body}</p>
+          )}
+          {game && <GameDetail n={n} />}
 
           {/* Type-specific detail panels */}
           {n.type === "otp" && <OtpDetail n={n} />}

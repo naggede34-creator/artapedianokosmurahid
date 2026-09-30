@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 
 const rp = (n) => `Rp${Number(n || 0).toLocaleString("id-ID")}`;
 const NAMA = { catur: "♟ Catur", uno: "🃏 UNO", remi: "🂡 Remi", mahjong: "🀄 Mahjong" };
+const NAMA_SOLO = { plinko: "🔮 Plinko", slot: "🀄 Mahjong Spin 1024" };
 const STATUS = { menunggu: "Menunggu lawan", gabung: "Bergabung", main: "Berjalan", selesai: "Selesai", batal: "Batal" };
 
 export default function AdminGame() {
@@ -66,6 +67,27 @@ export default function AdminGame() {
         <button type="button" onClick={() => kirim("sapu")} disabled={sibuk === "sapu"} className="btn-3d mt-3 rounded-xl border border-line bg-surface px-4 py-2 text-xs font-black text-ink">
           🧹 Jalankan penyapu (waktu habis, tantangan basi, bayaran tertunda)
         </button>
+      </div>
+
+      <div className="card p-4" data-testid="admin-solo">
+        <h3 className="text-base font-extrabold text-ink">🎰 Game solo (Plinko & Mahjong Spin 1024)</h3>
+        <p className="mt-1 text-xs leading-relaxed text-muted">
+          Hasil ditentukan server (acak kriptografis), RTP ≈ 96%. Bawaannya hanya <b>koin latihan</b>. Taruhan <b>saldo sungguhan</b> = perjudian yang dilarang/diatur ketat di banyak negara
+          (termasuk Indonesia) dan berisiko bagi pemain — nyalakan <b>GAME_KASINO_AKTIF</b> di Konfigurasi → Website hanya bila kamu paham dan menanggung risikonya.
+          Status sekarang: game solo <b>{d?.solo ? (d.solo.aktif ? "aktif" : "ditutup") : "…"}</b>, saldo sungguhan <b className={d?.solo?.kasino ? "text-rose" : ""}>{d?.solo ? (d.solo.kasino ? "DIIZINKAN" : "mati") : "…"}</b>.
+          Batas taruhan, batas rugi harian, dan batas kemenangan diatur lewat GAME_SOLO_*.
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {(d?.solo?.ringkas || []).map((x) => (
+            <div key={`${x.game}:${x.mode}`} className="rounded-xl border border-line bg-surface px-3 py-2.5 text-xs">
+              <p className="text-sm font-bold text-ink">{NAMA_SOLO[x.game] || x.game} · {x.mode === "demo" ? "koin latihan" : "saldo"}</p>
+              <p className="mt-0.5 text-muted">{x.ronde} ronde · taruhan {x.mode === "demo" ? x.taruhan.toLocaleString("id-ID") : rp(x.taruhan)} · dibayar {x.mode === "demo" ? x.bayar.toLocaleString("id-ID") : rp(x.bayar)}</p>
+              <p className="text-muted">RTP nyata {(x.rtp * 100).toFixed(1)}% · menang terbesar {x.mode === "demo" ? x.menangTerbesar.toLocaleString("id-ID") : rp(x.menangTerbesar)}{x.mode === "saldo" ? ` · untung rumah ${rp(x.untungRumah)}` : ""}</p>
+            </div>
+          ))}
+          {d && !(d.solo?.ringkas || []).length && <p className="text-sm text-muted">Belum ada ronde solo.</p>}
+        </div>
+        {d?.solo?.tertunda > 0 && <p className="mt-2 text-xs font-bold text-rose">⚠ {d.solo.tertunda} ronde menunggu penyelesaian — jalankan penyapu.</p>}
       </div>
 
       <div className="card p-4">

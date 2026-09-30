@@ -5,57 +5,41 @@
 // "Mengerti", tombol Esc, atau ketukan di luar kartu. Bisa dibuka lagi dari
 // menu samping ("✨ Yang baru").
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { onOpenersFree } from "@/lib/introGate";
 
-// Naikkan versi ini saat ada pembaruan baru supaya popup muncul lagi.
-export const VERSI_PEMBARUAN = "2026-09-30";
-const KUNCI = "artapedia_pembaruan_dilihat";
+// Isi popup datang dari server (diatur admin di tab Pembaruan); `versi` berubah
+// setiap admin mengubah daftar aktif, sehingga popup muncul lagi.
+import { ITEM_BAWAAN, JUDUL_BAWAAN, SUB_BAWAAN, VERSI_BAWAAN } from "@/lib/pembaruanBawaan";
 
-const DAFTAR = [
-  {
-    ikon: "🎮", judul: "Duel Game — UNO, Remi, Mahjong & Catur", baru: true,
-    isi: "Main lawan sesama pengguna, lengkap dengan taruhan saldo (potongan admin tampil jelas). Ada notifikasi saat ditantang, duel dimulai, giliranmu, dan hasil menang/kalah. Buka lewat WEARTA CHAT → tab Game.",
-    href: "/chat?game=1", tombol: "Main sekarang"
-  },
-  {
-    ikon: "💬", judul: "WEARTA CHAT — chat ala WhatsApp", baru: true,
-    isi: "Chat pribadi & grup, kirim foto, pesan suara, stiker, jajak pendapat; balas, reaksi, teruskan, ubah & hapus pesan; centang dibaca, online/terakhir dilihat, dan indikator mengetik. Pesan sementara, arsip, bisukan, dan blokir juga ada."
-  },
-  {
-    ikon: "📞", judul: "Panggilan suara & video + Status (SW)", baru: true,
-    isi: "Telepon teman langsung dari web. Buat status teks/foto yang hilang setelah 24 jam, dan lihat siapa saja yang menontonnya."
-  },
-  {
-    ikon: "🎖", judul: "Lencana verifikasi berwarna",
-    isi: "Admin bisa memberi lencana verifikasi dengan pilihan warna: biru, hitam, oranye, pink, hijau, dan lainnya."
-  },
-  {
-    ikon: "🔗", judul: "Bagikan kontak lewat tautan",
-    isi: "Kontak dibagikan sebagai tautan yang langsung membuka chat — tanpa membagikan kode akun. Sebelum mengobrol, kamu wajib mengatur nama dulu."
-  },
-  {
-    ikon: "👤", judul: "Profil Akun & tombol Keluar",
-    isi: "Halaman profil lengkap: avatar, level, statistik, kode akun (sembunyi/salin/unduh), tema, notifikasi, dan Keluar dari akun dengan aman.",
-    href: "/profil", tombol: "Buka profil"
-  },
-  {
-    ikon: "🔐", judul: "Daftar & masuk dengan kode akun",
-    isi: "Daftar cukup dengan nama — kamu mendapat kode akun untuk masuk lagi kapan saja, juga di bot Telegram."
-  },
-  {
-    ikon: "🤖", judul: "Bot Telegram lebih rapi & lengkap",
-    isi: "Tampilan Rich Message, tombol berwarna dan tertata rapi, notifikasi lebih detail, plus paket reseller dan program kreator."
-  }
-];
+const KUNCI = "artapedia_pembaruan_dilihat";
+const BAWAAN = { versi: VERSI_BAWAAN, otomatis: true, judul: JUDUL_BAWAAN, sub: SUB_BAWAAN, item: ITEM_BAWAAN.map((x, n) => ({ id: `b${n}`, ...x })) };
 
 export default function PembaruanModal({ langsung = false }) {
   const [buka, setBuka] = useState(false);
+  const [data, setData] = useState(BAWAAN);
+  const versiRef = useRef(BAWAAN.versi);
 
   useEffect(() => {
     let batal = false;
-    let sudah = false;
-    try { sudah = localStorage.getItem(KUNCI) === VERSI_PEMBARUAN; } catch {}
+    let off = () => {};
+    let nanti = null;
+    const manual = () => setBuka(true);
+    window.addEventListener("buka-pembaruan", manual);
+    fetch("/api/pembaruan", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null)
+      .then((j) => {
+        if (batal) return;
+        const d = j && Array.isArray(j.item) ? j : BAWAAN;
+        versiRef.current = d.versi;
+        setData(d);
+        let sudah = false;
+        try { sudah = localStorage.getItem(KUNCI) === d.versi; } catch {}
+        if (sudah || !d.otomatis || !d.item.length) return;
+        mulaiTampil();
+      });
+    function mulaiTampil() {
     // Menunggu popup pembuka lain (mis. Tutorial & Informasi) ditutup dulu supaya tidak bertumpuk; paling lama 25 detik.
     const tampil = () => {
       const mulai = Date.now();
@@ -68,15 +52,14 @@ export default function PembaruanModal({ langsung = false }) {
       cek();
     };
     // Halaman tanpa popup pembuka (WEARTA CHAT layar penuh) tidak punya antrean yang ditunggu.
-    const off = sudah ? () => {} : langsung ? (() => { const id = setTimeout(tampil, 1200); return () => clearTimeout(id); })() : onOpenersFree(() => setTimeout(tampil, 700));
-    const manual = () => setBuka(true);
-    window.addEventListener("buka-pembaruan", manual);
-    return () => { batal = true; off?.(); window.removeEventListener("buka-pembaruan", manual); };
-  }, []);
+      off = langsung ? (() => { const id = setTimeout(tampil, 1200); return () => clearTimeout(id); })() : onOpenersFree(() => { nanti = setTimeout(tampil, 700); });
+    }
+    return () => { batal = true; off?.(); clearTimeout(nanti); window.removeEventListener("buka-pembaruan", manual); };
+  }, [langsung]);
 
   const tutup = useCallback(() => {
     setBuka(false);
-    try { localStorage.setItem(KUNCI, VERSI_PEMBARUAN); } catch {}
+    try { localStorage.setItem(KUNCI, versiRef.current); } catch {}
   }, []);
 
   useEffect(() => {
@@ -98,14 +81,15 @@ export default function PembaruanModal({ langsung = false }) {
           <button onClick={tutup} className="press absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/25" aria-label="Tutup">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>
           </button>
-          <p className="text-[11px] font-black uppercase tracking-widest text-amber-bright">Pembaruan · {VERSI_PEMBARUAN}</p>
-          <h2 id="pembaruan-judul" className="mt-1 font-display text-2xl">✨ Yang Baru di Artapedia</h2>
-          <p className="mt-1 text-xs text-white/75">Banyak fitur baru sudah aktif. Ini ringkasannya.</p>
+          <p className="text-[11px] font-black uppercase tracking-widest text-amber-bright">Pembaruan terbaru</p>
+          <h2 id="pembaruan-judul" className="mt-1 font-display text-2xl">{data.judul}</h2>
+          {data.sub && <p className="mt-1 text-xs text-white/75">{data.sub}</p>}
         </div>
 
         <ul className="gulir-aman min-h-0 flex-1 space-y-2.5 overflow-y-auto p-4">
-          {DAFTAR.map((d) => (
-            <li key={d.judul} className="rounded-2xl border border-line bg-surface2/50 p-3.5">
+          {!data.item.length && <li className="rounded-2xl border border-line bg-surface2/50 p-4 text-center text-xs text-muted">Belum ada pembaruan untuk ditampilkan.</li>}
+          {data.item.map((d) => (
+            <li key={d.id || d.judul} className="rounded-2xl border border-line bg-surface2/50 p-3.5">
               <div className="flex items-start gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-soft text-xl" aria-hidden="true">{d.ikon}</span>
                 <div className="min-w-0 flex-1">

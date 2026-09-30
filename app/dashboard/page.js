@@ -512,7 +512,7 @@ export default function DashboardPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm text-muted">{greeting()},</p>
+          <p className="text-sm text-muted">{ready ? greeting() : "Halo"},</p>
           <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
             {ready ? name || "Pelanggan Artapedia" : "…"}
           </h1>
@@ -526,6 +526,14 @@ export default function DashboardPage() {
               🛡️ Claim Garansi
             </button>
           )}
+          <Link
+            href="/chat?game=1"
+            data-testid="tombol-game-dashboard"
+            className="btn-3d flex items-center gap-1.5 rounded-xl border-2 border-ink bg-amber px-4 py-2.5 text-sm font-black text-white shadow-lift transition-transform hover:-translate-y-0.5"
+          >
+            🎮 Game
+            <span className="rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black leading-none text-white">BARU</span>
+          </Link>
           <Link
             href="/gateway"
             className="btn-3d flex items-center gap-1.5 rounded-xl border border-blue/40 bg-blue-soft px-4 py-2.5 text-sm font-semibold text-blue-bright transition-colors hover:bg-blue/10"
