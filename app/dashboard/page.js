@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLembarTerbuka } from "@/lib/lembarTerbuka";
 import { useUser } from "@/app/providers";
 import SimCard from "@/components/SimCard";
+import GameWallet from "@/components/GameWallet";
 import OTPPriceWidget from "@/components/OTPPriceWidget";
 import FlashSaleTimer from "@/components/FlashSaleTimer";
 import LuckyHourBanner from "@/components/LuckyHourBanner";
@@ -41,22 +42,40 @@ function Bars({ data, keyName, className }) {
   );
 }
 
+// Aksi utama: empat tombol besar di bawah dompet.
+const utama = [
+  { href: "/otp", label: "Beli Nokos", sub: "Nomor OTP termurah", ikon: "📱", warna: "bg-gradient-to-br from-[#1d4ed8] to-[#0a1e50]" },
+  { href: "/deposit", label: "Isi Saldo Nokos", sub: "QRIS, semua metode", ikon: "💳", warna: "bg-gradient-to-br from-[#ea580c] to-[#9a3412]" },
+  { href: "/chat?game=1", label: "Game", sub: "UNO, Remi, Plinko, Slot", ikon: "🎮", warna: "bg-gradient-to-br from-[#9333ea] to-[#3b0764]", badge: "BARU", testid: "tombol-game-dashboard" },
+  { href: "/chat", label: "Kontak", sub: "WEARTA CHAT & panggilan", ikon: "💬", warna: "bg-gradient-to-br from-[#059669] to-[#064e3b]", badge: "LIVE", testid: "tombol-kontak-dashboard" }
+];
+
+// Menu lainnya (yang sering dipakai sudah ada di Aksi utama).
 const shortcuts = [
-  { href: "/otp", label: "Beli nokos", icon: Icon.phone },
-  { href: "/deposit", label: "Isi saldo", icon: Icon.qris },
+  { href: "/game-deposit", label: "Isi saldo game", icon: "🎲", badge: "Baru" },
   { href: "/transfer", label: "Transfer", icon: Icon.transfer },
   { href: "/mutasi", label: "Mutasi", icon: Icon.ledger },
-  { href: "/pet", label: "Pet Arta Pedia", icon: "🥚", badge: "Baru" },
+  { href: "/pet", label: "Pet Arta Pedia", icon: "🥚" },
   { href: "/misi", label: "Misi & Poin", icon: Icon.star },
   { href: "/referral", label: "Undang teman", icon: Icon.gift },
-  { href: "/apikey", label: "API Key", icon: Icon.key, badge: "Dev" },
-  { href: "/produk", label: "Toko Produk", icon: Icon.shop, badge: "Baru" },
-  { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin, badge: "Baru" },
-  { href: "/chat", label: "Grup Chat", icon: "💬", badge: "Live" },
-  { href: "/gateway", label: "QRIS Gateway", icon: "💸", badge: "Baru" },
-  { href: "/reseller", label: "Bot Reseller", icon: "🤖", badge: "Baru" },
-  { href: "/giveaway", label: "Giveaway", icon: "🎁", badge: "Baru" }
+  { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin },
+  { href: "/produk", label: "Toko Produk", icon: Icon.shop },
+  { href: "/gateway", label: "QRIS Gateway", icon: "💸" },
+  { href: "/reseller", label: "Bot Reseller", icon: "🤖" },
+  { href: "/giveaway", label: "Giveaway", icon: "🎁" },
+  { href: "/apikey", label: "API Key", icon: Icon.key, badge: "Dev" }
 ];
+
+function SectionTitle({ icon, title, hint }) {
+  return (
+    <div className="mb-3 mt-7 flex items-baseline gap-2">
+      <span className="text-lg leading-none" aria-hidden="true">{icon}</span>
+      <h2 className="text-sm font-black uppercase tracking-wider text-ink">{title}</h2>
+      {hint && <span className="text-[11px] text-muted">{hint}</span>}
+      <span className="ml-1 h-px flex-1 bg-line" aria-hidden="true" />
+    </div>
+  );
+}
 
 function WarrantyModal({ open, onClose, token }) {
   useLembarTerbuka(open);
@@ -510,10 +529,11 @@ export default function DashboardPage() {
         <AnimeHero />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+      {/* Sapaan + jalan pintas akun */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-sm text-muted">{ready ? greeting() : "Halo"},</p>
-          <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
+          <h1 className="truncate text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
             {ready ? name || "Pelanggan Artapedia" : "…"}
           </h1>
         </div>
@@ -521,35 +541,12 @@ export default function DashboardPage() {
           {garansiAktif && (
             <button
               onClick={() => setWarrantyModal(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-rose/40 bg-rose-soft px-4 py-2.5 text-sm font-semibold text-rose transition-colors hover:bg-rose/10"
+              className="flex items-center gap-1.5 rounded-xl border border-rose/40 bg-rose-soft px-3.5 py-2 text-xs font-bold text-rose transition-colors hover:bg-rose/10"
             >
               🛡️ Claim Garansi
             </button>
           )}
-          <Link
-            href="/chat?game=1"
-            data-testid="tombol-game-dashboard"
-            className="btn-3d flex items-center gap-1.5 rounded-xl border-2 border-ink bg-amber px-4 py-2.5 text-sm font-black text-white shadow-lift transition-transform hover:-translate-y-0.5"
-          >
-            🎮 Game
-            <span className="rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black leading-none text-white">BARU</span>
-          </Link>
-          <Link
-            href="/gateway"
-            className="btn-3d flex items-center gap-1.5 rounded-xl border border-blue/40 bg-blue-soft px-4 py-2.5 text-sm font-semibold text-blue-bright transition-colors hover:bg-blue/10"
-          >
-            💸 QRIS Gateway
-          </Link>
-          <Link
-            href="/reseller"
-            className="btn-3d flex items-center gap-1.5 rounded-xl border border-amber/40 bg-amber-soft px-4 py-2.5 text-sm font-semibold text-amber-bright transition-colors hover:bg-amber/10"
-          >
-            🤖 Bot Reseller
-          </Link>
-          <Link
-            href="/profil"
-            className="btn-3d flex items-center gap-1.5 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-amber/60"
-          >
+          <Link href="/profil" className="flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3.5 py-2 text-xs font-bold text-ink transition-colors hover:border-amber/60">
             👤 Profil akun
           </Link>
         </div>
@@ -562,14 +559,14 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Low Balance Alert */}
+      {/* Low Balance Alert (saldo nokos) */}
       {ready && balance !== undefined && balance < 2000 && (
         <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-amber/30 bg-amber-soft px-4 py-3">
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber text-white text-base">⚠️</span>
             <div>
-              <p className="text-sm font-bold text-amber-bright">Saldo hampir habis!</p>
-              <p className="text-xs text-muted">Saldo kamu kurang dari Rp2.000 — isi sekarang agar bisa terus bertransaksi.</p>
+              <p className="text-sm font-bold text-amber-bright">Saldo nokos hampir habis!</p>
+              <p className="text-xs text-muted">Kurang dari Rp2.000 — isi sekarang agar bisa terus membeli nomor.</p>
             </div>
           </div>
           <Link href="/deposit" className="shrink-0 rounded-xl bg-amber px-4 py-2 text-xs font-bold text-white">
@@ -578,7 +575,34 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── Manga Waifu AI chat — di atas SimCard/balance ── */}
+      {/* ── Dua dompet terpisah ── */}
+      <SectionTitle icon="👛" title="Dompet" hint="Saldo nokos & saldo game dipisah" />
+      <div className="grid gap-4 md:grid-cols-2" data-testid="dompet-ganda">
+        <SimCard />
+        <GameWallet />
+      </div>
+
+      {/* ── Aksi utama ── */}
+      <SectionTitle icon="⚡" title="Aksi utama" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="aksi-utama">
+        {utama.map((u) => (
+          <Link
+            key={u.href + u.label}
+            href={u.href}
+            data-testid={u.testid}
+            className={`hover-lift group relative flex items-center gap-3 overflow-hidden rounded-2xl border-2 border-ink/80 px-4 py-4 text-white shadow-lift transition-transform active:scale-[0.98] ${u.warna}`}
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-2xl transition-transform group-hover:scale-110">{u.ikon}</span>
+            <span className="min-w-0">
+              <span className="block text-sm font-black leading-tight">{u.label}</span>
+              <span className="mt-0.5 block text-[11px] font-medium leading-snug text-white/80">{u.sub}</span>
+            </span>
+            {u.badge && <span className="absolute right-2 top-2 rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black leading-none text-white">{u.badge}</span>}
+          </Link>
+        ))}
+      </div>
+
+      {/* ── Manga Waifu AI chat ── */}
       {ready && (
         <div className="mt-5">
           <MangaWaifu
@@ -590,31 +614,32 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="mt-3 grid gap-5 lg:grid-cols-[440px_1fr]">
-        <SimCard />
-
-        <div className="grid grid-cols-4 gap-2 sm:grid-cols-8 lg:grid-cols-4">
+      {/* ── Menu lainnya ── */}
+      <SectionTitle icon="🧩" title="Menu lainnya" />
+      <div>
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8">
           {shortcuts.map((s) => {
             const I = s.icon;
             const isEmoji = typeof I === "string";
             return (
-              <Link key={s.href} href={s.href} className="card card-3d hover-lift manga-lines relative flex flex-col items-center justify-center gap-2 px-2 py-4 text-center">
+              <Link key={s.href} href={s.href} className="card card-3d hover-lift manga-lines relative flex flex-col items-center justify-center gap-2 px-2 py-3.5 text-center">
                 {s.badge && (
-                  <span className="absolute -top-1.5 -right-1 rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black text-white leading-none shadow-sm animate-pulse">
+                  <span className="absolute -top-1.5 -right-1 rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black text-white leading-none shadow-sm">
                     {s.badge}
                   </span>
                 )}
-                <span className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110 ${s.badge ? "bg-gradient-to-br from-amber to-amber-bright text-white shadow-md" : "bg-amber-soft text-amber-bright"}`}>
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-soft text-amber-bright transition-transform group-hover:scale-110">
                   {isEmoji ? <span className="text-2xl leading-none">{I}</span> : <I />}
                 </span>
-                <span className="text-xs font-semibold text-ink">{s.label}</span>
+                <span className="text-[11px] font-semibold leading-tight text-ink">{s.label}</span>
               </Link>
             );
           })}
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <SectionTitle icon="📊" title="Ringkasan & aktivitas" />
+      <div className="grid grid-cols-3 gap-3">
         {[
           ["Total transaksi", stats?.totalTransaksi],
           ["OTP berhasil", stats?.otpBerhasil],

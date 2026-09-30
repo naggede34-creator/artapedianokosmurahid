@@ -64,10 +64,10 @@ function PanelDompet({ s, kunci = false }) {
       <div className="ws-mode" role="tablist" aria-label="Mode taruhan">
         <button role="tab" aria-selected={mode === "demo"} className={mode === "demo" ? "on" : ""} disabled={kunci} onClick={() => setMode("demo")}>🪙 Koin latihan</button>
         <button role="tab" aria-selected={mode === "saldo"} className={mode === "saldo" ? "on" : ""} disabled={kunci || !info.kasino} onClick={() => setMode("saldo")} title={info.kasino ? "" : "Dimatikan admin"}>
-          💳 Saldo {!info.kasino && <small>(mati)</small>}
+          💳 Saldo game {!info.kasino && <small>(mati)</small>}
         </button>
       </div>
-      <div className="ws-saldo"><span>{mode === "demo" ? "Koin kamu" : "Saldo kamu"}</span><b data-testid="ws-saldo">{fmt(dompet)}</b></div>
+      <div className="ws-saldo"><span>{mode === "demo" ? "Koin kamu" : "Saldo game"}</span><b data-testid="ws-saldo">{fmt(dompet)}</b></div>
       <div className="ws-bet">
         <button disabled={kunci} onClick={() => ubah(bet / 2)} aria-label="Setengah">½</button>
         <label>
@@ -84,6 +84,7 @@ function PanelDompet({ s, kunci = false }) {
         ))}
       </div>
       {mode === "demo" && dompet < info.demoMin * 10 && <button className="wa-tombol kecil" onClick={s.isiUlang} disabled={kunci}>🪙 Isi ulang koin ({info.koinAwal.toLocaleString("id-ID")})</button>}
+      {mode === "saldo" && dompet < info.min && <a className="wa-tombol kecil" href="/game-deposit" style={{ textAlign: "center", textDecoration: "none" }}>➕ Isi saldo game</a>}
       {mode === "saldo" && info.rugiHarian > 0 && <p className="ws-catatan">Batas rugi harian {rp(info.rugiHarian)} · terpakai {rp(info.rugiHariIni)}</p>}
     </div>
   );
@@ -446,7 +447,7 @@ export function LayarSlot({ onTutup }) {
             <li><b>Ubin emas</b> (gulungan 2–4): bila ikut menang, berubah menjadi <b>WILD</b> di tempatnya. WILD (gulungan 2–4) menggantikan ubin biasa.</li>
             <li><b>3+ SCATTER 福</b> = {10} putaran gratis (+2 per scatter tambahan). Di putaran gratis, 3+ scatter menambah putaran. Maksimal {40} putaran gratis.</li>
             <li>Batas kemenangan {info2?.maksPengali ?? 5000}× taruhan per ronde. RTP ≈ 96%. Hasil seluruh ronde (termasuk putaran gratis) ditentukan server dengan acak kriptografis sebelum dianimasikan; “Lewati” hanya mempercepat tampilan.</li>
-            <li>Koin latihan tidak bernilai uang. Mode saldo hanya jika admin mengaktifkannya dan ada batas rugi harian. Main untuk hiburan.</li>
+            <li>Koin latihan tidak bernilai uang. Mode saldo game hanya jika admin mengaktifkannya dan ada batas rugi harian. Main untuk hiburan.</li>
           </ul>
         </Lembar>
       )}

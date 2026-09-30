@@ -11,8 +11,13 @@ export async function GET(req) {
     const token = new URL(req.url).searchParams.get("token");
     if (!token) return NextResponse.json({ error: "Kode akun kosong." }, { status: 400 });
 
+    // Dua dompet terpisah: ?dompet=game → mutasi SALDO GAME saja; bawaannya mutasi saldo nokos (tanpa entri game).
+    const dompetGame = new URL(req.url).searchParams.get("dompet") === "game";
     const logs = await balanceLogsCol();
-    const ledger = await logs.find({ token }).sort({ createdAt: -1 }).limit(200).toArray();
+    const ledger = await logs.find(dompetGame ? { token, wallet: "game" } : { token, wallet: { $ne: "game" } }).sort({ createdAt: -1 }).limit(200).toArray();
+    if (dompetGame) {
+      return NextResponse.json({ items: ledger.map((l) => ({ id: l._id.toString(), type: l.type, title: l.title, amount: l.amount, balanceAfter: l.balanceAfter ?? null, ref: l.ref || null, createdAt: l.createdAt })) });
+    }
     const items = ledger.map((l) => ({
       id: l._id.toString(),
       type: l.type,
@@ -27,7 +32,7 @@ export async function GET(req) {
     const legacyFilter = { token, createdAt: { $lt: oldest } };
     const [deps, otps] = await Promise.all([
       (await depositsCol())
-        .find({ ...legacyFilter, status: "completed" }, { projection: { orderId: 1, amount: 1, createdAt: 1, provider: 1 } })
+        .find({ ...legacyFilter, status: "completed", wallet: { $ne: "game" } }, { projection: { orderId: 1, amount: 1, createdAt: 1, provider: 1 } })
         .sort({ createdAt: -1 })
         .limit(100)
         .toArray(),

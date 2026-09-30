@@ -24,6 +24,7 @@ export async function POST(req) {
         return NextResponse.json({
           token: existing.token,
           balance: existing.balance,
+          saldoGame: existing.saldoGame ?? 0,
           depositBalance: existing.depositBalance ?? null,
           name: existing.name || null,
           createdAt: existing.createdAt || null,

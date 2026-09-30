@@ -70,8 +70,9 @@ function DialogAturan({ jenis, onTutup }) {
 export function DialogDuel({ jenis: jenisAwal = "catur", undang: undangAwal = null, onTutup, onBuat }) {
   const wa = useWa();
   const { api, toast } = wa;
-  const { balance, refreshBalance } = useUser();
+  const { refreshBalance } = useUser();
   const [jenis, setJenis] = useState(jenisAwal);
+  const [saldoGame, setSaldoGame] = useState(0);
   const [undang, setUndang] = useState(undangAwal);
   const [taruhan, setTaruhan] = useState("0");
   const [konfig, setKonfig] = useState(null);
@@ -80,7 +81,7 @@ export function DialogDuel({ jenis: jenisAwal = "catur", undang: undangAwal = nu
   const [hasil, setHasil] = useState([]);
   const [tampilCari, setTampilCari] = useState(false);
 
-  useEffect(() => { api.get("/api/game").then((r) => r.ok && setKonfig(r.data.konfig)); refreshBalance?.(); // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { api.get("/api/game").then((r) => { if (r.ok) { setKonfig(r.data.konfig); setSaldoGame(r.data.saldoGame ?? 0); } }); refreshBalance?.(); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     if (!tampilCari) return undefined;
@@ -92,7 +93,7 @@ export function DialogDuel({ jenis: jenisAwal = "catur", undang: undangAwal = nu
   const feePersen = konfig?.feePersen ?? 5;
   const hadiah = S ? S * 2 - Math.floor((S * 2 * feePersen) / 100) : 0;
   const boleh = konfig?.taruhanAktif !== false;
-  const salah = S > 0 && konfig ? (S < konfig.min ? `Minimal ${rupiah(konfig.min)}` : S > konfig.maks ? `Maksimal ${rupiah(konfig.maks)}` : S > balance ? "Saldo tidak cukup" : "") : "";
+  const salah = S > 0 && konfig ? (S < konfig.min ? `Minimal ${rupiah(konfig.min)}` : S > konfig.maks ? `Maksimal ${rupiah(konfig.maks)}` : S > saldoGame ? "Saldo game tidak cukup" : "") : "";
   const pilihanCepat = [0, 1000, 5000, 10000, 25000, 50000].filter((n) => !konfig || n === 0 || (n >= konfig.min && n <= konfig.maks));
 
   async function buat() {
@@ -157,7 +158,7 @@ export function DialogDuel({ jenis: jenisAwal = "catur", undang: undangAwal = nu
             {pilihanCepat.map((n) => <button type="button" key={n} className={S === n ? "aktif" : ""} onClick={() => setTaruhan(String(n))} disabled={!boleh && n > 0}>{n ? rupiah(n) : "Santai (Rp0)"}</button>)}
           </div>
           <input type="number" inputMode="numeric" min={0} value={taruhan} onChange={(e) => setTaruhan(e.target.value)} disabled={!boleh} aria-label="Nominal taruhan" />
-          <small className="wg-catatan">Saldomu: <b>{rupiah(balance)}</b>{konfig ? ` · batas ${rupiah(konfig.min)}–${rupiah(konfig.maks)}` : ""}</small>
+          <small className="wg-catatan">Saldo game: <b>{rupiah(saldoGame)}</b>{konfig ? ` · batas ${rupiah(konfig.min)}–${rupiah(konfig.maks)}` : ""}{S > saldoGame ? <> · <a href="/game-deposit" style={{ color: "inherit", fontWeight: 900 }}>Isi saldo game</a></> : null}</small>
           {S > 0 && (
             <div className="wg-ringkas-taruhan">
               <span>Taruhan kedua pemain <b>{rupiah(S * 2)}</b></span>
@@ -184,7 +185,7 @@ const IKON = { catur: "♟", uno: "🃏", remi: "🂡", mahjong: "🀄" };
 export function TabGame() {
   const wa = useWa();
   const { api, toast } = wa;
-  const { balance, refreshBalance } = useUser();
+  const { refreshBalance } = useUser();
   const [d, setD] = useState(null);
   const [aturan, setAturan] = useState(null);
   const [sibuk, setSibuk] = useState("");
@@ -209,8 +210,9 @@ export function TabGame() {
   const k = d?.konfig || {};
   return (
     <div className="wa-tab-isi">
-      <div className="wg-saldo">
-        <span>Saldomu</span><b>{rupiah(balance)}</b>
+      <div className="wg-saldo" data-testid="wg-saldo-game">
+        <span>Saldo game</span><b>{rupiah(d?.saldoGame ?? 0)}</b>
+        <a className="wg-isi-saldo" href="/game-deposit" data-testid="isi-saldo-game">➕ Isi saldo game</a>
         {k.taruhanAktif === false ? <em>Taruhan dimatikan admin — main santai</em> : <em>Potongan admin {k.feePersen ?? 5}% dari total taruhan</em>}
       </div>
 

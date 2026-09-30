@@ -45,6 +45,7 @@ export async function GET(req) {
       // ditandai ada atau tidak; gambarnya diambil satu-satu lewat ?orderId=.
       hasProof: Boolean(d.proofImage),
       kodeUnik: d.kodeUnik || 0,
+      wallet: d.wallet === "game" ? "game" : "nokos",
       // Hasil baca OCR (tanpa teks mentah) — ditampilkan sebagai lencana di panel admin.
       ocr: d.ocr ? { setuju: !!d.ocr.setuju, alasan: d.ocr.alasan || [], cek: d.ocr.cek || null, keyakinan: d.ocr.keyakinan ?? null, refId: d.ocr.refId || null, ganda: !!d.ocr.ganda } : null,
       otomatis: d.autoOcr === true,

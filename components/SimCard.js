@@ -52,7 +52,10 @@ export default function SimCard({ compact = false }) {
     <div className="sim-card sim-enter overflow-hidden p-5 sm:p-6">
       <div className="relative z-[1] flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-medium text-white/65">{name ? `Saldo ${name}` : "Saldo kamu"}</p>
+          <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium text-white/65">
+            <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-black tracking-wide text-white">📱 SALDO NOKOS</span>
+            {name ? <span className="truncate text-white/55">{name}</span> : null}
+          </p>
           <div className="mt-1 flex items-center gap-2">
             <p ref={nilaiRef}
               className={`text-[30px] font-extrabold leading-none tracking-tight tabular-nums sm:text-[36px] ${naik ? "value-pop value-ring" : ""}`}>

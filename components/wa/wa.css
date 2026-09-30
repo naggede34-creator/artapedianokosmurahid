@@ -884,3 +884,5 @@ label.wa-saklar { display: flex; }
 .sl-tabel .baris span { display: flex; flex-direction: column; font-weight: 900; }
 .sl-tabel .baris small { font-size: 10px; font-weight: 700; opacity: .65; }
 @media (prefers-reduced-motion: reduce) { .sl-ubin.jatuh, .sl-ubin.menang, .sl-papan.gratis, .sl-kilau { animation: none; } }
+
+.wg-isi-saldo { display: inline-block; margin-top: 8px; padding: 7px 14px; border-radius: 12px; font-weight: 900; font-size: 13px; color: #422006; background: #fde047; border: 2.5px solid var(--wa-ink-tegas); box-shadow: 0 3px 0 var(--wa-ink-tegas); text-decoration: none; }

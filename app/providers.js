@@ -55,6 +55,8 @@ const UserContext = createContext(null);
 export function UserProvider({ children }) {
   const [token, setToken] = useState(null);
   const [balance, setBalance] = useState(0);
+  // Saldo game: dompet terpisah dari saldo nokos.
+  const [gameBalance, setGameBalance] = useState(0);
   const [depositBalance, setDepositBalance] = useState(null);
   const [name, setName] = useState(null);
   const [joinedAt, setJoinedAt] = useState(null);
@@ -78,6 +80,7 @@ export function UserProvider({ children }) {
       try { localStorage.removeItem("artapedia_keluar"); } catch {}
       setToken(data.token);
       setBalance(data.balance);
+      setGameBalance(data.saldoGame ?? 0);
       setDepositBalance(data.depositBalance ?? null);
       setName(data.name || null);
       setJoinedAt(data.createdAt || null);
@@ -188,7 +191,7 @@ export function UserProvider({ children }) {
       body: JSON.stringify({ token })
     });
     const data = await res.json();
-    if (res.ok) setBalance(data.balance);
+    if (res.ok) { setBalance(data.balance); setGameBalance(data.saldoGame ?? 0); }
   }, [token]);
 
   const restoreToken = useCallback(
@@ -229,7 +232,7 @@ export function UserProvider({ children }) {
 
   return (
     <UserContext.Provider
-      value={{ token, balance, depositBalance, name, joinedAt, tourDone, ready, perluMasuk, loginWajib, daftar, masuk, keluar, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
+      value={{ token, balance, gameBalance, depositBalance, name, joinedAt, tourDone, ready, perluMasuk, loginWajib, daftar, masuk, keluar, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
     >
       {children}
     </UserContext.Provider>

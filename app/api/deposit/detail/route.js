@@ -10,6 +10,8 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");
   const orderId = searchParams.get("order_id");
+  // Dompet: halaman saldo game hanya memulihkan deposit game, halaman deposit nokos hanya yang bukan game.
+  const dompet = searchParams.get("wallet") === "game" ? { wallet: "game" } : { wallet: { $ne: "game" } };
   if (!token) return NextResponse.json({ error: "Kode akun kosong." }, { status: 400 });
 
   const deposits = await depositsCol();
@@ -17,6 +19,7 @@ export async function GET(req) {
     ? { token, orderId }
     : {
         token,
+        ...dompet,
         // Deposit manual yang sudah dikonfirmasi user ikut dipulihkan: layarnya
         // masih punya isi ("menunggu dicek admin"), tidak seperti QRIS otomatis
         // yang begitu lewat statusnya tidak ada lagi yang perlu dilihat.
@@ -50,6 +53,7 @@ export async function GET(req) {
       ...(d.provider === MANUAL_DEPOSIT_KEY ? { manual: true, manualInfo: d.manualInfo || null } : {}),
       paymentUrl: d.paymentUrl || null,
       status: d.status,
+      ...(d.wallet === "game" ? { wallet: "game" } : {}),
       createdAt: d.createdAt,
       expiredAt: d.expiredAt ? new Date(d.expiredAt).getTime() : null
     }

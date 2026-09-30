@@ -47,6 +47,16 @@ const TABS = [
   { id: "tools", label: "Tools", icon: "🛠️" },
 ];
 
+// Kelompok menu admin (semua id tab harus ada di TABS; yang tidak terdaftar di sini tetap diberi kelompok "Lainnya").
+const KELOMPOK_TAB = [
+  { id: "ringkas", label: "Ringkasan", icon: "📊", tabs: ["ringkasan", "transaksi"] },
+  { id: "uang", label: "Pengguna & Uang", icon: "👥", tabs: ["pengguna", "depositmanual", "tarik", "referral", "kreator", "giveaway", "juara", "job"] },
+  { id: "game", label: "Game & Chat", icon: "🎮", tabs: ["game", "pembaruan", "lencana"] },
+  { id: "konten", label: "Konten & Toko", icon: "🛍️", tabs: ["konten", "banner", "produk", "tiket"] },
+  { id: "integrasi", label: "Integrasi", icon: "🔌", tabs: ["gateway", "bot", "reseller", "konfigurasi"] },
+  { id: "sistem", label: "Sistem", icon: "⚙️", tabs: ["pengaturan", "tools"] }
+];
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("ringkasan");
@@ -66,6 +76,8 @@ export default function AdminDashboardPage() {
 
   const [balanceForm, setBalanceForm] = useState({ token: "", amount: "", note: "" });
   const [balanceAction, setBalanceAction] = useState("add");
+  // Dompet yang diubah: saldo nokos atau saldo game (terpisah).
+  const [balanceWallet, setBalanceWallet] = useState("nokos");
   const [balanceSubmitting, setBalanceSubmitting] = useState(false);
   const [balanceMsg, setBalanceMsg] = useState("");
   const [pointsForm, setPointsForm] = useState({ token: "", amount: "", note: "" });
@@ -2003,11 +2015,11 @@ export default function AdminDashboardPage() {
       const res = await fetch("/api/admin/users/balance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: balanceForm.token.trim(), amount: Number(balanceForm.amount), action: balanceAction, note: balanceForm.note.trim() })
+        body: JSON.stringify({ token: balanceForm.token.trim(), amount: Number(balanceForm.amount), action: balanceAction, note: balanceForm.note.trim(), wallet: balanceWallet === "game" ? "game" : undefined })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal memproses.");
-      setBalanceMsg(`Berhasil. Saldo terbaru: ${fmtRp(data.balance)}`);
+      setBalanceMsg(`Berhasil. ${balanceWallet === "game" ? "Saldo game" : "Saldo"} terbaru: ${fmtRp(data.balance)}`);
       setBalanceForm({ token: "", amount: "", note: "" });
       loadUsers();
     } catch (err) {
@@ -2132,39 +2144,65 @@ export default function AdminDashboardPage() {
 
       <PeringatanKodeAdmin onBuka={() => setActiveTab("konfigurasi")} />
 
-      {/* ── Tab navigation ── */}
-      <div className="mt-4 sticky top-2 z-30 flex gap-1 overflow-x-auto rounded-2xl border border-line bg-surface/95 p-1 shadow-soft backdrop-blur-sm">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              setActiveTab(tab.id);
-              if (tab.id === "depositmanual") loadManualDeposits(manualFilter);
-              if (tab.id === "tarik") loadWithdrawals();
-              if (tab.id === "juara") loadLeaderboard(lbOffset);
-              if (tab.id === "gateway") loadGateway();
-              if (tab.id === "bot") loadBots();
-              if (tab.id === "reseller") loadReseller();
-              if (tab.id === "giveaway") loadGw2();
-            }}
-            className={`relative flex-1 min-w-max rounded-xl px-3 py-2 text-xs font-bold transition-all whitespace-nowrap ${
-              activeTab === tab.id
-                ? "bg-ink text-bg shadow-soft scale-[1.02]"
-                : "text-muted hover:bg-surface2 hover:text-ink"
-            }`}
-          >
-            <span className="mr-1">{tab.icon}</span>
-            {tab.label}
-            {/* Deposit manual yang menunggu tidak akan terlihat kalau tabnya
-                tidak dibuka — lencananya yang memanggil. */}
-            {tab.id === "depositmanual" && manualPending > 0 && (
-              <span className="ml-1.5 rounded-full bg-rose px-1.5 py-0.5 text-[10px] font-black text-white">
-                {manualPending}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      {/* ── Navigasi dua tingkat: kelompok di atas, tab kelompok itu di bawahnya ── */}
+      {(() => {
+        const bukaTab = (id) => {
+          setActiveTab(id);
+          if (id === "depositmanual") loadManualDeposits(manualFilter);
+          if (id === "tarik") loadWithdrawals();
+          if (id === "juara") loadLeaderboard(lbOffset);
+          if (id === "gateway") loadGateway();
+          if (id === "bot") loadBots();
+          if (id === "reseller") loadReseller();
+          if (id === "giveaway") loadGw2();
+        };
+        const kelompokAktif = KELOMPOK_TAB.find((k) => k.tabs.includes(activeTab)) || KELOMPOK_TAB[0];
+        const peta = Object.fromEntries(TABS.map((t) => [t.id, t]));
+        return (
+          <div className="mt-4 sticky top-2 z-30 rounded-2xl border border-line bg-surface/95 p-1.5 shadow-soft backdrop-blur-sm" data-testid="admin-nav">
+            <div className="no-scrollbar flex gap-1 overflow-x-auto" role="tablist" aria-label="Kelompok menu admin">
+              {KELOMPOK_TAB.map((k) => {
+                const aktif = k.id === kelompokAktif.id;
+                const lencana = k.tabs.includes("depositmanual") ? manualPending : 0;
+                return (
+                  <button
+                    key={k.id}
+                    role="tab"
+                    aria-selected={aktif}
+                    onClick={() => bukaTab(aktif ? activeTab : k.tabs[0])}
+                    className={`relative flex min-w-max flex-1 items-center justify-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-extrabold transition-all whitespace-nowrap ${aktif ? "bg-ink text-bg shadow-soft" : "text-muted hover:bg-surface2 hover:text-ink"}`}
+                  >
+                    <span>{k.icon}</span>{k.label}
+                    {lencana > 0 && <span className="rounded-full bg-rose px-1.5 py-0.5 text-[10px] font-black text-white">{lencana}</span>}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="no-scrollbar mt-1.5 flex gap-1 overflow-x-auto border-t border-line pt-1.5" role="tablist" aria-label={`Menu ${kelompokAktif.label}`}>
+              {kelompokAktif.tabs.map((id) => {
+                const tab = peta[id];
+                if (!tab) return null;
+                return (
+                  <button
+                    key={id}
+                    role="tab"
+                    aria-selected={activeTab === id}
+                    onClick={() => bukaTab(id)}
+                    className={`relative min-w-max rounded-lg px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${activeTab === id ? "bg-amber-soft text-amber-bright ring-1 ring-inset ring-amber/40" : "text-muted hover:bg-surface2 hover:text-ink"}`}
+                  >
+                    <span className="mr-1">{tab.icon}</span>
+                    {tab.label}
+                    {/* Deposit manual yang menunggu tidak akan terlihat kalau tabnya tidak dibuka — lencananya yang memanggil. */}
+                    {id === "depositmanual" && manualPending > 0 && (
+                      <span className="ml-1.5 rounded-full bg-rose px-1.5 py-0.5 text-[10px] font-black text-white">{manualPending}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* TAB: RINGKASAN                                                */}
@@ -2251,7 +2289,7 @@ export default function AdminDashboardPage() {
           <div ref={formRef} className="glow-ring rounded-2xl">
             <form onSubmit={submitBalance} className="rounded-2xl bg-surface p-5 shadow-card-3d sm:p-6">
               <h2 className="font-display text-base font-semibold text-ink">Tambah / Kurangi Saldo</h2>
-              <div className="mt-4 grid gap-3 sm:grid-cols-[1.3fr_1fr_1.3fr_auto]">
+              <div className="mt-4 grid gap-3 sm:grid-cols-[1.3fr_1fr_1.3fr_1fr_auto]">
                 <input
                   value={balanceForm.token}
                   onChange={(e) => setBalanceForm((f) => ({ ...f, token: e.target.value }))}
@@ -2274,6 +2312,16 @@ export default function AdminDashboardPage() {
                   placeholder="Catatan (opsional)"
                   className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
                 />
+                <select
+                  value={balanceWallet}
+                  onChange={(e) => setBalanceWallet(e.target.value)}
+                  aria-label="Dompet"
+                  className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm font-semibold text-ink outline-none focus:border-amber"
+                  data-testid="admin-dompet"
+                >
+                  <option value="nokos">💳 Saldo nokos</option>
+                  <option value="game">🎮 Saldo game</option>
+                </select>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -2416,7 +2464,7 @@ export default function AdminDashboardPage() {
                     users.map((u) => (
                       <tr key={u.token} className={`border-b border-line last:border-0 ${u.suspended ? "bg-rose-soft/30" : ""}`}>
                         <td className="px-4 py-3 font-mono text-xs text-ink">{u.token}{u.name ? ` · ${u.name}` : ""}</td>
-                        <td className="px-4 py-3 font-medium text-ink">{fmtRp(u.balance)}</td>
+                        <td className="px-4 py-3 font-medium text-ink">{fmtRp(u.balance)}<span className="block text-[10px] font-normal text-muted">🎮 {fmtRp(u.saldoGame || 0)}</span></td>
                         <td className="px-4 py-3 text-xs text-muted">{u.referralCount} orang</td>
                         <td className="px-4 py-3 text-xs text-muted">{fmtDate(u.createdAt)}</td>
                         <td className="px-4 py-3">
