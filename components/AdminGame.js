@@ -72,9 +72,9 @@ export default function AdminGame() {
       <div className="card p-4" data-testid="admin-solo">
         <h3 className="text-base font-extrabold text-ink">🎰 Game solo (Plinko & Mahjong Spin 1024)</h3>
         <p className="mt-1 text-xs leading-relaxed text-muted">
-          Hasil ditentukan server (acak kriptografis), RTP ≈ 96%. Bawaannya hanya <b>koin latihan</b>. Taruhan <b>saldo sungguhan</b> = perjudian yang dilarang/diatur ketat di banyak negara
-          (termasuk Indonesia) dan berisiko bagi pemain — nyalakan <b>GAME_KASINO_AKTIF</b> di Konfigurasi → Website hanya bila kamu paham dan menanggung risikonya.
-          Status sekarang: game solo <b>{d?.solo ? (d.solo.aktif ? "aktif" : "ditutup") : "…"}</b>, saldo sungguhan <b className={d?.solo?.kasino ? "text-rose" : ""}>{d?.solo ? (d.solo.kasino ? "DIIZINKAN" : "mati") : "…"}</b>.
+          Hasil ditentukan server (acak kriptografis), RTP ≈ 96%. Game solo memakai <b>poin game</b> pemain (tidak ada koin latihan) — ini taruhan sungguhan, yang dilarang/diatur ketat di banyak negara
+          (termasuk Indonesia) dan berisiko bagi pemain. Matikan lewat <b>GAME_KASINO_AKTIF</b> di Konfigurasi → Website bila perlu.
+          Status sekarang: game solo <b>{d?.solo ? (d.solo.aktif ? "aktif" : "ditutup") : "…"}</b>, main dengan poin <b className={d?.solo?.kasino ? "text-rose" : ""}>{d?.solo ? (d.solo.kasino ? "DIIZINKAN" : "mati") : "…"}</b>.
           Batas taruhan, batas rugi harian, dan batas kemenangan diatur lewat GAME_SOLO_*.
         </p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">

@@ -246,7 +246,7 @@ export function TabGame() {
       </div>
       {k.aktif === false && <p className="wa-kosong-kecil">Duel permainan sedang ditutup admin.</p>}
 
-      <h3 className="wa-subjudul">Game solo <small className="ws-kecil">main sendiri · koin latihan</small></h3>
+      <h3 className="wa-subjudul">Game solo <small className="ws-kecil">main sendiri · pakai poin game</small></h3>
       <KatalogSolo onBuka={(kode) => wa.bukaGame(kode)} />
 
       {d?.milik?.length > 0 && (

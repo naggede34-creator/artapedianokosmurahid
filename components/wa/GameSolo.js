@@ -1,7 +1,7 @@
 "use client";
 
 // Game solo di WEARTA CHAT: Plinko & Mahjong Spin 1024. Server yang menentukan hasil (acak kriptografis);
-// layar ini hanya menganimasikannya. Dua mode: koin latihan (bawaan) dan saldo sungguhan (bila admin menyalakan).
+// layar ini hanya menganimasikannya. Taruhan SELALU memakai poin game (saldo utama game) — tidak ada koin latihan.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useUser } from "@/app/providers";
 import { Ik, Lembar, useWa } from "@/components/wa/kit";
@@ -25,85 +25,68 @@ function useSolo() {
   const { api, toast } = useWa();
   const { refreshBalance } = useUser();
   const [info, setInfo] = useState(null);
-  const [mode, setMode] = useState("demo");
+  const mode = "saldo"; // hanya poin game
   const [bet, setBet] = useState(1000);
   // Saldo yang DITAMPILKAN (bisa tertunda sampai animasi selesai agar tidak membocorkan hasil).
-  const [koin, setKoin] = useState(0);
   const [saldo, setSaldo] = useState(0);
 
   const muat = useCallback(async () => {
     const r = await api.get("/api/game/solo");
-    if (r.ok) { setInfo(r.data); setKoin(r.data.koin); setSaldo(r.data.saldo); }
+    if (r.ok) { setInfo(r.data); setSaldo(r.data.saldo); }
     else toast(r.error || "Gagal memuat game solo.");
   }, [api, toast]);
   useEffect(() => { muat(); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const batas = info ? (mode === "demo" ? [info.demoMin, info.demoMaks] : [info.min, info.maks]) : [100, 20000];
-  // Taruhan awal mengikuti mode: koin latihan 100, saldo = minimal.
-  useEffect(() => { if (info) setBet((b) => Math.min(batas[1], Math.max(batas[0], mode === "demo" ? Math.min(b, 1000) : Math.max(b, info.min)))); // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, info]);
+  const batas = info ? [info.min, info.maks] : [1000, 50000];
+  // Taruhan awal = minimal yang diizinkan (dijaga di antara batas min–maks).
+  useEffect(() => { if (info) setBet((b) => Math.min(info.maks, Math.max(info.min, b))); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [info]);
 
-  const dompet = mode === "demo" ? koin : saldo;
-  const set = { setKoin, setSaldo };
+  const dompet = saldo;
+  const set = { setSaldo };
   const main = useCallback(async (aksi, data) => {
     const r = await api.post("/api/game/solo", { aksi, mode, bet, ...data });
     return r;
   }, [api, mode, bet]);
-  const isiUlang = useCallback(async () => {
-    const r = await api.post("/api/game/solo", { aksi: "isi-ulang" });
-    if (r.ok) { setKoin(r.data.koin); toast("Koin latihan diisi ulang."); } else toast(r.error || "Gagal mengisi ulang.");
-  }, [api, toast]);
-
-  return { info, mode, setMode, bet, setBet, batas, dompet, koin, saldo, ...set, main, isiUlang, muat, refreshBalance };
+  return { info, mode, bet, setBet, batas, dompet, saldo, ...set, main, muat, refreshBalance };
 }
 
 function PanelDompet({ s, kunci = false }) {
-  const { info, mode, setMode, bet, setBet, batas, dompet } = s;
+  const { info, bet, setBet, batas, dompet } = s;
   if (!info) return null;
-  const unit = mode === "demo" ? "koin" : "poin";
-  // Mode saldo: taruhan diketik dalam POIN, disimpan/dikirim dalam rupiah.
-  const tampilBet = mode === "demo" ? bet : bet / POIN_RP;
-  const ketikBet = (v) => setBet(mode === "demo" ? Math.round(Number(v) || 0) : Math.round((Number(v) || 0) * POIN_RP));
-  const fmt = (n) => (mode === "demo" ? `${Number(n).toLocaleString("id-ID")} koin` : rp(n));
+  // Taruhan diketik dalam POIN, disimpan/dikirim dalam rupiah (2 poin = Rp1.000).
+  const tampilBet = bet / POIN_RP;
+  const ketikBet = (v) => setBet(Math.round((Number(v) || 0) * POIN_RP));
   const ubah = (v) => setBet(Math.min(batas[1], Math.max(batas[0], Math.round(Number(v) || 0))));
   return (
     <div className="ws-dompet" data-testid="ws-dompet">
-      <div className="ws-mode" role="tablist" aria-label="Mode taruhan">
-        <button role="tab" aria-selected={mode === "demo"} className={mode === "demo" ? "on" : ""} disabled={kunci} onClick={() => setMode("demo")}>🪙 Koin latihan</button>
-        <button role="tab" aria-selected={mode === "saldo"} className={mode === "saldo" ? "on" : ""} disabled={kunci || !info.kasino} onClick={() => setMode("saldo")} title={info.kasino ? "" : "Dimatikan admin"}>
-          💳 Poin game {!info.kasino && <small>(mati)</small>}
-        </button>
-      </div>
-      <div className="ws-saldo"><span>{mode === "demo" ? "Koin kamu" : "Poin game"}</span><b data-testid="ws-saldo">{fmt(dompet)}</b></div>
+      <div className="ws-saldo"><span>🎲 Poin game</span><b data-testid="ws-saldo">{rp(dompet)}</b></div>
       <div className="ws-bet">
         <button disabled={kunci} onClick={() => ubah(bet / 2)} aria-label="Setengah">½</button>
         <label>
-          <small>Taruhan ({unit})</small>
-          <input type="number" inputMode="numeric" min={mode === "demo" ? batas[0] : batas[0] / POIN_RP} max={mode === "demo" ? batas[1] : batas[1] / POIN_RP} step={mode === "demo" ? 100 : 1} value={tampilBet} disabled={kunci}
+          <small>Taruhan (poin)</small>
+          <input type="number" inputMode="numeric" min={batas[0] / POIN_RP} max={batas[1] / POIN_RP} step={1} value={tampilBet} disabled={kunci}
             onChange={(e) => ketikBet(e.target.value)} onBlur={() => ubah(bet)} data-testid="ws-bet" />
         </label>
         <button disabled={kunci} onClick={() => ubah(bet * 2)} aria-label="Dua kali">2×</button>
         <button disabled={kunci} onClick={() => ubah(batas[1])}>Maks</button>
       </div>
       <div className="ws-chips">
-        {(mode === "demo" ? [100, 500, 1000, 5000, 10000] : [2, 10, 20, 50, 100].map((x) => x * POIN_RP)).filter((x) => x >= batas[0] && x <= batas[1]).map((x) => (
-          <button key={x} className={bet === x ? "on" : ""} disabled={kunci} onClick={() => setBet(x)}>{mode === "demo" ? (x >= 1000 ? `${x / 1000}K` : x) : `${x / POIN_RP}`}</button>
+        {[2, 10, 20, 50, 100].map((x) => x * POIN_RP).filter((x) => x >= batas[0] && x <= batas[1]).map((x) => (
+          <button key={x} className={bet === x ? "on" : ""} disabled={kunci} onClick={() => setBet(x)}>{x / POIN_RP}</button>
         ))}
       </div>
-      {mode === "demo" && dompet < info.demoMin * 10 && <button className="wa-tombol kecil" onClick={s.isiUlang} disabled={kunci}>🪙 Isi ulang koin ({info.koinAwal.toLocaleString("id-ID")})</button>}
-      {mode === "saldo" && dompet < info.min && <a className="wa-tombol kecil" href="/game-deposit" style={{ textAlign: "center", textDecoration: "none" }}>➕ Isi poin game</a>}
-      {mode === "saldo" && info.rugiHarian > 0 && <p className="ws-catatan">Batas rugi harian {rp(info.rugiHarian)} · terpakai {rp(info.rugiHariIni)}</p>}
+      {dompet < bet && <a className="wa-tombol kecil" href="/game-deposit" data-testid="isi-poin-solo" style={{ textAlign: "center", textDecoration: "none" }}>➕ Isi poin game</a>}
+      {info.rugiHarian > 0 && <p className="ws-catatan">Batas rugi harian {rp(info.rugiHarian)} · terpakai {rp(info.rugiHariIni)}</p>}
     </div>
   );
 }
 
-function Pengingat({ mode }) {
+function Pengingat() {
   return (
     <p className="ws-peringatan">
-      {mode === "saldo"
-        ? "⚠️ Ini permainan untung-untungan dengan uang sungguhan — bisa kalah. Main sebatas kemampuan; RTP ≈ 96% (rumah untung jangka panjang). Bukan cara mencari uang."
-        : "🪙 Koin latihan tidak bernilai uang & tidak bisa ditukar. Hasil acak ditentukan server; RTP ≈ 96%."}
+      ⚠️ Taruhan memakai poin game milikmu — bisa kalah, dan poin berkurang saat bola/putaran dimulai. Main sebatas kemampuan; RTP ≈ 96% (rumah untung jangka panjang). Bukan cara mencari uang.
     </p>
   );
 }
@@ -156,7 +139,7 @@ function Bola({ n, jalur, dx, rowH, top, onMendarat, onPasak, cepat }) {
 export function LayarPlinko({ onTutup }) {
   const s = useSolo();
   const wa = useWa();
-  const { info, mode, bet } = s;
+  const { info, bet } = s;
   const [baris, setBaris] = useState(12);
   const [risiko, setRisiko] = useState("sedang");
   const [bola, setBola] = useState([]); // bola yang sedang jatuh
@@ -204,7 +187,7 @@ export function LayarPlinko({ onTutup }) {
     setTimeout(() => hidup.current && setSorot((x) => (x?.n === n ? null : x)), 900);
     setRiwayat((r) => [{ x: t.pengali, untung: t.untung, id: n }, ...r].slice(0, 12));
     setTerakhir(t);
-    if (t.mode === "demo") s.setKoin(t.saldo); else { s.setSaldo(t.saldo); s.refreshBalance?.(); }
+    s.setSaldo(t.saldo); s.refreshBalance?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -217,7 +200,7 @@ export function LayarPlinko({ onTutup }) {
     const n = ++noBola.current;
     tertunda.current[n] = r.data;
     // Saldo langsung dipotong di tampilan (taruhan), hadiah menyusul saat bola mendarat.
-    if (r.data.mode === "demo") s.setKoin((k) => k - r.data.bet); else s.setSaldo((k) => k - r.data.bet);
+    s.setSaldo((k) => k - r.data.bet);
     setBola((b) => [...b, { n, jalur: r.data.hasil.jalur }]);
     setSibuk(false);
     return true;
@@ -293,7 +276,7 @@ export function LayarPlinko({ onTutup }) {
 
             {terakhir && bola.length === 0 && (
               <p className={`ws-hasil-baris ${terakhir.untung >= 0 ? "menang" : "kalah"}`} data-testid="plinko-hasil" role="status">
-                {fmtX(terakhir.pengali)} · {terakhir.untung >= 0 ? "+" : "−"}{terakhir.mode === "demo" ? `${Math.abs(terakhir.untung).toLocaleString("id-ID")} koin` : rp(Math.abs(terakhir.untung))}
+                {fmtX(terakhir.pengali)} · {terakhir.untung >= 0 ? "+" : "−"}{rp(Math.abs(terakhir.untung))}
               </p>
             )}
 
@@ -305,7 +288,7 @@ export function LayarPlinko({ onTutup }) {
                 : <button className="wa-tombol" onClick={() => mulaiAuto(10)} disabled={sibuk || bola.length > 0}>Auto ×10</button>}
               <button className={`wa-tombol${turbo ? " utama" : ""}`} onClick={() => setTurbo((t) => !t)} aria-pressed={turbo}>⚡ Turbo</button>
             </div>
-            <Pengingat mode={mode} />
+            <Pengingat />
           </>
         )}
       </div>
@@ -316,7 +299,7 @@ export function LayarPlinko({ onTutup }) {
             <li>Bola mendarat di salah satu kotak bawah: hadiah = taruhan × angka kotak. Tepi jarang kena tapi besar; tengah sering tapi kecil.</li>
             <li>Risiko rendah: hadiah merata. Tinggi: sering kalah, sesekali sangat besar (hingga ×1000 pada 16 baris).</li>
             <li>RTP (pengembalian jangka panjang) ≈ {(RTP_TAMPIL * 100).toFixed(0)}% di semua pilihan. Hasil ditentukan server dengan acak kriptografis <i>sebelum</i> bola dianimasikan — tidak bisa dipengaruhi klien.</li>
-            <li>Auto ×10 menjatuhkan 10 bola berurutan. Koin latihan tidak bernilai uang; mode saldo hanya jika admin mengaktifkannya dan ada batas rugi harian.</li>
+            <li>Auto ×10 menjatuhkan 10 bola berurutan. Taruhan memakai poin game dan ada batas rugi harian.</li>
           </ul>
         </Lembar>
       )}
@@ -344,7 +327,7 @@ const gridKosong = () => Array.from({ length: 5 }, () => Array.from({ length: 4 
 export function LayarSlot({ onTutup }) {
   const s = useSolo();
   const wa = useWa();
-  const { info, mode, bet } = s;
+  const { info, bet } = s;
   const [grid, setGrid] = useState(() => Array.from({ length: 5 }, (_, c) => Array.from({ length: 4 }, (_, r) => [(c * 3 + r * 2) % 9, 0])));
   const [efek, setEfek] = useState({ menang: new Set(), hilang: new Set(), jatuh: new Set(), berubah: new Set() });
   const [putar, setPutar] = useState(false);
@@ -451,11 +434,11 @@ export function LayarSlot({ onTutup }) {
     if (!hidup.current) return;
     if (!r.ok) { wa.toast(r.error || "Gagal memutar."); setPutar(false); return; }
     const d = r.data;
-    if (d.mode === "demo") s.setKoin((k) => k - d.bet); else s.setSaldo((k) => k - d.bet);
+    s.setSaldo((k) => k - d.bet);
     await animasi(d);
     if (!hidup.current) return;
     setTotal(d.pengali);
-    if (d.mode === "demo") s.setKoin(d.saldo); else { s.setSaldo(d.saldo); s.refreshBalance?.(); }
+    s.setSaldo(d.saldo); s.refreshBalance?.();
     setAkhir(d);
     setPesan("");
     setPutar(false);
@@ -475,7 +458,7 @@ export function LayarSlot({ onTutup }) {
 
   const info2 = info?.slot;
   const besar = akhir && akhir.pengali >= 10;
-  const koinTeks = (n) => (mode === "demo" ? `${Math.abs(n).toLocaleString("id-ID")} koin` : rp(Math.abs(n)));
+  const koinTeks = (n) => rp(Math.abs(n));
   const ladder = gratis ? info2?.ladderGratis : info2?.ladderDasar;
 
   return (
@@ -536,7 +519,7 @@ export function LayarSlot({ onTutup }) {
               <button className={`wa-tombol${turbo ? " utama" : ""}`} onClick={() => setTurbo((t) => !t)} aria-pressed={turbo}>⚡ Turbo</button>
               <button className="wa-tombol" onClick={() => setAturan(true)}>?</button>
             </div>
-            <Pengingat mode={mode} />
+            <Pengingat />
           </>
         )}
       </div>
@@ -549,13 +532,13 @@ export function LayarSlot({ onTutup }) {
             <li><b>Ubin emas</b> (gulungan 2–4): bila ikut menang, berubah menjadi <b>WILD</b> di tempatnya. WILD (gulungan 2–4) menggantikan ubin biasa.</li>
             <li><b>3+ SCATTER 福</b> = {10} putaran gratis (+2 per scatter tambahan). Di putaran gratis, 3+ scatter menambah putaran. Maksimal {40} putaran gratis.</li>
             <li>Batas kemenangan {info2?.maksPengali ?? 5000}× taruhan per ronde. RTP ≈ 96%. Hasil seluruh ronde (termasuk putaran gratis) ditentukan server dengan acak kriptografis sebelum dianimasikan; “Lewati” hanya mempercepat tampilan.</li>
-            <li>Koin latihan tidak bernilai uang. Mode saldo game hanya jika admin mengaktifkannya dan ada batas rugi harian. Main untuk hiburan.</li>
+            <li>Taruhan memakai poin game milikmu (2 poin = Rp1.000) dan dipotong saat putaran dimulai. Ada batas rugi harian. Main untuk hiburan.</li>
           </ul>
         </Lembar>
       )}
       {bayarTabel && info2 && (
         <Lembar judul="Tabel bayar" onTutup={() => setBayarTabel(false)} lebar={460}>
-          <p className="wa-kosong-kecil" style={{ textAlign: "left" }}>Pengali × taruhan × jumlah jalur, untuk 3 / 4 / 5 gulungan (sebelum pengali kombo). Taruhan saat ini: {mode === "demo" ? `${bet} koin` : rp(bet)}.</p>
+          <p className="wa-kosong-kecil" style={{ textAlign: "left" }}>Pengali × taruhan × jumlah jalur, untuk 3 / 4 / 5 gulungan (sebelum pengali kombo). Taruhan saat ini: {rp(bet)}.</p>
           <div className="sl-tabel">
             {info2.bayar.map((b, i) => (
               <div key={i} className="baris">
