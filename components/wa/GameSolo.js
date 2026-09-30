@@ -5,8 +5,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useUser } from "@/app/providers";
 import { Ik, Lembar, useWa } from "@/components/wa/kit";
+import { teksPoinRp, POIN_RP } from "@/lib/poinGame";
 
-const rp = (n) => `Rp${Number(n || 0).toLocaleString("id-ID")}`;
+// Nominal saldo game tampil sebagai poin + padanan rupiah (2 poin = Rp1.000).
+const rp = (n) => teksPoinRp(n);
 const fmtX = (x) => `×${Number(x).toLocaleString("id-ID", { maximumFractionDigits: 2 })}`;
 const tidur = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -56,7 +58,10 @@ function useSolo() {
 function PanelDompet({ s, kunci = false }) {
   const { info, mode, setMode, bet, setBet, batas, dompet } = s;
   if (!info) return null;
-  const unit = mode === "demo" ? "koin" : "Rp";
+  const unit = mode === "demo" ? "koin" : "poin";
+  // Mode saldo: taruhan diketik dalam POIN, disimpan/dikirim dalam rupiah.
+  const tampilBet = mode === "demo" ? bet : bet / POIN_RP;
+  const ketikBet = (v) => setBet(mode === "demo" ? Math.round(Number(v) || 0) : Math.round((Number(v) || 0) * POIN_RP));
   const fmt = (n) => (mode === "demo" ? `${Number(n).toLocaleString("id-ID")} koin` : rp(n));
   const ubah = (v) => setBet(Math.min(batas[1], Math.max(batas[0], Math.round(Number(v) || 0))));
   return (
@@ -64,27 +69,27 @@ function PanelDompet({ s, kunci = false }) {
       <div className="ws-mode" role="tablist" aria-label="Mode taruhan">
         <button role="tab" aria-selected={mode === "demo"} className={mode === "demo" ? "on" : ""} disabled={kunci} onClick={() => setMode("demo")}>🪙 Koin latihan</button>
         <button role="tab" aria-selected={mode === "saldo"} className={mode === "saldo" ? "on" : ""} disabled={kunci || !info.kasino} onClick={() => setMode("saldo")} title={info.kasino ? "" : "Dimatikan admin"}>
-          💳 Saldo game {!info.kasino && <small>(mati)</small>}
+          💳 Poin game {!info.kasino && <small>(mati)</small>}
         </button>
       </div>
-      <div className="ws-saldo"><span>{mode === "demo" ? "Koin kamu" : "Saldo game"}</span><b data-testid="ws-saldo">{fmt(dompet)}</b></div>
+      <div className="ws-saldo"><span>{mode === "demo" ? "Koin kamu" : "Poin game"}</span><b data-testid="ws-saldo">{fmt(dompet)}</b></div>
       <div className="ws-bet">
         <button disabled={kunci} onClick={() => ubah(bet / 2)} aria-label="Setengah">½</button>
         <label>
           <small>Taruhan ({unit})</small>
-          <input type="number" inputMode="numeric" min={batas[0]} max={batas[1]} step={mode === "demo" ? 100 : 1000} value={bet} disabled={kunci}
-            onChange={(e) => setBet(Math.round(Number(e.target.value) || 0))} onBlur={() => ubah(bet)} data-testid="ws-bet" />
+          <input type="number" inputMode="numeric" min={mode === "demo" ? batas[0] : batas[0] / POIN_RP} max={mode === "demo" ? batas[1] : batas[1] / POIN_RP} step={mode === "demo" ? 100 : 1} value={tampilBet} disabled={kunci}
+            onChange={(e) => ketikBet(e.target.value)} onBlur={() => ubah(bet)} data-testid="ws-bet" />
         </label>
         <button disabled={kunci} onClick={() => ubah(bet * 2)} aria-label="Dua kali">2×</button>
         <button disabled={kunci} onClick={() => ubah(batas[1])}>Maks</button>
       </div>
       <div className="ws-chips">
-        {(mode === "demo" ? [100, 500, 1000, 5000, 10000] : [1000, 5000, 10000, 25000, 50000]).filter((x) => x >= batas[0] && x <= batas[1]).map((x) => (
-          <button key={x} className={bet === x ? "on" : ""} disabled={kunci} onClick={() => setBet(x)}>{x >= 1000 ? `${x / 1000}K` : x}</button>
+        {(mode === "demo" ? [100, 500, 1000, 5000, 10000] : [2, 10, 20, 50, 100].map((x) => x * POIN_RP)).filter((x) => x >= batas[0] && x <= batas[1]).map((x) => (
+          <button key={x} className={bet === x ? "on" : ""} disabled={kunci} onClick={() => setBet(x)}>{mode === "demo" ? (x >= 1000 ? `${x / 1000}K` : x) : `${x / POIN_RP}`}</button>
         ))}
       </div>
       {mode === "demo" && dompet < info.demoMin * 10 && <button className="wa-tombol kecil" onClick={s.isiUlang} disabled={kunci}>🪙 Isi ulang koin ({info.koinAwal.toLocaleString("id-ID")})</button>}
-      {mode === "saldo" && dompet < info.min && <a className="wa-tombol kecil" href="/game-deposit" style={{ textAlign: "center", textDecoration: "none" }}>➕ Isi saldo game</a>}
+      {mode === "saldo" && dompet < info.min && <a className="wa-tombol kecil" href="/game-deposit" style={{ textAlign: "center", textDecoration: "none" }}>➕ Isi poin game</a>}
       {mode === "saldo" && info.rugiHarian > 0 && <p className="ws-catatan">Batas rugi harian {rp(info.rugiHarian)} · terpakai {rp(info.rugiHariIni)}</p>}
     </div>
   );

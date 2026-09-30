@@ -10,6 +10,7 @@ import AdminAfiliasi from "@/components/AdminAfiliasi";
 import AdminLencana from "@/components/AdminLencana";
 import AdminGame from "@/components/AdminGame";
 import AdminPembaruan from "@/components/AdminPembaruan";
+import AdminTarikPoin from "@/components/AdminTarikPoin";
 import { CHANNEL_ID, CHANNEL_URL } from "@/lib/links";
 
 function fmtDate(d) {
@@ -35,6 +36,7 @@ const TABS = [
   { id: "lencana", label: "Lencana", icon: "🎖" },
   { id: "game", label: "Game", icon: "🎮" },
   { id: "pembaruan", label: "Pembaruan", icon: "✨" },
+  { id: "tarikpoin", label: "Tarik Poin", icon: "💸" },
   { id: "konfigurasi", label: "Konfigurasi", icon: "🔑" },
   { id: "bot", label: "Bot Telegram", icon: "🤖" },
   { id: "reseller", label: "Bot Reseller", icon: "🏪" },
@@ -50,7 +52,7 @@ const TABS = [
 // Kelompok menu admin (semua id tab harus ada di TABS; yang tidak terdaftar di sini tetap diberi kelompok "Lainnya").
 const KELOMPOK_TAB = [
   { id: "ringkas", label: "Ringkasan", icon: "📊", tabs: ["ringkasan", "transaksi"] },
-  { id: "uang", label: "Pengguna & Uang", icon: "👥", tabs: ["pengguna", "depositmanual", "tarik", "referral", "kreator", "giveaway", "juara", "job"] },
+  { id: "uang", label: "Pengguna & Uang", icon: "👥", tabs: ["pengguna", "depositmanual", "tarikpoin", "tarik", "referral", "kreator", "giveaway", "juara", "job"] },
   { id: "game", label: "Game & Chat", icon: "🎮", tabs: ["game", "pembaruan", "lencana"] },
   { id: "konten", label: "Konten & Toko", icon: "🛍️", tabs: ["konten", "banner", "produk", "tiket"] },
   { id: "integrasi", label: "Integrasi", icon: "🔌", tabs: ["gateway", "bot", "reseller", "konfigurasi"] },
@@ -3153,7 +3155,12 @@ export default function AdminDashboardPage() {
                         {!d.otomatis && d.ocr && !d.ocr.setuju && d.ocr.alasan?.length > 0 && (
                           <p className="mt-1 text-[11px] text-amber-bright" data-testid="chip-ocr-gagal">🤖 OCR tidak lolos: {d.ocr.alasan.join(" ")}</p>
                         )}
-                        {d.kodeUnik > 0 && <p className="mt-0.5 text-[11px] text-muted">Kode unik Rp{d.kodeUnik}</p>}
+                        {d.wallet === "game" && (
+                          <p className="mt-1 inline-block rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-bold text-purple-700" data-testid="chip-wallet-game">
+                            🎮 Deposit POIN GAME · {Math.round(d.amount / 500)} poin
+                          </p>
+                        )}
+                        {d.kodeUnik > 0 && <p className="mt-0.5 text-[11px] text-muted">Kode unik Rp{d.kodeUnik}{d.wallet === "game" ? " (tidak jadi poin)" : ""}</p>}
                         {d.userNote && <p className="mt-1 text-xs text-ink">📝 {d.userNote}</p>}
                         {d.adminNote && <p className="mt-1 text-xs text-rose">Catatan admin: {d.adminNote}</p>}
                       </div>
@@ -3243,6 +3250,7 @@ export default function AdminDashboardPage() {
       {activeTab === "lencana" && <AdminLencana />}
       {activeTab === "game" && <AdminGame />}
       {activeTab === "pembaruan" && <AdminPembaruan />}
+      {activeTab === "tarikpoin" && <AdminTarikPoin />}
 
       {activeTab === "giveaway" && (
         <div className="mt-5 space-y-5">

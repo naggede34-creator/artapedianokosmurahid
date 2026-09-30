@@ -5,9 +5,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@/app/providers";
 import { Ik, Avatar, NamaLencana, Lembar, Konfirmasi, useWa, useInterval, salin, waktuDaftar } from "@/components/wa/kit";
 import { KatalogSolo } from "@/components/wa/GameSolo";
+import { teksPoinRp, POIN_RP } from "@/lib/poinGame";
 import { PapanCatur, PapanUno, PapanRemi, PapanMahjong, HasilRemi, HasilMahjong } from "@/components/wa/GameBoards";
 
-const rupiah = (n) => `Rp${Number(n || 0).toLocaleString("id-ID")}`;
+// Nominal game tampil sebagai poin + padanan rupiah (2 poin = Rp1.000).
+const rupiah = (n) => teksPoinRp(n);
 const fotoDari = (p) => (p?.fotoV ? `/api/wa/foto/${p.pid}?v=${p.fotoV}` : null);
 export const tautanGame = (id) => `${typeof window !== "undefined" ? window.location.origin : ""}/chat?game=${id}`;
 
@@ -89,12 +91,14 @@ export function DialogDuel({ jenis: jenisAwal = "catur", undang: undangAwal = nu
     return () => clearTimeout(t);
   }, [cari, tampilCari, api]);
 
-  const S = Math.max(0, Math.floor(Number(taruhan) || 0));
+  // Taruhan diketik dalam POIN (1 poin = Rp500); server memakai rupiah.
+  const poinTaruhan = Math.max(0, Math.floor(Number(taruhan) || 0));
+  const S = poinTaruhan * POIN_RP;
   const feePersen = konfig?.feePersen ?? 5;
   const hadiah = S ? S * 2 - Math.floor((S * 2 * feePersen) / 100) : 0;
   const boleh = konfig?.taruhanAktif !== false;
-  const salah = S > 0 && konfig ? (S < konfig.min ? `Minimal ${rupiah(konfig.min)}` : S > konfig.maks ? `Maksimal ${rupiah(konfig.maks)}` : S > saldoGame ? "Saldo game tidak cukup" : "") : "";
-  const pilihanCepat = [0, 1000, 5000, 10000, 25000, 50000].filter((n) => !konfig || n === 0 || (n >= konfig.min && n <= konfig.maks));
+  const salah = S > 0 && konfig ? (S < konfig.min ? `Minimal ${rupiah(konfig.min)}` : S > konfig.maks ? `Maksimal ${rupiah(konfig.maks)}` : S > saldoGame ? "Poin game tidak cukup" : "") : "";
+  const pilihanCepat = [0, 2, 10, 20, 50, 100].filter((n) => !konfig || n === 0 || (n * POIN_RP >= konfig.min && n * POIN_RP <= konfig.maks));
 
   async function buat() {
     if (kirim || salah) return;
@@ -155,16 +159,16 @@ export function DialogDuel({ jenis: jenisAwal = "catur", undang: undangAwal = nu
         <div className="wa-form-grup">
           <span>Taruhan per pemain {boleh ? "" : "(dinonaktifkan admin)"}</span>
           <div className="wg-chip-taruhan">
-            {pilihanCepat.map((n) => <button type="button" key={n} className={S === n ? "aktif" : ""} onClick={() => setTaruhan(String(n))} disabled={!boleh && n > 0}>{n ? rupiah(n) : "Santai (Rp0)"}</button>)}
+            {pilihanCepat.map((n) => <button type="button" key={n} className={poinTaruhan === n ? "aktif" : ""} onClick={() => setTaruhan(String(n))} disabled={!boleh && n > 0}>{n ? `${n} poin` : "Santai"}</button>)}
           </div>
-          <input type="number" inputMode="numeric" min={0} value={taruhan} onChange={(e) => setTaruhan(e.target.value)} disabled={!boleh} aria-label="Nominal taruhan" />
-          <small className="wg-catatan">Saldo game: <b>{rupiah(saldoGame)}</b>{konfig ? ` · batas ${rupiah(konfig.min)}–${rupiah(konfig.maks)}` : ""}{S > saldoGame ? <> · <a href="/game-deposit" style={{ color: "inherit", fontWeight: 900 }}>Isi saldo game</a></> : null}</small>
+          <input type="number" inputMode="numeric" min={0} value={taruhan} onChange={(e) => setTaruhan(e.target.value)} disabled={!boleh} aria-label="Taruhan (poin)" placeholder="Taruhan dalam poin" />
+          <small className="wg-catatan">Poin game: <b>{rupiah(saldoGame)}</b>{konfig ? ` · batas ${rupiah(konfig.min)}–${rupiah(konfig.maks)}` : ""}{S > saldoGame ? <> · <a href="/game-deposit" style={{ color: "inherit", fontWeight: 900 }}>Isi poin</a></> : null}</small>
           {S > 0 && (
             <div className="wg-ringkas-taruhan">
               <span>Taruhan kedua pemain <b>{rupiah(S * 2)}</b></span>
               <span>Potongan admin {feePersen}% <b>−{rupiah(S * 2 - hadiah)}</b></span>
               <span className="besar">Pemenang mendapat <b>{rupiah(hadiah)}</b></span>
-              <small>Saldomu dipotong {rupiah(S)} sekarang. Duel dibatalkan/seri = dikembalikan utuh.</small>
+              <small>Saldo game dipotong {rupiah(S)} sekarang. Duel dibatalkan/seri = dikembalikan utuh.</small>
             </div>
           )}
           {salah && <small className="wa-gerbang-galat" role="alert">{salah}</small>}
@@ -211,8 +215,8 @@ export function TabGame() {
   return (
     <div className="wa-tab-isi">
       <div className="wg-saldo" data-testid="wg-saldo-game">
-        <span>Saldo game</span><b>{rupiah(d?.saldoGame ?? 0)}</b>
-        <a className="wg-isi-saldo" href="/game-deposit" data-testid="isi-saldo-game">➕ Isi saldo game</a>
+        <span>Poin game</span><b>{rupiah(d?.saldoGame ?? 0)}</b>
+        <a className="wg-isi-saldo" href="/game-deposit" data-testid="isi-saldo-game">➕ Isi poin</a>
         {k.taruhanAktif === false ? <em>Taruhan dimatikan admin — main santai</em> : <em>Potongan admin {k.feePersen ?? 5}% dari total taruhan</em>}
       </div>
 
@@ -406,7 +410,7 @@ export function LayarGame({ id, onTutup }) {
               ) : (
                 <>
                   <b>{g.diundangSaya ? `${g.pemain[0]?.nama} menantangmu!` : `Duel ${g.nama} dari ${g.pemain[0]?.nama}`}</b>
-                  <p>{g.taruhan ? `Taruhan ${rupiah(g.taruhan)} per pemain. Menang = ${rupiah(g.hadiah)}. Saldomu dipotong ${rupiah(g.taruhan)} saat menerima.` : "Main santai tanpa taruhan."}</p>
+                  <p>{g.taruhan ? `Taruhan ${rupiah(g.taruhan)} per pemain. Menang = ${rupiah(g.hadiah)}. Saldo game dipotong ${rupiah(g.taruhan)} saat menerima.` : "Main santai tanpa taruhan."}</p>
                   <div className="wg-aksi">
                     <button className="wa-tombol utama" onClick={async () => { const r = await cepat("gabung"); if (r) { muat(); } }} disabled={sibuk}>Terima & main</button>
                     {g.diundangSaya && <button className="wa-tombol bahaya" onClick={async () => { const r = await cepat("tolak"); if (r) onTutup(); }} disabled={sibuk}>Tolak</button>}
@@ -431,7 +435,7 @@ export function LayarGame({ id, onTutup }) {
               <p>{g.hasil.alasan}</p>
               {g.taruhan > 0 && (
                 <p className="wg-hasil-uang">
-                  {g.hasil.saya === "menang" ? <>+{rupiah(g.hasil.dibayar)} masuk ke saldomu <small>(potongan admin {rupiah(g.hasil.fee)})</small></> : g.hasil.saya === "kalah" ? <>Taruhan {rupiah(g.taruhan)} hangus</> : <>Taruhan {rupiah(g.taruhan)} dikembalikan utuh</>}
+                  {g.hasil.saya === "menang" ? <>+{rupiah(g.hasil.dibayar)} masuk ke saldo game <small>(potongan admin {rupiah(g.hasil.fee)})</small></> : g.hasil.saya === "kalah" ? <>Taruhan {rupiah(g.taruhan)} hangus</> : <>Taruhan {rupiah(g.taruhan)} dikembalikan utuh</>}
                 </p>
               )}
               {["menang", "kalah", "seri"].includes(g.hasil.saya) && (
