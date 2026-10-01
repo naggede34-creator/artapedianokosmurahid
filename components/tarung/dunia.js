@@ -406,7 +406,7 @@ export class Dunia {
       default: this.gesek(f, dt, 2200); break; // intro, menang, kalah, ko
     }
     if (f.keadaan !== "dibanting") f.x = jepit(f.x, -TEPI, TEPI);
-    f.pose = this.poseUntuk(f);
+    f.pose = this.lembut(f, this.poseUntuk(f), dt);
     // bayangan gerak (afterimage) saat jurus/terlempar
     if (f.warnaBayang) {
       f.tBayang -= dt;
@@ -914,6 +914,19 @@ export class Dunia {
   }
 
   // ═════════════════════════ POSE ═════════════════════════
+  /**
+   * Penghalus gerak: pose yang dihitung dilewatkan filter lintas-bingkai supaya perpindahan antar keadaan
+   * (jalan↔siaga↔jongkok↔lompat…) tidak patah. Jurus, bantingan, dan terlempar tetap tajam agar waktu pukulan terbaca.
+   */
+  lembut(f, p, dt) {
+    const prev = f.pose;
+    if (!prev || !dt) return lengkap(p);
+    const tegas = ["serang", "membanting", "dibanting", "melayang", "naskah", "ko", "rebah"].includes(f.keadaan);
+    if (tegas || f.diUdara) return lengkap(p);
+    const k = 1 - Math.exp(-dt * (f.keadaan === "siaga" ? 18 : 26));
+    return campur(prev, lengkap(p), k);
+  }
+
   poseUntuk(f) {
     const P = f.P, t = f.t;
     let p;

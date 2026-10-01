@@ -4440,3 +4440,68 @@ html:not(.dark)[data-tema="arang"] { --c-bg: 246 248 251; --c-surface2: 234 239 
 @media (prefers-reduced-motion: reduce) {
   .kilau-sapu::after { transition: none; display: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DASBOR BERTAB, UBIN MENU, GERAK MASUK BERTINGKAT
+   ═══════════════════════════════════════════════════════════════════════ */
+.dash-tab {
+  display: flex; gap: 8px; justify-content: center;
+  background: linear-gradient(rgb(var(--c-bg) / .92), rgb(var(--c-bg) / .78));
+  backdrop-filter: blur(8px);
+}
+.dash-tab button {
+  flex: 1; max-width: 190px; padding: 9px 10px; border-radius: 14px;
+  font-size: 13px; font-weight: 900; letter-spacing: .01em; color: rgb(var(--c-muted));
+  background: rgb(var(--c-surface)); border: 2.5px solid rgb(var(--c-ink) / .85);
+  box-shadow: 3px 3px 0 rgb(var(--c-ink) / .85);
+  transition: transform .14s ease, box-shadow .14s ease, background .2s, color .2s;
+}
+.dash-tab button:hover { transform: translate(-1px, -2px); box-shadow: 4px 5px 0 rgb(var(--c-ink) / .85); }
+.dash-tab button:active, .dash-tab button.aktif { transform: translate(3px, 3px); box-shadow: 0 0 0 rgb(var(--c-ink)); }
+.dash-tab button.aktif {
+  color: #fff; background: linear-gradient(180deg, rgb(var(--c-orange)), rgb(var(--c-orange) / .82));
+  animation: tab-pantul .35s cubic-bezier(.2, 1.4, .4, 1);
+}
+@keyframes tab-pantul { 0% { transform: translate(3px, 3px) scale(.92); } 60% { transform: translate(3px, 3px) scale(1.06); } 100% { transform: translate(3px, 3px) scale(1); } }
+
+/* Isi tab masuk satu per satu, seperti panel komik yang dibalik. */
+.dash-isi > *, .dash-isi > * > * { animation: panel-masuk .5s cubic-bezier(.2, .9, .3, 1.1) backwards; }
+.dash-isi > *:nth-child(1), .dash-isi > * > *:nth-child(1) { animation-delay: .02s; }
+.dash-isi > *:nth-child(2), .dash-isi > * > *:nth-child(2) { animation-delay: .07s; }
+.dash-isi > *:nth-child(3), .dash-isi > * > *:nth-child(3) { animation-delay: .12s; }
+.dash-isi > *:nth-child(4), .dash-isi > * > *:nth-child(4) { animation-delay: .17s; }
+.dash-isi > *:nth-child(5), .dash-isi > * > *:nth-child(5) { animation-delay: .22s; }
+.dash-isi > *:nth-child(6), .dash-isi > * > *:nth-child(6) { animation-delay: .27s; }
+.dash-isi > *:nth-child(n+7), .dash-isi > * > *:nth-child(n+7) { animation-delay: .3s; }
+@keyframes panel-masuk { from { opacity: 0; transform: translateY(18px) rotateX(-12deg) scale(.97); } to { opacity: 1; transform: none; } }
+
+.menu-ubin {
+  background: rgb(var(--c-surface2)); border: 2px solid rgb(var(--c-ink) / .8);
+  box-shadow: 2px 2px 0 rgb(var(--c-ink) / .8);
+}
+.menu-ubin::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / .4) 50%, transparent 65%) no-repeat;
+  background-size: 250% 100%; background-position: 150% 0;
+}
+.menu-ubin:hover::after { background-position: -50% 0; transition: background-position .6s ease; }
+.menu-ubin:active { transform: translate(2px, 2px); box-shadow: none; }
+
+/* Tombol aksi utama: kilau menyapu pelan sesekali. */
+[data-testid="aksi-utama"] a::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 40%, rgb(255 255 255 / .22) 50%, transparent 60%);
+  transform: translateX(-130%); animation: kilau-lewat 5.5s ease-in-out infinite;
+}
+[data-testid="aksi-utama"] a:nth-child(2)::before { animation-delay: 1.2s; }
+[data-testid="aksi-utama"] a:nth-child(3)::before { animation-delay: 2.4s; }
+[data-testid="aksi-utama"] a:nth-child(4)::before { animation-delay: 3.6s; }
+@keyframes kilau-lewat { 0%, 70% { transform: translateX(-130%); } 100% { transform: translateX(130%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-isi > *, .dash-isi > * > *, .dash-tab button.aktif, [data-testid="aksi-utama"] a::before { animation: none !important; }
+}
+
+/* Sentuhan global: gulir halus & seleksi teks bernuansa komik. */
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+::selection { background: rgb(var(--c-orange) / .35); color: rgb(var(--c-ink)); }

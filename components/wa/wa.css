@@ -1153,3 +1153,30 @@ button.gp-domino { cursor: pointer; }
 .wa-wall-grid .wall-samudra { background: linear-gradient(170deg, #0e7490, #1e3a8a); }
 .wa-wall-grid .wall-polos { background: rgb(var(--c-surface2)); color: var(--wa-teks); text-shadow: none; }
 .wa-wall-grid .wall- { background: repeating-linear-gradient(45deg, rgb(var(--c-orange) / .25) 0 8px, rgb(var(--c-blue) / .2) 8px 16px); color: var(--wa-teks); text-shadow: none; }
+
+/* ═══ Gerak lobi game: tidak kaku ═══ */
+.wg-kartu-game { animation: wg-kartu-masuk .5s cubic-bezier(.2, .9, .3, 1.15) backwards; transition: transform .18s cubic-bezier(.2, .9, .3, 1.3), box-shadow .18s; }
+.wg-kartu-game:nth-child(1) { animation-delay: .04s; } .wg-kartu-game:nth-child(2) { animation-delay: .09s; }
+.wg-kartu-game:nth-child(3) { animation-delay: .14s; } .wg-kartu-game:nth-child(4) { animation-delay: .19s; }
+.wg-kartu-game:nth-child(5) { animation-delay: .24s; } .wg-kartu-game:nth-child(n+6) { animation-delay: .29s; }
+.wg-kartu-game:hover { transform: translateY(-4px) rotate(-1deg) scale(1.02); }
+.wg-kartu-game:active { transform: translateY(1px) scale(.97); }
+.wg-kartu-game .ikon { display: inline-block; animation: wg-ikon-napas 3.2s ease-in-out infinite; }
+.wg-kartu-game:nth-child(2n) .ikon { animation-delay: -1.1s; } .wg-kartu-game:nth-child(3n) .ikon { animation-delay: -2s; }
+@keyframes wg-kartu-masuk { from { opacity: 0; transform: translateY(22px) scale(.9) rotate(-2deg); } to { opacity: 1; transform: none; } }
+@keyframes wg-ikon-napas { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-3px) rotate(4deg) scale(1.06); } }
+.wg-unggulan { position: relative; overflow: hidden; transition: transform .2s cubic-bezier(.2, .9, .3, 1.3); animation: wg-kartu-masuk .55s cubic-bezier(.2, .9, .3, 1.15) backwards; }
+.wg-unggulan:hover { transform: translateY(-3px) scale(1.012); }
+.wg-unggulan:active { transform: scale(.98); }
+.wg-unggulan::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / .25) 50%, transparent 62%); transform: translateX(-130%); animation: kilau-lewat 4.8s ease-in-out infinite; }
+.wg-unggulan-gbr img { animation: wg-potret-goyang 3.6s ease-in-out infinite; transform-origin: 50% 100%; }
+.wg-unggulan-gbr img:nth-child(2) { animation-delay: -1.2s; } .wg-unggulan-gbr img:nth-child(3) { animation-delay: -2.4s; }
+@keyframes wg-potret-goyang { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-5px) rotate(1.5deg) scale(1.03); } }
+.wa-tab-isi .wa-baris-daftar { transition: transform .15s ease, box-shadow .15s ease; }
+.wa-tab-isi .wa-baris-daftar:active { transform: translate(2px, 2px); }
+.wa-tombol { transition: transform .12s ease, box-shadow .12s ease, filter .15s; }
+.wa-tombol:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.06); }
+.wa-tombol:active:not(:disabled) { transform: translate(2px, 2px); }
+@media (prefers-reduced-motion: reduce) {
+  .wg-kartu-game, .wg-kartu-game .ikon, .wg-unggulan, .wg-unggulan::after, .wg-unggulan-gbr img { animation: none !important; }
+}

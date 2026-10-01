@@ -50,20 +50,33 @@ const utama = [
   { href: "/chat", label: "WEARTA CHAT", sub: "Chat, grup, panggilan & WEARTA AI", ikon: "💬", warna: "bg-gradient-to-br from-[#059669] to-[#064e3b]", badge: "LIVE", testid: "tombol-kontak-dashboard" }
 ];
 
-// Menu lainnya (yang sering dipakai sudah ada di Aksi utama).
-const shortcuts = [
-  { href: "/game-deposit", label: "Isi saldo game", icon: "🎲", badge: "Baru" },
-  { href: "/transfer", label: "Transfer", icon: Icon.transfer },
-  { href: "/mutasi", label: "Mutasi", icon: Icon.ledger },
-  { href: "/pet", label: "Pet Arta Pedia", icon: "🥚" },
-  { href: "/misi", label: "Misi & Poin", icon: Icon.star },
-  { href: "/referral", label: "Undang teman", icon: Icon.gift },
-  { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin },
-  { href: "/produk", label: "Toko Produk", icon: Icon.shop },
-  { href: "/gateway", label: "QRIS Gateway", icon: "💸" },
-  { href: "/reseller", label: "Bot Reseller", icon: "🤖" },
-  { href: "/giveaway", label: "Giveaway", icon: "🎁" },
-  { href: "/apikey", label: "API Key", icon: Icon.key, badge: "Dev" }
+// Menu lainnya, dikelompokkan supaya cepat ditemukan.
+const kelompokMenu = [
+  { judul: "Keuangan", ikon: "💰", item: [
+    { href: "/game-deposit", label: "Isi saldo game", icon: "🎲", badge: "Baru" },
+    { href: "/transfer", label: "Transfer", icon: Icon.transfer },
+    { href: "/mutasi", label: "Mutasi", icon: Icon.ledger },
+    { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin },
+    { href: "/gateway", label: "QRIS Gateway", icon: "💸" }
+  ] },
+  { judul: "Hadiah & seru-seruan", ikon: "🎁", item: [
+    { href: "/misi", label: "Misi & Poin", icon: Icon.star },
+    { href: "/referral", label: "Undang teman", icon: Icon.gift },
+    { href: "/pet", label: "Pet Arta Pedia", icon: "🥚" },
+    { href: "/giveaway", label: "Giveaway", icon: "🎁" }
+  ] },
+  { judul: "Bisnis & developer", ikon: "🧰", item: [
+    { href: "/produk", label: "Toko Produk", icon: Icon.shop },
+    { href: "/reseller", label: "Bot Reseller", icon: "🤖" },
+    { href: "/apikey", label: "API Key", icon: Icon.key, badge: "Dev" },
+    { href: "/api-docs", label: "Dokumentasi API", icon: "📘" }
+  ] }
+];
+
+const TAB_DASH = [
+  { id: "beranda", label: "Beranda", ikon: "🏠" },
+  { id: "aktivitas", label: "Aktivitas", ikon: "📊" },
+  { id: "bantuan", label: "Bantuan", ikon: "🎧" }
 ];
 
 function SectionTitle({ icon, title, hint }) {
@@ -396,6 +409,11 @@ export default function DashboardPage() {
   const [ticketReply, setTicketReply] = useState("");
   const [ticketReplyLoading, setTicketReplyLoading] = useState(false);
   const [showTicketForm, setShowTicketForm] = useState(false);
+  const [csUser, setCsUser] = useState("teatlas");
+  useEffect(() => { fetch("/api/settings/public").then((r) => r.json()).then((d) => { if (d?.csUsername) setCsUser(String(d.csUsername).replace(/^@/, "")); }).catch(() => {}); }, []);
+  const [tab, setTabState] = useState("beranda");
+  useEffect(() => { try { const t = sessionStorage.getItem("dash_tab"); if (TAB_DASH.some((x) => x.id === t)) setTabState(t); } catch {} }, []);
+  function setTab(id) { setTabState(id); try { sessionStorage.setItem("dash_tab", id); } catch {} }
 
   // Fitur garansi bisa ditutup admin sewaktu-waktu. Kalau pengaturannya gagal
   // dibaca, tombolnya dibiarkan tetap ada: lebih baik pengguna menekan tombol
@@ -552,6 +570,18 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Tab dasbor */}
+      <div className="dash-tab sticky top-[64px] z-30 -mx-1 mt-5 px-1 py-2" role="tablist" aria-label="Bagian dasbor" data-testid="dash-tab">
+        {TAB_DASH.map((x) => (
+          <button key={x.id} role="tab" aria-selected={tab === x.id} data-testid={`dash-tab-${x.id}`} onClick={() => setTab(x.id)} className={tab === x.id ? "aktif" : ""}>
+            <span aria-hidden="true">{x.ikon}</span> {x.label}
+          </button>
+        ))}
+      </div>
+
+      <div key={tab} className="dash-isi">
+      {tab === "beranda" && (
+        <>
       {/* Win-back banner */}
       {ready && token && (
         <div className="mt-4">
@@ -614,30 +644,35 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── Menu lainnya ── */}
+      {/* ── Menu lainnya (berkelompok) ── */}
       <SectionTitle icon="🧩" title="Menu lainnya" />
-      <div>
-        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8">
-          {shortcuts.map((s) => {
-            const I = s.icon;
-            const isEmoji = typeof I === "string";
-            return (
-              <Link key={s.href} href={s.href} className="card card-3d hover-lift manga-lines relative flex flex-col items-center justify-center gap-2 px-2 py-3.5 text-center">
-                {s.badge && (
-                  <span className="absolute -top-1.5 -right-1 rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black text-white leading-none shadow-sm">
-                    {s.badge}
-                  </span>
-                )}
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-soft text-amber-bright transition-transform group-hover:scale-110">
-                  {isEmoji ? <span className="text-2xl leading-none">{I}</span> : <I />}
-                </span>
-                <span className="text-[11px] font-semibold leading-tight text-ink">{s.label}</span>
-              </Link>
-            );
-          })}
-        </div>
+      <div className="grid gap-4 md:grid-cols-3" data-testid="menu-kelompok">
+        {kelompokMenu.map((k) => (
+          <div key={k.judul} className="card p-3.5">
+            <p className="mb-2.5 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-muted"><span aria-hidden="true">{k.ikon}</span>{k.judul}</p>
+            <div className={`grid gap-2 md:grid-cols-2 ${k.item.length === 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+              {k.item.map((m) => {
+                const I = m.icon;
+                const isEmoji = typeof I === "string";
+                return (
+                  <Link key={m.href} href={m.href} className="menu-ubin hover-lift relative flex flex-col items-center justify-center gap-1.5 rounded-2xl px-1.5 py-3 text-center">
+                    {m.badge && <span className="absolute -right-1 -top-1.5 rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black leading-none text-white shadow-sm">{m.badge}</span>}
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-soft text-amber-bright">
+                      {isEmoji ? <span className="text-2xl leading-none">{I}</span> : <I />}
+                    </span>
+                    <span className="text-[11px] font-bold leading-tight text-ink">{m.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
+        </>
+      )}
 
+      {tab === "aktivitas" && (
+        <>
       <SectionTitle icon="📊" title="Ringkasan & aktivitas" />
       <div className="grid grid-cols-3 gap-3">
         {[
@@ -785,6 +820,35 @@ export default function DashboardPage() {
         </div>
       </div>
 
+        </>
+      )}
+
+      {tab === "bantuan" && (
+        <>
+      {/* Bantuan cepat */}
+      <SectionTitle icon="🎧" title="Bantuan cepat" />
+      <div className="grid gap-3 sm:grid-cols-3" data-testid="bantuan-cepat">
+        <a href={`https://t.me/${csUser}`} target="_blank" rel="noopener noreferrer" className="card hover-lift flex items-center gap-3 p-4">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-soft text-2xl">✈️</span>
+          <span><b className="block text-sm text-ink">Customer Service</b><small className="text-xs text-muted">Chat Telegram @{csUser}</small></span>
+        </a>
+        <Link href="/chat" className="card hover-lift flex items-center gap-3 p-4">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-soft text-2xl">✦</span>
+          <span><b className="block text-sm text-ink">Tanya WEARTA AI</b><small className="text-xs text-muted">Jawaban instan 24 jam</small></span>
+        </Link>
+        {garansiAktif ? (
+          <button onClick={() => setWarrantyModal(true)} className="card hover-lift flex items-center gap-3 p-4 text-left">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-soft text-2xl">🛡️</span>
+            <span><b className="block text-sm text-ink">Klaim Garansi</b><small className="text-xs text-muted">Nomor bermasalah? Refund saldo</small></span>
+          </button>
+        ) : (
+          <Link href="/api-docs" className="card hover-lift flex items-center gap-3 p-4">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-soft text-2xl">📘</span>
+            <span><b className="block text-sm text-ink">Dokumentasi API</b><small className="text-xs text-muted">Untuk developer</small></span>
+          </Link>
+        )}
+      </div>
+
       {/* Banner dashboard. Dulu dirender di sini dengan key={b._id}, padahal
           endpoint publiknya mengirim `id` — jadi setiap banner punya key
           undefined dan React memakai ulang elemen yang salah saat daftarnya
@@ -897,6 +961,10 @@ export default function DashboardPage() {
             })}
           </div>
         )}
+      </div>
+
+        </>
+      )}
       </div>
 
       <WarrantyModal open={warrantyModal} onClose={() => setWarrantyModal(false)} token={token} />
