@@ -53,6 +53,9 @@ export default function Percakapan({ roomId }) {
   const [berbintang, setBerbintang] = useState(null);
   const [pilihSementara, setPilihSementara] = useState(false);
   const [mengirim, setMengirim] = useState(false);
+  const [aiMikir, setAiMikir] = useState(false);
+  const [wallpaper, setWallpaper] = useState("");
+  const [pilihWall, setPilihWall] = useState(false);
 
   const listRef = useRef(null);
   const inputRef = useRef(null);
@@ -65,15 +68,20 @@ export default function Percakapan({ roomId }) {
   const bawahRef = useRef(true);
   const fileFoto = useRef(null);
   const fileKamera = useRef(null);
+  const fileDokumen = useRef(null);
 
   pesanRef.current = pesan;
   bawahRef.current = bawah;
 
+  const ai = info?.jenis === "ai" || String(roomId).startsWith("ai-");
   const umum = info?.jenis === "umum";
   const grup = info?.jenis === "grup";
   const privat = info?.jenis === "private";
   const lawan = info?.lawan || null;
   const adminAksi = umum ? !!admin : !!info?.saya?.admin;
+
+  useEffect(() => { try { setWallpaper(localStorage.getItem("wa-wall") || ""); } catch {} }, []);
+  function setWall(k) { setWallpaper(k); setPilihWall(false); try { k ? localStorage.setItem("wa-wall", k) : localStorage.removeItem("wa-wall"); } catch {} }
 
   // ───────────── muat info ─────────────
   const muatInfo = useCallback(async () => {
@@ -214,7 +222,14 @@ export default function Percakapan({ roomId }) {
         return [...real, asli, ...temps];
       });
       wa.muatUlang?.();
-      if (roomId === "umum" && (payload.jenis === "teks" || payload.jenis === "stiker" || payload.jenis === "gambar")) {
+      if ((ai || /^\s*@(ai|wearta)\b/i.test(payload.teks || "")) && payload.jenis === "teks") {
+        setAiMikir(true);
+        api.post("/api/wa/ai", { roomId, teks: payload.teks || "" }).then((x) => {
+          setAiMikir(false);
+          if (x.data?.replied) polling();
+          else if (x.data?.batas) toast("Pelan-pelan ya, WEARTA AI butuh jeda sebentar.");
+        }).catch(() => setAiMikir(false));
+      } else if (roomId === "umum" && (payload.jenis === "teks" || payload.jenis === "stiker" || payload.jenis === "gambar")) {
         api.post("/api/wa/ai", { teks: payload.teks || "", jenis: payload.jenis === "teks" ? "teks" : "lain" }).then((x) => { if (x.data?.replied) setTimeout(polling, 500); });
       }
       return true;
@@ -224,7 +239,7 @@ export default function Percakapan({ roomId }) {
     if (r.error) toast(r.error);
     return false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api, roomId, polling]);
+  }, [api, roomId, polling, ai]);
 
   const buatTmp = (ekstra) => ({
     id: `tmp-${Date.now()}-${++tmpN.current}`, jenis: "teks", dari: me?.pid, namaDari: me?.nama, mine: true, teks: "", media: null, stiker: null, poll: null,
@@ -326,6 +341,34 @@ export default function Percakapan({ roomId }) {
     kirimKe(buatTmp({ jenis: "gambar", media: p.data, teks: p.teks, balas: b ? { msgId: b.id, nama: b.nama, preview: b.preview } : null }), { jenis: "gambar", media: p.data, teks: p.teks, ...(b ? { balasId: b.id } : {}) });
   }
 
+  // ───────────── dokumen & lokasi ─────────────
+  async function pilihDokumen(e) {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    setLampir(false);
+    if (!f) return;
+    if (f.size > 2_200_000) { toast("Dokumen terlalu besar (maks ±2 MB)."); return; }
+    const data = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(f); }).catch(() => null);
+    if (!data) { toast("Dokumen tidak bisa dibaca."); return; }
+    const b = balas;
+    setBalas(null);
+    const payload = { jenis: "dokumen", media: data, nama: f.name, ...(b ? { balasId: b.id } : {}) };
+    kirimKe(buatTmp({ jenis: "dokumen", dokumen: { nama: f.name, bytes: f.size, url: null } }), payload);
+  }
+  function kirimLokasi() {
+    setLampir(false);
+    if (!navigator.geolocation) { toast("Perangkat ini tidak mendukung lokasi."); return; }
+    toast("Mencari lokasimu…");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lokasi = { lat: pos.coords.latitude, lon: pos.coords.longitude, label: "Lokasi saya" };
+        kirimKe(buatTmp({ jenis: "lokasi", lokasi }), { jenis: "lokasi", ...lokasi });
+      },
+      (err) => toast(err?.code === 1 ? "Izin lokasi ditolak. Aktifkan lokasi untuk situs ini di pengaturan peramban." : "Lokasi tidak ditemukan. Coba lagi."),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
+    );
+  }
+
   // ───────────── suara ─────────────
   async function mulaiRekam() {
     if (rekamRef.current) return;
@@ -394,7 +437,7 @@ export default function Percakapan({ roomId }) {
     balas: (m) => {
       if (m.jenis === "dihapus" || m.tunda) return;
       const nama = m.mine ? "Kamu" : (pengirim[m.dari]?.nama || m.namaDari || "Pengguna");
-      const preview = m.jenis === "teks" ? m.teks : m.jenis === "gambar" ? `📷 ${m.teks || "Foto"}` : m.jenis === "suara" ? "🎤 Pesan suara" : m.jenis === "stiker" ? `${m.stiker} Stiker` : m.jenis === "poll" ? `📊 ${m.poll?.pertanyaan}` : "";
+      const preview = m.jenis === "teks" ? m.teks : m.jenis === "gambar" ? `📷 ${m.teks || "Foto"}` : m.jenis === "suara" ? "🎤 Pesan suara" : m.jenis === "stiker" ? `${m.stiker} Stiker` : m.jenis === "poll" ? `📊 ${m.poll?.pertanyaan}` : m.jenis === "dokumen" ? `📄 ${m.dokumen?.nama || "Dokumen"}` : m.jenis === "lokasi" ? "📍 Lokasi" : "";
       setBalas({ id: m.id, nama, preview: String(preview || "").slice(0, 80) });
       setUbah(null);
       inputRef.current?.focus();
@@ -431,7 +474,7 @@ export default function Percakapan({ roomId }) {
   function jalankan(kode, m) {
     setMenuPesan(null);
     if (kode === "balas") h.current.balas(m);
-    else if (kode === "salin") salin(m.jenis === "teks" || m.jenis === "gambar" ? m.teks : m.stiker || m.poll?.pertanyaan || "").then((ok) => toast(ok ? "Disalin." : "Gagal menyalin."));
+    else if (kode === "salin") salin(m.jenis === "teks" || m.jenis === "gambar" ? m.teks : m.jenis === "lokasi" ? `https://maps.google.com/?q=${m.lokasi?.lat},${m.lokasi?.lon}` : m.stiker || m.poll?.pertanyaan || "").then((ok) => toast(ok ? "Disalin." : "Gagal menyalin."));
     else if (kode === "teruskan") wa.buka({ tipe: "teruskan", room: roomId, msg: m });
     else if (kode === "bintang") aksiPesan("bintang", m, { nyalakan: !m.bintang }).then((r) => r.ok && toast(m.bintang ? "Bintang dilepas." : "Diberi bintang."));
     else if (kode === "sematkan") aksiPesan("sematkan", m, { nyalakan: !m.pinned }).then((r) => { if (r.ok) { toast(m.pinned ? "Sematan dilepas." : "Pesan disematkan."); muatInfo(); } });
@@ -483,7 +526,9 @@ export default function Percakapan({ roomId }) {
   const fotoKepala = info?.foto || dariDaftar?.foto;
   const fotoAda = info ? info.fotoAda : !!dariDaftar?.fotoAda;
   let subjudul = "";
-  if (mengetik.length) subjudul = privat ? "sedang mengetik…" : `${mengetik.slice(0, 2).join(", ")} sedang mengetik…`;
+  if (aiMikir) subjudul = "sedang mengetik…";
+  else if (mengetik.length) subjudul = privat ? "sedang mengetik…" : `${mengetik.slice(0, 2).join(", ")} sedang mengetik…`;
+  else if (ai) subjudul = aiMikir ? "sedang mengetik…" : "asisten pintar • selalu online";
   else if (privat && lawan) subjudul = teksTerakhir(lawan);
   else if (grup && info) subjudul = info.anggota.slice(0, 4).map((a) => (a.pid === me?.pid ? "Kamu" : a.nama)).join(", ") + (info.anggota.length > 4 ? "…" : "");
   else if (umum) subjudul = info?.tutup ? "Ditutup admin" : "Grup terbuka untuk semua pengguna";
@@ -517,18 +562,18 @@ export default function Percakapan({ roomId }) {
 
   // ───────────── render ─────────────
   return (
-    <section className="wa-perc" aria-label={`Percakapan ${namaJudul}`}>
+    <section className={`wa-perc${wallpaper ? ` wall-${wallpaper}` : ""}${ai ? " is-ai" : ""}`} aria-label={`Percakapan ${namaJudul}`}>
       <header className="wa-kepala">
         <button className="wa-ikon wa-kembali" onClick={() => wa.tutupRoom()} aria-label="Kembali"><Ik n="back" s={22} /></button>
-        <button className="wa-kepala-info" onClick={() => (privat && lawan ? wa.buka({ tipe: "user", pid: lawan.pid }) : info && wa.buka({ tipe: "room", roomId }))}>
-          <Avatar nama={namaJudul} foto={fotoKepala} ada={fotoAda} size={42} online={privat && !!lawan?.online} umum={umum && !info?.fotoAda} />
+        <button className="wa-kepala-info" onClick={() => (ai ? null : privat && lawan ? wa.buka({ tipe: "user", pid: lawan.pid }) : info && wa.buka({ tipe: "room", roomId }))}>
+          <Avatar nama={namaJudul} foto={fotoKepala} ada={fotoAda} size={42} online={privat && !!lawan?.online} umum={umum && !info?.fotoAda} ai={ai} />
           <span className="wa-kepala-teks">
             <NamaLencana nama={namaJudul} lencana={info?.lencana} size={16} />
-            <small className={mengetik.length ? "mengetik" : lawan?.online ? "online" : ""}>{subjudul || " "}</small>
+            <small className={mengetik.length || aiMikir ? "mengetik" : lawan?.online || ai ? "online" : ""}>{subjudul || " "}</small>
           </span>
         </button>
         <div className="wa-kepala-aksi">
-          {!umum && (
+          {!umum && !ai && (
             <>
               <button className="wa-ikon" onClick={() => telepon("video")} aria-label="Panggilan video"><Ik n="video" s={22} /></button>
               <button className="wa-ikon" onClick={() => telepon("suara")} aria-label="Panggilan suara"><Ik n="phone" s={20} /></button>
@@ -541,13 +586,14 @@ export default function Percakapan({ roomId }) {
               <>
                 <div className="wa-menu-tutup" onClick={() => setMenuKepala(false)} />
                 <div className="wa-menu-pop" role="menu">
-                  <button onClick={() => { setMenuKepala(false); privat && lawan ? wa.buka({ tipe: "user", pid: lawan.pid }) : wa.buka({ tipe: "room", roomId }); }}><Ik n="info" s={18} /> {privat ? "Lihat kontak" : "Info grup"}</button>
+                  {!ai && <button onClick={() => { setMenuKepala(false); privat && lawan ? wa.buka({ tipe: "user", pid: lawan.pid }) : wa.buka({ tipe: "room", roomId }); }}><Ik n="info" s={18} /> {privat ? "Lihat kontak" : "Info grup"}</button>}
+                  <button onClick={() => { setMenuKepala(false); setPilihWall(true); }}><Ik n="wall" s={18} /> Latar obrolan</button>
                   {privat && lawan && <button onClick={() => { setMenuKepala(false); wa.buka({ tipe: "duel-baru", undang: lawan, onBuat: kirimTantangan }); }}><Ik n="game" s={18} /> Tantang main game</button>}
                   <button onClick={bukaBerbintang}><Ik n="star" s={18} /> Pesan berbintang</button>
                   <button onClick={() => { setMenuKepala(false); ubahPref("muted"); }}><Ik n={info?.pref?.muted ? "bell" : "mute"} s={18} /> {info?.pref?.muted ? "Aktifkan notifikasi" : "Bisukan notifikasi"}</button>
                   <button onClick={() => { setMenuKepala(false); ubahPref("pinned"); }}><Ik n="pin" s={18} /> {info?.pref?.pinned ? "Lepas sematan chat" : "Sematkan chat"}</button>
-                  {!umum && <button onClick={() => { setMenuKepala(false); ubahPref("archived"); }}><Ik n="archive" s={18} /> Arsipkan chat</button>}
-                  {!umum && <button onClick={() => { setMenuKepala(false); setPilihSementara(true); }}><Ik n="refresh" s={18} /> Pesan sementara{info?.sementara ? ` (${info.sementara === 86400000 ? "24 jam" : info.sementara === 604800000 ? "7 hari" : "90 hari"})` : ""}</button>}
+                  {!umum && !ai && <button onClick={() => { setMenuKepala(false); ubahPref("archived"); }}><Ik n="archive" s={18} /> Arsipkan chat</button>}
+                  {!umum && !ai && <button onClick={() => { setMenuKepala(false); setPilihSementara(true); }}><Ik n="refresh" s={18} /> Pesan sementara{info?.sementara ? ` (${info.sementara === 86400000 ? "24 jam" : info.sementara === 604800000 ? "7 hari" : "90 hari"})` : ""}</button>}
                   <button onClick={() => { setMenuKepala(false); kosongkanChat(); }}><Ik n="trash" s={18} /> Kosongkan chat</button>
                   {privat && lawan && <button className="bahaya" onClick={() => { setMenuKepala(false); blokirLawan(); }}><Ik n="block" s={18} /> {diblokirSaya ? "Buka blokir" : "Blokir"}</button>}
                   {grup && <button className="bahaya" onClick={() => { setMenuKepala(false); keluarGrup(); }}><Ik n="logout" s={18} /> Keluar grup</button>}
@@ -623,7 +669,7 @@ export default function Percakapan({ roomId }) {
             />
           );
         })}
-        {mengetik.length > 0 && (
+        {(mengetik.length > 0 || aiMikir) && (
           <div className="wa-baris lain awal"><div className="wa-gel lain awal wa-titik-tulis"><i /><i /><i /></div></div>
         )}
       </div>
@@ -652,6 +698,13 @@ export default function Percakapan({ roomId }) {
             </div>
           )}
 
+          {ai && !teks && !rekam && (
+            <div className="wa-saran-ai" role="group" aria-label="Saran pertanyaan">
+              {["Cara deposit QRIS?", "Cara beli nomor OTP", "Apa itu poin game?", "Bikinkan caption jualan", "Terjemahkan ke Inggris"].map((t) => (
+                <button key={t} onClick={() => { setTeks(t); inputRef.current?.focus(); }}>{t}</button>
+              ))}
+            </div>
+          )}
           {panel && (
             <div className="wa-panel-emoji">
               <div className="wa-panel-tab">
@@ -684,7 +737,9 @@ export default function Percakapan({ roomId }) {
             <div className="wa-lampir">
               <button onClick={() => fileFoto.current?.click()}><span style={{ background: "#8b5cf6" }}><Ik n="image" s={24} /></span>Foto</button>
               <button onClick={() => fileKamera.current?.click()}><span style={{ background: "#ec4899" }}><Ik n="camera" s={24} /></span>Kamera</button>
-              <button onClick={() => { setLampir(false); setPoll(true); }}><span style={{ background: "#14b8a6" }}><Ik n="poll" s={24} /></span>Jajak</button>
+              <button onClick={() => fileDokumen.current?.click()}><span style={{ background: "#6366f1" }}><Ik n="doc" s={24} /></span>Dokumen</button>
+              <button onClick={kirimLokasi}><span style={{ background: "#22c55e" }}><Ik n="lokasi" s={24} /></span>Lokasi</button>
+              {!ai && <button onClick={() => { setLampir(false); setPoll(true); }}><span style={{ background: "#14b8a6" }}><Ik n="poll" s={24} /></span>Jajak</button>}
               {privat && lawan && <button onClick={() => { setLampir(false); wa.buka({ tipe: "duel-baru", undang: lawan, onBuat: kirimTantangan }); }}><span style={{ background: "#ef4444" }}><Ik n="game" s={24} /></span>Tantang</button>}
               <button onClick={() => { setLampir(false); wa.buka({ tipe: "kontak", mode: "bagikan", onPilih: bagikanKontak }); }}><span style={{ background: "#0ea5e9" }}><Ik n="user" s={24} /></span>Kontak</button>
               <button onClick={() => { setLampir(false); setPanel("stiker"); }}><span style={{ background: "#f77c22" }}><Ik n="sticker" s={24} /></span>Stiker</button>
@@ -692,6 +747,7 @@ export default function Percakapan({ roomId }) {
           )}
           <input ref={fileFoto} type="file" accept="image/*" hidden onChange={pilihFoto} />
           <input ref={fileKamera} type="file" accept="image/*" capture="environment" hidden onChange={pilihFoto} />
+          <input ref={fileDokumen} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.json" hidden onChange={pilihDokumen} />
 
           {rekam ? (
             <div className="wa-rekam">
@@ -740,12 +796,25 @@ export default function Percakapan({ roomId }) {
             </div>
             <div className="wa-menu-pesan-daftar">
               {menuPesan.jenis !== "dihapus" && <button onClick={() => jalankan("balas", menuPesan)}><Ik n="reply" s={19} /> Balas</button>}
-              {(menuPesan.jenis === "teks" || menuPesan.jenis === "gambar" || menuPesan.jenis === "stiker") && menuPesan.jenis !== "dihapus" && <button onClick={() => jalankan("salin", menuPesan)}><Ik n="copy" s={19} /> Salin</button>}
-              {["teks", "gambar", "stiker", "suara"].includes(menuPesan.jenis) && <button onClick={() => jalankan("teruskan", menuPesan)}><Ik n="forward" s={19} /> Teruskan</button>}
+              {(menuPesan.jenis === "teks" || menuPesan.jenis === "gambar" || menuPesan.jenis === "stiker" || menuPesan.jenis === "lokasi") && menuPesan.jenis !== "dihapus" && <button onClick={() => jalankan("salin", menuPesan)}><Ik n="copy" s={19} /> Salin</button>}
+              {["teks", "gambar", "stiker", "suara", "dokumen", "lokasi"].includes(menuPesan.jenis) && <button onClick={() => jalankan("teruskan", menuPesan)}><Ik n="forward" s={19} /> Teruskan</button>}
               {menuPesan.jenis !== "dihapus" && <button onClick={() => jalankan("bintang", menuPesan)}><Ik n="star" s={19} /> {menuPesan.bintang ? "Lepas bintang" : "Beri bintang"}</button>}
               {menuPesan.jenis !== "dihapus" && (privat || adminAksi) && <button onClick={() => jalankan("sematkan", menuPesan)}><Ik n="pin" s={19} /> {menuPesan.pinned ? "Lepas sematan" : "Sematkan"}</button>}
               {menuPesan.mine && (menuPesan.jenis === "teks" || menuPesan.jenis === "gambar") && Date.now() - new Date(menuPesan.createdAt).getTime() < BATAS_UBAH_MS && <button onClick={() => jalankan("ubah", menuPesan)}><Ik n="edit" s={19} /> Ubah</button>}
               <button className="bahaya" onClick={() => jalankan("hapus", menuPesan)}><Ik n="trash" s={19} /> Hapus</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pilihWall && (
+        <div className="wa-lembar-latar" onMouseDown={(e) => { if (e.target === e.currentTarget) setPilihWall(false); }}>
+          <div className="wa-lembar wa-wall-pilih" role="dialog" aria-label="Latar obrolan">
+            <h3>Latar obrolan</h3>
+            <div className="wa-wall-grid">
+              {[["", "Komik"], ["malam", "Malam"], ["hutan", "Hutan"], ["senja", "Senja"], ["samudra", "Samudra"], ["polos", "Polos"]].map(([k, n]) => (
+                <button key={k || "komik"} className={`wall-${k}${wallpaper === k ? " aktif" : ""}`} onClick={() => setWall(k)}><span>{n}</span></button>
+              ))}
             </div>
           </div>
         </div>

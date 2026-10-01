@@ -169,7 +169,9 @@ export default function ApiDocsPage() {
 
   const nav = [
     { id: "intro", label: "Intro" },
+    { id: "apikey", label: "API Key" },
     { id: "auth", label: "Authentication" },
+    { id: "ratelimit", label: "Rate limit" },
     { id: "errors", label: "Error codes" },
     { id: "ep-me", label: "GET /v1/me" },
     { id: "ep-servers", label: "GET /v1/servers" },
@@ -178,6 +180,10 @@ export default function ApiDocsPage() {
     { id: "ep-orders", label: "GET /v1/orders" },
     { id: "ep-order-status", label: "GET /v1/orders/status" },
     { id: "ep-order-create", label: "POST /v1/order" },
+    { id: "deposit", label: "Deposit otomatis" },
+    { id: "ep-dep-methods", label: "GET /v1/deposit/methods" },
+    { id: "ep-dep-create", label: "POST /v1/deposit" },
+    { id: "ep-dep-status", label: "GET /v1/deposit" },
     { id: "try", label: "Try it out" }
   ];
 
@@ -250,6 +256,34 @@ export default function ApiDocsPage() {
             </div>
           </Section>
 
+          {/* API KEY */}
+          <Section id="apikey">
+            <h2 className="text-display-sm font-display text-ink mb-4">API Key Artapedia</h2>
+            <p className="text-muted mb-4">
+              API key adalah kunci pribadimu untuk memakai API — satu akun satu key (32 karakter heksadesimal). Semua yang dilakukan lewat key
+              (saldo terpotong, pesanan, deposit) tercatat atas akunmu, jadi perlakukan seperti kata sandi.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="card rounded-xl p-4 border border-line">
+                <p className="font-semibold text-ink text-sm mb-2">🔑 Cara mendapatkan key</p>
+                <ol className="text-xs text-muted list-decimal list-inside space-y-1">
+                  <li>Masuk ke akunmu di web Artapedia.</li>
+                  <li>Buka halaman <Link href="/apikey" className="text-amber underline">API Key</Link> (menu Dashboard → API Key).</li>
+                  <li>Tekan <b>Buat / Buat ulang API key</b>, lalu salin — key utuh hanya tampil saat dibuat.</li>
+                </ol>
+              </div>
+              <div className="card rounded-xl p-4 border border-line">
+                <p className="font-semibold text-ink text-sm mb-2">🛡️ Aturan keamanan key</p>
+                <ul className="text-xs text-muted list-disc list-inside space-y-1">
+                  <li>Kirim lewat header <code className="font-mono text-amber">Authorization: Bearer</code>, jangan lewat URL.</li>
+                  <li>Jangan taruh di aplikasi frontend publik atau repository.</li>
+                  <li>Bocor? Buat ulang key — key lama langsung mati.</li>
+                  <li>Akun yang dibekukan (anti-curang) tidak bisa memakai API.</li>
+                </ul>
+              </div>
+            </div>
+          </Section>
+
           {/* AUTH */}
           <Section id="auth">
             <h2 className="text-display-sm font-display text-ink mb-4">Authentication</h2>
@@ -275,6 +309,42 @@ export default function ApiDocsPage() {
             </div>
           </Section>
 
+          {/* RATE LIMIT */}
+          <Section id="ratelimit">
+            <h2 className="text-display-sm font-display text-ink mb-4">Rate Limit API Key</h2>
+            <p className="text-muted mb-4">
+              Setiap API key dibatasi per <b>60 detik</b> (jendela bergulir). Batas dihitung <b>per key</b>, bukan per IP, dan melindungi akunmu
+              serta server dari permintaan berlebihan.
+            </p>
+            <div className="rounded-xl border border-line overflow-hidden">
+              {[
+                ["60 / menit", "Semua endpoint v1 (baca): me, servers, services, countries, orders, deposit status & methods"],
+                ["20 / menit", "POST /v1/order — membuat pesanan OTP (ikut hitungan 60/menit di atas)"],
+                ["6 / menit", "POST /v1/deposit — membuat QRIS deposit (ikut hitungan 60/menit di atas)"]
+              ].map(([batas, ket]) => (
+                <div key={batas} className="flex items-start gap-4 px-4 py-3 border-b border-line last:border-0">
+                  <Badge color="amber">{batas}</Badge>
+                  <p className="text-sm text-muted">{ket}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-sm font-semibold text-ink mt-5 mb-2">Header di setiap respons</p>
+            <div className="rounded-xl border border-line overflow-hidden bg-surface px-4">
+              <ResponseField name="X-RateLimit-Limit" type="number">Jatah permintaan pada jendela ini</ResponseField>
+              <ResponseField name="X-RateLimit-Remaining" type="number">Sisa jatah sebelum terkena batas</ResponseField>
+              <ResponseField name="X-RateLimit-Reset" type="number">Waktu jendela di-reset (detik Unix)</ResponseField>
+              <ResponseField name="Retry-After" type="number">Hanya pada 429: berapa detik harus menunggu</ResponseField>
+            </div>
+            <CodeBlock lang="json" code={`// HTTP 429 — melewati batas
+{
+  "error": "Rate limit exceeded: maks 60 request per menit untuk API key ini. Coba lagi dalam 23 detik.",
+  "retryAfter": 23
+}`} />
+            <div className="mt-4 p-4 rounded-xl bg-amber/5 border border-amber/20">
+              <p className="text-xs text-muted">💡 Untuk menunggu OTP, polling <code className="font-mono text-amber">/v1/orders/status</code> tiap 3–5 detik (bukan tiap detik) agar jatah cukup. Saat menerima 429, tunggu sesuai <code className="font-mono">Retry-After</code> lalu coba lagi.</p>
+            </div>
+          </Section>
+
           {/* ERRORS */}
           <Section id="errors">
             <h2 className="text-display-sm font-display text-ink mb-4">Error Codes</h2>
@@ -285,6 +355,7 @@ export default function ApiDocsPage() {
                 ["401", "rose", "Unauthorized", "API key tidak ada, salah format, atau tidak ditemukan"],
                 ["403", "rose", "Forbidden", "Akun ditangguhkan"],
                 ["404", "rose", "Not Found", "Resource (pesanan dll) tidak ditemukan"],
+                ["429", "rose", "Too Many Requests", "Melewati rate limit API key — lihat header Retry-After"],
                 ["500", "rose", "Server Error", "Kesalahan internal, coba lagi nanti"]
               ].map(([code, color, label, desc]) => (
                 <div key={code} className="flex items-start gap-4 px-4 py-3 border-b border-line last:border-0">
@@ -794,6 +865,114 @@ print(f"Phone: {data['phoneNumber']}, Order: {data['orderId']}")`}
 }`} />
           </Section>
 
+          {/* DEPOSIT OTOMATIS */}
+          <Section id="deposit">
+            <h2 className="text-display-sm font-display text-ink mb-2">Deposit Otomatis</h2>
+            <p className="text-muted mb-4">
+              Isi saldo akunmu lewat API: buat tagihan QRIS, bayar, dan <b>saldo masuk otomatis</b> begitu pembayaran terkonfirmasi — tanpa
+              admin. Cocok untuk bot atau aplikasi yang mengisi saldo secara terjadwal.
+            </p>
+            <div className="p-4 rounded-xl bg-amber/5 border border-amber/20 mb-2">
+              <p className="text-sm font-semibold text-amber mb-1">💡 Alur deposit otomatis</p>
+              <ol className="text-xs text-muted list-decimal list-inside space-y-1">
+                <li><code className="font-mono text-amber">GET /v1/deposit/methods</code> → pilih <code className="font-mono">provider</code> aktif dan lihat batas min/max.</li>
+                <li><code className="font-mono text-amber">POST /v1/deposit</code> → dapat <code className="font-mono">qr_image</code> / <code className="font-mono">qr_string</code> (QRIS) dan <code className="font-mono">total_amount</code>.</li>
+                <li>Bayar <b>persis</b> <code className="font-mono">total_amount</code> lewat aplikasi bank/e-wallet apa pun sebelum <code className="font-mono">expired_at</code>.</li>
+                <li>Cek <code className="font-mono text-amber">GET /v1/deposit?order_id=…</code> tiap 5 detik sampai <code className="font-mono">status</code> = <code className="font-mono">completed</code> — saldo sudah bertambah saat itu juga.</li>
+              </ol>
+              <p className="text-xs text-muted mt-2">Sistem juga memeriksa deposit yang menggantung secara berkala, jadi saldo tetap masuk walau kamu tidak sempat memanggil endpoint status.</p>
+            </div>
+            <p className="text-xs text-muted">Status: <code className="font-mono">pending</code> · <code className="font-mono">completed</code> · <code className="font-mono">expired</code> · <code className="font-mono">canceled</code> · <code className="font-mono">failed</code>. QRIS manual (dicek admin) tidak tersedia lewat API.</p>
+          </Section>
+
+          <Section id="ep-dep-methods">
+            <EndpointCard
+              method="GET"
+              path="/api/v1/deposit/methods"
+              title="Metode deposit otomatis"
+              description="Daftar metode QRIS otomatis yang aktif beserta batas nominal."
+              response={
+                <>
+                  <ResponseField name="min / max" type="number">Batas nominal deposit (Rupiah)</ResponseField>
+                  <ResponseField name="methods[]" type="array">Tiap item: provider, name, speed</ResponseField>
+                </>
+              }
+              curl={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
+  https://artapedianokosmurahid.vercel.app/api/v1/deposit/methods`}
+            />
+          </Section>
+
+          <Section id="ep-dep-create">
+            <EndpointCard
+              method="POST"
+              path="/api/v1/deposit"
+              title="Buat deposit QRIS"
+              description="Membuat tagihan QRIS otomatis. Batas: 6 permintaan/menit. Maksimal beberapa QRIS belum dibayar per akun."
+              params={
+                <>
+                  <Param name="amount" type="integer" required>Nominal saldo yang ingin masuk (Rupiah, sesuai min/max).</Param>
+                  <Param name="provider" type="string" required>Salah satu <code className="font-mono">provider</code> dari <code className="font-mono">/v1/deposit/methods</code>.</Param>
+                </>
+              }
+              response={
+                <>
+                  <ResponseField name="order_id" type="string">ID deposit — dipakai untuk cek status</ResponseField>
+                  <ResponseField name="total_amount" type="number">Yang harus dibayar (nominal + biaya admin bila ada)</ResponseField>
+                  <ResponseField name="admin_fee" type="number">Biaya admin provider</ResponseField>
+                  <ResponseField name="qr_image" type="string">Gambar QRIS (data URL / URL) untuk ditampilkan</ResponseField>
+                  <ResponseField name="qr_string" type="string|null">Isi mentah QRIS bila disediakan provider</ResponseField>
+                  <ResponseField name="expired_at" type="string">Batas waktu pembayaran</ResponseField>
+                </>
+              }
+              curl={`curl -X POST https://artapedianokosmurahid.vercel.app/api/v1/deposit \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"amount": 20000, "provider": "pakasir"}'`}
+              jsCode={`const res = await fetch("https://artapedianokosmurahid.vercel.app/api/v1/deposit", {
+  method: "POST",
+  headers: { "Authorization": "Bearer YOUR_API_KEY", "Content-Type": "application/json" },
+  body: JSON.stringify({ amount: 20000, provider: "pakasir" })
+});
+const dep = await res.json();
+console.log(dep.order_id, dep.total_amount); // tampilkan dep.qr_image ke pembayar`}
+              pythonCode={`import requests
+
+r = requests.post(
+    "https://artapedianokosmurahid.vercel.app/api/v1/deposit",
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
+    json={"amount": 20000, "provider": "pakasir"},
+)
+dep = r.json()
+print(dep["order_id"], dep["total_amount"])`}
+            />
+          </Section>
+
+          <Section id="ep-dep-status">
+            <EndpointCard
+              method="GET"
+              path="/api/v1/deposit"
+              title="Status deposit / riwayat"
+              description="Dengan ?order_id=… memeriksa status ke provider dan langsung mengkreditkan saldo bila sudah dibayar. Tanpa parameter: 20 deposit terakhir."
+              params={<Param name="order_id" type="string">ID deposit dari POST /v1/deposit (opsional).</Param>}
+              response={
+                <>
+                  <ResponseField name="status" type="string">pending · completed · expired · canceled · failed</ResponseField>
+                  <ResponseField name="credited" type="boolean">true = saldo sudah ditambahkan</ResponseField>
+                  <ResponseField name="balance" type="number">Saldo terbaru setelah pengecekan</ResponseField>
+                </>
+              }
+              curl={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
+  "https://artapedianokosmurahid.vercel.app/api/v1/deposit?order_id=DP1727700000000123"`}
+              jsCode={`// polling tiap 5 detik sampai selesai
+let d;
+do {
+  await new Promise((r) => setTimeout(r, 5000));
+  d = await (await fetch(url + "?order_id=" + orderId, { headers: { Authorization: "Bearer YOUR_API_KEY" } })).json();
+} while (d.status === "pending");
+console.log(d.status, d.balance);`}
+            />
+          </Section>
+
           {/* TRY IT OUT */}
           <Section id="try">
             <h2 className="text-display-sm font-display text-ink mb-4">Coba Sekarang</h2>
@@ -846,6 +1025,7 @@ print(f"Phone: {data['phoneNumber']}, Order: {data['orderId']}")`}
               <li>Semua waktu dalam format ISO 8601 UTC.</li>
               <li>Saldo selalu dalam Rupiah (IDR) tanpa desimal.</li>
               <li>API key bersifat privat — 1 key per akun. Regenerate di Dashboard kapan saja.</li>
+              <li>Batas laju per key: 60 request/menit (order 20/menit, buat deposit 6/menit) — lihat bagian Rate Limit.</li>
               <li>Butuh bantuan? Buka tiket di halaman <Link href="/dashboard" className="text-amber underline">Dashboard → Support</Link>.</li>
             </ul>
           </div>

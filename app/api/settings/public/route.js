@@ -14,6 +14,9 @@ import { atlanticConfigured } from "@/lib/atlantic";
 import { CHANNEL_URL } from "@/lib/links";
 import { infoJaminan } from "@/lib/jaminan";
 import { loginWajib } from "@/lib/webAuth";
+import { sapuDepositTertunda } from "@/lib/depositService";
+import { tahan } from "@/lib/tahan";
+import { pindaiDiLatar } from "@/lib/keamanan";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +25,10 @@ const CHANNELS = () => ({
 });
 
 export async function GET() {
+  // Lalu lintas web biasa ikut menyapu deposit QRIS yang menggantung (maks 1× per 30 detik per instance, di latar):
+  // cadangan bila webhook provider tidak sampai dan cron eksternal belum dipasang.
+  tahan(sapuDepositTertunda({ maks: 6, jeda: 30000, anggaranMs: 8000 }).catch(() => {}));
+  pindaiDiLatar(); // pemindaian keamanan berkala (maks 1× per 10 menit di seluruh sistem)
   const limits = depositLimits();
   try {
     const settings = await getSettings();

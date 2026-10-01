@@ -57,6 +57,10 @@ const P = {
   sticker: "M21 11.5V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h6.5L21 11.5zM19 5v5.5h-4.5c-1.1 0-2 .9-2 2V19H5V5h14z",
   text: "M5 4v3h5.5v12h3V7H19V4z",
   game: "M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z",
+  doc: "M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z",
+  lokasi: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
+  spark: "M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2zm7 12l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5z",
+  wall: "M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm0 2v8.5l3.5-3.5 3 3 4-4.5L20 14V6H4z",
   refresh: "M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
 };
 
@@ -98,18 +102,20 @@ export function inisial(nama = "") {
 }
 
 /** Foto bila ada (dan bisa dimuat), kalau tidak inisial berwarna. */
-export function Avatar({ nama, foto, ada = true, size = 46, online = false, ring = null, umum = false, onClick }) {
+export function Avatar({ nama, foto, ada = true, size = 46, online = false, ring = null, umum = false, ai = false, onClick }) {
   const [rusak, setRusak] = useState(false);
   useEffect(() => setRusak(false), [foto]);
   const tampilFoto = foto && ada && !rusak;
   return (
     <span
-      className={`wa-avatar${onClick ? " is-klik" : ""}${ring ? ` ring-${ring}` : ""}`}
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.38), background: tampilFoto ? "rgb(var(--c-surface2))" : warnaNama(nama) }}
+      className={`wa-avatar${onClick ? " is-klik" : ""}${ring ? ` ring-${ring}` : ""}${ai ? " is-ai" : ""}`}
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.38), background: ai ? undefined : tampilFoto ? "rgb(var(--c-surface2))" : warnaNama(nama) }}
       onClick={onClick}
       role={onClick ? "button" : undefined}
     >
-      {tampilFoto ? (
+      {ai ? (
+        <b className="wa-avatar-ai" aria-label="WEARTA AI">✦</b>
+      ) : tampilFoto ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={foto} alt="" loading="lazy" onError={() => setRusak(true)} />
       ) : umum ? (

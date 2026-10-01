@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { resolveApiKey } from "@/lib/apiKeyAuth";
+import { resolveApiKey, jsonV1 } from "@/lib/apiKeyAuth";
 import { otpOrdersCol } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ export async function GET(req) {
     .limit(limit)
     .toArray();
 
-  return NextResponse.json({
+  return jsonV1(req, {
     page,
     limit,
     items: list.map((o) => ({

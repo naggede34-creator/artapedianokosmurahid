@@ -35,7 +35,7 @@ const nextConfig = {
           // Kamera & mikrofon dibuka untuk situs sendiri: catatan suara dan panggilan
           // suara/video di Room Chat memakainya. Dengan camera=() / microphone=()
           // peramban menolak getUserMedia tanpa pernah bertanya ke pengguna.
-          { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
+          { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=(self)" },
           {
             key: "Content-Security-Policy",
             value: [

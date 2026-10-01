@@ -47,7 +47,7 @@ const utama = [
   { href: "/otp", label: "Beli Nokos", sub: "Nomor OTP termurah", ikon: "📱", warna: "bg-gradient-to-br from-[#1d4ed8] to-[#0a1e50]" },
   { href: "/deposit", label: "Isi Saldo Nokos", sub: "QRIS, semua metode", ikon: "💳", warna: "bg-gradient-to-br from-[#ea580c] to-[#9a3412]" },
   { href: "/chat?game=1", label: "Game", sub: "Arena Pendekar, 6 duel & 5 solo", ikon: "🎮", warna: "bg-gradient-to-br from-[#9333ea] to-[#3b0764]", badge: "BARU", testid: "tombol-game-dashboard" },
-  { href: "/chat", label: "Kontak", sub: "WEARTA CHAT & panggilan", ikon: "💬", warna: "bg-gradient-to-br from-[#059669] to-[#064e3b]", badge: "LIVE", testid: "tombol-kontak-dashboard" }
+  { href: "/chat", label: "WEARTA CHAT", sub: "Chat, grup, panggilan & WEARTA AI", ikon: "💬", warna: "bg-gradient-to-br from-[#059669] to-[#064e3b]", badge: "LIVE", testid: "tombol-kontak-dashboard" }
 ];
 
 // Menu lainnya (yang sering dipakai sudah ada di Aksi utama).

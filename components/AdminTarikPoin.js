@@ -4,6 +4,7 @@
 // ke e-wallet pengguna lalu menandai "Sudah dibayar", atau menolak (poin dikembalikan ke pengguna).
 import { useCallback, useEffect, useState } from "react";
 import { teksPoin } from "@/lib/poinGame";
+import AdminPengaturanPoin from "@/components/AdminPengaturanPoin";
 
 const rp = (n) => `Rp${Number(n || 0).toLocaleString("id-ID")}`;
 const waktu = (d) => (d ? new Date(d).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" }) : "—");
@@ -43,6 +44,7 @@ export default function AdminTarikPoin() {
 
   return (
     <div className="mt-5 space-y-4" data-testid="admin-tarik-poin">
+      <AdminPengaturanPoin />
       <div className="card p-4">
         <h3 className="text-base font-extrabold text-ink">💸 Tarik poin game ke e-wallet</h3>
         <p className="mt-1 text-xs leading-relaxed text-muted">

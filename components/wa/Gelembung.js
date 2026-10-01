@@ -9,6 +9,20 @@ export const EMOJI_REAKSI = ["👍", "❤️", "😂", "😮", "😢", "🙏", "
 
 // ─────────────────────────── TAUTAN ───────────────────────────
 const RE_URL = /(https?:\/\/[^\s<>"']+)/gi;
+// Format ala WhatsApp: *tebal*  _miring_  ~coret~  `kode` (juga **tebal** dari WEARTA AI).
+const RE_FMT = /(\*\*[^*\n]+\*\*|\*[^*\n]+\*|_[^_\n]+_|~[^~\n]+~|`[^`\n]+`)/g;
+function Format({ teks }) {
+  const bagian = String(teks).split(RE_FMT);
+  return bagian.map((b, i) => {
+    if (i % 2 === 0) return b;
+    if (b.startsWith("**")) return <strong key={i}>{b.slice(2, -2)}</strong>;
+    const isi = b.slice(1, -1);
+    if (b[0] === "*") return <strong key={i}>{isi}</strong>;
+    if (b[0] === "_") return <em key={i}>{isi}</em>;
+    if (b[0] === "~") return <s key={i}>{isi}</s>;
+    return <code key={i} className="wa-kode">{isi}</code>;
+  });
+}
 function Teks({ teks }) {
   const bagian = String(teks || "").split(RE_URL);
   return (
@@ -36,9 +50,36 @@ function Teks({ teks }) {
             </span>
           );
         }
-        return b;
+        return <Format key={i} teks={b} />;
       })}
     </>
+  );
+}
+
+// ─────────────────────────── DOKUMEN & LOKASI ───────────────────────────
+function ukuran(b) {
+  const n = Number(b) || 0;
+  return n > 1_000_000 ? `${(n / 1_000_000).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1000))} KB`;
+}
+function KartuDokumen({ d }) {
+  const ext = (String(d.nama).split(".").pop() || "file").slice(0, 4).toUpperCase();
+  const isi = (
+    <>
+      <span className="wa-dok-ikon"><Ik n="doc" s={22} /><b>{ext}</b></span>
+      <span className="wa-dok-info"><b>{d.nama}</b><small>{ukuran(d.bytes)}{d.url ? " • ketuk untuk unduh" : " • mengirim…"}</small></span>
+    </>
+  );
+  return d.url ? (
+    <a className="wa-dok" href={d.url} download={d.nama} onClick={(e) => e.stopPropagation()}>{isi}</a>
+  ) : <div className="wa-dok">{isi}</div>;
+}
+function KartuLokasi({ l }) {
+  const peta = `https://www.openstreetmap.org/?mlat=${l.lat}&mlon=${l.lon}#map=16/${l.lat}/${l.lon}`;
+  return (
+    <a className="wa-lok" href={peta} target="_blank" rel="noopener noreferrer nofollow" onClick={(e) => e.stopPropagation()}>
+      <span className="wa-lok-peta" aria-hidden><i /><Ik n="lokasi" s={34} /></span>
+      <span className="wa-lok-info"><b>{l.label || "Lokasi"}</b><small>{l.lat.toFixed(4)}, {l.lon.toFixed(4)} • buka peta</small></span>
+    </a>
   );
 }
 
@@ -172,7 +213,7 @@ function GelembungAsli({ m, grup, umum, pengirim, awalGrup, sorot, onMenu, onBal
     g.aktif = false; g.dx = 0; setDx(0);
   }
 
-  const kelas = ["wa-gel", mine ? "saya" : "lain", awalGrup ? "awal" : "", m.jenis === "stiker" ? "stiker" : "", dihapus ? "hapus" : "", sorot ? "sorot" : "", m.gagal ? "gagal" : ""].filter(Boolean).join(" ");
+  const kelas = ["wa-gel", mine ? "saya" : "lain", m.isAI ? "ai" : "", awalGrup ? "awal" : "", m.jenis === "stiker" ? "stiker" : "", dihapus ? "hapus" : "", sorot ? "sorot" : "", m.gagal ? "gagal" : ""].filter(Boolean).join(" ");
   const tampilNama = !mine && (grup || umum) && awalGrup && !dihapus;
 
   return (
@@ -238,7 +279,9 @@ function GelembungAsli({ m, grup, umum, pengirim, awalGrup, sorot, onMenu, onBal
             {m.jenis === "suara" && m.media ? <PemutarSuara src={m.media} durasi={m.durasi || 0} saya={mine} /> : null}
             {m.jenis === "stiker" ? <div className="wa-gel-stiker">{m.stiker}</div> : null}
             {m.jenis === "poll" && m.poll ? <Jajak poll={m.poll} onVote={(o) => onVote(m, o)} /> : null}
-            {(m.jenis === "teks" || (m.jenis === "gambar" && m.teks)) && (
+            {m.jenis === "dokumen" && m.dokumen ? <KartuDokumen d={m.dokumen} /> : null}
+            {m.jenis === "lokasi" && m.lokasi ? <KartuLokasi l={m.lokasi} /> : null}
+            {(m.jenis === "teks" || ((m.jenis === "gambar" || m.jenis === "dokumen") && m.teks)) && (
               <div className={`wa-gel-teks${m.jenis === "gambar" ? " keterangan" : ""}`}><Teks teks={m.teks} /></div>
             )}
           </>

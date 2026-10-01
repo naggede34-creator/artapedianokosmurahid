@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { resolveApiKey } from "@/lib/apiKeyAuth";
+import { resolveApiKey, jsonV1 } from "@/lib/apiKeyAuth";
 import { getSettings } from "@/lib/settings";
 import { OTP_SERVERS } from "@/lib/otpServers";
 
@@ -20,5 +20,5 @@ export async function GET(req) {
     provider: s.provider,
     description: s.desc
   }));
-  return NextResponse.json({ items });
+  return jsonV1(req, { items });
 }

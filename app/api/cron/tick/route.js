@@ -13,6 +13,8 @@ import { otpOrdersCol } from "@/lib/db";
 import { reconcileOtpOrder } from "@/lib/orderReconcile";
 import { periksaStokWatch } from "@/lib/stokWatch";
 import { sapuGame } from "@/lib/game/inti";
+import { sapuDepositTertunda } from "@/lib/depositService";
+import { pindaiBerkala } from "@/lib/keamanan";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -58,6 +60,18 @@ export async function GET(req) {
     hasil.stok = await periksaStokWatch();
   } catch (err) {
     hasil.galat.push(`stok: ${err?.message || err}`);
+  }
+  // Deposit QRIS yang sudah dibayar tapi webhook-nya tidak sampai (terutama dari bot): tanya provider & kreditkan.
+  try {
+    hasil.deposit = await sapuDepositTertunda({ maks: 30, anggaranMs: 30000 });
+  } catch (err) {
+    hasil.galat.push(`deposit: ${err?.message || err}`);
+  }
+  // Pemindaian keamanan otomatis (jalan sendiri tiap ±10 menit; di luar jadwal ini dilewati).
+  try {
+    hasil.keamanan = await pindaiBerkala();
+  } catch (err) {
+    hasil.galat.push(`keamanan: ${err?.message || err}`);
   }
   // Duel permainan: waktu habis, tantangan basi, pembayaran tertunda.
   try {

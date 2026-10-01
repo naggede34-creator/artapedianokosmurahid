@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { resolveApiKey } from "@/lib/apiKeyAuth";
+import { resolveApiKey, jsonV1 } from "@/lib/apiKeyAuth";
 import { getSettings } from "@/lib/settings";
 import { listServices, serverEnabled } from "@/lib/otpCatalog";
 
@@ -15,11 +15,11 @@ export async function GET(req) {
   try {
     const settings = await getSettings();
     if (!serverEnabled(settings, server)) {
-      return NextResponse.json({ error: "This server is currently disabled." }, { status: 503 });
+      return jsonV1(req, { error: "This server is currently disabled." }, { status: 503 });
     }
-    return NextResponse.json({ server, items: await listServices(server) });
+    return jsonV1(req, { server, items: await listServices(server) });
   } catch (err) {
     console.error("[v1/services]", err?.message || err);
-    return NextResponse.json({ error: "Failed to fetch services." }, { status: 502 });
+    return jsonV1(req, { error: "Failed to fetch services." }, { status: 502 });
   }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { resolveApiKey } from "@/lib/apiKeyAuth";
+import { resolveApiKey, jsonV1 } from "@/lib/apiKeyAuth";
 import { otpOrdersCol } from "@/lib/db";
 import { reconcileOtpOrder } from "@/lib/orderReconcile";
 
@@ -11,15 +11,15 @@ export async function GET(req) {
 
   const { searchParams } = new URL(req.url);
   const orderId = searchParams.get("order_id");
-  if (!orderId) return NextResponse.json({ error: "order_id is required." }, { status: 400 });
+  if (!orderId) return jsonV1(req, { error: "order_id is required." }, { status: 400 });
 
   const orders = await otpOrdersCol();
   const order = await orders.findOne({ orderId, token: user.token });
-  if (!order) return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  if (!order) return jsonV1(req, { error: "Order not found." }, { status: 404 });
 
   try {
     const r = await reconcileOtpOrder(order);
-    return NextResponse.json({
+    return jsonV1(req, {
       orderId: order.orderId,
       server: order.server || "rumahotp",
       status: r.resolvedStatus,
@@ -33,6 +33,6 @@ export async function GET(req) {
       createdAt: order.createdAt
     });
   } catch {
-    return NextResponse.json({ error: "Failed to check order status." }, { status: 500 });
+    return jsonV1(req, { error: "Failed to check order status." }, { status: 500 });
   }
 }

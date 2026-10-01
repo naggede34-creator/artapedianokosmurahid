@@ -247,7 +247,7 @@ export default function WaApp() {
     return rooms.filter((r) => {
       if (arsip ? !r.archived : r.archived) return false;
       if (saring === "belum" && !r.belumBaca) return false;
-      if (saring === "grup" && r.jenis === "private") return false;
+      if (saring === "grup" && (r.jenis === "private" || r.jenis === "ai")) return false;
       if (k && !(r.nama.toLowerCase().includes(k) || (r.preview?.teks || "").toLowerCase().includes(k))) return false;
       return true;
     });
@@ -528,10 +528,11 @@ function BarisRoom({ r, aktif, onBuka, onMenu }) {
       onPointerLeave={() => clearTimeout(tahan.current)}
       onPointerMove={() => clearTimeout(tahan.current)}
     >
-      <Avatar nama={r.nama} foto={r.foto} ada={r.fotoAda} size={52} online={privat && !!r.lawan?.online} umum={r.jenis === "umum" && !r.fotoAda} />
+      <Avatar nama={r.nama} foto={r.foto} ada={r.fotoAda} size={52} online={privat && !!r.lawan?.online} umum={r.jenis === "umum" && !r.fotoAda} ai={r.jenis === "ai"} />
       <span className="wa-baris-teks">
         <span className="wa-baris-atas">
           <NamaLencana nama={r.nama} lencana={r.lencana} />
+          {r.jenis === "ai" && <em className="wa-label-ai">AI</em>}
           <time className={r.belumBaca ? "baru" : ""}>{waktuDaftar(r.lastAt)}</time>
         </span>
         <span className="wa-baris-bawah">

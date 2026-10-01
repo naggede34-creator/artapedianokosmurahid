@@ -11,6 +11,7 @@ import AdminLencana from "@/components/AdminLencana";
 import AdminGame from "@/components/AdminGame";
 import AdminPembaruan from "@/components/AdminPembaruan";
 import AdminTarikPoin from "@/components/AdminTarikPoin";
+import AdminKeamanan from "@/components/AdminKeamanan";
 import { CHANNEL_ID, CHANNEL_URL } from "@/lib/links";
 
 function fmtDate(d) {
@@ -36,7 +37,7 @@ const TABS = [
   { id: "lencana", label: "Lencana", icon: "🎖" },
   { id: "game", label: "Game", icon: "🎮" },
   { id: "pembaruan", label: "Pembaruan", icon: "✨" },
-  { id: "tarikpoin", label: "Tarik Poin", icon: "💸" },
+  { id: "tarikpoin", label: "Poin Game", icon: "💸" },
   { id: "konfigurasi", label: "Konfigurasi", icon: "🔑" },
   { id: "bot", label: "Bot Telegram", icon: "🤖" },
   { id: "reseller", label: "Bot Reseller", icon: "🏪" },
@@ -45,7 +46,7 @@ const TABS = [
   { id: "produk", label: "Produk", icon: "🛍️" },
   { id: "job", label: "Job/Saldo", icon: "💰" },
   { id: "tiket", label: "Tiket", icon: "🎫" },
-  { id: "pengaturan", label: "Pengaturan", icon: "⚙️" },
+  { id: "pengaturan", label: "Pengaturan Umum", icon: "⚙️" },
   { id: "tools", label: "Tools", icon: "🛠️" },
 ];
 
@@ -5123,6 +5124,7 @@ export default function AdminDashboardPage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === "pengaturan" && (
         <div className="mt-5 space-y-5">
+          <AdminKeamanan />
 
           {/* Pengaturan utama */}
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
