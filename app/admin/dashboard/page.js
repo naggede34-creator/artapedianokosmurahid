@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import AdminSwitcher from "@/components/AdminSwitcher";
 import { OTP_SERVERS } from "@/lib/otpServers";
 import { DAFTAR_PUBLIK, channelAktifUntuk } from "@/lib/channelNotifTypes";
 import AdminKonfigurasi, { PeringatanKodeAdmin } from "@/components/AdminKonfigurasi";
@@ -64,9 +66,23 @@ const KELOMPOK_TAB = [
   { id: "sistem", label: "Sistem", icon: "⚙️", tabs: ["pengaturan", "tools"] }
 ];
 
+// Mode dasbor terpisah: /admin/dashboard?k=<kelompok> hanya menampilkan fitur kelompok itu (judul & menunya sendiri).
+// Tanpa ?k= tampilannya tetap seperti dulu (semua kelompok). Pengguna & Blokir punya dasbor khusus di /admin/pengguna.
+const JUDUL_DASBOR = {
+  ringkas: { judul: "Ringkasan & Transaksi", ikon: "📊" },
+  uang: { judul: "Keuangan", ikon: "💰" },
+  game: { judul: "Game & Chat", ikon: "🎮" },
+  konten: { judul: "Konten & Toko", ikon: "🛍️" },
+  integrasi: { judul: "Integrasi", ikon: "🔌" },
+  sistem: { judul: "Sistem", ikon: "⚙️" }
+};
+
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("ringkasan");
+  const kParam = useSearchParams()?.get("k") || "";
+  const modeK = JUDUL_DASBOR[kParam] ? kParam : "";
+  const tabModeK = modeK ? (KELOMPOK_TAB.find((x) => x.id === modeK)?.tabs || []).filter((t) => t !== "pengguna") : [];
+  const [activeTab, setActiveTab] = useState(modeK ? tabModeK[0] : "ringkasan");
 
   const [settings, setSettings] = useState(null);
   const [markupInput, setMarkupInput] = useState("");
@@ -2100,6 +2116,8 @@ export default function AdminDashboardPage() {
     // serta tombol di dalamnya ikut gaya dasbor. Menyentuh empat ribu baris
     // satu per satu akan menghasilkan tampilan yang mirip tapi tidak pernah
     // benar-benar seragam — dan tiap tab baru harus diseragamkan lagi.
+    <>
+    <Suspense fallback={null}><AdminSwitcher /></Suspense>
     <div className="admin-shell mx-auto max-w-content px-4 pb-16 pt-6 sm:px-5 sm:pt-10">
 
       {/* ── Manga Header ── */}
@@ -2118,7 +2136,7 @@ export default function AdminDashboardPage() {
               <p className="text-xs font-black uppercase tracking-widest text-amber opacity-80">Admin Panel</p>
             </div>
             <h1 className="font-display text-xl font-black text-white sm:text-2xl tracking-tight">
-              Dashboard <span style={{ color: "rgb(var(--c-blue))" }}>Artapedia</span>
+              {modeK ? <>{JUDUL_DASBOR[modeK].ikon} Dasbor <span style={{ color: "rgb(var(--c-blue))" }}>{JUDUL_DASBOR[modeK].judul}</span></> : <>Dashboard <span style={{ color: "rgb(var(--c-blue))" }}>Artapedia</span></>}
             </h1>
             <p className="text-[10px] text-white/40 mt-0.5 font-mono">Control Center · {new Date().toLocaleDateString("id-ID", { weekday:"long", day:"2-digit", month:"long", year:"numeric" })}</p>
           </div>
@@ -2130,7 +2148,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* ── Quick stat strip ── */}
-      <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+      <div className={`mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 ${modeK && modeK !== "ringkas" ? "hidden" : ""}`}>
         <StatCard label="Total User" value={total.toLocaleString("id-ID")} icon="👥" floatClass="pop-float" />
         <StatCard label="Saldo Beredar" value={fmtRp(totalBalance)} icon="💰" accent="text-amber-bright" floatClass="pop-float-2" />
         <StatCard
@@ -2163,11 +2181,13 @@ export default function AdminDashboardPage() {
           if (id === "reseller") loadReseller();
           if (id === "giveaway") loadGw2();
         };
-        const kelompokAktif = KELOMPOK_TAB.find((k) => k.tabs.includes(activeTab)) || KELOMPOK_TAB[0];
+        const kelompokAktif = modeK
+          ? { ...KELOMPOK_TAB.find((k) => k.id === modeK), tabs: tabModeK }
+          : KELOMPOK_TAB.find((k) => k.tabs.includes(activeTab)) || KELOMPOK_TAB[0];
         const peta = Object.fromEntries(TABS.map((t) => [t.id, t]));
         return (
           <div className="mt-4 sticky top-2 z-30 rounded-2xl border border-line bg-surface/95 p-1.5 shadow-soft backdrop-blur-sm" data-testid="admin-nav">
-            <div className="no-scrollbar flex gap-1 overflow-x-auto" role="tablist" aria-label="Kelompok menu admin">
+            {!modeK && <div className="no-scrollbar flex gap-1 overflow-x-auto" role="tablist" aria-label="Kelompok menu admin">
               {KELOMPOK_TAB.map((k) => {
                 const aktif = k.id === kelompokAktif.id;
                 const lencana = k.tabs.includes("depositmanual") ? manualPending : 0;
@@ -2184,8 +2204,8 @@ export default function AdminDashboardPage() {
                   </button>
                 );
               })}
-            </div>
-            <div className="no-scrollbar mt-1.5 flex gap-1 overflow-x-auto border-t border-line pt-1.5" role="tablist" aria-label={`Menu ${kelompokAktif.label}`}>
+            </div>}
+            <div className={`no-scrollbar flex gap-1 overflow-x-auto ${modeK ? "" : "mt-1.5 border-t border-line pt-1.5"}`} role="tablist" aria-label={`Menu ${kelompokAktif.label}`}>
               {kelompokAktif.tabs.map((id) => {
                 const tab = peta[id];
                 if (!tab) return null;
@@ -6507,6 +6527,7 @@ export default function AdminDashboardPage() {
         </div>
       )}
     </div>
+    </>
   );
 }
 
@@ -6824,6 +6845,18 @@ function ExportSection() {
   }, []);
 
   useEffect(() => { loadAutoBackup(); }, [loadAutoBackup]);
+  // Mode dasbor terpisah: tab pertama kelompok itu dibuka langsung, jadi datanya dimuat sekali di sini.
+  useEffect(() => {
+    if (!modeK) return;
+    const id = tabModeK[0];
+    if (id === "depositmanual") loadManualDeposits(manualFilter);
+    if (id === "tarik") loadWithdrawals();
+    if (id === "juara") loadLeaderboard(lbOffset);
+    if (id === "gateway") loadGateway();
+    if (id === "bot") loadBots();
+    if (id === "reseller") loadReseller();
+    if (id === "giveaway") loadGw2();
+  }, [modeK]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function abSimpan(patch) {
     setAbBusy("simpan"); setAbMsg(""); setAbErr("");
