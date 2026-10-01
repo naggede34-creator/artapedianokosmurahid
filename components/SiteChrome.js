@@ -19,6 +19,7 @@ import Depth3D from "@/components/Depth3D";
 import PanelTransition from "@/components/PanelTransition";
 import PasangAplikasi from "@/components/PasangAplikasi";
 import AuthGate from "@/components/AuthGate";
+import LayarBan from "@/components/LayarBan";
 import PembaruanModal from "@/components/PembaruanModal";
 import MusimPenerap from "@/components/MusimPenerap";
 import { useUser } from "@/app/providers";
@@ -28,7 +29,7 @@ const TANPA_LOGIN = ["/syarat", "/informasi", "/faq", "/cara-pakai", "/api-docs"
 
 export default function SiteChrome({ children }) {
   const pathname = usePathname();
-  const { perluMasuk } = useUser();
+  const { perluMasuk, banned } = useUser();
   const isAdmin = pathname?.startsWith("/admin");
   // Login wajib menyala dan belum punya akun: gerbang menutup halaman.
   const tampilGerbang = perluMasuk && !TANPA_LOGIN.some((p) => pathname === p || pathname?.startsWith(`${p}/`));
@@ -69,6 +70,9 @@ export default function SiteChrome({ children }) {
 
   // Halaman admin punya tampilannya sendiri, tanpa navbar/footer publik & tanpa gerbang maintenance.
   if (isAdmin) return <>{children}</>;
+
+  // Akun di-ban: hanya satu layar peringatan. Tidak ada dasbor, navigasi, tombol, atau halaman lain yang dirender.
+  if (banned) return <LayarBan />;
 
   if (checked && maintenance) {
     return (

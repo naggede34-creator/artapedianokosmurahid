@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { pastikanDepositBalance } from "@/lib/saldoDeposit";
 import { usersCol } from "@/lib/db";
 import { rateLimit } from "@/lib/rateLimit";
+import { catatIpAkun, ipDariReq } from "@/lib/blokirIp";
 
 export const dynamic = "force-dynamic";
 
@@ -18,12 +19,14 @@ export async function POST(req) {
       return NextResponse.json({ error: "Terlalu banyak permintaan." }, { status: 429 });
     }
     await pastikanDepositBalance(token);
-    const u = await (await usersCol()).findOne({ token }, { projection: { balance: 1, saldoGame: 1, depositBalance: 1 } });
+    const u = await (await usersCol()).findOne({ token }, { projection: { balance: 1, saldoGame: 1, depositBalance: 1, suspended: 1 } });
     if (!u) {
       // Tebakan kode akun yang salah dibatasi jauh lebih ketat.
       if (!rateLimit(`${ip}:user-saldo-miss`, 20, 60_000)) return NextResponse.json({ error: "Terlalu banyak percobaan." }, { status: 429 });
       return NextResponse.json({ error: "Akun tidak ditemukan." }, { status: 404 });
     }
+    if (u.suspended) return NextResponse.json({ error: "Akun dibanned.", suspended: true }, { status: 403, headers: { "Cache-Control": "no-store" } });
+    catatIpAkun(token, ipDariReq(req)).catch(() => {});
     return NextResponse.json({ balance: u.balance ?? 0, saldoGame: u.saldoGame ?? 0, depositBalance: u.depositBalance ?? null }, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
     console.error(err);

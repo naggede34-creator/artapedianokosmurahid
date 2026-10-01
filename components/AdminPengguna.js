@@ -62,8 +62,8 @@ function PanelDetail({ token, onTutup, onUbah }) {
   const blokir = async (aksi) => {
     setSibuk(true); setPesan(""); setGalat("");
     try {
-      await post("/api/admin/pengguna/blokir", { token, aksi, alasan, kabari, bebasAntiCurang: bebas });
-      setPesan(aksi === "ban" ? "Akun dibekukan ✅" : "Blokir dibuka ✅"); setAlasan("");
+      const r = await post("/api/admin/pengguna/blokir", { token, aksi, alasan, kabari, bebasAntiCurang: bebas });
+      setPesan(aksi === "ban" ? `Akun dibekukan ✅ · ${r.ipDiblokir || 0} IP ikut diblokir dari situs` : `Blokir dibuka ✅${r.ipDibuka ? ` · ${r.ipDibuka} IP dibuka lagi` : ""}`); setAlasan("");
       await muat(); onUbah?.();
     } catch (e) { setGalat(e.message); }
     setSibuk(false);
@@ -114,6 +114,13 @@ function PanelDetail({ token, onTutup, onUbah }) {
               )}
             </Kotak>
 
+            <Kotak judul={`IP yang pernah dipakai (${d.ipAkun?.length || 0})`}>
+              {d.ipAkun?.length ? (
+                <ul className="space-y-1" data-testid="pg-ip-daftar">{d.ipAkun.map((x) => <li key={x.ip} className="flex items-center justify-between gap-2 text-xs"><span className="font-mono">{x.ip}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${x.diblokir ? "bg-rose text-white" : "bg-surface2 text-muted"}`}>{x.diblokir ? "DIBLOKIR DARI SITUS" : "tidak diblokir"}</span></li>)}</ul>
+              ) : <p className="text-xs text-muted">Belum ada IP tercatat untuk akun ini.</p>}
+              <p className="mt-1 text-[11px] text-muted">Saat akun dibekukan, semua IP di atas ikut diblokir dari seluruh situs; saat dibuka, dilepas lagi. Waspada: IP WiFi/seluler bersama bisa mengenai orang lain.</p>
+            </Kotak>
+
             <Kotak judul="Keuangan">
               <Baris k="Saldo nokos" v={rp(d.balance)} />
               <Baris k="↳ bisa ditarik (dari deposit)" v={rp(d.bisaDitarik)} />
@@ -160,6 +167,45 @@ function PanelDetail({ token, onTutup, onUbah }) {
         )}
       </aside>
     </div>
+  );
+}
+
+function PanelIp() {
+  const [terbuka, setTerbuka] = useState(false);
+  const [d, setD] = useState(null);
+  const [galat, setGalat] = useState("");
+  const [ipBaru, setIpBaru] = useState("");
+  const [alasan, setAlasan] = useState("");
+  const muat = useCallback(async () => { try { setD(await api("/api/admin/ip-blokir")); setGalat(""); } catch (e) { setGalat(e.message); } }, []);
+  useEffect(() => { if (terbuka) muat(); }, [terbuka, muat]);
+  async function aksi(a, ip, al) { try { await post("/api/admin/ip-blokir", { aksi: a, ip, alasan: al }); setIpBaru(""); setAlasan(""); await muat(); } catch (e) { setGalat(e.message); } }
+  return (
+    <section className="mt-4 rounded-2xl border-2 border-ink/15 bg-surface p-3" data-testid="pg-ip-panel">
+      <button onClick={() => setTerbuka(!terbuka)} className="flex w-full items-center justify-between text-left text-sm font-black text-ink" aria-expanded={terbuka} data-testid="pg-ip-toggle">
+        <span>🌐 IP yang diblokir dari situs</span><span>{terbuka ? "▲" : "▼"}</span>
+      </button>
+      {terbuka && (
+        <div className="mt-3">
+          {galat && <p className="mb-2 rounded-lg bg-rose-soft px-3 py-2 text-xs font-bold text-rose" data-testid="pg-ip-galat">{galat}</p>}
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input value={ipBaru} onChange={(e) => setIpBaru(e.target.value)} placeholder="IP (mis. 203.0.113.9)" className="rounded-lg border border-line bg-bg px-2.5 py-1.5 text-sm sm:w-48" data-testid="pg-ip-input" />
+            <input value={alasan} onChange={(e) => setAlasan(e.target.value)} maxLength={200} placeholder="Alasan (opsional)" className="min-w-0 flex-1 rounded-lg border border-line bg-bg px-2.5 py-1.5 text-sm" />
+            <button onClick={() => aksi("blokir", ipBaru, alasan)} disabled={!ipBaru.trim()} className="rounded-lg bg-rose px-3 py-1.5 text-sm font-black text-white disabled:opacity-50" data-testid="pg-ip-blokir">Blokir IP</button>
+          </div>
+          <ul className="mt-3 space-y-1.5" data-testid="pg-ip-daftar-semua">
+            {!d && !galat && <li className="text-xs text-muted">Memuat…</li>}
+            {d && d.items.length === 0 && <li className="text-xs text-muted" data-testid="pg-ip-kosong">Tidak ada IP yang diblokir.</li>}
+            {d?.items.map((x) => (
+              <li key={x.ip} className="flex items-center justify-between gap-2 rounded-lg bg-bg px-2.5 py-1.5 text-xs" data-testid="pg-ip-baris">
+                <span className="min-w-0"><b className="font-mono">{x.ip}</b><br /><span className="text-muted">{x.manual ? "manual" : `akun ${x.akun.join(", ") || "-"}`} · {tgl(x.at)} · {x.alasan || "—"}</span></span>
+                <button onClick={() => aksi("buka", x.ip)} className="shrink-0 rounded-lg bg-success px-2.5 py-1 text-[11px] font-black text-white" data-testid="pg-ip-buka">Buka</button>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[11px] text-muted">IP yang diblokir tidak bisa membuka halaman/API apa pun (kecuali admin). Dibuka otomatis saat akun pemicunya dibuka blokirnya.</p>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -237,6 +283,7 @@ export default function AdminPengguna() {
           <button disabled={hal + 1 >= totalHal} onClick={() => setHal(hal + 1)} className="rounded-lg border border-line px-3 py-1.5 font-bold disabled:opacity-40">Berikutnya →</button>
         </div>
       )}
+      <PanelIp />
       {buka && <PanelDetail token={buka} onTutup={() => setBuka(null)} onUbah={() => muat()} />}
     </div>
   );

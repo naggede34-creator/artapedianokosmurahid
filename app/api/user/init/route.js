@@ -3,6 +3,7 @@ import { usersCol } from "@/lib/db";
 import { sendMonitorLog, userLoginLog } from "@/lib/monitor";
 import { rateLimit } from "@/lib/rateLimit";
 import { loginWajib, buatAkunBaru } from "@/lib/webAuth";
+import { catatIpAkun, blokirIpAkun, ipDariReq } from "@/lib/blokirIp";
 
 export async function POST(req) {
   try {
@@ -19,7 +20,14 @@ export async function POST(req) {
         return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi sebentar lagi." }, { status: 429 });
       }
       const existing = await users.findOne({ token: String(body.token).trim().toUpperCase() });
+      if (existing && existing.suspended) {
+        // Akun di-ban: tidak ada data akun yang dikirim — klien hanya menampilkan layar "AKUN ANDA TELAH DI BANNED…".
+        // Dibuka dari IP baru = ikut diblokir (menghindari ban lewat ganti jaringan).
+        blokirIpAkun(existing.token, "Akun yang di-ban dibuka dari IP lain", [ipDariReq(req)]).catch(() => {});
+        return NextResponse.json({ token: existing.token, suspended: true });
+      }
       if (existing) {
+        catatIpAkun(existing.token, ipDariReq(req)).catch(() => {});
         sendMonitorLog(userLoginLog({ token: existing.token, isNew: false }));
         return NextResponse.json({
           token: existing.token,
@@ -52,6 +60,7 @@ export async function POST(req) {
     }
 
     const { token, createdAt } = await buatAkunBaru({ req, ref: body.ref, sumber: "Website" });
+    catatIpAkun(token, ipDariReq(req)).catch(() => {});
     return NextResponse.json({ token, balance: 0, createdAt, tourDone: false });
   } catch (err) {
     console.error(err);

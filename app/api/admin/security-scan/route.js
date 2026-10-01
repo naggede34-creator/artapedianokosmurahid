@@ -1,5 +1,6 @@
 // POST /api/admin/security-scan  — triggered from admin dashboard
 // Deteksi spam order, deposit massal, saldo anomali, penyalahgunaan garansi, dll.
+import { blokirIpAkun } from "@/lib/blokirIp";
 import { NextResponse } from "next/server";
 import { usersCol, otpOrdersCol, depositsCol, userNotificationsCol, warrantyClaimsCol } from "@/lib/db";
 import { adminSah } from "@/lib/adminAuth";
@@ -130,6 +131,7 @@ export async function POST(req) {
         read: false,
         createdAt: now
       });
+      await blokirIpAkun(flag.token, `Auto-security: ${flag.reason}`);
       autoSuspended.push(flag);
     } else {
       await users.updateOne({ token: flag.token }, {

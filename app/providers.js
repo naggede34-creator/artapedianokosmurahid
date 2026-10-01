@@ -83,6 +83,14 @@ export function UserProvider({ children }) {
   // true = admin mewajibkan daftar/masuk dan pengunjung belum punya akun aktif.
   const [perluMasuk, setPerluMasuk] = useState(false);
   const [loginWajib, setLoginWajib] = useState(false);
+  // true = akun ini di-ban admin (atau IP-nya diblokir): seluruh situs diganti satu layar peringatan.
+  const [banned, setBanned] = useState(false);
+
+  useEffect(() => {
+    const saat = () => setBanned(true);
+    window.addEventListener("artapedia:diblokir", saat);
+    return () => window.removeEventListener("artapedia:diblokir", saat);
+  }, []);
 
   const init = useCallback(async (existingToken, ref) => {
     const body = existingToken ? { token: existingToken } : {};
@@ -93,6 +101,12 @@ export function UserProvider({ children }) {
       body: JSON.stringify(body)
     });
     const data = await res.json();
+    if (res.ok && data.suspended) {
+      // Kode akun tetap diingat di perangkat: membuka situs lagi tetap menampilkan layar ban.
+      try { localStorage.setItem("artapedia_token", data.token); } catch {}
+      setBanned(true);
+      return data;
+    }
     if (res.ok) {
       localStorage.setItem("artapedia_token", data.token);
       try { localStorage.removeItem("artapedia_keluar"); } catch {}
@@ -211,6 +225,7 @@ export function UserProvider({ children }) {
         body: JSON.stringify({ token })
       });
       const data = await res.json();
+      if (res.status === 403 && data.suspended) { setBanned(true); return; }
       if (res.ok) { setBalance(data.balance); setGameBalance(data.saldoGame ?? 0); if (data.depositBalance !== undefined) setDepositBalance(data.depositBalance); }
     } catch {}
   }, [token]);
@@ -286,7 +301,7 @@ export function UserProvider({ children }) {
 
   return (
     <UserContext.Provider
-      value={{ token, balance, gameBalance, depositBalance, name, joinedAt, tourDone, ready, perluMasuk, loginWajib, daftar, masuk, keluar, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
+      value={{ token, balance, gameBalance, depositBalance, name, joinedAt, tourDone, ready, perluMasuk, loginWajib, banned, daftar, masuk, keluar, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
     >
       {children}
     </UserContext.Provider>
