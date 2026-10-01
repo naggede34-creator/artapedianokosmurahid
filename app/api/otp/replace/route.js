@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { otpOrdersCol, usersCol } from "@/lib/db";
+import { kreditRefund } from "@/lib/saldoDeposit";
 import { beliNomorPengganti, bisaDiganti } from "@/lib/gantiNomor";
 import { otpPurchaseNotif, otpAutoRefundNotif, otpRefundPublicNotif } from "@/lib/telegram";
 import { umumkan } from "@/lib/notifyHub";
@@ -50,11 +51,7 @@ export async function POST(req) {
       // Provider tidak bisa kasih nomor pengganti -> saldo dikembalikan penuh,
       // termasuk biaya jaminan kalau ada: jaminannya tidak terpenuhi.
       const totalRefund = oldOrder.price + (Number(oldOrder.jaminanBiaya) || 0);
-      const refunded = await users.findOneAndUpdate(
-        { token },
-        { $inc: { balance: totalRefund } },
-        { returnDocument: "after" }
-      );
+      const refunded = await kreditRefund(token, totalRefund, oldOrder.depositBagian);
       // Pembeli dapat uangnya kembali, jadi komisi resellernya (kalau ada) ikut ditarik.
       await tarikKomisi(oldOrder.komisiOrderId || oldOrder.orderId);
       await logBalance({
@@ -99,6 +96,7 @@ export async function POST(req) {
       countryName: oldOrder.countryName,
       phoneNumber: fresh.phoneNumber,
       price: oldOrder.price,
+      depositBagian: oldOrder.depositBagian ?? null,
       ...(oldOrder.jaminanBiaya ? { jaminanBiaya: oldOrder.jaminanBiaya, jaminanGanti: true } : {}),
       ...(oldOrder.resellerBotId ? { resellerBotId: oldOrder.resellerBotId, komisiOrderId: oldOrder.komisiOrderId || oldOrder.orderId } : {}),
       status: "pending",

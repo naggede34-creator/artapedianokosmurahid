@@ -4,6 +4,8 @@ import { adminSah } from "@/lib/adminAuth";
 import { ObjectId } from "mongodb";
 import { warrantyResolvedNotif, warrantyPublicNotif } from "@/lib/telegram";
 import { umumkan } from "@/lib/notifyHub";
+import { kreditRefund } from "@/lib/saldoDeposit";
+import { otpOrdersCol } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -66,11 +68,9 @@ export async function POST(req) {
     const users = await usersCol();
     // $inc, bukan $set dengan saldo yang dibaca sebelumnya: dengan $set, satu
     // transaksi lain yang selesai di sela-selanya akan tertimpa dan hilang.
-    const updated = await users.findOneAndUpdate(
-      { token: claim.token },
-      { $inc: { balance: claim.purchasePrice } },
-      { returnDocument: "after" }
-    );
+    // Bagian deposit dari pembelian aslinya ikut kembali (pesanan lama tanpa catatan: seluruhnya).
+    const pesananAsli = claim.orderId ? await (await otpOrdersCol()).findOne({ orderId: claim.orderId }, { projection: { depositBagian: 1 } }) : null;
+    const updated = await kreditRefund(claim.token, claim.purchasePrice, pesananAsli ? pesananAsli.depositBagian : 0);
     if (!updated) {
       // Usernya hilang — kembalikan klaimnya ke pending supaya tidak tercatat
       // sebagai disetujui padahal tidak ada saldo yang masuk.

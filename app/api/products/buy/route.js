@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { productsCol, productOrdersCol, usersCol } from "@/lib/db";
+import { catatPotongan } from "@/lib/saldoDeposit";
 import { logBalance } from "@/lib/ledger";
 import { rateLimit } from "@/lib/rateLimit";
 import { productBoughtNotif, productSoldPublicNotif } from "@/lib/telegram";
@@ -43,6 +44,7 @@ export async function POST(req) {
       { returnDocument: "after" }
     );
     if (!debited) return NextResponse.json({ error: "Saldo tidak cukup atau akun tidak ditemukan." }, { status: 400 });
+    await catatPotongan(token, debited, product.price);
 
     // Kurangi stok jika bukan unlimited
     if (product.stock !== -1) {

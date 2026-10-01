@@ -3,6 +3,7 @@ import { usersCol, adminBalanceLogsCol } from "@/lib/db";
 import { adminSah } from "@/lib/adminAuth";
 import { sendTelegramNotif, adminBalanceAdjustNotif } from "@/lib/telegram";
 import { logBalance } from "@/lib/ledger";
+import { rapatkanDeposit } from "@/lib/saldoDeposit";
 
 export async function POST(req) {
   if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
@@ -25,6 +26,8 @@ export async function POST(req) {
       { returnDocument: "after" }
     );
 
+    // Pengurangan oleh admin: jaga depositBalance ≤ saldo (yang bisa ditarik tak pernah melebihi saldo).
+    if (updated && action === "sub" && medan === "balance") await rapatkanDeposit(token, updated?.balance);
     if (!updated) {
       return NextResponse.json(
         { error: action === "sub" ? "Saldo user tidak cukup untuk dikurangi." : "Akun tidak ditemukan." },

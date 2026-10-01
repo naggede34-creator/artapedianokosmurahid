@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { usersCol } from "@/lib/db";
 import { sendMessage, isOwner, rupiah, HELP_TEXT } from "@/lib/telegramBot";
 import { logBalance } from "@/lib/ledger";
+import { rapatkanDeposit } from "@/lib/saldoDeposit";
 import { esc } from "@/lib/telegram";
 import { diagnoseWarungNokos, warungNokosConfigured } from "@/lib/warungnokos";
 import {
@@ -151,6 +152,7 @@ async function handleUbahSaldo(chatId, args, users, sign) {
     await sendMessage(chatId, "Saldo user berubah saat diproses, coba lagi.");
     return;
   }
+  if (sign < 0) await rapatkanDeposit(token, updated.balance);
   await logBalance({
     token,
     type: sign > 0 ? "admin_add" : "admin_sub",

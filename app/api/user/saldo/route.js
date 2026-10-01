@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { pastikanDepositBalance } from "@/lib/saldoDeposit";
 import { usersCol } from "@/lib/db";
 import { rateLimit } from "@/lib/rateLimit";
 
@@ -16,6 +17,7 @@ export async function POST(req) {
     if (!rateLimit(`${ip}:user-saldo`, 300, 60_000)) {
       return NextResponse.json({ error: "Terlalu banyak permintaan." }, { status: 429 });
     }
+    await pastikanDepositBalance(token);
     const u = await (await usersCol()).findOne({ token }, { projection: { balance: 1, saldoGame: 1, depositBalance: 1 } });
     if (!u) {
       // Tebakan kode akun yang salah dibatasi jauh lebih ketat.

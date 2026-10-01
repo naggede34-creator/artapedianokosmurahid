@@ -79,7 +79,7 @@ export default function TarikPage() {
           <div className="mb-5 rounded-2xl border border-line bg-surface2 px-4 py-3">
             <p className="text-xs font-bold uppercase tracking-wide text-muted">Bisa ditarik sekarang</p>
             <b className="text-3xl tabular-nums text-ink" data-testid="tarik-dapat">{info ? rupiah(dapat) : "…"}</b>
-            <p className="mt-1 text-[11px] text-muted">Saldo nokos total {info ? rupiah(info.saldo) : "…"}. Hanya saldo hasil <b>deposit</b> yang bisa ditarik (bonus & hadiah tidak).</p>
+            <p className="mt-1 text-[11px] text-muted">Saldo nokos total {info ? rupiah(info.saldo) : "…"}{info && info.saldo > dapat ? <> · tidak bisa ditarik <b>{rupiah(info.saldo - dapat)}</b></> : null}. Hanya saldo hasil <b>deposit</b> yang bisa ditarik. Saldo dari voucher, hadiah, misi, spin, poin, cashback, referral, transfer masuk, hasil tukar poin game, atau tambahan admin <b>tidak bisa ditarik</b> (tetap bisa dipakai belanja nokos). Saat belanja, saldo bonus dipakai lebih dulu.</p>
           </div>
 
           {info && !info.aktif ? <Alert>Penarikan saldo sedang dinonaktifkan atau belum tersedia. Coba lagi nanti.</Alert> : (

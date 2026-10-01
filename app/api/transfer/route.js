@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { pastikanDepositBalance } from "@/lib/saldoDeposit";
 import { usersCol } from "@/lib/db";
 import { logBalance } from "@/lib/ledger";
 import { transferNotif, transferPublicNotif } from "@/lib/telegram";
@@ -65,6 +66,7 @@ export async function POST(req) {
     // depositBalance: hanya bertambah dari deposit tunai — saldo dari voucher, spin wheel,
     // poin, cashback, dll. TIDAK bisa ditransfer. Akun lama (tanpa field depositBalance)
     // dianggap seluruh saldo berasal dari deposit (backwards-compatible).
+    await pastikanDepositBalance(fromToken);
     const fromUser = await users.findOne({ token: fromToken }, { projection: { balance: 1, depositBalance: 1, name: 1 } });
     if (!fromUser) return NextResponse.json({ error: "Kode akun tidak ditemukan." }, { status: 404 });
 
