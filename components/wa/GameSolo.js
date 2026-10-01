@@ -348,6 +348,7 @@ export function LayarSlot({ onTutup }) {
   const [hujan, setHujan] = useState(0); // hujan koin emas (kunci animasi)
   const [banner, setBanner] = useState(null); // { teks, tingkat, nilai }
   const [goyang, setGoyang] = useState(false);
+  const [panelBet, setPanelBet] = useState(false);
   const lewati = useRef(false);
   const hidup = useRef(true);
   useEffect(() => () => { hidup.current = false; }, []);
@@ -464,25 +465,43 @@ export function LayarSlot({ onTutup }) {
   const koinTeks = (n) => rp(Math.abs(n));
   const ladder = gratis ? info2?.ladderGratis : info2?.ladderDasar;
 
-  return (
-    <div className={`wg-layar ws-layar ws-slot${goyang ? " goyang" : ""}`} role="dialog" aria-label="Mahjong Spin 1024" onClickCapture={bunyiKlik}>
-      <header className="wa-kepala wg-kepala">
-        <button className="wa-ikon" onClick={onTutup} aria-label="Kembali" disabled={putar}><Ik n="back" s={22} /></button>
-        <div className="wg-judul"><b>🀄 Mahjong Spin 1024</b><small>Solo · RTP ≈ 96% · maks ×{info2?.maksPengali ?? 5000}</small></div>
-        <TombolSuara />
-        <button className="wa-ikon" onClick={() => setBayarTabel(true)} aria-label="Tabel bayar"><Ik n="info" s={22} /></button>
-      </header>
-      <div className="wg-isi ws-isi">
-        {!info && <div className="wa-memuat"><span className="wa-spin" /> Memuat…</div>}
-        {info && !info.aktif && <div className="wa-galat-blok"><span>🀄</span><p>Game solo sedang ditutup admin.</p></div>}
-        {info?.aktif && (
-          <>
-            <div className="sl-judul" aria-hidden="true"><span className="naga">🐉</span><b><em>麻雀</em> MAHJONG WAYS</b><span className="naga kanan">🐉</span></div>
-            <div className="sl-kombo" aria-label="Pengali kombo">
-              {ladder?.map((m, i) => <span key={i} className={kombo >= 0 && i === Math.min(kombo, ladder.length - 1) ? "on" : ""}>×{m}</span>)}
-              {gratis && <em className="sl-gratis" data-testid="slot-gratis">Gratis {gratis.no}/{gratis.dari}</em>}
-            </div>
+  // Taruhan naik/turun mengikuti tangga poin (2, 4, 6, 10, 20, 30, 50, 100) dalam batas min–maks server.
+  const TANGGA = [2, 4, 6, 10, 20, 30, 50, 100].map((x) => x * POIN_RP);
+  const ubahBet = (arah) => {
+    if (!info || putar) return;
+    const sah = TANGGA.filter((x) => x >= info.min && x <= info.maks);
+    const kini = sah.findIndex((x) => x >= bet);
+    const idx = arah > 0 ? (sah[kini] > bet ? kini : Math.min(sah.length - 1, kini + 1)) : Math.max(0, (kini < 0 ? sah.length : kini) - 1);
+    s.setBet(sah[Math.max(0, Math.min(sah.length - 1, idx))] ?? bet);
+    bunyi("klik");
+  };
+  const tahan = useRef(null);
+  const sudahTahan = useRef(false);
+  const mulaiTahan = () => { sudahTahan.current = false; clearTimeout(tahan.current); tahan.current = setTimeout(() => { sudahTahan.current = true; setTurbo(true); putarSekarang(); }, 550); };
+  const lepasTahan = () => clearTimeout(tahan.current);
+  const klikPutar = () => { if (sudahTahan.current) { sudahTahan.current = false; return; } putarSekarang(); };
+  const kekuranganPoin = info && s.dompet < bet;
 
+  return (
+    <div className={`wg-layar ws-layar ws-slot sl-layar${goyang ? " goyang" : ""}${gratis ? " gratis" : ""}`} role="dialog" aria-label="Mahjong Spin 1024" onClickCapture={bunyiKlik}>
+      <div className="sl-latar" aria-hidden="true" />
+      <div className="sl-atas">
+        <button className="sl-bulat" onClick={onTutup} aria-label="Kembali" disabled={putar}><Ik n="back" s={20} /></button>
+        <TombolSuara className="sl-suara" />
+        <button className="sl-bulat" onClick={() => setAturan(true)} aria-label="Cara main"><Ik n="info" s={20} /></button>
+      </div>
+      {!info && <div className="wa-memuat" style={{ marginTop: 120 }}><span className="wa-spin" /> Memuat…</div>}
+      {info && !info.aktif && <div className="wa-galat-blok" style={{ marginTop: 120 }}><span>🀄</span><p>Game solo sedang ditutup admin.</p></div>}
+      {info?.aktif && (
+        <div className="sl-isi">
+          <div className="sl-pita" aria-label="Pengali kombo">
+            {ladder?.map((m, i) => <span key={i} className={kombo >= 0 && i === Math.min(kombo, ladder.length - 1) ? "on" : ""}>x{m}</span>)}
+            {gratis && <em className="sl-gratis" data-testid="slot-gratis">GRATIS {gratis.no}/{gratis.dari}</em>}
+          </div>
+
+          <div className="sl-bingkai">
+            <span className="naga-sudut kiri" aria-hidden="true">🐉</span>
+            <span className="naga-sudut kanan" aria-hidden="true">🐉</span>
             <div className={`sl-papan${gratis ? " gratis" : ""}`} data-testid="slot-papan">
               {grid.map((kol, c) => (
                 <div key={c} className={`sl-kol${berputar.has(c) ? " putar" : ""}`}>
@@ -494,46 +513,71 @@ export function LayarSlot({ onTutup }) {
                 </div>
               ))}
             </div>
+          </div>
 
-            <div className="sl-status" aria-live="polite">
-              {pesan ? <b data-testid="slot-pesan">{pesan}</b> : akhir ? (
-                <b data-testid="slot-hasil" className={akhir.untung >= 0 ? "menang" : "kalah"}>
-                  {akhir.bayar > 0 ? `${besar ? "🎉 BIG WIN! " : "Menang "}${fmtX(akhir.pengali)} · +${koinTeks(akhir.bayar)}` : "Belum beruntung — coba lagi!"}
-                  {akhir.hasil.gratis > 0 && <small> · {akhir.hasil.gratis} putaran gratis</small>}
-                </b>
-              ) : <span>Putar untuk mulai. Cocokkan 3+ gulungan dari kiri.</span>}
-              {total > 0 && putar && <small data-testid="slot-total">Total ×{total.toLocaleString("id-ID", { maximumFractionDigits: 2 })}</small>}
+          <div className="sl-pesanbar" aria-live="polite">
+            {pesan ? <b data-testid="slot-pesan">{pesan}</b> : akhir ? (
+              <b data-testid="slot-hasil" className={akhir.untung >= 0 ? "menang" : "kalah"}>
+                {akhir.bayar > 0 ? `${besar ? "🎉 BIG WIN! " : "MENANG "}${fmtX(akhir.pengali)} · +${koinTeks(akhir.bayar)}` : "BELUM BERUNTUNG — COBA LAGI!"}
+                {akhir.hasil.gratis > 0 && <small> · {akhir.hasil.gratis} putaran gratis</small>}
+              </b>
+            ) : <b>{kekuranganPoin ? "POIN GAME TIDAK CUKUP" : "PASANG TARUHANMU!"}</b>}
+            {total > 0 && putar && <small data-testid="slot-total">Total ×{total.toLocaleString("id-ID", { maximumFractionDigits: 2 })}</small>}
+            {putar && <button className="sl-lewati" onClick={() => { lewati.current = true; }} data-testid="slot-lewati">⏩ Lewati</button>}
+          </div>
+          {besar && !putar && <div className="wg-konfeti ws-konfeti" aria-hidden="true">{Array.from({ length: 16 }, (_, i) => <i key={i} style={{ "--i": i }} />)}</div>}
+          {hujan > 0 && <div key={hujan} className="sl-hujan" aria-hidden="true">{Array.from({ length: 26 }, (_, i) => <span key={i} style={{ "--i": i, "--x": `${(i * 37) % 100}%`, "--d": `${(i % 9) * 0.12}s` }}>🪙</span>)}</div>}
+          {naga > 0 && <div key={`n${naga}`} className="sl-naga" aria-hidden="true">🐉</div>}
+          {banner && (
+            <div key={banner.kunci} className={`sl-banner t${banner.tingkat}`} role="status" data-testid="slot-banner" onClick={() => setBanner(null)}>
+              <small>🪙 🪙 🪙</small>
+              <b>{banner.teks}</b>
+              <CacahAngka nilai={banner.nilai} format={koinTeks} />
             </div>
-            {besar && !putar && <div className="wg-konfeti ws-konfeti" aria-hidden="true">{Array.from({ length: 16 }, (_, i) => <i key={i} style={{ "--i": i }} />)}</div>}
-            {hujan > 0 && <div key={hujan} className="sl-hujan" aria-hidden="true">{Array.from({ length: 26 }, (_, i) => <span key={i} style={{ "--i": i, "--x": `${(i * 37) % 100}%`, "--d": `${(i % 9) * 0.12}s` }}>🪙</span>)}</div>}
-            {naga > 0 && <div key={`n${naga}`} className="sl-naga" aria-hidden="true">🐉</div>}
-            {banner && (
-              <div key={banner.kunci} className={`sl-banner t${banner.tingkat}`} role="status" data-testid="slot-banner" onClick={() => setBanner(null)}>
-                <small>🪙 🪙 🪙</small>
-                <b>{banner.teks}</b>
-                <CacahAngka nilai={banner.nilai} format={koinTeks} />
-              </div>
-            )}
+          )}
 
-            <PanelDompet s={s} kunci={kunci} />
-            <div className="ws-aksi">
-              <button className="wa-tombol utama ws-besar" onClick={putarSekarang} disabled={putar || (info && s.dompet < bet)} data-testid="slot-putar">{putar ? "Berputar…" : "🀄 PUTAR"}</button>
-              {putar && <button className="wa-tombol" onClick={() => { lewati.current = true; }} data-testid="slot-lewati">⏩ Lewati</button>}
-              <button className={`wa-tombol${turbo ? " utama" : ""}`} onClick={() => setTurbo((t) => !t)} aria-pressed={turbo}>⚡ Turbo</button>
-              <button className="wa-tombol" onClick={() => setAturan(true)}>?</button>
-            </div>
-            <Pengingat />
-          </>
-        )}
-      </div>
+          <div className="sl-kontrol">
+            <button className="sl-pm" onClick={() => ubahBet(-1)} disabled={putar} aria-label="Kurangi taruhan" data-testid="slot-kurang">−</button>
+            <button className={`sl-spin${putar ? " jalan" : ""}${turbo ? " turbo" : ""}`} onClick={klikPutar} onPointerDown={mulaiTahan} onPointerUp={lepasTahan} onPointerLeave={lepasTahan} onPointerCancel={lepasTahan} disabled={putar || kekuranganPoin} data-testid="slot-putar" aria-label={putar ? "Berputar" : "Putar"}>
+              <svg viewBox="0 0 160 160" className="sl-spin-svg" aria-hidden="true">
+                <defs><path id="sl-busur" d="M 16 90 A 64 64 0 0 1 144 90" /></defs>
+                <text fontSize="10" fontWeight="900" letterSpacing=".5" fill="#fff3c4"><textPath href="#sl-busur" startOffset="50%" textAnchor="middle">TAHAN UNTUK SPIN TURBO</textPath></text>
+                <g transform="translate(80 92)"><g className="sl-panah" fill="none" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M -26 -8 A 28 28 0 0 1 22 -17" /><path d="M 26 8 A 28 28 0 0 1 -22 17" />
+                  <path d="M 24 -30 L 24 -12 L 6 -14" fill="#fff" stroke="none" transform="translate(0 -1)" /><path d="M -24 30 L -24 12 L -6 14" fill="#fff" stroke="none" transform="translate(0 1)" />
+                </g></g>
+              </svg>
+            </button>
+            <button className="sl-pm" onClick={() => ubahBet(1)} disabled={putar} aria-label="Tambah taruhan" data-testid="slot-tambah">+</button>
+          </div>
+          <div className="sl-ikonbaris">
+            <button className="sl-ikon" onClick={() => setAturan(true)} aria-label="Cara main">i</button>
+            <button className={`sl-ikon${turbo ? " on" : ""}`} onClick={() => setTurbo((t) => !t)} aria-pressed={turbo} aria-label="Turbo" title="Turbo">⚡</button>
+            <button className="sl-ikon" onClick={() => setBayarTabel(true)} aria-label="Tabel bayar" title="Tabel bayar">🀄</button>
+            <button className="sl-ikon" onClick={() => setPanelBet(true)} disabled={putar} aria-label="Atur taruhan" data-testid="slot-atur-bet" title="Atur taruhan">🪙</button>
+          </div>
+          <div className="sl-kaki">
+            <span><em>KREDIT</em> <b data-testid="slot-kredit" title={rp(s.dompet)}>{rp(s.dompet)}</b></span>
+            <span><em>TARUHAN</em> <b data-testid="slot-taruhan">{rp(bet)}</b></span>
+          </div>
+          {kekuranganPoin && <a className="sl-isi-poin" href="/game-deposit" data-testid="isi-poin-solo">➕ Isi poin game</a>}
+          <p className="sl-peringatan">Taruhan memakai poin game dan dipotong saat putaran dimulai · RTP ≈ 96% · main sebatas kemampuan</p>
+        </div>
+      )}
 
+      {panelBet && (
+        <Lembar judul="Atur taruhan" onTutup={() => setPanelBet(false)} lebar={420}>
+          <PanelDompet s={s} kunci={kunci} />
+        </Lembar>
+      )}
       {aturan && (
         <Lembar judul="Cara main Mahjong Spin 1024" onTutup={() => setAturan(false)} lebar={460}>
           <ul className="wg-aturan">
             <li><b>1024 jalur:</b> 5 gulungan × 4 baris. Menang bila simbol yang sama muncul di 3+ gulungan berurutan dari kiri; jumlah jalur = perkalian jumlah simbol itu di tiap gulungan.</li>
             <li><b>Kaskade:</b> ubin yang menang hilang, ubin lain jatuh dan ubin baru masuk — bisa menang berantai. Pengali kombo naik: ×1 → ×2 → ×3 → ×5 (putaran gratis: ×2 → ×4 → ×6 → ×10).</li>
-            <li><b>Ubin emas</b> (gulungan 2–4): bila ikut menang, berubah menjadi <b>WILD</b> di tempatnya. WILD (gulungan 2–4) menggantikan ubin biasa.</li>
+            <li><b>Ubin emas</b> (gulungan 2–4): bila ikut menang, berubah menjadi <b>WILD</b> di tempatnya. WILD (ubin emas berpola, gulungan 2–4) menggantikan ubin biasa.</li>
             <li><b>3+ SCATTER 福</b> = {10} putaran gratis (+2 per scatter tambahan). Di putaran gratis, 3+ scatter menambah putaran. Maksimal {40} putaran gratis.</li>
+            <li><b>Kontrol:</b> tombol − / + mengubah taruhan, ketuk tombol putar untuk memutar, <b>tahan</b> tombol putar untuk spin turbo. Ikon 🪙 membuka pengaturan taruhan, 🀄 membuka tabel bayar.</li>
             <li>Batas kemenangan {info2?.maksPengali ?? 5000}× taruhan per ronde. RTP ≈ 96%. Hasil seluruh ronde (termasuk putaran gratis) ditentukan server dengan acak kriptografis sebelum dianimasikan; “Lewati” hanya mempercepat tampilan.</li>
             <li>Taruhan memakai poin game milikmu (2 poin = Rp1.000) dan dipotong saat putaran dimulai. Ada batas rugi harian. Main untuk hiburan.</li>
           </ul>
@@ -549,7 +593,7 @@ export function LayarSlot({ onTutup }) {
                 {b.map((x, j) => <span key={j}><small>{j + 3} gulungan</small><b>{fmtX(x)}</b></span>)}
               </div>
             ))}
-            <div className="baris"><Ubin sel={[WILD, 0]} /><span style={{ gridColumn: "2 / 5" }}><small>WILD menggantikan semua ubin biasa (gulungan 2–4)</small></span></div>
+            <div className="baris"><Ubin sel={[WILD, 0]} /><span style={{ gridColumn: "2 / 5" }}><small>WILD (ubin emas berpola) menggantikan semua ubin biasa (gulungan 2–4)</small></span></div>
             <div className="baris"><Ubin sel={[SCATTER, 0]} /><span style={{ gridColumn: "2 / 5" }}><small>3+ scatter memicu putaran gratis</small></span></div>
           </div>
         </Lembar>

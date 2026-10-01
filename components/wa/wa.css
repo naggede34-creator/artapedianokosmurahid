@@ -1030,3 +1030,59 @@ button.gp-domino { cursor: pointer; }
 .gp-domino.sorot { box-shadow: 0 3px 0 #0f766e, 0 4px 0 #042f2e, 0 0 12px #fde047aa; }
 .gp-domino.dipilih { transform: translateY(-8px) scale(1.06); box-shadow: 0 6px 0 #0f766e, 0 0 18px #fde047; }
 .gp-domino.redup { opacity: .45; filter: saturate(.6); }
+
+/* ═══════════ Mahjong Spin 1024 — tampilan arcade layar penuh (pita pengali merah, ubin besar, kontrol bundar emas) ═══════════ */
+.sl-layar { background: linear-gradient(180deg, #fce9d0 0%, #f8d1b0 50%, #f2b88c 100%); overflow-y: auto; color: #4a0d18; }
+.sl-layar.gratis { background: linear-gradient(180deg, #3b0a2a 0%, #6b1236 50%, #8a2a1a 100%); }
+.sl-latar { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(70% 30% at 50% 0%, #ffffff99, transparent), radial-gradient(circle at 12% 90%, #e9b94944 0 120px, transparent 121px), radial-gradient(circle at 92% 70%, #e9b94933 0 100px, transparent 101px); }
+.sl-atas { position: absolute; top: calc(8px + env(safe-area-inset-top)); left: 10px; right: 10px; display: flex; justify-content: space-between; align-items: center; z-index: 8; }
+.sl-bulat { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: #5b0f1d; color: #ffe9a8; border: 2px solid #e9b949; box-shadow: 0 2px 0 #2d0810; }
+.sl-suara button { width: 34px; height: 34px; border-radius: 50%; background: #5b0f1d; border: 2px solid #e9b949; box-shadow: 0 2px 0 #2d0810; font-size: 15px; opacity: .8; }
+.sl-suara button.on { background: #8d1428; opacity: 1; }
+.sl-isi { position: relative; z-index: 2; width: min(100%, 460px); margin: 0 auto; padding: 52px 10px 18px; display: flex; flex-direction: column; gap: 10px; min-height: 100%; }
+.sl-pita { position: relative; display: flex; justify-content: space-around; align-items: center; padding: 8px 12px 12px; border-radius: 20px 20px 42px 42px / 20px 20px 28px 28px; background: linear-gradient(180deg, #ee2c50, #b01232 55%, #8a0a25); border: 3px solid #f1c75a; box-shadow: 0 4px 0 #5c0618, inset 0 2px 0 #ff93a8aa, 0 0 0 3px #a2761b55; }
+.sl-pita > span { font-size: 38px; line-height: 1; font-weight: 900; font-style: italic; color: #650a1b; -webkit-text-stroke: 1px #3a0410; text-shadow: 2px 3px 0 #0003; transition: transform .2s; }
+.sl-pita > span.on { color: #ffd84a; -webkit-text-stroke: 1px #a56a00; text-shadow: 0 0 14px #ffd84acc, 2px 3px 0 #7a4a00; transform: scale(1.18); }
+.sl-pita .sl-gratis { position: absolute; left: 50%; bottom: -14px; translate: -50% 0; margin: 0; padding: 3px 14px; font-size: 12px; background: linear-gradient(180deg, #ffe58a, #e0a21a); color: #5b0f1d; border: 2px solid #8a5a06; }
+.sl-bingkai { position: relative; margin-top: 4px; }
+.naga-sudut { position: absolute; z-index: 4; pointer-events: none; font-size: 62px; line-height: 1; filter: sepia(1) saturate(4.5) hue-rotate(-16deg) drop-shadow(0 4px 3px #0006); }
+.naga-sudut.kiri { top: -40px; left: -14px; transform: scaleX(-1) rotate(-8deg); }
+.naga-sudut.kanan { bottom: -34px; right: -12px; transform: rotate(-6deg); }
+.sl-layar .sl-papan { --u: calc((min(100vw, 460px) - 54px) / 5); gap: 4px; padding: 6px; margin: 0; border-radius: 6px; background: linear-gradient(180deg, #8d1428, #5e0a1a); border: 3px solid #e9b949; box-shadow: 0 0 0 3px #a2761b, 0 10px 18px #0006, inset 0 0 20px #00000066; overflow: hidden; }
+.sl-layar .sl-papan::before { display: none; }
+.sl-layar .sl-papan.gratis { background: linear-gradient(180deg, #7a1a3a, #3a0a24); border-color: #ffe58a; }
+.sl-layar .sl-kol { gap: 4px; }
+.sl-layar .sl-ubin { width: var(--u); height: calc(var(--u) * 1.08); border: 0; border-radius: 12px; background: linear-gradient(180deg, #fbf9f3, #e9e3d5); box-shadow: 0 3px 0 #b9af9a, inset 0 2px 0 #fff, inset 0 -8px 12px #0000000c; }
+.sl-layar .sl-gambar { width: 95%; height: 95%; filter: drop-shadow(0 2px 1px #00000033); }
+.sl-layar .sl-ubin.wild { background: linear-gradient(180deg, #ffe58a, #e0a21a); box-shadow: 0 3px 0 #8a5a06, 0 0 16px #ffd84acc, inset 0 2px 0 #fff8; }
+.sl-layar .sl-ubin.scatter { background: linear-gradient(180deg, #fbf9f3, #e9e3d5); box-shadow: 0 3px 0 #b9af9a, 0 0 16px #f5a60bcc, inset 0 2px 0 #fff; }
+.sl-layar .sl-ubin.emas { background: linear-gradient(180deg, #ffeaa0, #f0b52a 60%, #d08a10); border: 0; box-shadow: 0 3px 0 #8a5a06, 0 0 14px #ffd84acc, inset 0 2px 0 #fff9; }
+.sl-pesanbar { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 58px; padding: 6px 70px 6px 10px; text-align: center; color: #fff; text-transform: uppercase; letter-spacing: 1px; background: linear-gradient(180deg, #1f8a63, #0d5a3f); border-top: 4px solid #e9b949; border-bottom: 4px solid #e9b949; box-shadow: 0 4px 0 #0a3d2a; }
+.sl-pesanbar b { font-size: 19px; font-weight: 900; text-shadow: 0 2px 0 #00000055; }
+.sl-pesanbar b.menang { color: #fff3a8; } .sl-pesanbar b.kalah { color: #ffd5d5; }
+.sl-pesanbar small { font-size: 12px; font-weight: 800; opacity: .85; text-transform: none; letter-spacing: 0; }
+.sl-lewati { position: absolute; right: 8px; top: 50%; translate: 0 -50%; padding: 6px 10px; border-radius: 10px; font-size: 12px; font-weight: 900; background: #e9b949; color: #4a0d18; border: 2px solid #8a5a06; }
+.sl-kontrol { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: 4px; }
+.sl-spin { position: relative; width: 132px; height: 132px; padding: 0; border-radius: 50%; background: radial-gradient(circle at 50% 30%, #d5ab52, #8a6420 72%); border: 4px solid #ecc96b; box-shadow: 0 0 0 4px #5b3f12, 0 8px 0 #3a280a, inset 0 3px 10px #ffffff66; display: grid; place-items: center; touch-action: manipulation; user-select: none; transition: transform .1s; }
+.sl-spin:active:not(:disabled) { transform: scale(.95); }
+.sl-spin:disabled { filter: saturate(.55) brightness(.9); }
+.sl-spin-svg { width: 100%; height: 100%; display: block; }
+.sl-panah { transform-box: fill-box; transform-origin: center; }
+.sl-spin.jalan .sl-panah { animation: sl-panah-putar .7s linear infinite; }
+.sl-spin.turbo { box-shadow: 0 0 0 4px #5b3f12, 0 8px 0 #3a280a, inset 0 3px 10px #ffffff66, 0 0 22px #ffe58acc; }
+@keyframes sl-panah-putar { to { transform: rotate(360deg); } }
+.sl-pm { width: 54px; height: 54px; border-radius: 50%; font-size: 32px; line-height: 1; font-weight: 900; display: grid; place-items: center; background: radial-gradient(circle at 50% 30%, #bb8e38, #6e4d14); color: #ffe9a8; border: 3px solid #ecc96b; box-shadow: 0 4px 0 #3a280a; }
+.sl-pm:disabled { opacity: .5; }
+.sl-ikonbaris { display: flex; justify-content: center; gap: 10px; }
+.sl-ikon { min-width: 58px; height: 40px; padding: 0 10px; border-radius: 14px; font-size: 18px; font-weight: 900; background: #7a1226; color: #ffe9a8; border: 2px solid #e9b949; box-shadow: 0 3px 0 #3b0813; }
+.sl-ikon.on { background: #e9b949; color: #4a0d18; }
+.sl-ikon:disabled { opacity: .5; }
+.sl-kaki { display: flex; justify-content: center; gap: 14px; flex-wrap: nowrap; font-weight: 900; font-size: 12.5px; white-space: nowrap; }
+.sl-kaki > span { display: inline-flex; gap: 5px; align-items: baseline; }
+.sl-kaki em { font-style: normal; color: #d28a0a; font-size: 11px; letter-spacing: .3px; }
+.sl-layar.gratis .sl-kaki b { color: #ffe9a8; }
+.sl-kaki b { color: #5b0f1d; font-variant-numeric: tabular-nums; }
+.sl-isi-poin { align-self: center; padding: 8px 16px; border-radius: 12px; font-weight: 900; background: #fde047; color: #422006; border: 2px solid #8a5a06; text-decoration: none; }
+.sl-peringatan { margin: 0; text-align: center; font-size: 10.5px; font-weight: 700; opacity: .65; }
+.sl-layar.goyang { animation: sl-goyang .7s ease-in-out; }
+@media (prefers-reduced-motion: reduce) { .sl-spin.jalan .sl-panah { animation: none; } }
