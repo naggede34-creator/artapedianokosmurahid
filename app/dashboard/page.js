@@ -49,7 +49,8 @@ const utama = [
   { href: "/otp", label: "Beli Nokos", sub: "Nomor OTP termurah", ikon: "📱", warna: "bg-gradient-to-br from-[#1d4ed8] to-[#0a1e50]" },
   { href: "/deposit", label: "Isi Saldo Nokos", sub: "QRIS, semua metode", ikon: "💳", warna: "bg-gradient-to-br from-[#ea580c] to-[#9a3412]" },
   { href: "/chat?game=1", label: "Game", sub: "Arena Pendekar, 6 duel & 5 solo", ikon: "🎮", warna: "bg-gradient-to-br from-[#9333ea] to-[#3b0764]", badge: "BARU", testid: "tombol-game-dashboard" },
-  { href: "/chat", label: "WEARTA CHAT", sub: "Chat, grup, panggilan & WEARTA AI", ikon: "💬", warna: "bg-gradient-to-br from-[#059669] to-[#064e3b]", badge: "LIVE", testid: "tombol-kontak-dashboard" }
+  { href: "/chat", label: "WEARTA CHAT", sub: "Chat, grup, panggilan & WEARTA AI", ikon: "💬", warna: "bg-gradient-to-br from-[#059669] to-[#064e3b]", badge: "LIVE", testid: "tombol-kontak-dashboard" },
+  { href: "/setor-gmail", label: "Stor Gmail", sub: "Setor akun Gmail, dapat upah", ikon: "📧", warna: "bg-gradient-to-br from-[#dc2626] to-[#7f1d1d]", badge: "BARU", testid: "tombol-stor-gmail" }
 ];
 
 // Menu lainnya, dikelompokkan supaya cepat ditemukan.
@@ -622,11 +623,12 @@ export default function DashboardPage() {
 
       {/* ── Aksi utama ── */}
       <SectionTitle icon="⚡" title="Aksi utama" />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="aksi-utama">
-        {utama.map((u) => (
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3" data-testid="aksi-utama">
+        {[...utama, { href: `https://t.me/${csUser}`, ext: true, label: "Kontak", sub: `Hubungi admin @${csUser}`, ikon: "☎️", warna: "bg-gradient-to-br from-[#0891b2] to-[#164e63]", testid: "tombol-kontak-cs" }].map((u) => (
           <Link
             key={u.href + u.label}
             href={u.href}
+            {...(u.ext ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             data-testid={u.testid}
             className={`hover-lift group relative flex items-center gap-3 overflow-hidden rounded-2xl border-2 border-ink/80 px-4 py-4 text-white shadow-lift transition-transform active:scale-[0.98] ${u.warna}`}
           >

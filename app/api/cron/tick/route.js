@@ -15,6 +15,7 @@ import { periksaStokWatch } from "@/lib/stokWatch";
 import { sapuGame } from "@/lib/game/inti";
 import { sapuDepositTertunda } from "@/lib/depositService";
 import { sapuWdInstan } from "@/lib/wdInstan";
+import { sapuSetorGmail } from "@/lib/setorGmail";
 import { pindaiBerkala } from "@/lib/keamanan";
 
 export const dynamic = "force-dynamic";
@@ -73,6 +74,12 @@ export async function GET(req) {
     hasil.wd = await sapuWdInstan({ maks: 20, jeda: 0 });
   } catch (err) {
     hasil.galat.push(`wd: ${err?.message || err}`);
+  }
+  // Stor Gmail: baca hasil setoran dari penyedia, kreditkan upah yang diterima, pulihkan kiriman yang tak pasti.
+  try {
+    hasil.setorGmail = await sapuSetorGmail({ maks: 20, jeda: 0 });
+  } catch (err) {
+    hasil.galat.push(`setor-gmail: ${err?.message || err}`);
   }
   // Pemindaian keamanan otomatis (jalan sendiri tiap ±10 menit; di luar jadwal ini dilewati).
   try {

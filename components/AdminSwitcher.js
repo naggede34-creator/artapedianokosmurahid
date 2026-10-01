@@ -7,6 +7,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 export const DASBOR_ADMIN = [
   { id: "pusat", href: "/admin", label: "Pusat", ikon: "🏠", ket: "Semua dasbor di satu tempat" },
   { id: "pengguna", href: "/admin/pengguna", label: "Pengguna & Blokir", ikon: "👥", ket: "Cari pengguna, lihat detail, blokir / buka blokir" },
+  { id: "setor", href: "/admin/setor-gmail", label: "Stor Gmail", ikon: "📧", ket: "Untung per email, room, setoran, upah, penarikan saldo Stor" },
   { id: "ringkas", href: "/admin/dashboard?k=ringkas", label: "Ringkasan", ikon: "📊", ket: "Statistik & semua transaksi" },
   { id: "uang", href: "/admin/dashboard?k=uang", label: "Keuangan", ikon: "💰", ket: "Deposit manual, tarik saldo, AustinPay, referral, giveaway, juara, job" },
   { id: "game", href: "/admin/dashboard?k=game", label: "Game & Chat", ikon: "🎮", ket: "Game, Arena, pembaruan, lencana, event musiman" },
@@ -18,7 +19,7 @@ export const DASBOR_ADMIN = [
 export default function AdminSwitcher() {
   const path = usePathname() || "";
   const k = useSearchParams()?.get("k") || "";
-  const aktif = path === "/admin" ? "pusat" : path.startsWith("/admin/pengguna") ? "pengguna" : path.startsWith("/admin/dashboard") ? (k || "semua") : "";
+  const aktif = path === "/admin" ? "pusat" : path.startsWith("/admin/pengguna") ? "pengguna" : path.startsWith("/admin/setor-gmail") ? "setor" : path.startsWith("/admin/dashboard") ? (k || "semua") : "";
   return (
     <nav className="no-scrollbar sticky top-0 z-40 flex gap-1 overflow-x-auto border-b border-line bg-surface/95 px-3 py-2 backdrop-blur-sm" aria-label="Dasbor admin" data-testid="admin-switcher">
       {DASBOR_ADMIN.map((d) => (
