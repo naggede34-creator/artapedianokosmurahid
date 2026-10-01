@@ -68,6 +68,20 @@ jobs:
           path: android-app/artapedia.apk
           retention-days: 30
 
+      - name: Simpan APK ke cabang "apk-build" (agar mudah diunduh langsung)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: ${{ github.workspace }}
+        run: |
+          mkdir -p /tmp/apk && cp android-app/artapedia.apk /tmp/apk/artapedia.apk
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git checkout --orphan apk-build
+          git rm -rf --quiet . || true
+          cp /tmp/apk/artapedia.apk ./artapedia.apk
+          git add artapedia.apk
+          git commit -q -m "APK ${GITHUB_SHA::7}"
+          git push -f origin apk-build
+
       - name: Lampirkan ke Release (hanya saat tag)
         if: startsWith(github.ref, 'refs/tags/apk-v')
         uses: softprops/action-gh-release@v2
