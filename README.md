@@ -480,3 +480,12 @@ Kalau ada yang gagal, buka Dashboard Admin → Server OTP → **Diagnosa koneksi
 menembak kedua server WarungNokos plus endpoint profil, lalu melaporkan saldo akun dan
 penyebab kegagalannya.
 
+
+### Galat "Not enough balance" saat beli nomor WarungNokos
+
+Pesan itu datang dari **pemasok di balik pilihan nomor tersebut** (kolom "Server N" di pricelist WarungNokos), bukan dari saldo
+pembeli maupun — pada umumnya — saldo akun WarungNokos-mu. Sekarang: pembeli melihat pesan yang jelas ("Pemasok nomor untuk
+pilihan ini sedang kosong. Saldo tidak terpotong"), sistem otomatis mencoba pilihan lain untuk negara yang sama (boleh sedikit
+lebih mahal asal modalnya ≤ 97% dari harga yang dibayar pembeli — tidak pernah rugi), dan admin dikabari lewat Telegram
+bersama saldo akun WarungNokos yang terbaca API key (maks 1× per 10 menit per pilihan). Jika saldo yang tertera di notifikasi
+itu jauh lebih kecil dari saldo di akun WarungNokos-mu, API key yang terpasang milik akun lain.
