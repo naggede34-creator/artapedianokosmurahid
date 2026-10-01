@@ -20,6 +20,7 @@ import PanelTransition from "@/components/PanelTransition";
 import PasangAplikasi from "@/components/PasangAplikasi";
 import AuthGate from "@/components/AuthGate";
 import PembaruanModal from "@/components/PembaruanModal";
+import MusimPenerap from "@/components/MusimPenerap";
 import { useUser } from "@/app/providers";
 
 // Halaman yang tetap terbuka tanpa akun saat login diwajibkan: informasi umum.
@@ -109,6 +110,7 @@ export default function SiteChrome({ children }) {
           <WelcomeBonusPopup />
         </>
       )}
+      <MusimPenerap />
       <BroadcastBar />
       <Navbar />
       <main className="pb-24 md:pb-0">{children}</main>

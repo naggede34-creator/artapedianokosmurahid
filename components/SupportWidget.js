@@ -1,15 +1,23 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CHANNEL_URL } from "@/lib/links";
+import { saranHalaman } from "@/lib/navigasiAi";
+import TopiMaskot from "@/components/TopiMaskot";
 
 const GREETING = {
   role: "assistant",
   content:
-    "Halo! Aku Arta, CS AI Artapedia 🤖. Ada kendala deposit, order OTP, atau pertanyaan lain? Tanya aja di sini."
+    "Halo! Aku WEARTA AI 🦅✨ Aku bisa menjawab pertanyaan dan mengarahkanmu ke menu yang tepat — deposit, beli nomor OTP, game, klan, sampai ganti tema. Mau tanya apa?"
 };
 
-function ChatBubble({ msg }) {
+function tebal(teks) {
+  return String(teks).split(/(\*\*[^*]+\*\*)/g).map((x, i) => (x.startsWith("**") && x.endsWith("**") ? <strong key={i}>{x.slice(2, -2)}</strong> : x));
+}
+
+function ChatBubble({ msg, onNav }) {
   const isUser = msg.role === "user";
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
@@ -20,7 +28,16 @@ function ChatBubble({ msg }) {
             : "rounded-bl-sm border border-line bg-surface2 text-ink"
         }`}
       >
-        {msg.content}
+        {isUser ? msg.content : tebal(msg.content)}
+        {!isUser && msg.tautan?.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5" data-testid="ai-tautan">
+            {msg.tautan.map((t) => (
+              <Link key={t.href} href={t.href} onClick={onNav} className="press rounded-full border-2 border-amber bg-amber-soft px-2.5 py-1 text-[11px] font-bold text-amber-bright">
+                {t.ikon} {t.label} →
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -49,15 +66,16 @@ export default function SupportWidget({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const scrollRef = useRef(null);
+  const path = usePathname() || "/";
 
   useEffect(() => {
     if (!scrollRef.current) return;
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, loading, chatOpen]);
 
-  async function sendMessage(e) {
-    e.preventDefault();
-    const text = input.trim();
+  async function sendMessage(e, teksLangsung) {
+    e?.preventDefault?.();
+    const text = String(teksLangsung ?? input).trim();
     if (!text || loading) return;
 
     const history = messages;
@@ -73,12 +91,13 @@ export default function SupportWidget({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
+          halaman: path,
           history: history.map((m) => ({ role: m.role, content: m.content }))
         })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "AI CS sedang tidak bisa dihubungi.");
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+      if (!res.ok) throw new Error(data.error || "WEARTA AI sedang tidak bisa dihubungi.");
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply, tautan: data.tautan || [] }]);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -98,8 +117,8 @@ export default function SupportWidget({
                 <img src="/maskot-sm.webp" alt="" className="h-full w-full object-contain object-bottom p-0.5" />
               </span>
               <div>
-                <p className="text-sm font-semibold leading-tight">ARTA PEDIA SUPPORT</p>
-                <p className="text-[11px] text-white/80">Biasanya balas dalam beberapa detik</p>
+                <p className="text-sm font-semibold leading-tight">WEARTA AI</p>
+                <p className="text-[11px] text-white/80">Menjawab & mengarahkan ke menu yang tepat</p>
               </div>
             </div>
             <button
@@ -115,8 +134,15 @@ export default function SupportWidget({
 
           <div ref={scrollRef} className="flex-1 space-y-2.5 overflow-y-auto bg-bg px-3.5 py-3.5">
             {messages.map((m, i) => (
-              <ChatBubble key={i} msg={m} />
+              <ChatBubble key={i} msg={m} onNav={() => setChatOpen(false)} />
             ))}
+            {messages.length <= 1 && !loading && (
+              <div className="flex flex-wrap gap-1.5 pt-1" data-testid="ai-saran">
+                {saranHalaman(path).map((q) => (
+                  <button key={q} onClick={() => sendMessage(null, q)} className="press rounded-full border border-line bg-surface px-3 py-1.5 text-[11.5px] font-semibold text-ink">{q}</button>
+                ))}
+              </div>
+            )}
             {loading && <TypingDots />}
             {error && (
               <p className="rounded-xl bg-rose-soft px-3 py-2 text-xs font-medium text-rose">{error}</p>
@@ -132,7 +158,7 @@ export default function SupportWidget({
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Tulis pertanyaanmu..."
+                placeholder="Tanya WEARTA AI…"
                 className="min-w-0 flex-1 rounded-full border border-line bg-surface px-4 py-2 text-sm text-ink outline-none focus:border-amber"
               />
               <button
@@ -181,7 +207,7 @@ export default function SupportWidget({
             className="hover-lift flex items-center gap-2 rounded-full border border-line bg-surface py-2 pl-3 pr-4 text-sm font-medium text-ink shadow-lift"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-success-soft text-success">🤖</span>
-            Tanya CS AI
+            Tanya WEARTA AI
           </button>
         </div>
       )}
@@ -191,7 +217,7 @@ export default function SupportWidget({
         <button
           onClick={() => setMenuOpen((v) => !v)}
           className="mascot-fab press"
-          aria-label={menuOpen ? "Tutup menu bantuan" : "Bantuan — ARTA PEDIA SUPPORT"}
+          aria-label={menuOpen ? "Tutup menu bantuan" : "Bantuan — WEARTA AI"}
         >
           {menuOpen ? (
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="mascot-fab-x">
@@ -201,6 +227,7 @@ export default function SupportWidget({
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/maskot-sm.webp" alt="" className="mascot-fab-img" />
+              <TopiMaskot ukuran="1.1rem" />
               <span className="mascot-fab-dot" aria-hidden="true" />
             </>
           )}

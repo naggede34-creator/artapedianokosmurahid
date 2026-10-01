@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { otpOrdersCol } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+// Tidak lagi membocorkan potongan token (kunci akun): cukup kode hash yang tak bisa dibalik.
 function maskToken(token) {
-  if (!token || token.length < 6) return "***";
-  return token.slice(0, 3) + "•".repeat(4) + token.slice(-3);
+  if (!token) return "***";
+  return "AP" + createHash("sha256").update(String(token)).digest("hex").slice(0, 3).toUpperCase() + "•••";
 }
 
 export async function GET() {

@@ -13,6 +13,8 @@ import LevelUpModal from "@/components/LevelUpModal";
 import OnboardingTour, { useShouldShowTour } from "@/components/OnboardingTour";
 import NamePromptModal from "@/components/NamePromptModal";
 import WinbackBanner from "@/components/WinbackBanner";
+import MusimBanner from "@/components/MusimBanner";
+import PitaBukti from "@/components/PitaBukti";
 import BannerRail from "@/components/BannerRail";
 import AnimeHero from "@/components/AnimeHero";
 import MangaWaifu from "@/components/MangaWaifu";
@@ -62,6 +64,7 @@ const kelompokMenu = [
   ] },
   { judul: "Hadiah & seru-seruan", ikon: "🎁", item: [
     { href: "/misi", label: "Misi & Poin", icon: Icon.star },
+    { href: "/klan", label: "Klan", icon: "🛡", badge: "Baru" },
     { href: "/referral", label: "Undang teman", icon: Icon.gift },
     { href: "/pet", label: "Pet Arta Pedia", icon: "🥚" },
     { href: "/giveaway", label: "Giveaway", icon: "🎁" }
@@ -583,6 +586,10 @@ export default function DashboardPage() {
       <div key={tab} className="dash-isi">
       {tab === "beranda" && (
         <>
+      {/* Event musiman (tanggal kembar, gajian, Ramadan, …) */}
+      <MusimBanner className="mt-4" />
+      <PitaBukti className="mt-3" />
+
       {/* Win-back banner */}
       {ready && token && (
         <div className="mt-4">

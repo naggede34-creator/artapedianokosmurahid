@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "@/app/providers";
 import { markOpenersFree, onComicDone } from "@/lib/introGate";
+import TopiMaskot from "./TopiMaskot";
 
 // Sapaan ARTA PEDIA SUPPORT tepat setelah animasi loading selesai.
 // Tampil sekali per sesi supaya tidak mengganggu saat pindah-pindah halaman.
@@ -122,6 +123,7 @@ export default function MascotGreeting() {
           <div className="mg-figure">
             <span className="mg-halo" aria-hidden="true" />
             <span className="mg-shadow" aria-hidden="true" />
+            <TopiMaskot ukuran="2.4rem" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/maskot.webp" alt="ARTA PEDIA SUPPORT" className="mg-img" width="484" height="700" />
           </div>

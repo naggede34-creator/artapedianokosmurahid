@@ -13,6 +13,7 @@ import AdminPembaruan from "@/components/AdminPembaruan";
 import AdminTarikPoin from "@/components/AdminTarikPoin";
 import AdminKeamanan from "@/components/AdminKeamanan";
 import AdminAustinPay from "@/components/AdminAustinPay";
+import AdminMusim from "@/components/AdminMusim";
 import { CHANNEL_ID, CHANNEL_URL } from "@/lib/links";
 
 function fmtDate(d) {
@@ -39,6 +40,7 @@ const TABS = [
   { id: "lencana", label: "Lencana", icon: "🎖" },
   { id: "game", label: "Game", icon: "🎮" },
   { id: "pembaruan", label: "Pembaruan", icon: "✨" },
+  { id: "musim", label: "Event Musiman", icon: "🎉" },
   { id: "tarikpoin", label: "Poin Game", icon: "💸" },
   { id: "konfigurasi", label: "Konfigurasi", icon: "🔑" },
   { id: "bot", label: "Bot Telegram", icon: "🤖" },
@@ -56,7 +58,7 @@ const TABS = [
 const KELOMPOK_TAB = [
   { id: "ringkas", label: "Ringkasan", icon: "📊", tabs: ["ringkasan", "transaksi"] },
   { id: "uang", label: "Pengguna & Uang", icon: "👥", tabs: ["pengguna", "depositmanual", "austinpay", "tarikpoin", "tarik", "referral", "kreator", "giveaway", "juara", "job"] },
-  { id: "game", label: "Game & Chat", icon: "🎮", tabs: ["game", "pembaruan", "lencana"] },
+  { id: "game", label: "Game & Chat", icon: "🎮", tabs: ["game", "pembaruan", "lencana", "musim"] },
   { id: "konten", label: "Konten & Toko", icon: "🛍️", tabs: ["konten", "banner", "produk", "tiket"] },
   { id: "integrasi", label: "Integrasi", icon: "🔌", tabs: ["gateway", "bot", "reseller", "konfigurasi"] },
   { id: "sistem", label: "Sistem", icon: "⚙️", tabs: ["pengaturan", "tools"] }
@@ -3255,6 +3257,7 @@ export default function AdminDashboardPage() {
       {activeTab === "pembaruan" && <AdminPembaruan />}
       {activeTab === "tarikpoin" && <AdminTarikPoin />}
       {activeTab === "austinpay" && <AdminAustinPay />}
+      {activeTab === "musim" && <AdminMusim />}
 
       {activeTab === "giveaway" && (
         <div className="mt-5 space-y-5">

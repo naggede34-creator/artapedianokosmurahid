@@ -10,6 +10,7 @@ import { TombolSuara, useMusik, bunyiKlik } from "@/components/wa/Suara";
 import { efek as bunyi } from "@/lib/suara";
 import { PapanCatur, PapanUno, PapanRemi, PapanMahjong, PapanGaple, HasilRemi, HasilMahjong, HasilGaple } from "@/components/wa/GameBoards";
 import dynamic from "next/dynamic";
+import KartuMenang from "@/components/KartuMenang";
 const PapanTarung = dynamic(() => import("@/components/tarung/Tarung").then((m) => m.PapanTarung), { ssr: false, loading: () => <div className="wa-memuat"><span className="wa-spin" /> Memuat arena…</div> });
 
 // Nominal game tampil sebagai poin + padanan rupiah (2 poin = Rp1.000).
@@ -347,6 +348,7 @@ export function LayarGame({ id, onTutup }) {
   const [tick, setTick] = useState(0);
   const [tanya, setTanya] = useState(null);
   const [aturan, setAturan] = useState(false);
+  const [kartu, setKartu] = useState(false);
   const batas = useRef(0);
   const statusAwal = useRef(null);
   const sebelum = useRef(null);
@@ -483,6 +485,7 @@ export function LayarGame({ id, onTutup }) {
             </div>
           )}
 
+          {kartu && g.hasil?.saya === "menang" && <KartuMenang judul="MENANG!" subjudul={g.nama} nama={wa.saya?.nama || ""} baris={[lawan ? `Mengalahkan ${lawan.nama}` : "", g.hasil.alasan || ""].filter(Boolean)} teksBagikan={`Aku baru menang di ${g.nama} — ARTA PEDIA! 🏆`} onTutup={() => setKartu(false)} />}
           {selesai && (
             <div className={`wg-hasil ${g.hasil?.saya || ""}`} role="status" data-testid="wg-hasil">
               {g.hasil.saya === "menang" && <div className="wg-konfeti" aria-hidden="true">{Array.from({ length: 16 }, (_, i) => <i key={i} style={{ "--i": i }} />)}</div>}
@@ -509,6 +512,7 @@ export function LayarGame({ id, onTutup }) {
               {g.jenis === "gaple" && g.papan?.selesai && <HasilGaple selesai={g.papan.selesai} />}
               <div className="wg-aksi">
                 {lawan && g.status === "selesai" && <button className="wa-tombol utama" onClick={revans}>🔁 Revans</button>}
+                {g.hasil.saya === "menang" && <button className="wa-tombol" onClick={() => setKartu(true)} data-testid="bagikan-menang">📸 Bagikan kemenangan</button>}
                 <button className="wa-tombol" onClick={onTutup}>Tutup</button>
               </div>
             </div>

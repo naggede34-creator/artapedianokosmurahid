@@ -90,6 +90,7 @@ const sections = [
       { href: "/loyalitas", label: "Poin & Level", icon: <Icon.star width={19} height={19} /> },
       { href: "/toko-poin", label: "Toko Poin", icon: I.cart, badge: "Baru" },
       { href: "/misi", label: "Misi & Tantangan", icon: I.trophy, badge: "Baru" },
+      { href: "/klan", label: "Klan", icon: <span className="text-[17px] leading-none">🛡</span>, badge: "Baru" },
       { href: "/vip", label: "Level VIP", icon: I.tag },
       { href: "/referral", label: "Undang Teman", icon: <Icon.gift width={19} height={19} /> },
       { href: "/leaderboard", label: "Leaderboard", icon: I.trophy }

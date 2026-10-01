@@ -198,3 +198,33 @@
 @media (prefers-reduced-motion: reduce) {
   .tr-poster-k, .tr-vs-sisi, .tr-vs-teks, .tr-konfeti i, .tr-k.a6.siap { animation: none !important; }
 }
+
+/* ═══ Season Arena ═══ */
+.sa-latar { position: absolute; inset: 0; z-index: 30; background: rgb(8 4 16 / .88); display: flex; align-items: stretch; justify-content: center; overflow-y: auto; }
+.sa-kartu { width: min(100%, 520px); padding: calc(10px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom)); color: #f3eaff; }
+.sa-atas { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.sa-atas h2 { font-family: var(--font-display), Impact, sans-serif; font-weight: 400; letter-spacing: 2px; font-size: 26px; color: #ffe7a1; margin: 0; }
+.sa-tab { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0; }
+.sa-tab button { padding: 10px 6px; border-radius: 12px; font-weight: 800; font-size: 13px; background: #1c0f30; border: 2px solid #ffffff22; color: #cdbde8; cursor: pointer; }
+.sa-tab button.on { background: linear-gradient(100deg, #7a2a12, #3a1030); border-color: #ffb31a; color: #fff3c8; }
+.sa-info, .sa-lalu { font-size: 12px; color: #cdbde8; margin: 6px 0; }
+.sa-hadiah-baris { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.sa-hadiah-baris span { background: #ffd75e22; border: 1px solid #ffd75e66; color: #ffe7a1; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; }
+.sa-saya { display: grid; gap: 2px; padding: 10px 12px; margin: 6px 0; border-radius: 14px; background: linear-gradient(100deg, #10335a, #121233); border: 2px solid #5fd0ff88; font-size: 13px; }
+.sa-saya span { color: #bfe6ff; font-size: 12px; }
+.sa-daftar { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 6px; }
+.sa-baris { display: grid; grid-template-columns: 34px 1fr auto auto; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: #1c0f30; border: 1px solid #ffffff1a; }
+.sa-baris.saya { border-color: #5fd0ff; background: #12274a; }
+.sa-no { font-size: 17px; text-align: center; }
+.sa-nama { font-weight: 800; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: grid; }
+.sa-nama em { font-style: normal; font-size: 11px; font-weight: 600; color: #b8a6d6; }
+.sa-nilai { text-align: right; font-weight: 900; font-size: 15px; color: #ffe7a1; display: grid; }
+.sa-nilai small { font-weight: 500; font-size: 10px; color: #b8a6d6; }
+.sa-hadiah { font-size: 11px; font-weight: 800; color: #7ef0b0; }
+.sa-kosong { text-align: center; color: #b8a6d6; font-size: 13px; padding: 18px 8px; }
+.sa-galat { background: #5a1020; border: 1px solid #ff6b81; border-radius: 10px; padding: 8px 10px; font-size: 13px; }
+.sa-muat { text-align: center; color: #cdbde8; padding: 30px 0; }
+.sa-aturan { margin-top: 10px; font-size: 12px; color: #cdbde8; }
+.sa-aturan summary { cursor: pointer; font-weight: 800; color: #ffe7a1; }
+.sa-aturan ul { padding-left: 18px; display: grid; gap: 4px; margin: 6px 0; }
+.sa-bagi { width: 100%; margin: 4px 0; padding: 9px; border-radius: 12px; border: 2px solid #ffd75e; background: #3a1030; color: #ffe7a1; font-weight: 800; cursor: pointer; }

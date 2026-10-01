@@ -243,6 +243,11 @@ export const tautanKontak = (pid) => `${typeof window !== "undefined" ? window.l
 /** Bagikan lewat menu bagikan perangkat; jika tak ada, salin ke papan klip. Mengembalikan "bagikan" | "salin" | "gagal". */
 export async function bagikanTautan({ judul, teks, url }) {
   try {
+    // Aplikasi Android (WebView) tidak punya navigator.share: pakai jembatan ArtapediaApp.
+    if (typeof window !== "undefined" && window.ArtapediaApp?.postMessage) {
+      window.ArtapediaApp.postMessage(JSON.stringify({ aksi: "bagikan-teks", teks: teks || judul || "", url }));
+      return "bagikan";
+    }
     if (navigator.share) {
       await navigator.share({ title: judul, text: teks, url });
       return "bagikan";

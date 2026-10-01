@@ -6,6 +6,8 @@ import SimCard from "@/components/SimCard";
 import HeroMascot from "@/components/HeroMascot";
 import TransactionTicker from "@/components/TransactionTicker";
 import LiveTicker from "@/components/LiveTicker";
+import MusimBanner from "@/components/MusimBanner";
+import PitaBukti from "@/components/PitaBukti";
 import BannerRail from "@/components/BannerRail";
 import ChannelNotifCard from "@/components/ChannelNotifCard";
 import GatewayTeaser from "@/components/GatewayTeaser";
@@ -324,6 +326,9 @@ export default function HomePage() {
             kolom kiri yang lebih panjang. */}
         <HeroMascot />
       </section>
+
+      <MusimBanner className="mt-6" />
+      <PitaBukti className="mt-3" />
 
       {/* Live Purchase Ticker */}
       <section className="mt-6">

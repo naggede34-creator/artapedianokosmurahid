@@ -9,6 +9,7 @@ import { muatSemua, urlPotret } from "@/components/tarung/sprite";
 import { KARAKTER, URUTAN_KARAKTER, ARENA, URUTAN_ARENA, BIAYA_JURUS, BIAYA_PAMUNGKAS } from "@/lib/tarung/karakter";
 import { efek as bunyi, pembawaAcara, bangunkan } from "@/lib/suara";
 import { TombolSuara, useMusik, bunyiKlik } from "@/components/wa/Suara";
+import SeasonArena from "@/components/tarung/SeasonArena";
 import "@/components/tarung/tarung.css";
 
 const KUNCI = "artapedia_tarung_v1";
@@ -332,6 +333,7 @@ export function LayarTarung({ onTutup, onDuel }) {
   const [p1, setP1] = useState(null);
   const [laga, setLaga] = useState(null);
   const [panduan, setPanduan] = useState(false);
+  const [season, setSeason] = useState(false);
   const [rekor, setRekor] = useState({});
   const [pilihLawan, setPilihLawan] = useState({ p2: "acak", level: 1, arena: "lawan" });
   useEffect(() => { setRekor(bacaRekor()); muatSemua(URUTAN_KARAKTER.map((k) => KARAKTER[k])); }, []);
@@ -391,6 +393,7 @@ export function LayarTarung({ onTutup, onDuel }) {
             <button className="tr-menu-b arkade" onClick={() => mulaiMode("arkade")} data-testid="tr-mode-arkade"><i>🏆</i><b>Mode Arkade</b><small>Kalahkan 4 penantang berturut-turut</small></button>
             <button className="tr-menu-b cepat" onClick={() => mulaiMode("cepat")} data-testid="tr-mode-cepat"><i>⚔️</i><b>Tarung Cepat</b><small>Lawan CPU · pilih lawan & kesulitan</small></button>
             <button className="tr-menu-b duel" onClick={onDuel} data-testid="tr-mode-duel"><i>👥</i><b>Duel vs Pemain</b><small>Tarung lawan pengguna lain · bisa taruhan poin</small></button>
+            <button className="tr-menu-b season" onClick={() => setSeason(true)} data-testid="tr-mode-season"><i>👑</i><b>Season & Turnamen</b><small>Peringkat musim, turnamen mingguan, hadiah</small></button>
             <button className="tr-menu-b latihan" onClick={() => mulaiMode("latihan")} data-testid="tr-mode-latihan"><i>🎯</i><b>Latihan</b><small>Coba semua jurus tanpa batas</small></button>
             <button className="tr-menu-b panduan" onClick={() => setPanduan(true)}><i>📖</i><b>Cara Main & Jurus</b><small>Kontrol, combo, daftar jurus</small></button>
           </div>
@@ -434,6 +437,7 @@ export function LayarTarung({ onTutup, onDuel }) {
         </div>
       )}
       {panduan && <PanduanTarung onTutup={() => setPanduan(false)} />}
+      {season && <SeasonArena onTutup={() => setSeason(false)} />}
     </div>
   );
 }

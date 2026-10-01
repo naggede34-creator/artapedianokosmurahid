@@ -1,0 +1,75 @@
+name: Build APK Android
+
+# Membangun APK aplikasi WebView ARTA PEDIA (folder android-app/).
+# Jalankan manual: tab Actions → "Build APK Android" → Run workflow.
+# Atau beri tag, mis. `git tag apk-v1.0.0 && git push --tags` → APK ikut terlampir di Releases.
+on:
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: "Alamat situs yang dibungkus aplikasi"
+        required: false
+        default: "https://artapedianokosmurahid.vercel.app"
+  push:
+    tags: ["apk-v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: android-app
+    env:
+      SITE_URL: ${{ github.event.inputs.site_url || 'https://artapedianokosmurahid.vercel.app' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Buat kerangka Android (flutter create)
+        run: flutter create --platforms=android --org id.artapedia --project-name artapedia_app --no-pub .
+
+      - name: Sesuaikan izin, nama, deep link, minSdk
+        run: python3 tool/siapkan_android.py
+
+      - name: Ambil dependensi
+        run: flutter pub get
+
+      - name: Buat ikon peluncur
+        run: dart run flutter_launcher_icons
+
+      - name: Analisis kode
+        run: flutter analyze
+
+      - name: Uji widget
+        run: flutter test
+
+      - name: Build APK rilis
+        run: flutter build apk --release --dart-define=SITE_URL=${{ env.SITE_URL }}
+
+      - name: Ganti nama berkas
+        run: cp build/app/outputs/flutter-apk/app-release.apk artapedia.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: artapedia-apk
+          path: android-app/artapedia.apk
+          retention-days: 30
+
+      - name: Lampirkan ke Release (hanya saat tag)
+        if: startsWith(github.ref, 'refs/tags/apk-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android-app/artapedia.apk

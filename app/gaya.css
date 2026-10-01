@@ -1,0 +1,342 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   GAYA TAMPILAN — pilihan gaya visual (di luar tema warna di lib/tema.js)
+   Bawaan = Komik 3D (tanpa atribut). Gaya lain dipasang lewat <html data-gaya="…">:
+     liquid · glass · neon · clay · bersih · retro
+   Warna tetap mengikuti tema warna & mode terang/gelap, kecuali "neon" yang selalu gelap.
+   Semua aturan di-scope ke html[data-gaya] sehingga tanpa atribut tidak ada yang berubah.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Daftar elemen yang ikut digaya-ulang (kartu, panel, tombol, isian). */
+/* ── umum: judul tidak lagi berhuruf kapital Bangers kecuali neon/retro ── */
+html[data-gaya="liquid"] :is(h1, h2, h3, h4, .judul-timbul),
+html[data-gaya="glass"] :is(h1, h2, h3, h4, .judul-timbul),
+html[data-gaya="clay"] :is(h1, h2, h3, h4, .judul-timbul),
+html[data-gaya="bersih"] :is(h1, h2, h3, h4, .judul-timbul) {
+  font-family: var(--font-body), system-ui, sans-serif !important;
+  text-transform: none !important;
+  letter-spacing: -0.01em !important;
+  font-weight: 800 !important;
+  text-shadow: none !important;
+  transform: none !important;
+}
+html[data-gaya="liquid"] .user-dash h2::after,
+html[data-gaya="glass"] .user-dash h2::after,
+html[data-gaya="clay"] .user-dash h2::after,
+html[data-gaya="bersih"] .user-dash h2::after { display: none; }
+html[data-gaya]:not([data-gaya="komik"]) body { background-image: none; }
+
+/* ═══════════════ 1. LIQUID — gelembung cairan, berkilau, lembut ═══════════════ */
+/* body harus transparan: kalau body (kelas bg-bg) buram, latar gelembung di body::before (z-index -1) tertutup. Warna dasar tetap dari <html>. */
+html[data-gaya="liquid"] body, html[data-gaya="glass"] body { background-color: transparent !important; }
+html[data-gaya="liquid"], html[data-gaya="glass"] { background-color: rgb(var(--c-bg)); }
+html[data-gaya="liquid"] body::before {
+  content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(38% 38% at 18% 22%, rgb(var(--c-orange) / .50), transparent 70%),
+    radial-gradient(34% 34% at 82% 18%, rgb(var(--c-blue) / .50), transparent 70%),
+    radial-gradient(40% 40% at 70% 82%, rgb(236 72 153 / .42), transparent 70%),
+    radial-gradient(30% 30% at 24% 80%, rgb(20 184 166 / .40), transparent 70%);
+  filter: blur(18px);
+  animation: gaya-cair 22s ease-in-out infinite alternate;
+}
+@keyframes gaya-cair {
+  0% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+  50% { transform: translate3d(3%, -2%, 0) scale(1.08) rotate(4deg); }
+  100% { transform: translate3d(-3%, 3%, 0) scale(1.03) rotate(-3deg); }
+}
+html[data-gaya="liquid"] :is(.card, .card-flat, .panel-3d, .manga-card, .card-3d, .card-wow, .balok-3d, .menu-ubin, .comic-panel, .admin-card, .user-dash .card, .user-dash .card-flat, .user-dash .panel-3d) {
+  border: 1px solid rgb(255 255 255 / .6) !important;
+  border-radius: 28px !important;
+  background: linear-gradient(150deg, rgb(var(--c-surface) / .94), rgb(var(--c-surface2) / .72)) !important;
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / .75),
+    inset 0 -14px 26px -16px rgb(var(--c-orange) / .28),
+    0 22px 44px -22px rgb(var(--c-blue) / .5) !important;
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  transition: transform .35s cubic-bezier(.3, 1.4, .5, 1), box-shadow .35s ease, border-radius .6s ease !important;
+}
+html.dark[data-gaya="liquid"] :is(.card, .card-flat, .panel-3d, .manga-card, .card-3d, .card-wow, .balok-3d, .menu-ubin, .comic-panel, .admin-card, .user-dash .card, .user-dash .panel-3d) {
+  border-color: rgb(255 255 255 / .14) !important;
+  box-shadow: inset 0 1.5px 0 rgb(255 255 255 / .14), inset 0 -14px 26px -16px rgb(var(--c-orange) / .3), 0 22px 44px -22px rgb(0 0 0 / .8) !important;
+}
+html[data-gaya="liquid"] :is(.card, .panel-3d, .manga-card, .card-3d, .balok-3d, .menu-ubin, .user-dash .card, .user-dash .panel-3d):hover {
+  transform: translateY(-4px) scale(1.012) !important;
+  border-radius: 34px 26px 32px 28px !important;
+}
+html[data-gaya="liquid"] :is(.card, .panel-3d, .user-dash .card)::after,
+html[data-gaya="liquid"] .user-dash .card::after { opacity: 0 !important; }
+html[data-gaya="liquid"] :is(.btn-primary, .btn-dark, .btn-danger, .btn-3d, .btn-glow, .btn-neon) {
+  border: 0 !important;
+  border-radius: 999px !important;
+  background-image: linear-gradient(135deg, rgb(var(--c-orange)), rgb(236 72 153)) !important;
+  color: #fff !important;
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / .55), inset 0 -4px 10px rgb(0 0 0 / .18), 0 12px 26px -8px rgb(var(--c-orange) / .75) !important;
+  transition: transform .3s cubic-bezier(.3, 1.6, .5, 1), box-shadow .3s ease, border-radius .5s ease !important;
+}
+html[data-gaya="liquid"] .btn-danger { background-image: linear-gradient(135deg, rgb(var(--c-danger)), rgb(251 146 60)) !important; }
+html[data-gaya="liquid"] .btn-dark { background-image: linear-gradient(135deg, rgb(var(--c-blue)), rgb(99 102 241)) !important; }
+html[data-gaya="liquid"] :is(.btn-primary, .btn-dark, .btn-danger, .btn-3d):hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.04) !important;
+  border-radius: 44% 56% 52% 48% / 62% 48% 52% 38% !important;
+}
+html[data-gaya="liquid"] :is(.btn-primary, .btn-dark, .btn-danger, .btn-3d):active:not(:disabled) { transform: scale(.96) !important; }
+html[data-gaya="liquid"] .btn-ghost {
+  border: 1px solid rgb(var(--c-blue) / .35) !important; border-radius: 999px !important;
+  background: rgb(var(--c-surface) / .7) !important; box-shadow: inset 0 2px 0 rgb(255 255 255 / .6), 0 8px 18px -10px rgb(var(--c-blue) / .5) !important;
+}
+html[data-gaya="liquid"] :is(.field, .field-3d) {
+  border: 1px solid rgb(var(--c-blue) / .3) !important; border-radius: 18px !important;
+  background: rgb(var(--c-surface) / .8) !important; box-shadow: inset 0 3px 8px -4px rgb(var(--c-blue) / .25) !important;
+}
+
+/* ═══════════════ 2. GLASS — kaca buram di atas aurora ═══════════════ */
+html[data-gaya="glass"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 10% 0%, rgb(var(--c-blue) / .62), transparent 60%),
+    radial-gradient(50% 45% at 100% 10%, rgb(var(--c-orange) / .55), transparent 60%),
+    radial-gradient(55% 50% at 50% 100%, rgb(139 92 246 / .52), transparent 62%);
+  animation: gaya-aurora 26s ease-in-out infinite alternate;
+}
+@keyframes gaya-aurora { from { filter: hue-rotate(0deg); transform: scale(1); } to { filter: hue-rotate(40deg); transform: scale(1.06); } }
+html[data-gaya="glass"] :is(.card, .card-flat, .panel-3d, .manga-card, .card-3d, .card-wow, .balok-3d, .menu-ubin, .comic-panel, .admin-card, .glass, .user-dash .card, .user-dash .card-flat, .user-dash .panel-3d, .user-dash .glass) {
+  border: 1px solid rgb(255 255 255 / .5) !important;
+  border-radius: 22px !important;
+  background: rgb(var(--c-surface) / .52) !important;
+  backdrop-filter: blur(20px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(170%) !important;
+  box-shadow: 0 8px 32px rgb(31 38 135 / .16), inset 0 1px 0 rgb(255 255 255 / .6) !important;
+  transition: transform .25s ease, box-shadow .25s ease, background .25s ease !important;
+}
+html.dark[data-gaya="glass"] :is(.card, .card-flat, .panel-3d, .manga-card, .card-3d, .card-wow, .balok-3d, .menu-ubin, .comic-panel, .admin-card, .glass, .user-dash .card, .user-dash .panel-3d, .user-dash .glass) {
+  border-color: rgb(255 255 255 / .14) !important; background: rgb(var(--c-surface) / .5) !important;
+  box-shadow: 0 8px 32px rgb(0 0 0 / .45), inset 0 1px 0 rgb(255 255 255 / .1) !important;
+}
+html[data-gaya="glass"] :is(.card, .panel-3d, .manga-card, .card-3d, .balok-3d, .menu-ubin, .user-dash .card, .user-dash .panel-3d):hover {
+  transform: translateY(-3px) !important; background: rgb(var(--c-surface) / .68) !important;
+}
+html[data-gaya="glass"] :is(.card, .panel-3d, .user-dash .card)::after { opacity: 0 !important; }
+html[data-gaya="glass"] :is(.btn-primary, .btn-dark, .btn-danger, .btn-3d, .btn-glow, .btn-neon) {
+  border: 1px solid rgb(255 255 255 / .55) !important; border-radius: 16px !important;
+  background-image: none !important; background-color: rgb(var(--c-orange) / .78) !important;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  color: #fff !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .6), 0 8px 24px -6px rgb(var(--c-orange) / .55) !important;
+}
+html[data-gaya="glass"] .btn-dark { background-color: rgb(var(--c-blue) / .75) !important; }
+html[data-gaya="glass"] .btn-danger { background-color: rgb(var(--c-danger) / .78) !important; }
+html[data-gaya="glass"] :is(.btn-primary, .btn-dark, .btn-danger, .btn-3d):hover:not(:disabled) { filter: brightness(1.1) saturate(1.2); transform: translateY(-1px) !important; }
+html[data-gaya="glass"] .btn-ghost {
+  border: 1px solid rgb(255 255 255 / .5) !important; border-radius: 16px !important;
+  background: rgb(var(--c-surface) / .45) !important; backdrop-filter: blur(10px); box-shadow: inset 0 1px 0 rgb(255 255 255 / .5) !important;
+}
+html[data-gaya="glass"] :is(.field, .field-3d) {
+  border: 1px solid rgb(255 255 255 / .45) !important; border-radius: 14px !important;
+  background: rgb(var(--c-surface) / .5) !important; backdrop-filter: blur(8px); box-shadow: none !important;
+}
+
+/* ═══════════════ 3. NEON — cyber gelap bercahaya (selalu gelap) ═══════════════ */
+html[data-gaya="neon"] {
+  color-scheme: dark;
+  --c-bg: 5 8 20; --c-surface: 10 15 34; --c-surface2: 16 24 52; --c-surface3: 26 38 78;
+  --c-line: 40 70 140; --c-ink: 224 240 255; --c-muted: 130 160 210;
+  --c-orange: 255 61 129; --c-orange-soft: 60 12 34; --c-orange-bright: 255 140 180;
+  --c-blue: 0 229 255; --c-blue-soft: 6 40 56; --c-blue-bright: 140 245 255;
+  --c-navy: 150 230 255; --c-navy-soft: 8 30 54; --c-navy-bright: 200 245 255;
+  --comic-shadow: 0 0 18px -4px rgb(0 229 255 / .5);
+  --comic-shadow-sm: 0 0 12px -4px rgb(0 229 255 / .45);
+  --comic-shadow-lg: 0 0 28px -4px rgb(0 229 255 / .6);
+  --comic-border: 1px solid rgb(0 229 255 / .7);
+}
+html[data-gaya="neon"] body {
+  background-color: rgb(5 8 20);
+  background-image:
+    linear-gradient(rgb(0 229 255 / .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(0 229 255 / .05) 1px, transparent 1px) !important;
+  background-size: 38px 38px !important;
+}
+html[data-gaya="neon"] body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(50% 40% at 50% 0%, rgb(255 61 129 / .18), transparent 70%), radial-gradient(40% 40% at 100% 100%, rgb(0 229 255 / .16), transparent 70%);
+}
+html[data-gaya="neon"] :is(h1, h2, h3, h4, .judul-timbul) { text-shadow: 0 0 12px rgb(0 229 255 / .65), 0 0 2px rgb(0 229 255 / .9) !important; color: rgb(190 248 255); }
+html[data-gaya="neon"] :is(.card, .card-flat, .panel-3d, .manga-card, .card-3d, .card-wow, .balok-3d, .menu-ubin, .comic-panel, .admin-card, .glass, .user-dash .card, .user-dash .card-flat, .user-dash .panel-3d, .user-dash .glass) {
+  border: 1px solid rgb(0 229 255 / .55) !important; border-radius: 12px !important;
+  background: linear-gradient(160deg, rgb(10 15 34 / .96), rgb(16 24 52 / .9)) !important;
+  box-shadow: 0 0 0 1px rgb(0 229 255 / .15), 0 0 22px -6px rgb(0 229 255 / .55), inset 0 0 18px -10px rgb(0 229 255 / .5) !important;
+  transition: box-shadow .25s ease, border-color .25s ease, transform .25s ease !important;
+}
+html[data-gaya="neon"] :is(.card, .panel-3d, .manga-card, .card-3d, .balok-3d, .menu-ubin, .user-dash .card, .user-dash .panel-3d):hover {
+  border-color: rgb(255 61 129 / .9) !important; transform: translateY(-2px) !important;
+  box-shadow: 0 0 0 1px rgb(255 61 129 / .3), 0 0 30px -4px rgb(255 61 129 / .7), inset 0 0 22px -10px rgb(255 61 129 / .5) !important;
+}
+html[data-gaya="neon"] :is(.card, .panel-3d, .user-dash .card)::after { opacity: 0 !important; }
+html[data-gaya="neon"] :is(.btn-primary, .btn-dark, .btn-danger, .btn-3d, .btn-glow, .btn-neon) {
+  background-image: none !important; background: transparent !important; color: rgb(255 140 180) !important;
+  border: 1.5px solid rgb(255 61 129) !important; border-radius: 10px !important;
+  box-shadow: 0 0 14px -2px rgb(255 61 129 / .7), inset 0 0 12px -6px rgb(255 61 129 / .8) !important;
+  text-shadow: 0 0 8px rgb(255 61 129 / .8);
+}
+html[data-gaya="neon"] .btn-dark { color: rgb(140 245 255) !important; border-color: rgb(0 229 255) !important; box-shadow: 0 0 14px -2px rgb(0 229 255 / .7), inset 0 0 12px -6px rgb(0 229 255 / .8) !important; text-shadow: 0 0 8px rgb(0 229 255 / .8); }
+html[data-gaya="neon"] :is(.btn-primary, .btn-dark, .btn-danger, .btn-3d):hover:not(:disabled) { background: rgb(255 61 129 / .16) !important; filter: brightness(1.15); }
+html[data-gaya="neon"] .btn-ghost { background: transparent !important; border: 1px solid rgb(0 229 255 / .5) !important; border-radius: 10px !important; box-shadow: 0 0 10px -4px rgb(0 229 255 / .5) !important; }
+html[data-gaya="neon"] :is(.field, .field-3d) { background: rgb(5 10 28) !important; border: 1px solid rgb(0 229 255 / .45) !important; border-radius: 10px !important; box-shadow: inset 0 0 12px -8px rgb(0 229 255) !important; color: rgb(224 240 255); }
+
+/* ═══════════════ 4. CLAY — tanah liat lembut, timbul empuk ═══════════════ */
+html[data-gaya="clay"] body { background-color: rgb(var(--c-bg)); }
+html[data-gaya="clay"] :is(.card, .card-flat, .panel-3d, .manga-card, .card-3d, .card-wow, .balok-3d, .menu-ubin, .comic-panel, .admin-card, .glass, .user-dash .card, .user-dash .card-flat, .user-dash .panel-3d, .user-dash .glass) {
+  border: 0 !important; border-radius: 28px !important;
+  background: rgb(var(--c-surface)) !important;
+  box-shadow: 12px 12px 26px rgb(0 0 0 / .12), -10px -10px 22px rgb(255 255 255 / .85), inset 0 0 0 1px rgb(255 255 255 / .35) !important;
+  transition: transform .25s ease, box-shadow .25s ease !important;
+}
+html.dark[data-gaya="clay"] :is(.card, .card-flat, .panel-3d, .manga-card, .card-3d, .card-wow, .balok-3d, .menu-ubin, .comic-panel, .admin-card, .glass, .user-dash .card, .user-dash .panel-3d) {
+  box-shadow: 10px 10px 22px rgb(0 0 0 / .55), -8px -8px 18px rgb(255 255 255 / .05) !important;
+}
+html[data-gaya="clay"] :is(.card, .panel-3d, .manga-card, .card-3d, .balok-3d, .menu-ubin, .user-dash .card, .user-dash .panel-3d):hover { transform: translateY(-3px) !important; }
+html[data-gaya="clay"] :is(.card, .panel-3d, .user-dash .card)::after { opacity: 0 !important; }
+html[data-gaya="clay"] :is(.btn-primary, .btn-dark, .btn-danger, .btn-3d, .btn-glow, .btn-neon) {
+  border: 0 !important; border-radius: 20px !important; background-image: none !important;
+  background-color: rgb(var(--c-orange)) !important; color: #fff !important;
+  box-shadow: 8px 8px 16px rgb(var(--c-orange) / .35), -6px -6px 14px rgb(255 255 255 / .7), inset -4px -4px 8px rgb(0 0 0 / .14), inset 4px 4px 8px rgb(255 255 255 / .35) !important;
+}
+html[data-gaya="clay"] .btn-dark { background-color: rgb(var(--c-blue)) !important; box-shadow: 8px 8px 16px rgb(var(--c-blue) / .35), -6px -6px 14px rgb(255 255 255 / .7), inset -4px -4px 8px rgb(0 0 0 / .14), inset 4px 4px 8px rgb(255 255 255 / .35) !important; }
+html[data-gaya="clay"] .btn-danger { background-color: rgb(var(--c-danger)) !important; }
+html[data-gaya="clay"] :is(.btn-primary, .btn-dark, .btn-danger, .btn-3d):active:not(:disabled) { transform: scale(.97) !important; box-shadow: inset 6px 6px 12px rgb(0 0 0 / .22), inset -4px -4px 10px rgb(255 255 255 / .3) !important; }
+html[data-gaya="clay"] .btn-ghost { border: 0 !important; border-radius: 20px !important; background: rgb(var(--c-surface)) !important; box-shadow: 6px 6px 14px rgb(0 0 0 / .1), -6px -6px 12px rgb(255 255 255 / .8) !important; }
+html[data-gaya="clay"] :is(.field, .field-3d) { border: 0 !important; border-radius: 18px !important; background: rgb(var(--c-surface2)) !important; box-shadow: inset 5px 5px 10px rgb(0 0 0 / .1), inset -5px -5px 10px rgb(255 255 255 / .8) !important; }
+
+/* ═══════════════ 5. BERSIH — minimal, rata, tenang ═══════════════ */
+html[data-gaya="bersih"] :is(.card, .card-flat, .panel-3d, .manga-card, .card-3d, .card-wow, .balok-3d, .menu-ubin, .comic-panel, .admin-card, .glass, .user-dash .card, .user-dash .card-flat, .user-dash .panel-3d, .user-dash .glass) {
+  border: 1px solid rgb(var(--c-line) / .8) !important; border-radius: 14px !important;
+  background: rgb(var(--c-surface)) !important; backdrop-filter: none !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / .05), 0 4px 14px -8px rgb(0 0 0 / .12) !important;
+  transform-style: flat !important;
+}
+html[data-gaya="bersih"] :is(.card, .panel-3d, .manga-card, .card-3d, .balok-3d, .menu-ubin, .user-dash .card, .user-dash .panel-3d):hover {
+  transform: translateY(-1px) !important; box-shadow: 0 2px 4px rgb(0 0 0 / .06), 0 10px 24px -10px rgb(0 0 0 / .18) !important;
+}
+html[data-gaya="bersih"] :is(.card, .panel-3d, .user-dash .card)::after,
+html[data-gaya="bersih"] .manga-lines::before { display: none !important; }
+html[data-gaya="bersih"] :is(.btn-primary, .btn-dark, .btn-danger, .btn-3d, .btn-glow, .btn-neon) {
+  border: 0 !important; border-radius: 10px !important; background-image: none !important;
+  background-color: rgb(var(--c-orange)) !important; color: #fff !important; box-shadow: 0 1px 2px rgb(0 0 0 / .15) !important;
+}
+html[data-gaya="bersih"] .btn-dark { background-color: rgb(var(--c-blue)) !important; }
+html[data-gaya="bersih"] .btn-danger { background-color: rgb(var(--c-danger)) !important; }
+html[data-gaya="bersih"] :is(.btn-primary, .btn-dark, .btn-danger, .btn-3d):hover:not(:disabled) { filter: brightness(1.07); }
+html[data-gaya="bersih"] :is(.btn-primary, .btn-dark, .btn-danger, .btn-3d):active:not(:disabled) { transform: scale(.98) !important; }
+html[data-gaya="bersih"] .btn-ghost { border: 1px solid rgb(var(--c-line)) !important; border-radius: 10px !important; background: transparent !important; box-shadow: none !important; }
+html[data-gaya="bersih"] :is(.field, .field-3d) { border: 1px solid rgb(var(--c-line)) !important; border-radius: 10px !important; background: rgb(var(--c-surface)) !important; box-shadow: none !important; }
+html[data-gaya="bersih"] .btn-primary::after, html[data-gaya="bersih"] .btn-dark::after { display: none !important; }
+
+/* ═══════════════ 6. RETRO — arkade piksel, blok & garis pindai ═══════════════ */
+html[data-gaya="retro"] { --c-orange: 255 112 20; --c-blue: 56 120 255; }
+html[data-gaya="retro"]:not(.dark) { --c-bg: 255 246 226; --c-surface: 255 252 242; --c-surface2: 255 238 204; }
+html[data-gaya="retro"] body {
+  background-image: repeating-linear-gradient(0deg, transparent 0 2px, rgb(0 0 0 / .045) 2px 3px) !important;
+  background-size: auto !important;
+}
+html[data-gaya="retro"] :is(h1, h2, h3, h4, .judul-timbul) { font-family: var(--font-mono), ui-monospace, monospace !important; text-transform: uppercase !important; letter-spacing: .02em !important; font-weight: 800 !important; text-shadow: 3px 3px 0 rgb(var(--c-orange) / .45) !important; }
+html[data-gaya="retro"] :is(.card, .card-flat, .panel-3d, .manga-card, .card-3d, .card-wow, .balok-3d, .menu-ubin, .comic-panel, .admin-card, .glass, .user-dash .card, .user-dash .card-flat, .user-dash .panel-3d, .user-dash .glass) {
+  border: 3px solid rgb(var(--c-ink)) !important; border-radius: 0 !important;
+  background: rgb(var(--c-surface)) !important; backdrop-filter: none !important;
+  box-shadow: 6px 6px 0 rgb(var(--c-ink)) !important;
+  clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px));
+  transition: transform .08s steps(2), box-shadow .08s steps(2) !important;
+}
+html[data-gaya="retro"] :is(.card, .panel-3d, .manga-card, .card-3d, .balok-3d, .menu-ubin, .user-dash .card, .user-dash .panel-3d):hover { transform: translate(-2px, -2px) !important; box-shadow: 8px 8px 0 rgb(var(--c-ink)) !important; }
+html[data-gaya="retro"] :is(.card, .panel-3d, .user-dash .card)::after { opacity: 0 !important; }
+html[data-gaya="retro"] :is(.btn-primary, .btn-dark, .btn-danger, .btn-3d, .btn-glow, .btn-neon) {
+  border: 3px solid rgb(var(--c-ink)) !important; border-radius: 0 !important; background-image: none !important;
+  background-color: rgb(var(--c-orange)) !important; color: #fff !important;
+  font-family: var(--font-mono), monospace !important; font-weight: 800 !important; text-transform: uppercase;
+  box-shadow: 0 5px 0 rgb(var(--c-ink)) !important;
+  clip-path: polygon(0 3px, 3px 3px, 3px 0, calc(100% - 3px) 0, calc(100% - 3px) 3px, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 3px calc(100% - 3px), 0 calc(100% - 3px));
+  transition: transform .06s steps(2), box-shadow .06s steps(2) !important;
+}
+html[data-gaya="retro"] .btn-dark { background-color: rgb(var(--c-blue)) !important; }
+html[data-gaya="retro"] .btn-danger { background-color: rgb(var(--c-danger)) !important; }
+html[data-gaya="retro"] :is(.btn-primary, .btn-dark, .btn-danger, .btn-3d):active:not(:disabled) { transform: translateY(5px) !important; box-shadow: 0 0 0 rgb(var(--c-ink)) !important; }
+html[data-gaya="retro"] .btn-ghost { border: 3px solid rgb(var(--c-ink)) !important; border-radius: 0 !important; background: rgb(var(--c-surface)) !important; box-shadow: 0 4px 0 rgb(var(--c-ink)) !important; font-family: var(--font-mono), monospace !important; }
+html[data-gaya="retro"] :is(.field, .field-3d) { border: 3px solid rgb(var(--c-ink)) !important; border-radius: 0 !important; background: rgb(var(--c-surface)) !important; box-shadow: inset 3px 3px 0 rgb(0 0 0 / .12) !important; font-family: var(--font-mono), monospace; }
+html[data-gaya="retro"] .btn-primary::after, html[data-gaya="retro"] .btn-dark::after { display: none !important; }
+
+/* ── gerak dikurangi ── */
+@media (prefers-reduced-motion: reduce) {
+  html[data-gaya] body::before { animation: none !important; }
+}
+
+/* ═══════════════ Pratinjau mini di halaman /tampilan ═══════════════ */
+.gpv { position: relative; height: 92px; border-radius: 14px; overflow: hidden; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; isolation: isolate; }
+.gpv i { display: block; height: 30px; border-radius: 10px; }
+.gpv b { align-self: flex-start; display: inline-block; padding: 5px 14px; font-size: 10px; font-weight: 900; color: #fff; border-radius: 8px; }
+.gpv[data-g="komik"] { background: #eaf1ff radial-gradient(circle, rgb(46 134 255 / .18) 1px, transparent 1px) 0 0/10px 10px; }
+.gpv[data-g="komik"] i { background: #fff; border: 2.5px solid #0b1b44; box-shadow: 4px 4px 0 #0b1b44; border-radius: 12px; }
+.gpv[data-g="komik"] b { background: #ed5a0f; border: 2.5px solid #0b1b44; box-shadow: 3px 3px 0 #0b1b44; }
+.gpv[data-g="liquid"] { background: radial-gradient(60% 70% at 20% 20%, #ffb084aa, transparent 70%), radial-gradient(60% 70% at 85% 30%, #7fb4ffaa, transparent 70%), radial-gradient(60% 70% at 60% 100%, #f5a3d4aa, transparent 70%), #f7f3ff; }
+.gpv[data-g="liquid"] i { background: linear-gradient(150deg, #fffffff0, #ffffffa0); border: 1px solid #fff; border-radius: 22px; box-shadow: 0 10px 20px -10px #4f7bff99, inset 0 2px 0 #fff; }
+.gpv[data-g="liquid"] b { background: linear-gradient(135deg, #ff7a2f, #ec4899); border-radius: 999px; box-shadow: 0 8px 16px -6px #ff7a2fcc, inset 0 2px 0 #ffffff88; }
+.gpv[data-g="glass"] { background: radial-gradient(70% 60% at 0% 0%, #5aa0ffcc, transparent 60%), radial-gradient(60% 60% at 100% 10%, #ff8a4acc, transparent 60%), radial-gradient(70% 60% at 50% 100%, #9b7bffcc, transparent 60%), #dfe9ff; }
+.gpv[data-g="glass"] i { background: #ffffff66; border: 1px solid #ffffffaa; border-radius: 16px; backdrop-filter: blur(8px); box-shadow: 0 6px 20px #1f268744; }
+.gpv[data-g="glass"] b { background: #ed5a0fcc; border: 1px solid #ffffffaa; border-radius: 12px; }
+.gpv[data-g="neon"] { background: #050814 linear-gradient(#00e5ff12 1px, transparent 1px) 0 0/16px 16px, linear-gradient(90deg, #00e5ff12 1px, transparent 1px) 0 0/16px 16px; }
+.gpv[data-g="neon"] i { background: #0a0f22; border: 1px solid #00e5ff; border-radius: 8px; box-shadow: 0 0 14px -2px #00e5ffaa; }
+.gpv[data-g="neon"] b { background: transparent; color: #ff8cb4; border: 1.5px solid #ff3d81; border-radius: 7px; box-shadow: 0 0 12px -2px #ff3d81; }
+.gpv[data-g="clay"] { background: #eceff8; }
+.gpv[data-g="clay"] i { background: #eceff8; border-radius: 20px; box-shadow: 8px 8px 16px #0000001f, -6px -6px 14px #fff; }
+.gpv[data-g="clay"] b { background: #ed5a0f; border-radius: 14px; box-shadow: 5px 5px 10px #ed5a0f55, -4px -4px 8px #fff, inset -3px -3px 6px #0002, inset 3px 3px 6px #ffffff66; }
+.gpv[data-g="bersih"] { background: #f6f8fb; }
+.gpv[data-g="bersih"] i { background: #fff; border: 1px solid #dbe2ee; border-radius: 10px; box-shadow: 0 1px 2px #0000000d; }
+.gpv[data-g="bersih"] b { background: #ed5a0f; border-radius: 8px; }
+.gpv[data-g="retro"] { background: #fff6e2 repeating-linear-gradient(0deg, transparent 0 2px, #0000000a 2px 3px); }
+.gpv[data-g="retro"] i { background: #fffcf2; border: 3px solid #1b1b2f; border-radius: 0; box-shadow: 5px 5px 0 #1b1b2f; }
+.gpv[data-g="retro"] b { background: #ff7014; border: 3px solid #1b1b2f; border-radius: 0; box-shadow: 0 4px 0 #1b1b2f; font-family: ui-monospace, monospace; }
+
+/* ═══════════════ SKIN MASKOT (filter pada semua gambar maskot) ═══════════════ */
+html[data-skin="emas"] img[src*="/maskot"] { filter: sepia(.55) saturate(2.4) hue-rotate(-6deg) brightness(1.06) drop-shadow(0 0 7px rgb(250 204 21 / .8)); }
+html[data-skin="es"] img[src*="/maskot"] { filter: hue-rotate(168deg) saturate(1.3) brightness(1.05) drop-shadow(0 0 7px rgb(56 189 248 / .8)); }
+html[data-skin="api"] img[src*="/maskot"] { filter: hue-rotate(-28deg) saturate(1.9) brightness(1.04) drop-shadow(0 0 7px rgb(239 68 68 / .8)); }
+html[data-skin="hantu"] img[src*="/maskot"] { filter: grayscale(.55) hue-rotate(250deg) contrast(1.1) drop-shadow(0 0 7px rgb(139 92 246 / .85)); }
+html[data-skin="sakura"] img[src*="/maskot"] { filter: hue-rotate(300deg) saturate(1.2) brightness(1.1) drop-shadow(0 0 7px rgb(244 114 182 / .8)); }
+html[data-skin="santa"] img[src*="/maskot"] { filter: saturate(1.15) drop-shadow(0 0 6px rgb(220 38 38 / .7)); }
+html[data-skin="ramadan"] img[src*="/maskot"] { filter: hue-rotate(-12deg) saturate(1.1) drop-shadow(0 0 6px rgb(250 204 21 / .75)); }
+html[data-skin="merdeka"] img[src*="/maskot"] { filter: saturate(1.25) drop-shadow(0 0 6px rgb(220 38 38 / .75)); }
+html[data-skin="pesta"] img[src*="/maskot"] { filter: saturate(1.3) hue-rotate(12deg) drop-shadow(0 0 7px rgb(236 72 153 / .75)); }
+.topi-maskot { position: absolute; left: 50%; top: -4%; transform: translateX(-50%) rotate(-8deg); font-size: 1.6em; line-height: 1; pointer-events: none; z-index: 3; filter: drop-shadow(0 2px 2px rgb(0 0 0 / .35)); animation: topi-goyang 3.4s ease-in-out infinite; }
+@keyframes topi-goyang { 50% { transform: translateX(-50%) rotate(6deg) translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) { .topi-maskot { animation: none; } }
+
+/* ═══════════════ Banner event musiman ═══════════════ */
+.musim-banner { box-shadow: 4px 4px 0 rgb(var(--c-ink) / .9); }
+.musim-kilau { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / .22) 50%, transparent 62%); transform: translateX(-130%); animation: kilau-lewat 5s ease-in-out infinite; }
+.musim-ikon { animation: musim-goyang 2.6s ease-in-out infinite; }
+@keyframes musim-goyang { 0%, 100% { transform: rotate(-6deg) scale(1); } 50% { transform: rotate(6deg) scale(1.1); } }
+html[data-gaya="glass"] .musim-banner, html[data-gaya="liquid"] .musim-banner { border: 1px solid rgb(255 255 255 / .5) !important; box-shadow: 0 14px 34px -14px rgb(0 0 0 / .45); border-radius: 26px; }
+html[data-gaya="bersih"] .musim-banner { border: 0 !important; box-shadow: 0 2px 6px rgb(0 0 0 / .12); border-radius: 14px; }
+html[data-gaya="retro"] .musim-banner { border-radius: 0; box-shadow: 6px 6px 0 rgb(var(--c-ink)); }
+@media (prefers-reduced-motion: reduce) { .musim-kilau, .musim-ikon { animation: none; } }
+
+/* ═══════════════ Pita "baru saja beli / menang" ═══════════════ */
+.pita-bukti { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 12px; border: 2px solid rgb(var(--c-ink) / .85); background: rgb(var(--c-surface)); box-shadow: 3px 3px 0 rgb(var(--c-ink) / .85); font-size: 12.5px; overflow: hidden; }
+.pita-ikon { font-size: 16px; flex: none; }
+.pita-teks { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; animation: pita-masuk .5s ease both; color: rgb(var(--c-ink)); }
+.pita-teks small { color: rgb(var(--c-muted)); }
+@keyframes pita-masuk { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .pita-teks { animation: none; } }
+html[data-gaya="glass"] .pita-bukti, html[data-gaya="liquid"] .pita-bukti { border: 1px solid rgb(255 255 255 / .5); box-shadow: 0 10px 26px -12px rgb(0 0 0 / .4); border-radius: 999px; backdrop-filter: blur(14px); }
+html[data-gaya="bersih"] .pita-bukti { border: 1px solid rgb(var(--c-ink) / .12); box-shadow: none; }
+
+/* ═══════════════ Kartu kemenangan (bagikan) ═══════════════ */
+.km-latar { position: fixed; inset: 0; z-index: 90; background: rgb(0 0 0 / .78); display: grid; place-items: center; padding: 12px; overflow-y: auto; }
+.km-kotak { position: relative; width: min(100%, 380px); background: #12121c; border: 3px solid #ffd23f; border-radius: 20px; padding: 12px; color: #fff; }
+.km-x { position: absolute; top: -12px; right: -12px; width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #0b162c; font-weight: 900; border: 3px solid #0b162c; cursor: pointer; z-index: 2; }
+.km-gambar { aspect-ratio: 1080 / 1350; border-radius: 12px; overflow: hidden; background: #222; display: grid; place-items: center; }
+.km-gambar img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.km-muat { color: #aaa; font-size: 13px; }
+.km-aksi { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.km-aksi button { padding: 10px 6px; border-radius: 12px; border: 2px solid #0b162c; background: #ffd23f; color: #0b162c; font-weight: 900; font-size: 13px; cursor: pointer; box-shadow: 0 3px 0 #0b162c; }
+.km-aksi button:disabled { opacity: .5; }
+.km-aksi button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #0b162c; }
+.km-pesan { margin: 8px 2px 0; font-size: 12px; color: #bfe6ff; text-align: center; }

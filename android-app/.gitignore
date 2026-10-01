@@ -1,0 +1,10 @@
+# dibuat otomatis oleh `flutter create` / build
+/android/
+/build/
+/.dart_tool/
+/.flutter-plugins*
+/.metadata
+/.idea/
+*.iml
+/pubspec.lock
+.packages
