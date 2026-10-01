@@ -3,7 +3,7 @@
 //  • Pemindai kerentanan: alamat yang meminta berkas rahasia (.env, .git, wp-admin, phpmyadmin, …) diberi 404,
 //    dan setelah 3 kali dalam 10 menit IP-nya diblokir 1 jam.
 //  • Alat serang/pemindai terkenal (sqlmap, nikto, nmap, masscan, …) langsung ditolak.
-//  • Banjir permintaan ke /api dari satu IP (>600 per 10 detik) dibalas 429; pengulangan membuat IP diblokir 15 menit.
+//  • Banjir permintaan ke /api dari satu IP (>400 per 10 detik) dibalas 429; pengulangan membuat IP diblokir 15 menit.
 //  • Webhook penyedia (Telegram, pembayaran) dan cron dikecualikan agar tidak pernah ikut terblokir.
 //
 // Penghitung disimpan di memori isolat edge (per wilayah) — cukup untuk menahan bot sederhana; perlindungan
@@ -13,9 +13,22 @@ import { NextResponse } from "next/server";
 const batasTrafik = new Map(); // ip → { n, t0 }
 const pelanggaran = new Map(); // ip → { n, t0 }
 const diblokir = new Map(); // ip → sampai (ms)
+const batasUang = new Map(); // "ip|jalur" → { n, t0 }
 
-const KECUALI = [/^\/api\/cron\//, /^\/api\/telegram\/webhook/, /^\/api\/bot\/webhook/, /^\/api\/deposit\/webhook/, /^\/api\/gw\/v1\/callback/];
-const JALUR_PEMINDAI = /(^|\/)(\.env|\.git|\.svn|\.DS_Store|wp-admin|wp-login|wp-content|wp-includes|xmlrpc\.php|phpmyadmin|pma|cgi-bin|vendor\/phpunit|\.aws|\.ssh|id_rsa|config\.php|backup\.(sql|zip|tar)|dump\.sql|server-status)(\/|$|\.)|\.(php\d?|asp|aspx|jsp|cgi|env|bak|sql|ini|log)$/i;
+// Endpoint yang memindahkan uang / menebak kredensial: batas per-IP jauh lebih ketat daripada API biasa.
+// [pola, maks per menit]
+const JALUR_UANG = [
+  [/^\/api\/tarik/, 20],
+  [/^\/api\/game\/dompet/, 30],
+  [/^\/api\/deposit\/(create|confirm)/, 20],
+  [/^\/api\/transfer/, 20],
+  [/^\/api\/admin\/login/, 12],
+  [/^\/api\/admin\/austinpay/, 30],
+  [/^\/api\/user\/(init|login)/, 30]
+];
+
+const KECUALI = [/^\/api\/cron\//, /^\/api\/telegram\/webhook/, /^\/api\/bot\/webhook/, /^\/api\/deposit\/webhook/, /^\/api\/deposit\/austinpay-webhook/, /^\/api\/gw\/v1\/callback/];
+const JALUR_PEMINDAI = /(^|\/)(\.env|\.git|\.htaccess|\.htpasswd|actuator|_profiler|solr|jenkins|manager\/html|boaform|HNAP1|owa|ecp|remote\/login|\.svn|\.DS_Store|wp-admin|wp-login|wp-content|wp-includes|xmlrpc\.php|phpmyadmin|pma|cgi-bin|vendor\/phpunit|\.aws|\.ssh|id_rsa|config\.php|backup\.(sql|zip|tar)|dump\.sql|server-status)(\/|$|\.)|\.(php\d?|asp|aspx|jsp|cgi|env|bak|sql|ini|log)$/i;
 const UA_BURUK = /(sqlmap|nikto|nmap|masscan|acunetix|nessus|dirbuster|gobuster|wpscan|havij|zgrab|nuclei|jaeles|openvas|netsparker|burpcollaborator)/i;
 
 function ipDari(req) {
@@ -59,13 +72,39 @@ export function middleware(req) {
     return tolak(404, "Not found.", 0, false);
   }
 
+  // Admin: permintaan yang MENGUBAH data wajib berasal dari situs sendiri (tolak lintas-asal — pertahanan CSRF tambahan
+  // di atas cookie SameSite). Permintaan tanpa header Origin (alat server-ke-server, uji) tetap diizinkan.
+  if (api && pathname.startsWith("/api/admin/") && req.method !== "GET" && req.method !== "HEAD" && req.method !== "OPTIONS") {
+    const asal = req.headers.get("origin");
+    if (asal) {
+      let sama = false;
+      try { sama = new URL(asal).host === req.nextUrl.host || new URL(asal).host === req.headers.get("host"); } catch {}
+      if (!sama) return tolak(403, "Asal permintaan tidak diizinkan.", 0, true);
+    }
+  }
+
+  if (api && !lokal(ip) && req.method !== "GET") {
+    const aturan = JALUR_UANG.find(([r]) => r.test(pathname));
+    if (aturan) {
+      const k = `${ip}|${aturan[0].source}`;
+      let b = batasUang.get(k);
+      if (!b || now - b.t0 > 60_000) { b = { n: 0, t0: now }; batasUang.set(k, b); }
+      b.n += 1;
+      if (batasUang.size > 8000) batasUang.clear();
+      if (b.n > aturan[1]) {
+        if (b.n === aturan[1] + 1 && catat(ip, 1) >= 4) diblokir.set(ip, now + 15 * 60_000);
+        return tolak(429, "Terlalu banyak permintaan ke layanan ini. Tunggu sebentar.", 30, true);
+      }
+    }
+  }
+
   if (api && !lokal(ip) && !KECUALI.some((r) => r.test(pathname))) {
     let b = batasTrafik.get(ip);
     if (!b || now - b.t0 > 10_000) { b = { n: 0, t0: now }; batasTrafik.set(ip, b); }
     b.n += 1;
     if (batasTrafik.size > 8000) batasTrafik.clear();
-    if (b.n > 600) {
-      if (b.n === 601 && catat(ip) >= 3) diblokir.set(ip, now + 15 * 60_000);
+    if (b.n > 400) {
+      if (b.n === 401 && catat(ip) >= 3) diblokir.set(ip, now + 15 * 60_000);
       return tolak(429, "Terlalu banyak permintaan. Coba lagi sebentar.", 10, true);
     }
   }

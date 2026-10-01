@@ -14,6 +14,7 @@ import { reconcileOtpOrder } from "@/lib/orderReconcile";
 import { periksaStokWatch } from "@/lib/stokWatch";
 import { sapuGame } from "@/lib/game/inti";
 import { sapuDepositTertunda } from "@/lib/depositService";
+import { sapuWdInstan } from "@/lib/wdInstan";
 import { pindaiBerkala } from "@/lib/keamanan";
 
 export const dynamic = "force-dynamic";
@@ -66,6 +67,12 @@ export async function GET(req) {
     hasil.deposit = await sapuDepositTertunda({ maks: 30, anggaranMs: 30000 });
   } catch (err) {
     hasil.galat.push(`deposit: ${err?.message || err}`);
+  }
+  // Penarikan instant AustinPay yang macet / belum pasti: cocokkan ke riwayat penyedia, kembalikan saldo bila gagal.
+  try {
+    hasil.wd = await sapuWdInstan({ maks: 20, jeda: 0 });
+  } catch (err) {
+    hasil.galat.push(`wd: ${err?.message || err}`);
   }
   // Pemindaian keamanan otomatis (jalan sendiri tiap ±10 menit; di luar jadwal ini dilewati).
   try {

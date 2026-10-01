@@ -11,12 +11,14 @@ import { PROVIDER_KEYS, DEPOSIT_PROVIDERS } from "@/lib/paymentProviders";
 import { warungNokosConfigured } from "@/lib/warungnokos";
 import { rumahOtpConfigured } from "@/lib/rumahotp";
 import { atlanticConfigured } from "@/lib/atlantic";
+import { austinConfigured } from "@/lib/austinpay";
 import { CHANNEL_URL } from "@/lib/links";
 import { infoJaminan } from "@/lib/jaminan";
 import { loginWajib } from "@/lib/webAuth";
 import { sapuDepositTertunda } from "@/lib/depositService";
 import { tahan } from "@/lib/tahan";
 import { pindaiDiLatar } from "@/lib/keamanan";
+import { sapuWdInstan } from "@/lib/wdInstan";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +30,7 @@ export async function GET() {
   // Lalu lintas web biasa ikut menyapu deposit QRIS yang menggantung (maks 1× per 30 detik per instance, di latar):
   // cadangan bila webhook provider tidak sampai dan cron eksternal belum dipasang.
   tahan(sapuDepositTertunda({ maks: 6, jeda: 30000, anggaranMs: 8000 }).catch(() => {}));
+  tahan(sapuWdInstan({ maks: 6, jeda: 30000 }).catch(() => {}));
   pindaiDiLatar(); // pemindaian keamanan berkala (maks 1× per 10 menit di seluruh sistem)
   const limits = depositLimits();
   try {
@@ -45,6 +48,7 @@ export async function GET() {
     // /api/deposit/create dengan metode itu dan mendapat error yang
     // membingungkan setelah mengisi nominal.
     if (!(await atlanticConfigured())) providers.atlantic = false;
+    if (!(await austinConfigured())) providers.qrisfast = false;
     if (!manualDepositReady(settings)) providers.manual = false;
 
     // Jam buka TIDAK mematikan providers.manual. Kalau dimatikan, metodenya

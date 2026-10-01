@@ -54,6 +54,7 @@ const utama = [
 const kelompokMenu = [
   { judul: "Keuangan", ikon: "💰", item: [
     { href: "/game-deposit", label: "Isi saldo game", icon: "🎲", badge: "Baru" },
+    { href: "/tarik", label: "Tarik saldo", icon: "💸", badge: "Baru" },
     { href: "/transfer", label: "Transfer", icon: Icon.transfer },
     { href: "/mutasi", label: "Mutasi", icon: Icon.ledger },
     { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin },

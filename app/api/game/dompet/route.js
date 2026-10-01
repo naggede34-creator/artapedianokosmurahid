@@ -4,6 +4,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { jagaGame } from "@/lib/anticurang";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 45; // penarikan otomatis menunggu jawaban AustinPay
 
 const ip = (req) => req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 const j = (data, status = 200) => NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
@@ -30,7 +31,7 @@ export async function POST(req) {
     let r;
     if (b.aksi === "tukar") r = await tukarKeNokos(token, b.poin);
     else if (b.aksi === "isi-nokos") r = await isiPoinDariNokos(token, b.poin);
-    else if (b.aksi === "tarik") r = await ajukanTarik(token, { poin: b.poin, ewallet: b.ewallet, nomor: b.nomor, nama: b.nama });
+    else if (b.aksi === "tarik") r = await ajukanTarik(token, { poin: b.poin, ewallet: b.ewallet, nomor: b.nomor, nama: b.nama }, { ip: ip(req) });
     else if (b.aksi === "batal") r = await batalTarik(token, b.id);
     else return j({ error: "Aksi tidak dikenal." }, 400);
     if (!r.ok) return j({ error: r.alasan, ...(r.syarat ? { syarat: true } : {}) }, 400);

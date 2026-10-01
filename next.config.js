@@ -49,8 +49,13 @@ const nextConfig = {
               "media-src 'self' data: blob:",
               "connect-src 'self'",
               "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "object-src 'none'",
             ].join("; ")
           },
+          { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }
         ]
       }

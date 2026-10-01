@@ -10,15 +10,17 @@ import { POIN_RP, keRupiah, teksPoin, teksPoinRp } from "@/lib/poinGame";
 
 const CEPAT_ISI = [2, 20, 50, 100, 200, 500];
 const FINAL = ["completed", "canceled", "expired", "failed"];
+const restoredMetode = { current: false };
 const PROOF_MAX_SIDE = 2400;
 const PROOF_MAX_CHARS = 780_000;
-const STATUS_TARIK = { menunggu: ["⏳ Menunggu admin", "text-amber-bright"], dibayar: ["✅ Sudah dibayar", "text-success"], ditolak: ["❌ Ditolak (poin kembali)", "text-rose"], batal: ["↩ Dibatalkan (poin kembali)", "text-muted"] };
+const STATUS_TARIK = { menunggu: ["⏳ Menunggu admin", "text-amber-bright"], diproses: ["⏳ Diproses otomatis", "text-amber-bright"], dibayar: ["✅ Sudah dibayar", "text-success"], ditolak: ["❌ Ditolak (poin kembali)", "text-rose"], batal: ["↩ Dibatalkan (poin kembali)", "text-muted"] };
 
 export default function PoinGamePage() {
   const { token, refreshBalance } = useUser();
   const [info, setInfo] = useState(null);
   const [tab, setTab] = useState("isi");
   const [manual, setManual] = useState(null);
+  const [cepat, setCepat] = useState(false); // QRIS FAST (otomatis) tersedia?
 
   const muat = useCallback(async () => {
     if (!token) return;
@@ -30,7 +32,7 @@ export default function PoinGamePage() {
   }, [token]);
   useEffect(() => { muat(); }, [muat]);
   useEffect(() => {
-    fetch("/api/settings/public").then((r) => r.json()).then((d) => setManual(d.manualDeposit || null)).catch(() => {});
+    fetch("/api/settings/public").then((r) => r.json()).then((d) => { setManual(d.manualDeposit || null); setCepat(d.depositProviders?.qrisfast === true); }).catch(() => {});
     const t = new URLSearchParams(window.location.search).get("tab");
     if (["isi", "tukar", "tarik", "riwayat"].includes(t)) setTab(t);
   }, []);
@@ -69,7 +71,7 @@ export default function PoinGamePage() {
             ))}
           </div>
 
-          {tab === "isi" && <TabIsi token={token} info={info} manual={manual} segarkan={segarkan} />}
+          {tab === "isi" && <TabIsi token={token} info={info} manual={manual} cepat={cepat} segarkan={segarkan} />}
           {tab === "tukar" && <TabTukar token={token} info={info} segarkan={segarkan} />}
           {tab === "tarik" && <TabTarik token={token} info={info} segarkan={segarkan} />}
           {tab === "riwayat" && <TabRiwayat token={token} info={info} />}
@@ -81,7 +83,7 @@ export default function PoinGamePage() {
             <ul className="mt-2 list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-muted">
               <li><b>2 poin = Rp1.000.</b> Isi minimal {info?.topup.minPoin ?? 2} poin, maksimal {(info?.topup.maksPoin ?? 20000).toLocaleString("id-ID")} poin sekali isi.</li>
               <li>Tukar <b>dua arah</b>: poin → saldo nokos (dipakai beli nomor) atau saldo nokos → poin — instan.</li>
-              <li>Tarik poin ke <b>e-wallet</b> minimal {info ? rupiah(info.tarik.minRp) : "Rp10.000"}. {info?.tarik.jam}</li>
+              <li>Tarik poin ke <b>e-wallet</b> minimal {info ? rupiah(info.tarik.minRp) : "Rp15.000"}, biaya {info ? rupiah(info.tarik.feeRp) : "Rp2.000"}. {info?.tarik.jam}</li>
               <li>Ada syarat perputaran (harus main dulu) supaya aman dari penyalahgunaan.</li>
               <li>Main dengan bijak — ada batas taruhan dan batas rugi harian.</li>
             </ul>
@@ -94,7 +96,9 @@ export default function PoinGamePage() {
 }
 
 // ───────────────────────── ISI POIN (QRIS manual) ─────────────────────────
-function TabIsi({ token, info, manual, segarkan }) {
+function TabIsi({ token, info, manual, cepat, segarkan }) {
+  const [metode, setMetode] = useState("manual"); // "qrisfast" | "manual"
+  useEffect(() => { if (cepat) setMetode((m) => (m === "manual" && !restoredMetode.current ? "qrisfast" : m)); }, [cepat]);
   const [step, setStep] = useState("amount");
   const [poin, setPoin] = useState("");
   const [order, setOrder] = useState(null);
@@ -121,14 +125,14 @@ function TabIsi({ token, info, manual, segarkan }) {
       return d.status;
     } catch { return null; }
   }, [token, segarkan]);
-  const mulaiPoll = useCallback((orderId) => { clearInterval(pollRef.current); pollRef.current = setInterval(() => cek(orderId), 8000); }, [cek]);
+  const mulaiPoll = useCallback((orderId, tiap = 8000) => { clearInterval(pollRef.current); pollRef.current = setInterval(() => cek(orderId), tiap); }, [cek]);
   useEffect(() => () => clearInterval(pollRef.current), []);
 
   useEffect(() => {
     if (!token || restored.current) return;
     restored.current = true;
     fetch(`/api/deposit/detail?token=${encodeURIComponent(token)}&wallet=game`).then((r) => r.json()).then((d) => {
-      if (d.item && ["pending", "review"].includes(d.item.status)) { setOrder(d.item); setStatus(d.item.status); setStep("payment"); mulaiPoll(d.item.orderId); }
+      if (d.item && ["pending", "review"].includes(d.item.status)) { restoredMetode.current = true; setMetode(d.item.provider === "qrisfast" ? "qrisfast" : "manual"); setOrder(d.item); setStatus(d.item.status); setStep("payment"); mulaiPoll(d.item.orderId, d.item.provider === "qrisfast" ? 4000 : 8000); }
     }).catch(() => {});
   }, [token, mulaiPoll]);
   useEffect(() => {
@@ -139,7 +143,8 @@ function TabIsi({ token, info, manual, segarkan }) {
 
   const p = Math.floor(Number(poin) || 0);
   const min = info?.topup.minPoin ?? 2, maks = info?.topup.maksPoin ?? 20000;
-  const tutup = manual ? manual.open === false : false;
+  const fast = metode === "qrisfast" && cepat;
+  const tutup = !fast && (manual ? manual.open === false : false);
 
   async function buat(e) {
     e?.preventDefault();
@@ -147,11 +152,11 @@ function TabIsi({ token, info, manual, segarkan }) {
     if (p < min || p > maks) { setError(`Isi poin antara ${min} dan ${maks.toLocaleString("id-ID")} poin.`); return; }
     setLoading(true); setError("");
     try {
-      const r = await fetch("/api/deposit/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, amount: keRupiah(p), provider: "manual", wallet: "game" }) });
+      const r = await fetch("/api/deposit/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, amount: keRupiah(p), provider: fast ? "qrisfast" : "manual", wallet: "game" }) });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Gagal membuat tagihan.");
       setOrder(d); setStatus("pending"); setStep("payment"); setAlasan([]); setProof(null); setConfirmOpen(false);
-      mulaiPoll(d.orderId);
+      mulaiPoll(d.orderId, fast ? 4000 : 8000);
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   }
 
@@ -215,12 +220,28 @@ function TabIsi({ token, info, manual, segarkan }) {
             <button key={n} type="button" onClick={() => setPoin(String(n))} className={`rounded-xl border px-3 py-1.5 text-xs font-bold ${p === n ? "border-amber bg-amber-soft text-amber-bright" : "border-line text-ink"}`}>{n} poin</button>
           ))}
         </div>
-        {manual?.ocrAktif && (
+        {cepat && (
+          <div className="mt-4" data-testid="gd-metode">
+            <p className="label">Metode bayar</p>
+            <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Metode bayar">
+              <button type="button" role="radio" aria-checked={metode === "qrisfast"} onClick={() => setMetode("qrisfast")} data-testid="gd-metode-fast" className={`rounded-xl border px-3 py-2 text-left ${metode === "qrisfast" ? "border-amber bg-amber-soft" : "border-line"}`}>
+                <b className="block text-xs text-ink">⚡ QRIS FAST <span className="ml-1 rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black text-white">CEPAT</span></b>
+                <span className="text-[11px] text-muted">Otomatis — poin masuk begitu dibayar, tanpa bukti.</span>
+              </button>
+              <button type="button" role="radio" aria-checked={metode === "manual"} onClick={() => setMetode("manual")} data-testid="gd-metode-manual" className={`rounded-xl border px-3 py-2 text-left ${metode === "manual" ? "border-amber bg-amber-soft" : "border-line"}`}>
+                <b className="block text-xs text-ink">🧾 QRIS Manual</b>
+                <span className="text-[11px] text-muted">Unggah bukti transfer, dicek otomatis/admin.</span>
+              </button>
+            </div>
+          </div>
+        )}
+        {fast && <p className="mt-3 rounded-xl border border-amber/40 bg-amber-soft px-3 py-2 text-[11px] font-semibold text-amber-bright" data-testid="info-fast">⚡ Bayar persis sesuai total yang tampil (sudah termasuk kode unik). Poin masuk otomatis dalam hitungan detik — tidak perlu unggah bukti.</p>}
+        {!fast && manual?.ocrAktif && (
           <p className="mt-4 rounded-xl border border-amber/40 bg-amber-soft px-3 py-2 text-[11px] font-semibold text-amber-bright" data-testid="info-otomatis">
             ⚡ Verifikasi otomatis aktif: nominal transfer ditambah <b>kode unik Rp1–99</b> (biaya verifikasi, tidak jadi poin). Bayar persis sesuai total lalu unggah tangkapan layar bukti — bila cocok, poin masuk dalam hitungan detik.
           </p>
         )}
-        {manual && !manual.ocrAktif && <p className="mt-4 text-[11px] text-muted">Poin masuk setelah admin mencocokkan pembayaranmu (biasanya 5–15 menit).</p>}
+        {!fast && manual && !manual.ocrAktif && <p className="mt-4 text-[11px] text-muted">Poin masuk setelah admin mencocokkan pembayaranmu (biasanya 5–15 menit).</p>}
         {tutup && <Alert className="mt-4">QRIS manual sedang tutup{manual?.hoursLabel ? ` (jam layanan ${manual.hoursLabel})` : ""}. Coba lagi nanti.</Alert>}
         {error && <Alert className="mt-4">{error}</Alert>}
         <button type="submit" disabled={loading || tutup || p < min} className="btn-primary mt-5 w-full" data-testid="gd-lanjut">
@@ -279,6 +300,7 @@ function TabIsi({ token, info, manual, segarkan }) {
           <p className="text-3xl font-extrabold tabular-nums tracking-tight text-ink" data-testid="gd-total">{rupiah(bayar)}</p>
           <CopyButton value={bayar} label="" />
         </div>
+        {order.provider === "qrisfast" && bayar > order.amount && <p className="mt-1 text-xs font-semibold text-amber-bright" data-testid="gd-kode-fast">Termasuk kode unik/biaya Rp{(bayar - order.amount).toLocaleString("id-ID")} — tidak jadi poin.</p>}
         {kode > 0 && <p className="mt-1 text-xs font-semibold text-amber-bright" data-testid="gd-kode">Termasuk kode unik Rp{kode} (biaya verifikasi — tidak jadi poin).</p>}
         {order.qrImage ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -293,7 +315,12 @@ function TabIsi({ token, info, manual, segarkan }) {
         )}
       </div>
       {error && <Alert tone="amber" className="mt-4">{error}</Alert>}
-      {confirmOpen ? (
+      {order.provider === "qrisfast" ? (
+        <>
+          <p className="mt-4 rounded-xl border border-line bg-surface2 px-3 py-2 text-center text-xs text-muted" data-testid="gd-menunggu-fast">⚡ Menunggu pembayaran… poin masuk otomatis begitu QRIS dibayar. Halaman ini ikut berubah sendiri.</p>
+          <button type="button" onClick={() => cek(order.orderId)} className="btn-primary mt-3 w-full" data-testid="gd-cek-fast">Cek pembayaran</button>
+        </>
+      ) : confirmOpen ? (
         <div className="panel-3d mt-4 p-4">
           <p className="text-sm font-extrabold text-ink">Kirim bukti transfer</p>
           <p className="mt-1 text-xs text-muted">Gunakan tangkapan layar utuh yang menampilkan nama penerima, nominal, jam, dan nomor referensi.</p>
@@ -399,7 +426,14 @@ function TabTarik({ token, info, segarkan }) {
   const p = Math.floor(Number(poin) || 0);
   const kotor = keRupiah(p);
   const fee = info?.tarik.feeRp || 0;
-  const minPoin = info?.tarik.minPoin ?? 20;
+  const minPoin = info?.tarik.minPoin ?? 30;
+  const otomatis = !!info?.tarik.otomatis;
+  // Selama ada penarikan otomatis yang masih berjalan, segarkan tiap 6 detik.
+  useEffect(() => {
+    if (!info?.tarikan?.some((t) => t.otomatis && t.status === "menunggu")) return undefined;
+    const iv = setInterval(() => segarkan(), 6000);
+    return () => clearInterval(iv);
+  }, [info, segarkan]);
 
   async function ajukan(e) {
     e.preventDefault();
@@ -409,7 +443,12 @@ function TabTarik({ token, info, segarkan }) {
       const r = await fetch("/api/game/dompet", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, aksi: "tarik", poin: p, ewallet, nomor, nama }) });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Gagal mengajukan.");
-      setPesan({ ok: true, teks: `Pengajuan terkirim (${d.tarikan.id}). ${info?.tarik.jam}.` });
+      if (d.otomatis) {
+        const st = d.tarikan?.status;
+        setPesan(st === "dibayar" ? { ok: true, teks: `Berhasil! ${rupiah(d.tarikan.bersih)} sudah dikirim ke ${ewallet} ${d.tarikan.nomor}.` }
+          : st === "ditolak" ? { ok: false, teks: `Penarikan gagal${d.tarikan.catatan ? ` (${d.tarikan.catatan})` : ""}. Poin kamu sudah dikembalikan.` }
+          : { ok: true, teks: `Penarikan ${rupiah(d.tarikan.bersih)} sedang diproses otomatis. Statusnya berubah sendiri.` });
+      } else setPesan({ ok: true, teks: `Pengajuan terkirim (${d.tarikan.id}). ${info?.tarik.jam}.` });
       setPoin(""); segarkan();
     } catch (err) { setPesan({ ok: false, teks: err.message }); } finally { setSibuk(false); }
   }
@@ -423,7 +462,7 @@ function TabTarik({ token, info, segarkan }) {
   if (info && !info.tarik.aktif) return <Alert>Penarikan poin sedang dinonaktifkan admin.</Alert>;
   return (
     <div data-testid="form-tarik">
-      <p className="text-sm text-muted">Tarik poin ke <b>e-wallet</b>. Poin langsung ditahan, lalu admin mengirim rupiahnya. <b>{info?.tarik.jam}</b>. Minimal {teksPoinRp(info?.tarik.minRp || 10000)}.</p>
+      <p className="text-sm text-muted">{otomatis ? <>Tarik poin ke <b>e-wallet</b> — dikirim <b>otomatis</b> (tanpa menunggu admin), biasanya masuk dalam hitungan detik–menit. Bila gagal, poin dikembalikan.</> : <>Tarik poin ke <b>e-wallet</b>. Poin langsung ditahan, lalu admin mengirim rupiahnya. <b>{info?.tarik.jam}</b>.</>} Minimal {teksPoinRp(info?.tarik.minRp || 15000)}.</p>
       <form onSubmit={ajukan} className="mt-4 space-y-3">
         <div>
           <label className="label" htmlFor="tr-poin">Poin yang ditarik</label>
@@ -435,13 +474,13 @@ function TabTarik({ token, info, segarkan }) {
         <div>
           <p className="label">E-wallet tujuan</p>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="E-wallet tujuan">
-            {(info?.tarik.ewallet || ["DANA", "OVO", "GoPay", "ShopeePay", "LinkAja"]).map((e) => (
+            {(info?.tarik.ewallet || ["DANA", "GoPay", "ShopeePay", "LinkAja"]).map((e) => (
               <button key={e} type="button" role="radio" aria-checked={ewallet === e} onClick={() => setEwallet(e)} data-testid={`ew-${e}`} className={`rounded-xl border px-3 py-1.5 text-xs font-bold ${ewallet === e ? "border-amber bg-amber-soft text-amber-bright" : "border-line text-ink"}`}>{e}</button>
             ))}
           </div>
         </div>
         <input value={nomor} onChange={(e) => setNomor(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20))} inputMode="tel" placeholder="Nomor e-wallet (mis. 08123456789)" className="field w-full" aria-label="Nomor e-wallet" data-testid="tr-nomor" />
-        <input value={nama} onChange={(e) => setNama(e.target.value.slice(0, 60))} placeholder="Nama pemilik e-wallet" className="field w-full" aria-label="Nama pemilik e-wallet" data-testid="tr-nama" />
+        <input value={nama} onChange={(e) => setNama(e.target.value.slice(0, 60))} placeholder={otomatis ? "Nama pemilik e-wallet (opsional)" : "Nama pemilik e-wallet"} className="field w-full" aria-label="Nama pemilik e-wallet" data-testid="tr-nama" />
         <div className="panel-3d divide-y divide-line px-4 text-sm">
           <div className="flex justify-between py-2"><span className="text-muted">Poin ditahan</span><b>{p ? teksPoinRp(kotor) : "—"}</b></div>
           {fee > 0 && <div className="flex justify-between py-2"><span className="text-muted">Biaya tarik</span><b>−{rupiah(fee)}</b></div>}
@@ -455,7 +494,7 @@ function TabTarik({ token, info, segarkan }) {
       {!info?.tarikan.length ? <p className="mt-2 text-xs text-muted">Belum ada pengajuan.</p> : (
         <ul className="mt-2 divide-y divide-line" data-testid="daftar-tarikan">
           {info.tarikan.map((t) => {
-            const [label, warna] = STATUS_TARIK[t.status] || [t.status, "text-muted"];
+            const [label, warna] = STATUS_TARIK[t.otomatis && t.status === "menunggu" ? "diproses" : t.status] || [t.status, "text-muted"];
             return (
               <li key={t.id} className="py-2.5 text-xs" data-testid="baris-tarikan">
                 <div className="flex items-start justify-between gap-2">
@@ -463,7 +502,7 @@ function TabTarik({ token, info, segarkan }) {
                   <span className={`shrink-0 font-bold ${warna}`}>{label}</span>
                 </div>
                 {t.catatan && <p className="mt-1 text-[11px] text-muted">Catatan admin: {t.catatan}</p>}
-                {t.status === "menunggu" && <button type="button" onClick={() => batal(t.id)} className="mt-1 rounded-lg border border-rose/40 px-2 py-1 text-[11px] font-bold text-rose">Batalkan</button>}
+                {t.status === "menunggu" && !t.otomatis && <button type="button" onClick={() => batal(t.id)} className="mt-1 rounded-lg border border-rose/40 px-2 py-1 text-[11px] font-bold text-rose">Batalkan</button>}
               </li>
             );
           })}

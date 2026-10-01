@@ -4,6 +4,7 @@ import { PROVIDER_KEYS, MANUAL_DEPOSIT_KEY } from "@/lib/paymentProviders";
 import { warungNokosConfigured } from "@/lib/warungnokos";
 import { rumahOtpConfigured } from "@/lib/rumahotp";
 import { atlanticConfigured } from "@/lib/atlantic";
+import { austinConfigured } from "@/lib/austinpay";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ export async function GET(req) {
   if (!(await warungNokosConfigured())) aktif.warungnokos = false;
   if (!(await rumahOtpConfigured())) aktif.rumahotp = false;
   if (!(await atlanticConfigured())) aktif.atlantic = false;
+  if (!(await austinConfigured())) aktif.qrisfast = false;
   const { min, max } = depositLimits();
   const methods = PROVIDER_KEYS.filter((k) => k !== MANUAL_DEPOSIT_KEY && aktif[k]).map((k) => {
     const d = depositDisplay(settings, k);

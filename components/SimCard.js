@@ -122,6 +122,9 @@ export default function SimCard({ compact = false }) {
             <Link href="/transfer" className="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/15">
               Transfer
             </Link>
+            <Link href="/tarik" className="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/15" data-testid="simcard-tarik">
+              Tarik
+            </Link>
           </div>
         )}
       </div>

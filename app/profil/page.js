@@ -152,6 +152,7 @@ export default function ProfilPage() {
     ["/deposit", "💳", "Isi Saldo"],
     ["/riwayat", "🧾", "Riwayat"],
     ["/mutasi", "📒", "Mutasi Saldo"],
+    ["/tarik", "💸", "Tarik Saldo"],
     ["/transfer", "🔁", "Transfer"],
     ["/loyalitas", "⭐", "Poin & Level"],
     ["/referral", "🎁", "Undang Teman"],

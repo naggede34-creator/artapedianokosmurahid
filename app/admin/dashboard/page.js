@@ -12,6 +12,7 @@ import AdminGame from "@/components/AdminGame";
 import AdminPembaruan from "@/components/AdminPembaruan";
 import AdminTarikPoin from "@/components/AdminTarikPoin";
 import AdminKeamanan from "@/components/AdminKeamanan";
+import AdminAustinPay from "@/components/AdminAustinPay";
 import { CHANNEL_ID, CHANNEL_URL } from "@/lib/links";
 
 function fmtDate(d) {
@@ -31,6 +32,7 @@ const TABS = [
   { id: "transaksi", label: "Transaksi", icon: "💳" },
   { id: "depositmanual", label: "Deposit Manual", icon: "🔎" },
   { id: "tarik", label: "Tarik Saldo", icon: "🏦" },
+  { id: "austinpay", label: "AustinPay", icon: "⚡" },
   { id: "gateway", label: "QRIS Gateway", icon: "💸" },
   { id: "referral", label: "Referral", icon: "🛡" },
   { id: "kreator", label: "Kreator", icon: "🎬" },
@@ -53,7 +55,7 @@ const TABS = [
 // Kelompok menu admin (semua id tab harus ada di TABS; yang tidak terdaftar di sini tetap diberi kelompok "Lainnya").
 const KELOMPOK_TAB = [
   { id: "ringkas", label: "Ringkasan", icon: "📊", tabs: ["ringkasan", "transaksi"] },
-  { id: "uang", label: "Pengguna & Uang", icon: "👥", tabs: ["pengguna", "depositmanual", "tarikpoin", "tarik", "referral", "kreator", "giveaway", "juara", "job"] },
+  { id: "uang", label: "Pengguna & Uang", icon: "👥", tabs: ["pengguna", "depositmanual", "austinpay", "tarikpoin", "tarik", "referral", "kreator", "giveaway", "juara", "job"] },
   { id: "game", label: "Game & Chat", icon: "🎮", tabs: ["game", "pembaruan", "lencana"] },
   { id: "konten", label: "Konten & Toko", icon: "🛍️", tabs: ["konten", "banner", "produk", "tiket"] },
   { id: "integrasi", label: "Integrasi", icon: "🔌", tabs: ["gateway", "bot", "reseller", "konfigurasi"] },
@@ -3252,6 +3254,7 @@ export default function AdminDashboardPage() {
       {activeTab === "game" && <AdminGame />}
       {activeTab === "pembaruan" && <AdminPembaruan />}
       {activeTab === "tarikpoin" && <AdminTarikPoin />}
+      {activeTab === "austinpay" && <AdminAustinPay />}
 
       {activeTab === "giveaway" && (
         <div className="mt-5 space-y-5">

@@ -77,6 +77,7 @@ const sections = [
       { href: "/reseller", label: "Bot Reseller", icon: <span className="text-[17px] leading-none">🤖</span>, badge: "Baru" },
       { href: "/giveaway", label: "Giveaway", icon: <span className="text-[17px] leading-none">🎁</span>, badge: "Baru" },
       { href: "/tampilan", label: "Tampilan & Tema", icon: <span className="text-[17px] leading-none">🎨</span>, badge: "Baru" },
+      { href: "/tarik", label: "Tarik Saldo", icon: <span className="text-[17px] leading-none">💸</span> },
       { href: "/transfer", label: "Transfer Saldo", icon: <Icon.transfer width={19} height={19} /> },
       { href: "/mutasi", label: "Mutasi Saldo", icon: <Icon.ledger width={19} height={19} /> },
       { href: "/riwayat", label: "Riwayat Transaksi", icon: <Icon.history width={19} height={19} /> }
