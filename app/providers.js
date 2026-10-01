@@ -4,6 +4,19 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef } f
 import { usePathname } from "next/navigation";
 import { pasangPenyadapPerangkat } from "@/lib/perangkatKlien";
 
+// Mini app Telegram dibuka lewat tombol bot (?startapp=tarung / ?startapp=game): langsung ke Arena Pendekar / tab Game.
+if (typeof window !== "undefined") {
+  try {
+    const cari = (s) => new URLSearchParams(s).get("tgWebAppStartParam");
+    const sp = cari(window.location.search) || cari(window.location.hash.slice(1)) || window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+    const tujuan = sp === "tarung" ? "/chat?game=tarung" : sp === "game" ? "/chat?game=1" : null;
+    if (tujuan && sessionStorage.getItem("artapedia_startapp") !== sp && !window.location.pathname.startsWith("/chat")) {
+      sessionStorage.setItem("artapedia_startapp", sp);
+      window.location.replace(tujuan);
+    }
+  } catch {}
+}
+
 const THEME_KEY = "artapedia_theme";
 const ThemeContext = createContext(null);
 

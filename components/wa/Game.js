@@ -9,6 +9,8 @@ import { teksPoinRp, POIN_RP } from "@/lib/poinGame";
 import { TombolSuara, useMusik, bunyiKlik } from "@/components/wa/Suara";
 import { efek as bunyi } from "@/lib/suara";
 import { PapanCatur, PapanUno, PapanRemi, PapanMahjong, PapanGaple, HasilRemi, HasilMahjong, HasilGaple } from "@/components/wa/GameBoards";
+import dynamic from "next/dynamic";
+const PapanTarung = dynamic(() => import("@/components/tarung/Tarung").then((m) => m.PapanTarung), { ssr: false, loading: () => <div className="wa-memuat"><span className="wa-spin" /> Memuat arena…</div> });
 
 // Nominal game tampil sebagai poin + padanan rupiah (2 poin = Rp1.000).
 const rupiah = (n) => teksPoinRp(n);
@@ -16,6 +18,17 @@ const fotoDari = (p) => (p?.fotoV ? `/api/wa/foto/${p.pid}?v=${p.fotoV}` : null)
 export const tautanGame = (id) => `${typeof window !== "undefined" ? window.location.origin : ""}/chat?game=${id}`;
 
 export const ATURAN = {
+  tarung: {
+    judul: "Arena Pendekar",
+    ringkas: "Tarung arkade 1 lawan 1, giliran rahasia.",
+    poin: [
+      "Pilih satu dari 5 petarung (pilihan dirahasiakan sampai lawan memilih). Tiap petarung punya jurus & pamungkas berbeda.",
+      "Tiap giliran KEDUA pemain memilih aksi secara rahasia: Pukulan, Tendangan Kapak, Sapuan, Bantingan, Tangkis Atas, Tangkis Bawah, Jurus (35 energi), atau Pamungkas (energi penuh).",
+      "Pukulan › tendangan & bantingan · tendangan kapak › sapuan & tangkis bawah · sapuan › pukulan & tangkis atas · bantingan › kedua tangkisan. Tangkisan yang tepat membalas keras.",
+      "Server menyelesaikan bentrokan lalu kedua layar memutar animasinya. Nyawa habis = K.O.; 14 giliran tanpa K.O. = nyawa terbanyak menang ronde. Dua ronde = menang.",
+      "Batas 20 detik per giliran; diam = otomatis tangkis atas, diam 3 giliran berturut-turut = kalah."
+    ]
+  },
   catur: {
     judul: "Catur",
     ringkas: "Skakmat raja lawan. Aturan lengkap.",
@@ -196,7 +209,7 @@ export function DialogDuel({ jenis: jenisAwal = "catur", undang: undangAwal = nu
   );
 }
 
-const IKON = { catur: "♟", uno: "🃏", remi: "🂡", mahjong: "🀄", gaple: "⚃" };
+const IKON = { tarung: "🥋", catur: "♟", uno: "🃏", remi: "🂡", mahjong: "🀄", gaple: "⚃" };
 
 // ═════════════════════════ TAB GAME (LOBI) ═════════════════════════
 export function TabGame() {
@@ -241,6 +254,11 @@ export function TabGame() {
         <a className="wg-isi-saldo" href="/game-deposit" data-testid="isi-saldo-game">➕ Isi poin</a>
         {k.taruhanAktif === false ? <em>Taruhan dimatikan admin — main santai</em> : <em>Potongan admin {k.feePersen ?? 5}% dari total taruhan</em>}
       </div>
+
+      <button className="wg-unggulan" onClick={() => wa.bukaGame("tarung")} data-testid="buka-arena">
+        <span className="wg-unggulan-teks"><em>BARU · ARKADE</em><b>ARENA PENDEKAR</b><small>Game tarung 1 lawan 1 · 5 petarung · solo vs CPU & duel antar pemain</small></span>
+        <span className="wg-unggulan-gbr" aria-hidden>{["rakun", "ninja", "beruang"].map((n) => <img key={n} src={`/tarung/potret-${n}.webp?v=1`} alt="" />)}</span>
+      </button>
 
       <h3 className="wa-subjudul">Main sekarang</h3>
       <div className="wg-katalog">
@@ -340,7 +358,7 @@ export function LayarGame({ id, onTutup }) {
     const prev = sebelum.current;
     if (prev) {
       if (prev.status === "menunggu" && data.status === "main") bunyi("notif");
-      else if (data.status === "main" && sig !== prev.sig) bunyi({ catur: "langkah", uno: "kartu", remi: "kartu", mahjong: "ubin", gaple: "ubin" }[data.jenis] || "klik");
+      else if (data.status === "main" && sig !== prev.sig) { if (data.jenis !== "tarung") bunyi({ catur: "langkah", uno: "kartu", remi: "kartu", mahjong: "ubin", gaple: "ubin" }[data.jenis] || "klik"); }
       if (data.status === "main" && data.giliranSaya && !prev.giliran) setTimeout(() => bunyi("giliran"), 220);
       if (["selesai", "batal"].includes(data.status) && prev.status !== data.status) {
         const h = data.hasil?.saya;
@@ -397,7 +415,8 @@ export function LayarGame({ id, onTutup }) {
   const selesai = g && (g.status === "selesai" || g.status === "batal");
   const saya = g?.pemain?.find((p) => p.pid === wa.saya?.pid);
   const lawan = g?.lawan;
-  const Papan = { catur: PapanCatur, uno: PapanUno, remi: PapanRemi, mahjong: PapanMahjong, gaple: PapanGaple }[g?.jenis];
+  const Papan = { catur: PapanCatur, uno: PapanUno, remi: PapanRemi, mahjong: PapanMahjong, gaple: PapanGaple, tarung: PapanTarung }[g?.jenis];
+  const tarung = g?.jenis === "tarung";
 
   return (
     <div className="wg-layar" role="dialog" aria-label="Duel permainan" onClickCapture={bunyiKlik}>
@@ -416,7 +435,7 @@ export function LayarGame({ id, onTutup }) {
 
       {g && (
         <div className="wg-isi">
-          <div className="wg-pemain">
+          <div className={`wg-pemain${tarung && g.status !== "menunggu" ? " ringkas" : ""}`}>
             <div className={`wg-chip-pemain${main && g.giliranSaya ? " aktif" : ""}`}>
               <Avatar nama={saya?.nama || "Kamu"} foto={fotoDari(saya)} ada={!!saya?.fotoV} size={36} />
               <span><NamaLencana nama={saya?.nama || "Kamu"} lencana={saya?.lencana} size={13} /><small>{main ? (g.giliranSaya ? "Giliranmu" : "Menunggu") : "Kamu"}</small></span>
@@ -460,7 +479,7 @@ export function LayarGame({ id, onTutup }) {
 
           {g.papan && Papan && (
             <div className={`wg-papan wg-game-${g.jenis}`}>
-              <Papan papan={g.papan} onAksi={aksi} sibuk={sibuk || !main} />
+              <Papan papan={g.papan} onAksi={aksi} sibuk={sibuk || !main} sisa={sisa} />
             </div>
           )}
 

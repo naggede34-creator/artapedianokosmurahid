@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 const rp = (n) => `Rp${Number(n || 0).toLocaleString("id-ID")}`;
-const NAMA = { catur: "♟ Catur", uno: "🃏 UNO", remi: "🂡 Remi", mahjong: "🀄 Mahjong", gaple: "⚃ Domino Gaple" };
+const NAMA = { catur: "♟ Catur", uno: "🃏 UNO", remi: "🂡 Remi", mahjong: "🀄 Mahjong", gaple: "⚃ Domino Gaple", tarung: "🥋 Arena Pendekar" };
 const NAMA_SOLO = { plinko: "🔮 Plinko", slot: "🀄 Mahjong Spin 1024", dadu: "🎲 Dadu Naga", keno: "🎱 Keno Hoki", roda: "🎡 Roda Hoki" };
 const STATUS = { menunggu: "Menunggu lawan", gabung: "Bergabung", main: "Berjalan", selesai: "Selesai", batal: "Batal" };
 

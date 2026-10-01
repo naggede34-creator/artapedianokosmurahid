@@ -12,6 +12,9 @@ import LayarPanggilan from "@/components/wa/Panggilan";
 import { TabGame, LayarGame, DialogDuel, BannerGame } from "@/components/wa/Game";
 import { LayarPlinko, LayarSlot } from "@/components/wa/GameSolo";
 import { LayarDadu, LayarKeno, LayarRoda } from "@/components/wa/GameSolo2";
+import dynamic from "next/dynamic";
+// Arena Pendekar dimuat terpisah (berkas besar: mesin tarung, sprite, efek) hanya saat dibuka.
+const LayarTarung = dynamic(() => import("@/components/tarung/Tarung").then((m) => m.LayarTarung), { ssr: false, loading: () => <div className="wg-layar tr-memuat"><span className="wa-spin" /> Memuat Arena Pendekar…</div> });
 import { SheetKontak, SheetGrupBaru, SheetProfilSaya, SheetUser, SheetRoom, SheetTambahAnggota, SheetTeruskan } from "@/components/wa/Lembaran";
 import "@/components/wa/wa.css";
 
@@ -432,7 +435,8 @@ export default function WaApp() {
         {gameAktif === "dadu" && <LayarDadu onTutup={() => setGameAktif(null)} />}
         {gameAktif === "keno" && <LayarKeno onTutup={() => setGameAktif(null)} />}
         {gameAktif === "roda" && <LayarRoda onTutup={() => setGameAktif(null)} />}
-        {gameAktif && !["plinko", "slot", "dadu", "keno", "roda"].includes(gameAktif) && <LayarGame key={gameAktif} id={gameAktif} onTutup={() => { setGameAktif(null); sinkron(); }} />}
+        {gameAktif === "tarung" && <LayarTarung onTutup={() => setGameAktif(null)} onDuel={() => { setGameAktif(null); setTab("game"); buka({ tipe: "duel-baru", jenis: "tarung" }); }} />}
+        {gameAktif && !["plinko", "slot", "dadu", "keno", "roda", "tarung"].includes(gameAktif) && <LayarGame key={gameAktif} id={gameAktif} onTutup={() => { setGameAktif(null); sinkron(); }} />}
 
         {panggilan && <LayarPanggilan key={panggilan.callId || "keluar"} sesi={panggilan} onSelesai={selesaiPanggilan} />}
 

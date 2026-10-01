@@ -47,7 +47,8 @@ const sections = [
     items: [
       { href: "/dashboard", label: "Beranda", icon: <Icon.home width={19} height={19} /> },
       { href: "/profil", label: "Profil Akun", icon: <span className="text-[17px] leading-none">👤</span>, badge: "Baru" },
-      { href: "/chat?game=1", label: "Duel Game (UNO, Catur…)", icon: <span className="text-[17px] leading-none">🎮</span>, badge: "Baru" },
+      { href: "/chat?game=tarung", label: "Arena Pendekar (Tarung)", icon: <span className="text-[17px] leading-none">🥋</span>, badge: "Baru" },
+      { href: "/chat?game=1", label: "Duel Game (UNO, Catur…)", icon: <span className="text-[17px] leading-none">🎮</span> },
       // Tautan keluar ke channel Telegram. Ditaruh paling atas bersama Beranda,
       // bukan diselipkan di Bantuan: ini yang dipakai orang untuk memastikan
       // tokonya benar-benar jalan sebelum mereka mengisi saldo.
