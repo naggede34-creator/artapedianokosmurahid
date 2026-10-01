@@ -547,6 +547,10 @@ export default function DashboardPage() {
         <NamePromptModal onClose={() => setShowNamePrompt(false)} />
       )}
 
+      {/* user-dash-ruang: wadah perspektif 3D kartu. Perspektif TIDAK boleh di akar .user-dash — properti itu menjadikan
+          akar sebagai "induk" bagi semua elemen fixed di dalamnya, sehingga modal (isi nama, garansi, tur) terpusat di
+          tengah halaman yang panjang (bukan di layar) dan halaman ikut melompat saat inputnya mendapat fokus. */}
+      <div className="user-dash-ruang">
       {/* Anime Hero Banner */}
       <div className="mb-5">
         <AnimeHero />
@@ -975,6 +979,7 @@ export default function DashboardPage() {
 
         </>
       )}
+      </div>
       </div>
 
       <WarrantyModal open={warrantyModal} onClose={() => setWarrantyModal(false)} token={token} />

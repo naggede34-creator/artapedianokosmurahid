@@ -3551,7 +3551,7 @@ a.banner-3d:active {
    kartu itu sendiri, tiap kartu punya titik hilangnya masing-masing dan
    halamannya terbaca seperti tumpukan foto yang diambil dari sudut berbeda-beda
    — bukan seperti satu ruang yang dilihat dari satu tempat. */
-.user-dash {
+.user-dash-ruang {
   perspective: 1200px;
   perspective-origin: 50% 30%;
 }
@@ -4290,6 +4290,12 @@ html:not(.dark)[data-tema="arang"] { --c-bg: 246 248 251; --c-surface2: 234 239 
   overflow: hidden;
   isolation: isolate;
 }
+/* PERBAIKAN: .btn-primary dulu mengandalkan gradasi sebagai background-image, lalu blok di atas menimpanya dengan kilau —
+ * warna dasarnya hilang dan tombol jadi putih-di-atas-putih (mis. "+ Pesan nomor", tombol bayar Deposit). Warna dasar
+ * dikembalikan di sini; kilau tetap menjadi lapisan di atasnya. Tombol mati tetap memakai gaya .btn-primary:disabled. */
+.btn-primary:not(:disabled) { background-color: rgb(var(--c-blue)); }
+.btn-primary:hover:not(:disabled) { background-color: rgb(var(--c-blue-bright)); }
+
 .btn-primary::after,
 .btn-dark::after {
   content: "";

@@ -2141,7 +2141,7 @@ export default function AdminDashboardPage() {
             <p className="text-[10px] text-white/40 mt-0.5 font-mono">Control Center · {new Date().toLocaleDateString("id-ID", { weekday:"long", day:"2-digit", month:"long", year:"numeric" })}</p>
           </div>
           <button onClick={logout}
-            className="shrink-0 rounded-xl border border-rose/40 bg-rose/10 px-4 py-2 text-sm font-bold text-rose press hover:bg-rose/20 transition-colors">
+            className="shrink-0 rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-bold text-white press hover:bg-rose hover:border-rose transition-colors">
             ⬅ Keluar
           </button>
         </div>
