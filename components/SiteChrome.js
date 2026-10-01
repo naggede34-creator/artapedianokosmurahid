@@ -22,6 +22,7 @@ import AuthGate from "@/components/AuthGate";
 import LayarBan from "@/components/LayarBan";
 import PembaruanModal from "@/components/PembaruanModal";
 import MusimPenerap from "@/components/MusimPenerap";
+import PopupAdmin from "@/components/PopupAdmin";
 import { useUser } from "@/app/providers";
 
 // Halaman yang tetap terbuka tanpa akun saat login diwajibkan: informasi umum.
@@ -91,7 +92,7 @@ export default function SiteChrome({ children }) {
   // Tanpa RevealOnScroll di sini: halaman ini tidak memakai kelas animasi
   // masuk apa pun, dan pengamat mutasinya justru akan bekerja terus-menerus
   // di DOM chat yang isinya berubah setiap pesan datang.
-  if (isChat) return <>{tampilGerbang && <AuthGate />}{!tampilGerbang && <PembaruanModal langsung />}{children}</>;
+  if (isChat) return <>{tampilGerbang && <AuthGate />}{!tampilGerbang && <><PembaruanModal langsung /><PopupAdmin langsung /></>}{children}</>;
 
   return (
     <>
@@ -112,6 +113,7 @@ export default function SiteChrome({ children }) {
           <InfoModal />
           <PembaruanModal />
           <WelcomeBonusPopup />
+          <PopupAdmin />
         </>
       )}
       <MusimPenerap />

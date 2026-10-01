@@ -38,8 +38,8 @@ const UA_BURUK = /(sqlmap|nikto|nmap|masscan|acunetix|nessus|dirbuster|gobuster|
 
 // ── IP yang diblokir (daftar sidik bergaram, disegarkan berkala dari server) ──
 const SEGAR_MS = 10_000;
-const blokirIp = { sidik: null, t: 0, memuat: null };
-const JALUR_BEBAS_BLOKIR = [/^\/admin(\/|$)/, /^\/api\/admin(\/|$)/, /^\/api\/internal\//];
+const blokirIp = { sidik: null, p: null, t: 0, memuat: null };
+const JALUR_BEBAS_BLOKIR = [/^\/admin(\/|$)/, /^\/api\/admin(\/|$)/, /^\/api\/internal\//, /^\/api\/ban-tampilan(\/|$)/];
 
 async function muatDaftarBlokir(asal) {
   try {
@@ -50,6 +50,7 @@ async function muatDaftarBlokir(asal) {
     if (!r.ok) throw new Error(String(r.status));
     const d = await r.json();
     blokirIp.sidik = new Set(Array.isArray(d.h) ? d.h : []);
+    blokirIp.p = d.p && typeof d.p === "object" ? d.p : null;
     blokirIp.t = Date.now();
   } catch {
     // Gagal baca: pertahankan daftar lama (atau kosong) dan coba lagi sebentar lagi — situs tidak boleh mati karena ini.
@@ -107,7 +108,7 @@ export async function middleware(req) {
   if (!lokal(ip) && !JALUR_BEBAS_BLOKIR.some((r) => r.test(pathname)) && !KECUALI.some((r) => r.test(pathname)) && (await ipDiblokir(req, ip))) {
     const kepala = { "cache-control": "no-store", "x-diblokir": "1" };
     if (api) return NextResponse.json({ error: PESAN_BAN, diblokir: true }, { status: 403, headers: kepala });
-    return new NextResponse(halamanBan(), { status: 403, headers: { ...kepala, "content-type": "text/html; charset=utf-8" } });
+    return new NextResponse(halamanBan(blokirIp.p), { status: 403, headers: { ...kepala, "content-type": "text/html; charset=utf-8" } });
   }
 
   if (UA_BURUK.test(req.headers.get("user-agent") || "")) return tolak(403, "Forbidden.", 0, api);

@@ -68,6 +68,7 @@ export default function SetorGmailPage() {
               <p className="mt-1 text-[11px] text-muted">Total upah diterima {rupiah(info.totalMasuk)} · sudah ditarik {rupiah(info.totalTarik)}</p>
             </div>
 
+            <Estimasi />
             {!info.setuju ? <Syarat info={info} token={token} onSetuju={muat} /> : (
               <>
                 {!info.buka && <Alert tone="amber"><span data-testid="setor-tutup">🔒 {info.alasanTutup}</span></Alert>}
@@ -106,6 +107,22 @@ export default function SetorGmailPage() {
           </aside>
         </div>
       )}
+    </div>
+  );
+}
+
+function Estimasi() {
+  return (
+    <div className="grid gap-2 sm:grid-cols-2" data-testid="setor-estimasi">
+      <div className="rounded-2xl border border-line bg-surface p-3.5">
+        <p className="flex items-center gap-2 text-sm font-black text-ink"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-soft text-lg" aria-hidden="true">⏳</span>Estimasi ACC 1–3 Hari</p>
+        <p className="mt-1.5 text-xs leading-relaxed text-muted">Akun diproses setelah room ditutup.</p>
+      </div>
+      <div className="rounded-2xl border border-line bg-surface p-3.5">
+        <p className="flex items-center gap-2 text-sm font-black text-ink"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-success-soft text-lg" aria-hidden="true">⚡</span>Payout 1–3 Menit</p>
+        <p className="mt-1.5 text-xs leading-relaxed text-muted">Setelah email sudah di-ACC admin.</p>
+      </div>
+      <p className="text-[11px] text-muted sm:col-span-2">* Tergantung server dan admin.</p>
     </div>
   );
 }
