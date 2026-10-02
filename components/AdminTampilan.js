@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TAUTAN_DASBOR } from "@/lib/tautanDasbor";
 import { LayarBanView } from "@/components/LayarBan";
+import { TEMPLATE_BAN, TINGGI_TEMPLATE_BAN } from "@/lib/templateBan";
 
 const tgl = (v) => (v ? new Date(v).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
 const input = "w-full rounded-lg border border-line bg-bg px-2.5 py-1.5 text-sm text-ink";
@@ -197,6 +198,16 @@ function EditorBan() {
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="block text-xs font-bold text-muted">Teks tombol<input value={c.tombolTeks} onChange={(e) => set("tombolTeks", e.target.value)} maxLength={40} className={input} data-testid="ban-tombol-teks" /></label>
             <div className="text-xs font-bold text-muted">Tombol mengarah ke<TujuanTombol nilai={c.tombolHref} onUbah={(v) => set("tombolHref", v)} /></div>
+          </div>
+          <div className="rounded-xl border border-line bg-bg p-2.5" data-testid="ban-template-kotak">
+            <p className="text-xs font-bold text-muted">Template HTML siap pakai (3D, modern)</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {TEMPLATE_BAN.map((t) => (
+                <button key={t.id} type="button" data-testid={`ban-template-${t.id}`} onClick={() => setC((x) => ({ ...x, aktif: true, judul: "", teks: "", html: t.html, htmlTinggi: TINGGI_TEMPLATE_BAN, latar1: t.latar1, latar2: t.latar2, warnaJudul: t.warnaJudul, warnaTeks: t.warnaTeks }))}
+                  className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs font-black text-ink hover:bg-surface2">{t.nama}</button>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] text-muted">Klik untuk mengisi kolom HTML + warna latar; lihat pratinjau, lalu tekan Simpan. HTML-nya bisa diedit bebas.</p>
           </div>
           <label className="block text-xs font-bold text-muted">HTML kustom (opsional — ditampilkan di bingkai aman tanpa skrip)
             <textarea value={c.html} onChange={(e) => set("html", e.target.value)} rows={6} maxLength={20000} spellCheck={false} placeholder={'<div style="color:#fff;text-align:center"><h2>Pengumuman</h2></div>'} className={`${input} font-mono text-xs`} data-testid="ban-html-in" /></label>

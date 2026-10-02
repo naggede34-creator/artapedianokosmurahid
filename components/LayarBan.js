@@ -27,7 +27,7 @@ export function LayarBanView({ cfg, tertanam = false }) {
       {c.gambar ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={c.gambar} alt="" data-testid="ban-gambar" style={{ maxWidth: "min(420px,90%)", maxHeight: 300, borderRadius: 18, objectFit: "contain" }} />
-      ) : (
+      ) : c.html ? null : (
         <div style={{ fontSize: 64, lineHeight: 1 }} aria-hidden="true">🚫</div>
       )}
       {judul && (

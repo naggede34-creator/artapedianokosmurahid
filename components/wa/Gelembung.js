@@ -259,7 +259,7 @@ function GelembungAsli({ m, grup, umum, pengirim, awalGrup, sorot, onMenu, onBal
         )}
 
         {dihapus ? (
-          <div className="wa-gel-hapus"><Ik n="block" s={14} /> {mine ? "Kamu menghapus pesan ini" : "Pesan ini telah dihapus"}</div>
+          <div className="wa-gel-hapus"><Ik n="block" s={14} /> {m.sistem ? "Pesan dihapus otomatis oleh sistem" : mine ? "Kamu menghapus pesan ini" : "Pesan ini telah dihapus"}</div>
         ) : (
           <>
             {m.diteruskan ? <div className="wa-gel-teruskan"><Ik n="forward" s={13} /> Diteruskan</div> : null}

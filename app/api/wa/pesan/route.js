@@ -24,7 +24,7 @@ export async function POST(req) {
   if (aksi === "kirim") {
     if (!batasi(me, "kirim", 40, 60_000)) return terlaluCepat();
     const r = await kirim(me, roomId, body, { req });
-    return r.ok ? j({ ok: true, pesan: r.pesan }) : galat(r.alasan, r.status || 400, r.tutup ? { tutup: true } : {});
+    return r.ok ? j({ ok: true, pesan: r.pesan, ...(r.disaring ? { disaring: true } : {}) }) : galat(r.alasan, r.status || 400, r.tutup ? { tutup: true } : {});
   }
   if (!batasi(me, "aksi", 120, 60_000)) return terlaluCepat();
   const ok = (r, ekstra = {}) => (r.ok ? j({ ok: true, ...ekstra, ...(r.pesan ? { pesan: r.pesan } : {}), ...(r.terkirim !== undefined ? { terkirim: r.terkirim } : {}) }) : galat(r.alasan || "Gagal."));
@@ -33,7 +33,7 @@ export async function POST(req) {
     case "ketik": return ok(await ketik(me, roomId));
     case "reaksi": return ok(await reaksi(me, roomId, String(body.msgId || ""), String(body.emoji || "")));
     case "hapus": return ok(await hapus(me, roomId, String(body.msgId || ""), body.scope === "semua" ? "semua" : "saya", { req }));
-    case "ubah": return ok(await ubah(me, roomId, String(body.msgId || ""), body.teks));
+    case "ubah": { const r = await ubah(me, roomId, String(body.msgId || ""), body.teks, { req }); return ok(r, r.disaring ? { disaring: true } : {}); }
     case "bintang": return ok(await bintang(me, roomId, String(body.msgId || ""), !!body.nyalakan));
     case "sematkan": return ok(await sematkan(me, roomId, String(body.msgId || ""), !!body.nyalakan, { req }));
     case "vote": return ok(await pilihPoll(me, roomId, String(body.msgId || ""), String(body.opsiId || "")));

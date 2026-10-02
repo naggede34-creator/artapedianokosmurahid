@@ -222,6 +222,7 @@ export default function Percakapan({ roomId }) {
         return [...real, asli, ...temps];
       });
       wa.muatUlang?.();
+      if (r.data.disaring) { toast("🚫 Pesanmu dihapus otomatis oleh sistem karena memuat kata yang dilarang."); return true; }
       if ((ai || /^\s*@(ai|wearta)\b/i.test(payload.teks || "")) && payload.jenis === "teks") {
         setAiMikir(true);
         api.post("/api/wa/ai", { roomId, teks: payload.teks || "" }).then((x) => {
@@ -252,7 +253,7 @@ export default function Percakapan({ roomId }) {
     if (ubah) {
       const id = ubah.id;
       setUbah(null); setTeks("");
-      api.post("/api/wa/pesan", { aksi: "ubah", room: roomId, msgId: id, teks: t }).then((r) => { if (!r.ok) toast(r.error || "Gagal mengubah pesan."); polling(); });
+      api.post("/api/wa/pesan", { aksi: "ubah", room: roomId, msgId: id, teks: t }).then((r) => { if (!r.ok) toast(r.error || "Gagal mengubah pesan."); else if (r.data?.disaring) toast("🚫 Pesan dihapus otomatis oleh sistem karena memuat kata yang dilarang."); polling(); });
       return;
     }
     const b = balas;
