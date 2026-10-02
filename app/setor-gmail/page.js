@@ -58,6 +58,7 @@ export default function SetorGmailPage() {
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10" data-testid="halaman-setor-gmail">
       <PageHeader title="Stor Gmail" icon={<span className="text-xl">📧</span>} desc="Buat akun Gmail sesuai daftar, setor, dan dapat upah. Saldo Stor terpisah dari saldo lain." />
       {galat && <div className="mt-4"><Alert>{galat}</Alert></div>}
+      {info && !info.buka && info.bot?.url && <PopupBot bot={info.bot} />}
       {!info && !galat && <div className="mt-8 flex justify-center"><Spinner className="h-6 w-6" /></div>}
       {info && (
         <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -71,7 +72,12 @@ export default function SetorGmailPage() {
             <Estimasi />
             {!info.setuju ? <Syarat info={info} token={token} onSetuju={muat} /> : (
               <>
-                {!info.buka && <Alert tone="amber"><span data-testid="setor-tutup">🔒 {info.alasanTutup}</span></Alert>}
+                {!info.buka && (
+                  <Alert tone="amber">
+                    <span data-testid="setor-tutup">🔒 {info.alasanTutup}</span>
+                    {info.bot?.url && <a href={info.bot.url} target="_blank" rel="noopener noreferrer" className="mt-1.5 block font-black underline" data-testid="setor-ke-bot">🤖 Setor lewat {info.bot.nama} — rate lebih tinggi →</a>}
+                  </Alert>
+                )}
                 <div className="no-scrollbar flex gap-1 overflow-x-auto rounded-xl bg-surface2 p-1" role="tablist">
                   {[["setor", "📤 Setor"], ["riwayat", `📋 Riwayat (${info.riwayat.length})`], ["tarik", "💸 Tarik"], ["syarat", "📜 Syarat"]].map(([id, lb]) => (
                     <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)} data-testid={`setor-tab-${id}`} className={`tab whitespace-nowrap ${tab === id ? "tab-active" : ""}`}>{lb}</button>
@@ -107,6 +113,28 @@ export default function SetorGmailPage() {
           </aside>
         </div>
       )}
+    </div>
+  );
+}
+
+// Semua room tutup → popup otomatis (sekali per sesi) yang mengarahkan ke bot setor alternatif.
+function PopupBot({ bot }) {
+  const [buka, setBuka] = useState(false);
+  useEffect(() => {
+    try { if (sessionStorage.getItem("artapedia_setor_bot") !== "1") setBuka(true); } catch { setBuka(true); }
+  }, []);
+  const tutup = () => { setBuka(false); try { sessionStorage.setItem("artapedia_setor_bot", "1"); } catch {} };
+  if (!buka || !bot?.url) return null;
+  return (
+    <div className="fixed inset-0 z-[96] flex items-end justify-center px-3 pb-3 sm:items-center sm:pb-0" role="dialog" aria-modal="true" aria-label="Stor Gmail ditutup" data-testid="setor-popup-bot">
+      <button aria-label="Tutup" className="animate-fade-in absolute inset-0" style={{ background: "rgb(var(--c-ink) / 0.6)" }} onClick={tutup} />
+      <div className="animate-scale-in relative w-full max-w-sm overflow-hidden rounded-3xl border-2 border-ink/15 bg-surface p-6 text-center shadow-lift">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-soft text-4xl" aria-hidden="true">🤖</div>
+        <h2 className="mt-4 font-display text-2xl leading-tight text-ink">Stor Gmail di web ditutup</h2>
+        <p className="mt-2 text-sm leading-relaxed text-muted" data-testid="setor-popup-bot-teks">{bot.teks}</p>
+        <a href={bot.url} target="_blank" rel="noopener noreferrer" onClick={tutup} className="btn-primary mt-5 block w-full text-center" data-testid="setor-popup-bot-tombol">Setor lewat {bot.nama}</a>
+        <button onClick={tutup} className="mt-2 w-full rounded-xl px-3 py-2 text-xs font-bold text-muted hover:bg-surface2" data-testid="setor-popup-bot-tutup">Nanti saja</button>
+      </div>
     </div>
   );
 }
