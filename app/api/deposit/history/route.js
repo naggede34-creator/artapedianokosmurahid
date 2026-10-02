@@ -23,6 +23,7 @@ export async function GET(req) {
       adminFee: d.adminFee ?? null,
       totalAmount: d.totalAmount ?? null,
       provider: d.provider || "pakasir",
+      ...(d.rute ? { rute: true } : {}),
       wallet: d.wallet === "game" ? "game" : "nokos",
       status: d.status,
       credited: Boolean(d.credited),

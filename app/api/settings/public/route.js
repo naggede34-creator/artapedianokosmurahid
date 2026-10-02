@@ -1,3 +1,4 @@
+import { ambilRute } from "@/lib/depositRute";
 import { NextResponse } from "next/server";
 import {
   getSettings,
@@ -58,6 +59,25 @@ export async function GET() {
     // sekali; yang benar adalah metodenya ada, cuma sedang tutup — dan itu yang
     // ditampilkan halaman deposit lewat manualDeposit.open di bawah.
     const jam = manualDepositHours(settings);
+
+    // Rute deposit otomatis: pembeli tidak melihat daftar penyedia — hanya satu pilihan "QRIS" (penyedianya dipilih server
+    // berdasarkan nominal, lihat lib/depositRute.js) + QRIS manual bila tersedia. Kunci "qrisfast" hanya pembawa pilihan;
+    // server mengabaikannya dan memilih sendiri.
+    const rute = await ambilRute().catch(() => null);
+    const ruteSiap = !!rute?.aktif && [...rute.atas, ...rute.bawah].some((k) => providers[k]);
+    let depositProvidersKeluar = providers;
+    let depositFeeKeluar = depositFeePercent;
+    let depositMethodsKeluar = PROVIDER_KEYS.map((k) => depositDisplay(settings, k));
+    let depositMinKeluar = limits.min;
+    if (ruteSiap) {
+      depositProvidersKeluar = { qrisfast: true, manual: !!providers.manual };
+      depositFeeKeluar = { ...(depositFeePercent || {}), qrisfast: 0 };
+      depositMethodsKeluar = [
+        { key: "qrisfast", name: "QRIS", badge: "", desc: "Semua e-wallet & m-banking. Saldo masuk otomatis.", speed: "± 10–60 detik" },
+        ...depositMethodsKeluar.filter((m) => m.key === "manual")
+      ];
+      depositMinKeluar = Math.min(limits.min, rute.min);
+    }
     return NextResponse.json({
       maintenance: !!maintenance,
       // Saklar admin: true = pengunjung wajib daftar/masuk.
@@ -67,13 +87,14 @@ export async function GET() {
       maintenanceTitle: maintenanceTitle || "Sedang Maintenance",
       maintenanceButtonLabel: maintenanceButtonLabel || "",
       maintenanceButtonUrl: maintenanceButtonUrl || "",
-      depositProviders: providers,
-      depositFeePercent,
+      depositProviders: depositProvidersKeluar,
+      depositFeePercent: depositFeeKeluar,
+      depositRute: ruteSiap,
       // Jaminan OTP: { aktif, persen, menit }. Dipakai lembar beli untuk
       // menampilkan (atau menyembunyikan) pilihan jaminan.
       jaminan: await infoJaminan().catch(() => ({ aktif: false, persen: 0, menit: 4 })),
       // Nama & label metode deposit yang diatur admin.
-      depositMethods: PROVIDER_KEYS.map((k) => depositDisplay(settings, k)),
+      depositMethods: depositMethodsKeluar,
       // Keterangan singkat QRIS manual untuk ditampilkan sebelum deposit dibuat.
       // Gambar QRIS-nya sengaja TIDAK ikut: ratusan kilobita yang harus diunduh
       // semua orang di tiap halaman, padahal cuma dipakai saat benar-benar
@@ -94,7 +115,7 @@ export async function GET() {
         cashbackPercent: cashbackPercentFor(settings, "manual"),
         normalCashbackPercent: Number(settings.loyalty?.cashbackDepositPercent) || 0
       },
-      depositMin: limits.min,
+      depositMin: depositMinKeluar,
       depositMax: limits.max,
       // Daftar karakternya dikosongkan saat panelnya dimatikan, bukan dikirim
       // lalu disembunyikan halaman: kalau dikirim, gambar dan teks tiap

@@ -48,6 +48,7 @@ export async function GET(req) {
       adminFee: d.adminFee ?? null,
       totalAmount: d.totalAmount ?? null,
       provider: d.provider,
+      ...(d.rute ? { rute: true } : {}),
       method: d.method || "qris",
       qrImage,
       ...(d.provider === MANUAL_DEPOSIT_KEY ? { manual: true, manualInfo: d.manualInfo || null } : {}),

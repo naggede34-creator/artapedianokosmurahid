@@ -24,7 +24,7 @@ export async function POST(req) {
   if (error) return error;
   const body = await req.json().catch(() => ({}));
   if (body.provider === MANUAL_DEPOSIT_KEY) return jsonV1(req, { error: "QRIS manual tidak tersedia lewat API. Lihat GET /v1/deposit/methods." }, { status: 400 });
-  const r = await createDepositForToken({ token: user.token, amount: body.amount, provider: body.provider });
+  const r = await createDepositForToken({ token: user.token, amount: body.amount, provider: body.provider, tanpaRute: true });
   if (!r.ok) return jsonV1(req, { error: r.error }, { status: r.status || 400 });
   const d = r.deposit;
   return jsonV1(req, {

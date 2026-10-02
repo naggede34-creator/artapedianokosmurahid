@@ -79,7 +79,7 @@ function RiwayatInner() {
     [otp, q]
   );
   const fDep = useMemo(
-    () => deposits.filter((d) => !q || `${d.orderId} ${d.providerRef || ""} ${providerName(d.provider)}`.toLowerCase().includes(q)),
+    () => deposits.filter((d) => !q || `${d.orderId} ${d.providerRef || ""} ${d.rute ? "qris" : providerName(d.provider)}`.toLowerCase().includes(q)),
     [deposits, q]
   );
 
@@ -102,7 +102,7 @@ function RiwayatInner() {
       downloadCsv(
         `riwayat-deposit-${Date.now()}.csv`,
         toCsv(
-          fDep.map((d) => ({ ...d, provider: providerName(d.provider) })),
+          fDep.map((d) => ({ ...d, provider: d.rute ? "QRIS" : providerName(d.provider) })),
           [
             { key: "orderId", label: "ID Deposit" },
             { key: "provider", label: "Metode" },
@@ -214,7 +214,7 @@ function RiwayatInner() {
                     <Icon.qris />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-bold text-ink">{providerName(d.provider)}</span>
+                    <span className="block text-sm font-bold text-ink">{d.rute ? "QRIS" : providerName(d.provider)}</span>
                     <span className="block text-xs text-muted">{fmtWIB(d.createdAt)}</span>
                   </span>
                   <span className="shrink-0 text-right">
@@ -242,7 +242,7 @@ function RiwayatInner() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-base font-extrabold text-ink">Detail deposit</p>
-                <p className="text-xs text-muted">{providerName(openDeposit.provider)}</p>
+                <p className="text-xs text-muted">{openDeposit.rute ? "QRIS" : providerName(openDeposit.provider)}</p>
               </div>
               <button onClick={() => setOpenDeposit(null)} className="rounded-lg p-1 text-muted hover:text-ink" aria-label="Tutup">
                 <Icon.x />

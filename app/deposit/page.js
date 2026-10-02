@@ -679,7 +679,7 @@ export default function DepositPage() {
                   </span>
                   <h2 className="mt-4 text-xl font-extrabold text-ink">Saldo masuk {rupiah(order.amount)}</h2>
                   {cashback > 0 && <p className="mt-1 text-sm font-semibold text-success">+ cashback {rupiah(cashback)}</p>}
-                  <p className="mt-2 text-sm text-muted">Pembayaran via {methodName(order.provider)} sudah terkonfirmasi.</p>
+                  <p className="mt-2 text-sm text-muted">Pembayaran via {order.rute ? "QRIS" : methodName(order.provider)} sudah terkonfirmasi.</p>
                   <button onClick={() => setScratchOpen(true)} className="mt-4 flex items-center gap-2 mx-auto rounded-2xl border-2 border-amber/60 bg-amber/10 px-5 py-2.5 text-sm font-extrabold text-amber-bright press animate-pulse hover:animate-none hover:bg-amber/20">
                     🎫 Buka Kartu Gores Kamu!
                   </button>
@@ -913,7 +913,7 @@ export default function DepositPage() {
                   </p>
 
                   <div className="mt-5 divide-y divide-line rounded-2xl border border-line px-4">
-                    <Row label="Metode">{methodName(order.provider)}</Row>
+                    <Row label="Metode">{order.rute ? "QRIS" : methodName(order.provider)}</Row>
                     <Row label="ID deposit">
                       <span className="inline-flex items-center gap-1 font-mono text-xs">
                         {order.orderId}
