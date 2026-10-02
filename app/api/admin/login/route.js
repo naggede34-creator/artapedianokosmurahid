@@ -11,7 +11,7 @@ export async function POST(req) {
 
     const kunci = adminTerkunci(ip);
     if (kunci) return NextResponse.json({ error: `IP dikunci sementara karena terlalu banyak percobaan gagal. Coba lagi dalam ${Math.ceil(kunci / 60)} menit.` }, { status: 429 });
-    if (!rateLimit(`${ip || "unknown"}:admin-login`, 3, 5 * 60_000)) {
+    if (!rateLimit(`${ip || "unknown"}:admin-login`, Number(process.env.ADMIN_LOGIN_RATE) || 3, 5 * 60_000)) {
       return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi dalam 5 menit." }, { status: 429 });
     }
 

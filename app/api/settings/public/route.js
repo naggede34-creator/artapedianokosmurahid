@@ -90,6 +90,8 @@ export async function GET() {
       depositProviders: depositProvidersKeluar,
       depositFeePercent: depositFeeKeluar,
       depositRute: ruteSiap,
+      // Status QRIS FAST yang sebenarnya (dompet Poin Game tidak ikut rute otomatis, jadi butuh nilai asli).
+      qrisfastAsli: !!providers.qrisfast,
       // Jaminan OTP: { aktif, persen, menit }. Dipakai lembar beli untuk
       // menampilkan (atau menyembunyikan) pilihan jaminan.
       jaminan: await infoJaminan().catch(() => ({ aktif: false, persen: 0, menit: 4 })),

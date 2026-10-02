@@ -21,7 +21,9 @@ export default function AdminLoginPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Kode admin salah.");
-      router.push("/admin");
+      let tujuan = "/admin";
+      try { const n = new URLSearchParams(window.location.search).get("next"); if (n && /^\/admin(\/|\?|$)/.test(n)) tujuan = n; } catch {}
+      router.push(tujuan);
     } catch (err) {
       setError(err.message);
     } finally {

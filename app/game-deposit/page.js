@@ -32,7 +32,7 @@ export default function PoinGamePage() {
   }, [token]);
   useEffect(() => { muat(); }, [muat]);
   useEffect(() => {
-    fetch("/api/settings/public").then((r) => r.json()).then((d) => { setManual(d.manualDeposit || null); setCepat(d.depositProviders?.qrisfast === true); }).catch(() => {});
+    fetch("/api/settings/public").then((r) => r.json()).then((d) => { setManual(d.manualDeposit || null); setCepat((d.depositRute ? d.qrisfastAsli : d.depositProviders?.qrisfast) === true); }).catch(() => {});
     const t = new URLSearchParams(window.location.search).get("tab");
     if (["isi", "tukar", "tarik", "riwayat"].includes(t)) setTab(t);
   }, []);

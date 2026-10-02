@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import AdminSwitcher from "@/components/AdminSwitcher";
+import { sesiHabis } from "@/components/AdminSesi";
 import { OTP_SERVERS } from "@/lib/otpServers";
 import { DAFTAR_PUBLIK, channelAktifUntuk } from "@/lib/channelNotifTypes";
 import AdminKonfigurasi, { PeringatanKodeAdmin } from "@/components/AdminKonfigurasi";
@@ -351,7 +352,7 @@ export default function AdminDashboardPage() {
     setBannersLoading(true);
     try {
       const res = await fetch("/api/admin/banners");
-      if (res.status === 401) return router.push("/admin/login");
+      if (res.status === 401) return sesiHabis();
       const d = await res.json();
       setBanners(Array.isArray(d.items) ? d.items : []);
     } finally { setBannersLoading(false); }
@@ -361,7 +362,7 @@ export default function AdminDashboardPage() {
     setTicketsLoading(true);
     try {
       const res = await fetch("/api/admin/support/tickets");
-      if (res.status === 401) return router.push("/admin/login");
+      if (res.status === 401) return sesiHabis();
       const d = await res.json();
       setTickets(Array.isArray(d.items) ? d.items : []);
     } finally { setTicketsLoading(false); }
@@ -701,7 +702,7 @@ export default function AdminDashboardPage() {
     setAdminProductsLoading(true);
     try {
       const res = await fetch("/api/admin/products");
-      if (res.status === 401) return router.push("/admin/login");
+      if (res.status === 401) return sesiHabis();
       const d = await res.json();
       setAdminProducts(Array.isArray(d.items) ? d.items : []);
     } finally { setAdminProductsLoading(false); }
@@ -711,7 +712,7 @@ export default function AdminDashboardPage() {
     setAdminJobsLoading(true);
     try {
       const res = await fetch("/api/admin/jobs");
-      if (res.status === 401) return router.push("/admin/login");
+      if (res.status === 401) return sesiHabis();
       const d = await res.json();
       setAdminJobs(Array.isArray(d.items) ? d.items : []);
     } finally { setAdminJobsLoading(false); }
@@ -809,7 +810,7 @@ export default function AdminDashboardPage() {
     setWarrantyLoading(true);
     try {
       const res = await fetch("/api/admin/warranty");
-      if (res.status === 401) return router.push("/admin/login");
+      if (res.status === 401) return sesiHabis();
       const data = await res.json();
       setWarrantyClaims(Array.isArray(data.items) ? data.items : []);
     } finally {
@@ -1394,7 +1395,7 @@ export default function AdminDashboardPage() {
 
   const loadSettings = useCallback(async () => {
     const res = await fetch("/api/admin/settings");
-    if (res.status === 401) return router.push("/admin/login");
+    if (res.status === 401) return sesiHabis();
     const data = await res.json();
     setSettings(data);
     setMarkupInput(String(data.markupPercent ?? 0));
@@ -1484,7 +1485,7 @@ export default function AdminDashboardPage() {
       setUsersLoading(true);
       try {
         const res = await fetch(`/api/admin/users?q=${encodeURIComponent(q)}`);
-        if (res.status === 401) return router.push("/admin/login");
+        if (res.status === 401) return sesiHabis();
         const data = await res.json();
         setUsers(Array.isArray(data.items) ? data.items : []);
         setTotal(data.total || 0);
@@ -1500,7 +1501,7 @@ export default function AdminDashboardPage() {
     setStatsLoading(true);
     try {
       const res = await fetch("/api/admin/stats");
-      if (res.status === 401) return router.push("/admin/login");
+      if (res.status === 401) return sesiHabis();
       const data = await res.json();
       setStats(data);
     } finally {
@@ -1512,7 +1513,7 @@ export default function AdminDashboardPage() {
     setVouchersLoading(true);
     try {
       const res = await fetch("/api/admin/vouchers");
-      if (res.status === 401) return router.push("/admin/login");
+      if (res.status === 401) return sesiHabis();
       const data = await res.json();
       setVouchers(Array.isArray(data.items) ? data.items : []);
     } finally {
@@ -1524,7 +1525,7 @@ export default function AdminDashboardPage() {
     setBroadcastsLoading(true);
     try {
       const res = await fetch("/api/admin/broadcasts");
-      if (res.status === 401) return router.push("/admin/login");
+      if (res.status === 401) return sesiHabis();
       const data = await res.json();
       setBroadcasts(Array.isArray(data.items) ? data.items : []);
     } finally {
@@ -1536,7 +1537,7 @@ export default function AdminDashboardPage() {
     setAnnouncementsLoading(true);
     try {
       const res = await fetch("/api/admin/announcements");
-      if (res.status === 401) return router.push("/admin/login");
+      if (res.status === 401) return sesiHabis();
       const data = await res.json();
       setAnnouncements(Array.isArray(data.items) ? data.items : []);
     } finally {
