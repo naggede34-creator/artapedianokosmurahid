@@ -225,14 +225,14 @@ function Setor({ info, token, onUbah }) {
       )}
 
       <div>
-        <p className="label">3. Setor ke room</p>
+        <p className="label">3. Setor ke room <span className="ml-1 normal-case font-semibold text-muted" data-testid="setor-room-hitung">{info.jumlahRoom ? `· ${info.jumlahRoom.buka} buka · ${info.jumlahRoom.tutup} tutup` : ""}</span></p>
         {info.rooms.length === 0 ? <p className="text-xs text-muted">Belum ada room.</p> : (
           <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Room">
             {info.rooms.map((r) => (
               <button key={r.id} type="button" role="radio" aria-checked={roomId === r.id} disabled={!r.buka} onClick={() => setRoomId(r.id)} data-testid="setor-room"
                 className={`rounded-xl border px-3 py-2 text-left text-xs ${roomId === r.id ? "border-amber bg-amber-soft" : "border-line"} ${!r.buka ? "opacity-50" : ""}`}>
-                <b className="block text-ink">{r.nama}</b>
-                {r.buka ? <span className="text-success">Upah {rupiah(r.upah)} / email</span> : <span className="text-rose">🔒 {r.alasanTutup}</span>}
+                <span className="flex items-center justify-between gap-2"><b className="block truncate text-ink">{r.nama}</b><span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black ${r.buka ? "bg-success-soft text-success" : "bg-rose-soft text-rose"}`} data-testid="setor-room-status">{r.buka ? "BUKA" : "TUTUP"}</span></span>
+                {r.buka ? <span className="text-success">Upah {rupiah(r.upah)} / email</span> : <span className="text-rose">🔒 {r.alasanTutup}{r.terakhirBuka ? ` · terakhir buka ${new Date(r.terakhirBuka).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}` : ""}</span>}
               </button>
             ))}
           </div>

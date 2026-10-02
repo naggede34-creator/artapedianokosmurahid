@@ -11,7 +11,7 @@ export async function GET(req) {
   if (!(await adminSah(req))) return NextResponse.json({ error: "Unauthorized." }, { status: 401, headers: H });
   try {
     const status = new URL(req.url).searchParams.get("status") || "semua";
-    const [ringkas, daftar, wd, room] = await Promise.all([ringkasAdmin(), daftarAdmin({ status }), daftarWdAdmin({ jenis: "setor", limit: 25 }), ambilRoom()]);
+    const [ringkas, daftar, wd, room] = await Promise.all([ringkasAdmin(), daftarAdmin({ status }), daftarWdAdmin({ jenis: "setor", limit: 25 }), ambilRoom({ segar: true })]);
     return NextResponse.json({ ringkas, daftar, wd, rooms: room.rooms, galatPenyedia: room.galat }, { headers: H });
   } catch (err) {
     console.error("[admin/setor-gmail]", err?.message || err);
