@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { productBoughtNotif, productSoldPublicNotif } from "@/lib/telegram";
 import { umumkan } from "@/lib/notifyHub";
 import { ObjectId } from "mongodb";
+import { periksaTransaksi } from "@/lib/gerbangUang";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,8 @@ export async function POST(req) {
 
     const { token, productId } = await req.json().catch(() => ({}));
     if (!token || !productId) return NextResponse.json({ error: "Token dan produk wajib diisi." }, { status: 400 });
+    const gerbang = await periksaTransaksi(token);
+    if (gerbang) return NextResponse.json({ error: gerbang.error }, { status: gerbang.status });
 
     let oid;
     try { oid = new ObjectId(productId); } catch { return NextResponse.json({ error: "ID produk tidak valid." }, { status: 400 }); }

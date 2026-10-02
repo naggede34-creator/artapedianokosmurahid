@@ -14,6 +14,8 @@ import { reconcileOtpOrder } from "@/lib/orderReconcile";
 import { periksaStokWatch } from "@/lib/stokWatch";
 import { sapuGame } from "@/lib/game/inti";
 import { sapuDepositTertunda } from "@/lib/depositService";
+import { pengingatDeposit } from "@/lib/depositPengingat";
+import { sapuBanSementara } from "@/lib/penggunaAdmin";
 import { sapuWdInstan } from "@/lib/wdInstan";
 import { sapuSetorGmail } from "@/lib/setorGmail";
 import { pindaiBerkala } from "@/lib/keamanan";
@@ -68,6 +70,18 @@ export async function GET(req) {
     hasil.deposit = await sapuDepositTertunda({ maks: 30, anggaranMs: 30000 });
   } catch (err) {
     hasil.galat.push(`deposit: ${err?.message || err}`);
+  }
+  // Ban sementara yang sudah lewat waktunya dibuka otomatis.
+  try {
+    hasil.banSementara = await sapuBanSementara({});
+  } catch (err) {
+    hasil.galat.push(`ban-sementara: ${err?.message || err}`);
+  }
+  // Pengingat QRIS yang hampir kedaluwarsa (push web + bot).
+  try {
+    hasil.pengingat = await pengingatDeposit({ jeda: 0 });
+  } catch (err) {
+    hasil.galat.push(`pengingat: ${err?.message || err}`);
   }
   // Penarikan instant AustinPay yang macet / belum pasti: cocokkan ke riwayat penyedia, kembalikan saldo bila gagal.
   try {

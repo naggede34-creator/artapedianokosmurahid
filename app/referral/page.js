@@ -131,6 +131,17 @@ export default function ReferralPage() {
         </div>
       </div>
 
+      {Number(stats?.jaringanPersen) > 0 && (
+        <div className="hover-lift card-shadow mt-3 rounded-2xl border border-line bg-surface p-5" data-testid="referral-jaringan">
+          <p className="text-xs text-muted">🌐 Bonus jaringan — teman dari temanmu</p>
+          <p className="mt-1.5 font-display text-2xl font-semibold text-teal-bright">
+            {`Rp${Number(stats?.jaringanEarnings || 0).toLocaleString("id-ID")}`}
+            <span className="ml-2 text-xs font-bold text-muted">{stats?.jaringanCount || 0} orang</span>
+          </p>
+          <p className="mt-1 text-[11px] leading-relaxed text-muted">Saat orang yang diundang temanmu deposit pertama, kamu ikut dapat {stats.jaringanPersen}% dari bonus yang diterima temanmu.</p>
+        </div>
+      )}
+
       <div className="fade-up relative mt-10 overflow-hidden rounded-2xl border border-amber/25 bg-amber-soft p-6">
         <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-amber/15 blur-2xl" />
         <h3 className="relative font-display text-base font-medium text-ink">Cara kerjanya</h3>

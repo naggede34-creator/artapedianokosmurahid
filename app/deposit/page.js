@@ -63,6 +63,13 @@ export default function DepositPage() {
   const [proofNote, setProofNote] = useState("");
   const [confirming, setConfirming] = useState(false);
 
+  // Nominal yang paling sering kamu pakai (dari deposit lunas sebelumnya).
+  const [biasa, setBiasa] = useState([]);
+  useEffect(() => {
+    if (!token) return;
+    fetch(`/api/deposit/kebiasaan?token=${encodeURIComponent(token)}`).then((r) => r.json()).then((d) => setBiasa(Array.isArray(d.items) ? d.items : [])).catch(() => {});
+  }, [token]);
+
   const [voucher, setVoucher] = useState("");
   const [voucherBusy, setVoucherBusy] = useState(false);
   const [voucherMsg, setVoucherMsg] = useState(null);
@@ -529,6 +536,19 @@ export default function DepositPage() {
                   className="w-full bg-transparent px-2 py-4 text-2xl font-extrabold tabular-nums text-ink outline-none placeholder:text-muted/40"
                 />
               </div>
+              {biasa.filter((b) => b.amount >= cfg.min && b.amount <= cfg.max).length > 0 && (
+                <div className="mt-3" data-testid="deposit-biasa">
+                  <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-muted">⚡ Biasa kamu</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {biasa.filter((b) => b.amount >= cfg.min && b.amount <= cfg.max).map((b) => (
+                      <button key={b.amount} type="button" onClick={() => setAmount(String(b.amount))} data-on={amt === b.amount} data-testid="deposit-biasa-chip"
+                        className={`chip-3d px-2 py-2.5 text-sm font-extrabold tabular-nums ${amt === b.amount ? "text-amber-bright" : "text-ink"}`}>
+                        {rupiah(b.amount)}{b.n > 1 && <span className="ml-1 text-[10px] font-bold text-muted">{b.n}×</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="anim-stagger mt-3 grid grid-cols-3 gap-2">
                 {QUICK.filter((v) => v >= cfg.min && v <= cfg.max).map((v) => (
                   <button

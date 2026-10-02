@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useUser } from "@/app/providers";
 import ThemeToggle from "@/components/ThemeToggle";
 import PushToggle from "@/components/PushToggle";
+import KunciAkunPanel from "@/components/KunciAkunPanel";
 import { Lencana } from "@/components/wa/kit";
 import { PageHeader, rupiah } from "@/components/ui";
 
@@ -338,6 +339,11 @@ export default function ProfilPage() {
         <div className="mt-2 overflow-hidden rounded-xl border border-line">
           <PushToggle token={token} />
         </div>
+      </Kartu>
+
+      {/* ─── keamanan akun ─── */}
+      <Kartu judul="Keamanan akun" ikon="🛡" className="mt-5">
+        <KunciAkunPanel token={token} />
       </Kartu>
 
       {/* ─── keluar ─── */}

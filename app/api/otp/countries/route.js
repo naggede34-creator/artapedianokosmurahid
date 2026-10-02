@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSettings } from "@/lib/settings";
 import { listCountries } from "@/lib/otpCatalog";
+import { rateSendiri } from "@/lib/otpRate";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,10 @@ export async function GET(req) {
 
   try {
     const settings = await getSettings();
-    return NextResponse.json({ items: await listCountries(settings, server, serviceId) });
+    const items = await listCountries(settings, server, serviceId);
+    const rate = await rateSendiri(server, serviceId);
+    for (const it of items) { const r = rate[String(it.name || "").toLowerCase()]; if (r) it.rate_sendiri = r; }
+    return NextResponse.json({ items });
   } catch (err) {
     console.error("[otp/countries]", err?.response?.data || err?.message || err);
     return NextResponse.json({ error: err?.message || "Gagal mengambil daftar negara." }, { status: 502 });

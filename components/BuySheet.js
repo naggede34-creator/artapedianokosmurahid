@@ -35,6 +35,17 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   const [appSearch, setAppSearch] = useState("");
   const [countrySearch, setCountrySearch] = useState("");
   const [sortMode, setSortMode] = useState("rate"); // rate | harga
+  // Negara favorit (disimpan di perangkat): selalu tampil paling atas di daftar negara.
+  const [favNegara, setFavNegara] = useState([]);
+  useEffect(() => { try { setFavNegara(JSON.parse(localStorage.getItem("artapedia_favorite_otp_countries") || "[]")); } catch {} }, []);
+  function togelFavNegara(nama) {
+    setFavNegara((prev) => {
+      const k = String(nama || "").toLowerCase();
+      const next = prev.includes(k) ? prev.filter((x) => x !== k) : [k, ...prev].slice(0, 20);
+      try { localStorage.setItem("artapedia_favorite_otp_countries", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
 
   const [selectedService, setSelectedService] = useState(null);
   const [countries, setCountries] = useState([]);
@@ -146,13 +157,15 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
     const base = q ? countries.filter((c) => (c.name || "").toLowerCase().includes(q)) : countries;
     const minPrice = (c) => Math.min(Infinity, ...(c.pricelist || []).map((p) => Number(p.sell_price ?? p.price ?? Infinity)));
     const maxRate = (c) =>
-      Math.max(-1, ...(c.pricelist || []).map((p) => Number(pick(p, ["success_rate", "rate", "completion_rate", "percent"], -1))));
+      Math.max(c.rate_sendiri ? c.rate_sendiri.persen : -1, ...(c.pricelist || []).map((p) => Number(pick(p, ["success_rate", "rate", "completion_rate", "percent"], -1))));
+    const fav = (c) => (favNegara.includes(String(c.name || "").toLowerCase()) ? 0 : 1);
     return [...base].sort((a, b) => {
+      if (fav(a) !== fav(b)) return fav(a) - fav(b);
       if (sortMode === "harga") return minPrice(a) - minPrice(b);
       const r = maxRate(b) - maxRate(a);
       return r !== 0 ? r : minPrice(a) - minPrice(b);
     });
-  }, [countries, countrySearch, sortMode]);
+  }, [countries, countrySearch, sortMode, favNegara]);
 
   function chooseServer(key) {
     setBuyError(""); setTopupNominal(0);
@@ -567,11 +580,22 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                     return (
                       <div
                         key={c.number_id}
-                        className={`overflow-hidden rounded-2xl border-2 transition-all duration-200 ${
+                        className={`relative overflow-hidden rounded-2xl border-2 transition-all duration-200 ${
                           isOpen ? "border-amber bg-surface" : "border-ink/15 bg-surface hover:border-amber/50"
                         }`}
+                        data-testid="negara-kartu"
                         style={{ boxShadow: isOpen ? "5px 5px 0 rgb(var(--c-amber) / 0.35)" : "3px 3px 0 rgb(var(--c-ink) / 0.12)" }}
                       >
+                        <button
+                          type="button"
+                          onClick={() => togelFavNegara(c.name)}
+                          aria-label={favNegara.includes(String(c.name || "").toLowerCase()) ? "Hapus dari favorit" : "Jadikan favorit"}
+                          aria-pressed={favNegara.includes(String(c.name || "").toLowerCase())}
+                          data-testid="negara-fav"
+                          className="absolute left-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full text-[13px] leading-none"
+                        >
+                          {favNegara.includes(String(c.name || "").toLowerCase()) ? "⭐" : "☆"}
+                        </button>
                         <button
                           onClick={() => setExpandedCountry(isOpen ? null : c.number_id)}
                           className="press flex w-full items-center gap-3 px-3.5 py-3 text-left"
@@ -601,6 +625,18 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                             </span>
                             <span className="mt-1 flex items-center gap-1.5 text-[11px] text-muted">
                               <span className="font-semibold">{list.length} paket</span>
+                              {c.rate_sendiri && (
+                                <>
+                                  <span className="opacity-40">•</span>
+                                  <span
+                                    data-testid="negara-rate"
+                                    title={`Dari ${c.rate_sendiri.n} pesanan di toko ini (14 hari)`}
+                                    className={`font-bold ${c.rate_sendiri.persen >= 80 ? "text-success" : c.rate_sendiri.persen >= 50 ? "text-amber-bright" : "text-rose"}`}
+                                  >
+                                    📊 {c.rate_sendiri.persen}% OTP masuk
+                                  </span>
+                                </>
+                              )}
                               {totalStock != null && (
                                 <>
                                   <span className="opacity-40">•</span>

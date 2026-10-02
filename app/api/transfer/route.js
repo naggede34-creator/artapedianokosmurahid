@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { pastikanDepositBalance } from "@/lib/saldoDeposit";
 import { usersCol } from "@/lib/db";
+import { periksaTransaksi } from "@/lib/gerbangUang";
 import { logBalance } from "@/lib/ledger";
 import { transferNotif, transferPublicNotif } from "@/lib/telegram";
 import { umumkan } from "@/lib/notifyHub";
@@ -45,6 +46,8 @@ export async function POST(req) {
     const amount = Math.floor(Number(body.amount || 0));
 
     if (!fromToken) return NextResponse.json({ error: "Kode akun kosong." }, { status: 400 });
+    const gerbang = await periksaTransaksi(fromToken);
+    if (gerbang) return NextResponse.json({ error: gerbang.error }, { status: gerbang.status });
     if (!toToken) return NextResponse.json({ error: "Kode akun tujuan wajib diisi." }, { status: 400 });
     if (fromToken === toToken) return NextResponse.json({ error: "Tidak bisa transfer ke akun sendiri." }, { status: 400 });
     if (!Number.isFinite(amount) || amount < cfg.minAmount) {

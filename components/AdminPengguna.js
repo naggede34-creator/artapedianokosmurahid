@@ -14,6 +14,7 @@ const FILTER = [
   { id: "otomatis", label: "Auto-ban anti-curang", ikon: "🤖", kunci: "otomatis" },
   { id: "baru", label: "Baru 24 jam", ikon: "🆕", kunci: "baru" }
 ];
+const DURASI_BAN = [{ m: 0, l: "Permanen" }, { m: 60, l: "1 jam" }, { m: 360, l: "6 jam" }, { m: 1440, l: "24 jam" }, { m: 4320, l: "3 hari" }, { m: 10080, l: "7 hari" }, { m: 43200, l: "30 hari" }];
 const ALASAN_CEPAT = ["Curang di game", "Akun ganda / menghindari ban", "Penipuan deposit / bukti palsu", "Menyalahgunakan referral / bonus", "Pelanggaran aturan"];
 
 async function api(url, opsi) {
@@ -48,6 +49,7 @@ function PanelDetail({ token, onTutup, onUbah }) {
   const [galat, setGalat] = useState("");
   const [pesan, setPesan] = useState("");
   const [alasan, setAlasan] = useState("");
+  const [durasi, setDurasi] = useState(0);
   const [kabari, setKabari] = useState(true);
   const [bebas, setBebas] = useState(true);
   const [sibuk, setSibuk] = useState(false);
@@ -62,7 +64,7 @@ function PanelDetail({ token, onTutup, onUbah }) {
   const blokir = async (aksi) => {
     setSibuk(true); setPesan(""); setGalat("");
     try {
-      const r = await post("/api/admin/pengguna/blokir", { token, aksi, alasan, kabari, bebasAntiCurang: bebas });
+      const r = await post("/api/admin/pengguna/blokir", { token, aksi, alasan, kabari, bebasAntiCurang: bebas, durasiMenit: aksi === "ban" ? durasi : 0 });
       setPesan(aksi === "ban" ? `Akun dibekukan ✅ · ${r.ipDiblokir || 0} IP ikut diblokir dari situs` : `Blokir dibuka ✅${r.ipDibuka ? ` · ${r.ipDibuka} IP dibuka lagi` : ""}`); setAlasan("");
       await muat(); onUbah?.();
     } catch (e) { setGalat(e.message); }
@@ -97,7 +99,7 @@ function PanelDetail({ token, onTutup, onUbah }) {
               {d.suspended ? (
                 <>
                   <p className="text-xs text-ink">Dibekukan sejak <b>{tgl(d.suspendedAt)}</b></p>
-                  <p className="mt-1 rounded-lg bg-rose-soft px-2.5 py-1.5 text-xs text-rose" data-testid="pg-alasan-aktif">Alasan: {d.suspendReason || "—"}</p>
+                  <p className="mt-1 rounded-lg bg-rose-soft px-2.5 py-1.5 text-xs text-rose" data-testid="pg-alasan-aktif">Alasan: {d.suspendReason || "—"}{d.suspendedSampai ? ` · berakhir otomatis ${tgl(d.suspendedSampai)}` : " · permanen"}</p>
                   <textarea value={alasan} onChange={(e) => setAlasan(e.target.value)} maxLength={200} rows={2} placeholder="Catatan buka blokir (opsional)" className="mt-2 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm" data-testid="pg-alasan" />
                   <label className="mt-1 flex items-center gap-2 text-xs text-ink"><input type="checkbox" checked={bebas} onChange={(e) => setBebas(e.target.checked)} /> Bebaskan dari ban otomatis anti-curang berikutnya (direkomendasikan setelah ditinjau)</label>
                   <label className="flex items-center gap-2 text-xs text-ink"><input type="checkbox" checked={kabari} onChange={(e) => setKabari(e.target.checked)} /> Kabari pengguna lewat notifikasi</label>
@@ -108,6 +110,11 @@ function PanelDetail({ token, onTutup, onUbah }) {
                   <p className="text-xs text-muted">Akun aktif. Pembekuan memblokir pembelian, penarikan, game, dan fitur lain; saldo & poin tetap aman.</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">{ALASAN_CEPAT.map((a) => <button key={a} type="button" onClick={() => setAlasan(a)} className="rounded-full border border-line bg-surface px-2.5 py-1 text-[11px] font-bold text-ink hover:bg-surface2">{a}</button>)}</div>
                   <textarea value={alasan} onChange={(e) => setAlasan(e.target.value)} maxLength={200} rows={2} placeholder="Alasan blokir (wajib, tampil ke pengguna)" className="mt-2 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm" data-testid="pg-alasan" />
+                  <label className="mt-2 flex items-center gap-2 text-xs font-bold text-ink">Lama blokir
+                    <select value={durasi} onChange={(e) => setDurasi(Number(e.target.value))} className="rounded-lg border border-line bg-surface px-2 py-1 text-xs" data-testid="pg-durasi">
+                      {DURASI_BAN.map((d) => <option key={d.m} value={d.m}>{d.l}</option>)}
+                    </select>
+                  </label>
                   <label className="mt-1 flex items-center gap-2 text-xs text-ink"><input type="checkbox" checked={kabari} onChange={(e) => setKabari(e.target.checked)} /> Kabari pengguna lewat notifikasi</label>
                   <button disabled={sibuk} onClick={() => blokir("ban")} className="btn-3d mt-2 w-full rounded-xl bg-rose px-3 py-2 text-sm font-black text-white disabled:opacity-60" data-testid="pg-ban-ok">🚫 Bekukan akun</button>
                 </>

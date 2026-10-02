@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { usersCol, balanceLogsCol } from "@/lib/db";
 import { mergeLegacyPoints } from "@/lib/loyalty";
+import { periksaTransaksi } from "@/lib/gerbangUang";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,9 @@ const SHOP_ITEMS = {
 export async function POST(req) {
   const { token, itemId } = await req.json().catch(() => ({}));
   if (!token || !itemId) return NextResponse.json({ error: "Data tidak lengkap." }, { status: 400 });
+
+  const gerbang = await periksaTransaksi(token);
+  if (gerbang) return NextResponse.json({ error: gerbang.error }, { status: gerbang.status });
 
   const item = SHOP_ITEMS[itemId];
   if (!item) return NextResponse.json({ error: "Item tidak ditemukan." }, { status: 404 });

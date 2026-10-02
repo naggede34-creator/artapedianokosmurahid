@@ -18,7 +18,11 @@ export async function GET(req) {
       token: user.token,
       referralCount: user.referralCount || 0,
       referralEarnings: user.referralEarnings || 0,
-      bonusPercent: Number((await cfg("REFERRAL_BONUS_PERCENT")) || 0)
+      bonusPercent: Number((await cfg("REFERRAL_BONUS_PERCENT")) || 0),
+      // Bonus jaringan (level 2): % dari bonus temanmu saat TEMAN-DARI-TEMANMU deposit pertama.
+      jaringanPersen: Number((await cfg("REFERRAL_L2_PERSEN")) || 0),
+      jaringanEarnings: user.referralJaringanEarnings || 0,
+      jaringanCount: user.referralJaringanCount || 0
     });
   } catch (err) {
     console.error(err);
