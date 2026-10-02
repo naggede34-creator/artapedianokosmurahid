@@ -11,6 +11,9 @@ const DEFAULT_CHARS = [
 
 export default function AnimeHero() {
   const [chars, setChars]         = useState(DEFAULT_CHARS);
+  // null = status dari server belum terbaca. Panel TIDAK digambar sebelum itu — dulu ia langsung tampil dengan karakter
+  // bawaan, lalu tetap tampil walau admin sudah mematikannya (daftar kosong dari server dianggap "tak ada kustom").
+  const [aktif, setAktif]         = useState(null);
   const [idx, setIdx]             = useState(0);
   const [animating, setAnimating] = useState(false);
   const [burstKey, setBurstKey]   = useState(0);
@@ -20,9 +23,11 @@ export default function AnimeHero() {
     fetch("/api/settings/public")
       .then((r) => r.json())
       .then((d) => {
-        if (Array.isArray(d.heroChars) && d.heroChars.length > 0) setChars(d.heroChars);
+        const mati = d.heroCharsEnabled === false;
+        if (!mati && Array.isArray(d.heroChars) && d.heroChars.length > 0) setChars(d.heroChars);
+        setAktif(!mati);
       })
-      .catch(() => {});
+      .catch(() => setAktif(false));
   }, []);
 
   useEffect(() => {
@@ -49,9 +54,10 @@ export default function AnimeHero() {
   }
 
   const char = chars[idx] || DEFAULT_CHARS[0];
+  if (!aktif) return null;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl p-5"
+    <div className="relative mb-5 overflow-hidden rounded-3xl p-5" data-testid="hero-panel"
       style={{
         minHeight: 170,
         background: "linear-gradient(135deg, #0a0f1e 0%, #0d1530 50%, #120829 100%)",

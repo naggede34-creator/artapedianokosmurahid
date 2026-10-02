@@ -552,9 +552,7 @@ export default function DashboardPage() {
           tengah halaman yang panjang (bukan di layar) dan halaman ikut melompat saat inputnya mendapat fokus. */}
       <div className="user-dash-ruang">
       {/* Anime Hero Banner */}
-      <div className="mb-5">
-        <AnimeHero />
-      </div>
+      <AnimeHero />
 
       {/* Sapaan + jalan pintas akun */}
       <div className="flex flex-wrap items-end justify-between gap-3">
