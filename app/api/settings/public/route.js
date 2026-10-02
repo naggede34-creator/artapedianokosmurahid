@@ -64,17 +64,18 @@ export async function GET() {
     // berdasarkan nominal, lihat lib/depositRute.js) + QRIS manual bila tersedia. Kunci "qrisfast" hanya pembawa pilihan;
     // server mengabaikannya dan memilih sendiri.
     const rute = await ambilRute().catch(() => null);
-    const ruteSiap = !!rute?.aktif && [...rute.atas, ...rute.bawah].some((k) => providers[k]);
+    const ruteSiap = !!rute?.aktif && [...(rute.utama ? rute.pool : [...rute.atas, ...rute.bawah])].some((k) => providers[k]);
     let depositProvidersKeluar = providers;
     let depositFeeKeluar = depositFeePercent;
     let depositMethodsKeluar = PROVIDER_KEYS.map((k) => depositDisplay(settings, k));
     let depositMinKeluar = limits.min;
     if (ruteSiap) {
-      depositProvidersKeluar = { qrisfast: true, manual: !!providers.manual };
+      // Mode QRIS UTAMA: QRIS manual ikut kolam acak, jadi tidak tampil sebagai pilihan terpisah.
+      depositProvidersKeluar = { qrisfast: true, manual: rute.utama ? false : !!providers.manual };
       depositFeeKeluar = { ...(depositFeePercent || {}), qrisfast: 0 };
       depositMethodsKeluar = [
-        { key: "qrisfast", name: "QRIS", badge: "", desc: "Semua e-wallet & m-banking. Saldo masuk otomatis.", speed: "± 10–60 detik" },
-        ...depositMethodsKeluar.filter((m) => m.key === "manual")
+        { key: "qrisfast", name: rute.utama ? "QRIS UTAMA" : "QRIS", badge: rute.utama ? "UTAMA" : "", desc: "Semua e-wallet & m-banking. Saldo masuk otomatis.", speed: "± 10–60 detik" },
+        ...(rute.utama ? [] : depositMethodsKeluar.filter((m) => m.key === "manual"))
       ];
       depositMinKeluar = Math.min(limits.min, rute.min);
     }
