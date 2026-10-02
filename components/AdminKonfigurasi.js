@@ -20,6 +20,54 @@ function Lencana({ sumber }) {
   return <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${l.cls}`}>{l.teks}</span>;
 }
 
+
+/** Diagnosa rute deposit otomatis: tiap penyedia siap/tidak, berapa kali dipilih, dan galat terakhirnya. */
+function PanelRuteDeposit() {
+  const [d, setD] = useState(null);
+  const [galat, setGalat] = useState("");
+  const muat = useCallback(async () => {
+    try {
+      const r = await fetch("/api/admin/rute-deposit", { cache: "no-store" });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || "Gagal memuat");
+      setD(j); setGalat("");
+    } catch (e) { setGalat(e.message); }
+  }, []);
+  useEffect(() => { muat(); }, [muat]);
+  const modeTeks = { utama: "QRIS UTAMA (acak semua nominal)", nominal: "Rute per nominal", mati: "Rute mati (pembeli memilih sendiri)" };
+  return (
+    <section className="rounded-2xl border-2 border-ink/10 bg-surface p-4 shadow-soft sm:p-5" data-testid="panel-rute">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-display text-base font-black text-ink">🔀 Diagnosa rute deposit</h3>
+        <button type="button" onClick={muat} className="rounded-lg border border-line px-3 py-1 text-[11px] font-bold text-ink" data-testid="rute-muat">Segarkan</button>
+      </div>
+      {galat && <p className="mt-2 text-xs font-bold text-rose">{galat}</p>}
+      {d && (
+        <>
+          <p className="mt-1 text-[11px] text-muted">Mode: <b className="text-ink">{modeTeks[d.mode]}</b> · {d.total24} percobaan dalam 24 jam terakhir. Penyedia yang tidak siap otomatis dilewati — itu sebabnya pembeli bisa selalu jatuh ke satu penyedia saja.</p>
+          <div className="mt-3 space-y-2">
+            {d.penyedia.map((p) => (
+              <div key={p.key} className={`rounded-xl border px-3 py-2 ${p.siap ? "border-success/30 bg-success-soft" : "border-rose/30 bg-rose-soft"}`} data-testid={`rute-${p.key}`}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <b className="text-sm text-ink">{p.nama}</b>
+                  <span className={`text-[11px] font-black ${p.siap ? "text-success" : "text-rose"}`}>{p.siap ? "✅ siap ikut acak" : "⛔ DILEWATI"}</span>
+                </div>
+                {!p.siap && <p className="mt-1 text-[11px] font-bold text-rose">{p.alasan}</p>}
+                <p className="mt-1 text-[11px] text-muted">24 jam: {p.sukses} berhasil · {p.gagal} gagal</p>
+                {p.galatTerakhir && (
+                  <p className="mt-1 break-words text-[11px] font-semibold text-amber-bright">
+                    Galat terakhir ({new Date(p.galatTerakhir.at).toLocaleString("id-ID")}, Rp{Number(p.galatTerakhir.nominal).toLocaleString("id-ID")}): {p.galatTerakhir.alasan}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 /** Bilah peringatan yang dipasang di atas dasbor kalau panel masih memakai kode bawaan yang publik. */
 export function PeringatanKodeAdmin({ onBuka }) {
   const [bawaan, setBawaan] = useState(false);
@@ -168,7 +216,9 @@ export default function AdminKonfigurasi() {
         const baris = KONFIG.filter((k) => k.grup === g.id && (lanjutan || !k.lanjutan || status[k.nama]?.adaWeb));
         if (!baris.length) return null;
         return (
-          <section key={g.id} className="rounded-2xl border-2 border-ink/10 bg-surface p-4 shadow-soft sm:p-5">
+          <div key={g.id} className="space-y-4">
+          {g.id === "bayar" && <PanelRuteDeposit />}
+          <section className="rounded-2xl border-2 border-ink/10 bg-surface p-4 shadow-soft sm:p-5">
             <h3 className="font-display text-base font-black text-ink">{g.judul}</h3>
             <div className="mt-3 divide-y divide-line">
               {baris.map((k) => {
@@ -321,6 +371,7 @@ export default function AdminKonfigurasi() {
               })}
             </div>
           </section>
+          </div>
         );
       })}
 
