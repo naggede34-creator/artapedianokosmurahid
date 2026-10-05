@@ -9,7 +9,7 @@ import MysteryBoxModal from "@/components/MysteryBoxModal";
 import LuckyHourBanner from "@/components/LuckyHourBanner";
 import FlashSaleTimer from "@/components/FlashSaleTimer";
 import BannerRail from "@/components/BannerRail";
-import { PageHeader, Icon } from "@/components/ui";
+import { Icon } from "@/components/ui";
 
 // WhatsApp selalu tampil paling atas, sisanya tetap mengikuti urutan asli dari RumahOTP (Server Murah).
 function sortWithWaFirst(items) {
@@ -139,38 +139,97 @@ function OtpPageInner() {
     }
   }
 
+  const fmt = (n) => `Rp${Number(n || 0).toLocaleString("id-ID")}`;
+  const bukaCari = (nama) => { setCariSaran(nama || ""); setSheetOpen(true); };
+
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
       <div className="mb-4 space-y-2">
         <FlashSaleTimer />
         <LuckyHourBanner />
       </div>
-      <PageHeader
-        icon={<Icon.phone />}
-        title="Beli nokos"
-        // Nama server sengaja tidak disebut di sini: admin bisa mengganti nama
-        // dan menyalakan/mematikan server kapan saja, jadi kalimat yang
-        // menyebut nama tertentu pasti jadi salah suatu saat. Nama yang benar
-        // selalu tampil di kartu pilihan servernya.
-        desc="Pilih server, aplikasi, lalu negara. Nomor langsung tampil, kode OTP muncul sendiri begitu masuk. Tidak ada kode dalam waktu tertentu? Saldo dikembalikan otomatis."
-        action={
-          <button onClick={() => setSheetOpen(true)} className="btn-primary px-5">
-            + Pesan nomor
-          </button>
-        }
-      />
+
+      {/* ───────── Hero ───────── */}
+      <section className="relative overflow-hidden rounded-[28px] border border-line/10 bg-surface p-5 shadow-soft sm:p-7">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full blur-3xl"
+          style={{ background: "radial-gradient(circle, rgb(var(--c-blue) / 0.30), transparent 65%)" }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-28 -left-16 h-60 w-60 rounded-full blur-3xl"
+          style={{ background: "radial-gradient(circle, rgb(var(--c-orange) / 0.16), transparent 65%)" }}
+        />
+
+        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-md">
+            <h1 className="font-display text-display-sm font-bold tracking-tight text-ink sm:text-display-md">Beli nomor, kode OTP masuk sendiri</h1>
+            {/* Nama server sengaja tidak disebut: admin bisa mengganti nama dan
+                menyalakan/mematikan server kapan saja. Nama yang benar selalu
+                tampil di kartu pilihan server. */}
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              Pilih server, aplikasi, lalu negara. Nomornya langsung tampil dan kodenya muncul begitu masuk.
+              Kalau kode tidak datang, saldo kembali otomatis.
+            </p>
+          </div>
+
+          <div className="flex shrink-0 flex-col gap-3 sm:items-end">
+            <div className="flex items-center gap-3 rounded-2xl border border-line/10 bg-surface2 px-4 py-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue/15 text-blue-bright">
+                <Icon.phone width={18} height={18} />
+              </span>
+              <span>
+                <span className="block text-[11px] text-muted">Saldo kamu</span>
+                <span className="block text-base font-extrabold tabular-nums text-ink">{fmt(balance)}</span>
+              </span>
+            </div>
+            <button
+              onClick={() => bukaCari("")}
+              className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-blue px-6 py-3.5 text-sm font-extrabold text-white shadow-lift transition-all hover:-translate-y-0.5 hover:bg-blue-bright active:scale-[0.98]"
+            >
+              Pesan nomor
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="transition-transform group-hover:translate-x-0.5">
+                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Aturan pembelian: tiga hal yang paling sering ditanyakan */}
+        <ul className="relative mt-6 grid gap-2.5 border-t border-line/10 pt-5 sm:grid-cols-3">
+          {[
+            ["Batal setelah 3 menit", "Kode belum masuk? Pesanan bisa dibatalkan dan saldo langsung kembali."],
+            ["Refund otomatis", "Nomor yang kedaluwarsa tanpa kode dikembalikan penuh ke saldo."],
+            ["Pilih rate tinggi", "Urutkan “Paling sukses” supaya peluang kode masuk lebih besar."]
+          ].map(([t, d]) => (
+            <li key={t} className="flex gap-2.5">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-success/15 text-success">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </span>
+              <span>
+                <span className="block text-[13px] font-bold text-ink">{t}</span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-muted">{d}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       {/* Banner admin di halaman yang paling ramai dikunjungi. */}
       <BannerRail placement="order" className="mt-5" />
 
-      {/* Pesanan Pending */}
-      <div className="fade-up delay-2 mt-7">
+      {/* ───────── Pesanan aktif ───────── */}
+      <section className="mt-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-ink">Pesanan aktif</h2>
+          <h2 className="flex items-center gap-2 text-base font-extrabold text-ink">
+            Pesanan aktif
+            {order && <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" /><span className="relative inline-flex h-2 w-2 rounded-full bg-success" /></span>}
+          </h2>
           {order && (
             <button
               onClick={() => setRefreshSignal((n) => n + 1)}
-              className="btn-3d flex h-8 w-8 items-center justify-center rounded-full border border-line text-muted transition-colors hover:text-amber-bright"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-line/10 bg-surface2 text-muted transition-colors hover:text-blue-bright active:scale-95"
               aria-label="Segarkan status"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
@@ -187,50 +246,43 @@ function OtpPageInner() {
               order={order}
               token={token}
               refreshSignal={refreshSignal}
-              onBuyAgain={(nama) => { setCariSaran(typeof nama === "string" ? nama : ""); setSheetOpen(true); }}
+              onBuyAgain={(nama) => bukaCari(typeof nama === "string" ? nama : "")}
               onChanged={() => {
                 refreshBalance();
                 clearActiveOrder();
               }}
             />
           ) : (
-            <div className="manga-card halftone anim-drop flex flex-col items-center gap-3 px-6 py-10 text-center">
-              <span className="float-slow flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-soft text-amber-bright shadow-[0_4px_0_rgb(var(--c-orange)/0.3)]">
+            <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-line/20 px-6 py-10 text-center">
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue/10 text-blue-bright">
                 <Icon.phone width={26} height={26} />
               </span>
               <div>
                 <p className="text-sm font-bold text-ink">Belum ada pesanan aktif</p>
-                <p className="mt-1 text-xs text-muted">Nomor yang kamu beli akan muncul di sini beserta kode OTP-nya.</p>
+                <p className="mt-1 text-xs text-muted">Nomor yang kamu beli muncul di sini beserta kode OTP-nya.</p>
               </div>
-              <button onClick={() => setSheetOpen(true)} className="btn-dark mt-1 px-5">
+              <button onClick={() => bukaCari("")} className="mt-1 rounded-xl border border-line/15 bg-surface px-5 py-2.5 text-sm font-bold text-ink transition-colors hover:border-blue/50 hover:text-blue-bright">
                 Pesan nomor sekarang
               </button>
             </div>
           )}
         </div>
-      </div>
+      </section>
 
-      {/* Favorit & Layanan Terbaru */}
+      {/* ───────── Favorit & pernah dipesan ───────── */}
       {(favorites.length > 0 || recentServices.length > 0) && (
-        <div className="mt-8">
+        <section className="mt-8 space-y-5">
           {favorites.length > 0 && (
-            <div className="mb-4">
-              <h2 className="text-sm font-bold text-ink mb-2">⭐ Layanan Favorit</h2>
+            <div>
+              <h2 className="mb-2.5 text-sm font-extrabold text-ink">Favorit</h2>
               <div className="flex flex-wrap gap-2">
                 {favorites.map((svc) => (
-                  <div key={svc.name} className="flex items-center gap-1 rounded-xl border border-amber/30 bg-amber-soft px-3 py-1.5">
-                    <button
-                      onClick={() => { setSheetOpen(true); }}
-                      className="text-xs font-semibold text-amber-bright hover:underline"
-                    >
+                  <div key={svc.name} className="flex items-center overflow-hidden rounded-full border border-amber/30 bg-amber-soft">
+                    <button onClick={() => bukaCari(svc.name)} className="py-1.5 pl-3.5 pr-2 text-xs font-bold text-amber-bright hover:underline">
                       {svc.name}
-                      {svc.country ? <span className="font-normal text-muted"> · {svc.country}</span> : null}
+                      {svc.country ? <span className="font-medium text-muted"> · {svc.country}</span> : null}
                     </button>
-                    <button
-                      onClick={() => toggleFavorite(svc)}
-                      className="ml-1 text-amber-bright hover:text-rose text-xs"
-                      title="Hapus dari favorit"
-                    >
+                    <button onClick={() => toggleFavorite(svc)} className="py-1.5 pl-1 pr-3 text-xs text-amber-bright hover:text-rose" title="Hapus dari favorit" aria-label={`Hapus ${svc.name} dari favorit`}>
                       ★
                     </button>
                   </div>
@@ -241,45 +293,32 @@ function OtpPageInner() {
 
           {recentServices.length > 0 && (
             <div>
-              <h2 className="text-sm font-bold text-ink mb-2">🕐 Pernah Dipesan</h2>
+              <h2 className="mb-2.5 text-sm font-extrabold text-ink">Pernah dipesan</h2>
               <div className="flex flex-wrap gap-2">
-                {recentServices.map((svc) => (
-                  <div key={svc.name} className="flex items-center gap-1 rounded-xl border border-line bg-surface2 px-3 py-1.5">
-                    <button
-                      onClick={() => setSheetOpen(true)}
-                      className="text-xs font-semibold text-ink hover:text-amber-bright"
-                    >
-                      {svc.name}
-                      {svc.country ? <span className="font-normal text-muted"> · {svc.country}</span> : null}
-                    </button>
-                    <button
-                      onClick={() => toggleFavorite(svc)}
-                      className={`ml-1 text-xs ${favorites.some((f) => f.name === svc.name) ? "text-amber-bright" : "text-muted hover:text-amber-bright"}`}
-                      title={favorites.some((f) => f.name === svc.name) ? "Hapus dari favorit" : "Tambah ke favorit"}
-                    >
-                      {favorites.some((f) => f.name === svc.name) ? "★" : "☆"}
-                    </button>
-                  </div>
-                ))}
+                {recentServices.map((svc) => {
+                  const fav = favorites.some((f) => f.name === svc.name);
+                  return (
+                    <div key={svc.name} className="flex items-center overflow-hidden rounded-full border border-line/10 bg-surface2">
+                      <button onClick={() => bukaCari(svc.name)} className="py-1.5 pl-3.5 pr-2 text-xs font-bold text-ink hover:text-blue-bright">
+                        {svc.name}
+                        {svc.country ? <span className="font-medium text-muted"> · {svc.country}</span> : null}
+                      </button>
+                      <button
+                        onClick={() => toggleFavorite(svc)}
+                        className={`py-1.5 pl-1 pr-3 text-xs ${fav ? "text-amber-bright" : "text-muted hover:text-amber-bright"}`}
+                        title={fav ? "Hapus dari favorit" : "Tambah ke favorit"}
+                        aria-label={fav ? `Hapus ${svc.name} dari favorit` : `Tambah ${svc.name} ke favorit`}
+                      >
+                        {fav ? "★" : "☆"}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
-        </div>
+        </section>
       )}
-
-      {/* Aturan singkat */}
-      <div className="panel-3d mt-8 grid gap-4 p-5 sm:grid-cols-3">
-        {[
-          ["Batal setelah 3 menit", "Kalau kode belum masuk, pesanan bisa dibatalkan dan saldo langsung kembali."],
-          ["Refund otomatis", "Nomor yang kedaluwarsa tanpa kode dikembalikan penuh ke saldo."],
-          ["Pilih server dengan rate tinggi", "Urutkan “Paling sukses” agar peluang kode masuk lebih besar."]
-        ].map(([t, d]) => (
-          <div key={t}>
-            <p className="text-sm font-bold text-ink">{t}</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted">{d}</p>
-          </div>
-        ))}
-      </div>
 
       <BuySheet
         open={sheetOpen}

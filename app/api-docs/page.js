@@ -445,7 +445,7 @@ print(r.json())`}
               {[
                 ["rumahotp", "Server Nokos Murah", "Harga paling hemat, cakupan aplikasi & negara terluas."],
                 ["warungnokos_s1", "Server Plus", "Jalur utama WarungNokos (H2H), stok melimpah & rate sukses tertinggi."],
-                ["warungnokos_s2", "Server Express", "Server2 WarungNokos, dipakai saat stok server utama kosong."],
+                ["warungnokos_s2", "Server Express", "Jalur kedua WarungNokos (API v3). Kode layanannya berupa nama huruf kecil, mis. whatsapp; stok tidak ditampilkan angkanya."],
                 ["dibanana", "OTP Fast Murah", "OTP masuk cepat & murah. Negara: ID, MY, SG, US, UK."]
               ].map(([id, name, desc]) => (
                 <div key={id} className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 px-4 py-3 border-b border-line last:border-0">
@@ -804,7 +804,7 @@ def wait_for_otp(order_id, api_key):
                   <Param name="serviceId" type="string" required>Kode layanan (service_code dari /v1/services)</Param>
                   <Param name="numberId" type="string">Wajib untuk server rumahotp — number_id dari /v1/countries</Param>
                   <Param name="providerId" type="string">Wajib untuk server rumahotp — provider_id dari /v1/countries</Param>
-                  <Param name="countryId" type="string">Wajib untuk warungnokos_s2/s2 &amp; dibanana — country_id dari /v1/countries</Param>
+                  <Param name="countryId" type="string">Wajib untuk warungnokos_s1, warungnokos_s2 &amp; dibanana — country_id dari /v1/countries</Param>
                   <Param name="providerIndex" type="number">Wajib untuk dibanana — providerIndex dari /v1/countries (0 = termurah)</Param>
                   <Param name="operatorId" type="string">ID operator (opsional). WarungNokos memakai &quot;any&quot; kalau kosong.</Param>
                   <Param name="operatorName" type="string">Nama operator (opsional, untuk pencatatan)</Param>
