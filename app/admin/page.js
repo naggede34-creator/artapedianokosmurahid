@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Pusat Admin" };
 
 export default async function AdminPusatPage() {
-  if (!(await adminSahCookieStore(cookies()))) return <AdminGerbang />;
+  if (!(await adminSahCookieStore(await cookies()))) return <AdminGerbang />;
   return (
     <div className="min-h-screen bg-bg">
       <AdminSesi />

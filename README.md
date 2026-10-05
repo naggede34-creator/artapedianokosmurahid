@@ -1,7 +1,7 @@
 # Artapedia Web
 
 Website nokos (nomor OTP via **RumahOTP**, **WarungNokos S1/S2**, dan **dibanana**) dengan deposit
-saldo otomatis via **QRIS WarungNokos / Pakasir / RumahOTP**. Dibangun dengan Next.js, siap deploy ke Vercel.
+saldo otomatis via **QRIS WarungNokos / Pakasir / RumahOTP**. Dibangun dengan Next.js 15, siap deploy ke Vercel, Netlify, dan (eksperimental) Cloudflare.
 
 ## Pembaruan terbaru
 
@@ -489,3 +489,23 @@ pilihan ini sedang kosong. Saldo tidak terpotong"), sistem otomatis mencoba pili
 lebih mahal asal modalnya ≤ 97% dari harga yang dibayar pembeli — tidak pernah rugi), dan admin dikabari lewat Telegram
 bersama saldo akun WarungNokos yang terbaca API key (maks 1× per 10 menit per pilihan). Jika saldo yang tertera di notifikasi
 itu jauh lebih kecil dari saldo di akun WarungNokos-mu, API key yang terpasang milik akun lain.
+
+
+---
+
+## Platform deploy & pengaturan dari dasbor
+
+| Platform | Cara | Catatan |
+|---|---|---|
+| **Vercel** | import repo, isi `MONGODB_URI` | cron bawaan dari `vercel.json` |
+| **Netlify** | import repo (`netlify.toml` sudah ada) | cron lewat cron eksternal |
+| **Render** | Blueprint (`render.yaml`) atau Web Service manual: build `npm install && npm run build`, start `npm start` | cron jalan sendiri (`INTERNAL_CRON=1`); paket gratis tidur setelah 15 menit |
+| **Cloudflare** | lihat `deploy/cloudflare/README.md` | belum diuji, ada batasan ukuran & modul native |
+
+- **Next.js 15 + React 19**. Setelah mengganti `package.json`, jalankan `npm install`
+  (berkas `package-lock.json` lama dihapus karena tidak cocok; akan dibuat ulang).
+- **Rahasia cron** (`CRON_SECRET`) kini bisa diisi di dasbor admin → Konfigurasi. Nilai
+  dari dasbor dan dari env sama-sama diterima rute `/api/cron/*`.
+- **Alamat database MongoDB** bisa diganti dari dasbor admin → Konfigurasi (diuji dulu,
+  minta kode admin). `MONGODB_URI` di env tetap wajib sebagai pintu pertama; data
+  lama tidak ikut disalin otomatis.

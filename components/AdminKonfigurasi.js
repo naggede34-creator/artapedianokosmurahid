@@ -2,7 +2,7 @@
 
 // Tab Konfigurasi di dasbor admin.
 //
-// Aturannya satu: isi di sini ATAU di Environment Variables Vercel — salah satu
+// Aturannya satu: isi di sini ATAU di Environment Variables (Vercel/Netlify/Cloudflare) — salah satu
 // cukup. Kalau dua-duanya terisi, yang dari web dipakai. Tidak ada tombol
 // "terapkan"/"deploy ulang": nilainya langsung berlaku.
 import { useCallback, useEffect, useState } from "react";
@@ -10,7 +10,7 @@ import { GRUP, KONFIG } from "@/lib/configRegistry";
 
 const LENCANA = {
   web: { teks: "🌐 Web", cls: "bg-blue-soft text-blue" },
-  vercel: { teks: "▲ Vercel", cls: "bg-success-soft text-success" },
+  vercel: { teks: "▲ Env", cls: "bg-success-soft text-success" },
   bawaan: { teks: "Bawaan", cls: "bg-surface2 text-muted" },
   kosong: { teks: "Belum diisi", cls: "bg-amber-soft text-amber-bright" }
 };
@@ -106,6 +106,7 @@ export default function AdminKonfigurasi() {
   const [lanjutan, setLanjutan] = useState(false);
   const [kode, setKode] = useState({ sekarang: "", baru: "", ulang: "" });
   const [riwayat, setRiwayat] = useState(false);
+  const [dbForm, setDbForm] = useState({ uri: "", kode: "", hasil: null });
 
   const muat = useCallback(async () => {
     try {
@@ -165,6 +166,46 @@ export default function AdminKonfigurasi() {
     // Isiannya dikosongkan dari layar sesudah tersimpan: nilai rahasia yang
     // tertinggal di kolom input ikut terbawa ke tangkapan layar dan berbagi layar.
     if (ok) setNilai((n) => ({ ...n, [nama]: "" }));
+  }
+
+  // Uji koneksi ke alamat database baru tanpa mengubah apa pun.
+  async function ujiDb() {
+    setBusy("MONGODB_URI");
+    try {
+      const r = await fetch("/api/admin/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aksi: "db-uji", uri: dbForm.uri })
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        setDbForm((f) => ({ ...f, hasil: { ok: false, teks: d.error || "Gagal menguji." } }));
+        return;
+      }
+      setDbForm((f) => ({ ...f, hasil: { ok: true, teks: d.pesan, kosong: d.uji?.pengguna === 0 } }));
+    } catch {
+      setDbForm((f) => ({ ...f, hasil: { ok: false, teks: "Jaringan bermasalah, coba lagi." } }));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function pakaiDb() {
+    const peringatan =
+      "Pindahkan DATA situs (pengguna, saldo, pesanan) ke database ini?\n\n" +
+      "• Data di database lama TIDAK ikut disalin otomatis.\n" +
+      "• Kalau database tujuan kosong, semua pengguna akan tampak hilang sampai kamu mengembalikannya.\n" +
+      "• Konfigurasi (kunci API, kode admin) tetap tersimpan di database lama.";
+    if (!confirm(peringatan)) return;
+    const ok = await kirim({ aksi: "db-simpan", uri: dbForm.uri, kodeSekarang: dbForm.kode }, "MONGODB_URI");
+    if (ok) setDbForm({ uri: "", kode: "", hasil: null });
+  }
+
+  async function kembaliDbEnv() {
+    if (!dbForm.kode) return kabar("Isi kode admin yang sekarang dulu.", true);
+    if (!confirm("Kembali memakai alamat database dari Environment Variables? Data situs ikut berpindah ke database itu.")) return;
+    const ok = await kirim({ aksi: "db-hapus", kodeSekarang: dbForm.kode }, "MONGODB_URI");
+    if (ok) setDbForm({ uri: "", kode: "", hasil: null });
   }
 
   async function gantiKode() {
@@ -233,10 +274,86 @@ export default function AdminKonfigurasi() {
                     <p className="mt-0.5 font-mono text-[10px] text-muted">{k.nama}</p>
                     {k.bantuan && <p className="mt-1 text-[11px] leading-relaxed text-muted">{k.bantuan}</p>}
 
-                    {k.hanyaEnv ? (
-                      <p className="mt-2 rounded-lg bg-surface2 px-3 py-2 text-[11px] font-bold text-muted">
-                        {st.terisi ? "✅ Terisi di Vercel." : "Belum diisi di Vercel."} Hanya bisa diubah lewat Vercel.
-                      </p>
+                    {k.khusus === "dbUri" ? (
+                      <div className="mt-2 space-y-2">
+                        <div className="space-y-1 rounded-lg bg-surface2 px-3 py-2 text-[11px] font-bold text-muted">
+                          <p>
+                            Database data sekarang:{" "}
+                            <span className="break-all font-mono text-ink">{data.db?.aktif || "belum diisi"}</span>
+                          </p>
+                          <p>{data.db?.adaOverride ? "🌐 Dipilih dari dasbor." : "▲ Dari Environment Variables."}</p>
+                          {data.db?.adaOverride && (
+                            <p>
+                              Konfigurasi tetap di database env: <span className="break-all font-mono text-ink">{data.db.boot}</span>
+                            </p>
+                          )}
+                          {data.db?.rusak && (
+                            <p className="text-rose">
+                              ⚠️ Alamat dari dasbor tidak terbaca (MONGODB_URI di env berubah), jadi alamat env yang dipakai. Isi ulang di bawah.
+                            </p>
+                          )}
+                        </div>
+                        <input
+                          type="password"
+                          autoComplete="off"
+                          spellCheck={false}
+                          placeholder="mongodb+srv://user:password@cluster.mongodb.net/namadb"
+                          value={dbForm.uri}
+                          onChange={(e) => setDbForm((f) => ({ ...f, uri: e.target.value, hasil: null }))}
+                          className="w-full rounded-xl border border-line bg-bg px-3 py-2 font-mono text-xs"
+                        />
+                        <input
+                          type="password"
+                          autoComplete="off"
+                          placeholder="Kode admin yang sekarang (untuk konfirmasi)"
+                          value={dbForm.kode}
+                          onChange={(e) => setDbForm((f) => ({ ...f, kode: e.target.value }))}
+                          className="w-full rounded-xl border border-line bg-bg px-3 py-2 text-sm"
+                        />
+                        {dbForm.hasil && (
+                          <p
+                            className={`rounded-lg border px-3 py-2 text-[11px] font-bold ${
+                              dbForm.hasil.ok
+                                ? dbForm.hasil.kosong
+                                  ? "border-amber/40 bg-amber-soft text-amber-bright"
+                                  : "border-success/30 bg-success-soft text-success"
+                                : "border-rose/30 bg-rose-soft text-rose"
+                            }`}
+                          >
+                            {dbForm.hasil.ok ? "✅ " : "⛔ "}
+                            {dbForm.hasil.teks}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={ujiDb}
+                            disabled={busy !== "" || !dbForm.uri.trim()}
+                            className="btn-3d rounded-xl border border-line bg-surface px-4 py-2 text-xs font-black text-ink disabled:opacity-40"
+                          >
+                            {kunciBusy ? "…" : "Uji koneksi"}
+                          </button>
+                          <button
+                            onClick={pakaiDb}
+                            disabled={busy !== "" || !data.terbaca || !dbForm.uri.trim() || !dbForm.kode || !dbForm.hasil?.ok}
+                            className="btn-3d rounded-xl bg-blue px-4 py-2 text-xs font-black text-white disabled:opacity-40"
+                          >
+                            Pakai database ini
+                          </button>
+                          {data.db?.adaOverride && (
+                            <button
+                              onClick={kembaliDbEnv}
+                              disabled={busy !== "" || !data.terbaca}
+                              className="btn-3d rounded-xl border border-rose/40 bg-rose-soft px-4 py-2 text-xs font-black text-rose disabled:opacity-40"
+                            >
+                              Kembali ke alamat env
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-muted">
+                          Uji koneksi dulu (tombol “Pakai” baru aktif setelah ujinya berhasil). Data lama tidak ikut disalin ke database baru.
+                          MONGODB_URI di Environment Variables tetap wajib ada: itu pintu pertama untuk membaca konfigurasi ini.
+                        </p>
+                      </div>
                     ) : k.saklar ? (
                       <div className="mt-2 flex items-center gap-3">
                         {(() => {
@@ -349,7 +466,7 @@ export default function AdminKonfigurasi() {
                           {st.adaWeb && (
                             <button
                               onClick={() => {
-                                if (confirm(`Hapus ${k.label} dari web?${st.adaEnv ? " Nilai dari Vercel dipakai lagi." : " Isian ini jadi kosong."}`)) {
+                                if (confirm(`Hapus ${k.label} dari web?${st.adaEnv ? " Nilai dari Environment Variables dipakai lagi." : " Isian ini jadi kosong."}`)) {
                                   kirim({ aksi: "hapus", nama: k.nama }, k.nama);
                                 }
                               }}
@@ -362,7 +479,7 @@ export default function AdminKonfigurasi() {
                           )}
                         </div>
                         {st.adaWeb && st.adaEnv && (
-                          <p className="mt-1 text-[10px] text-muted">Vercel juga punya nilai; yang dari web dipakai.</p>
+                          <p className="mt-1 text-[10px] text-muted">Environment Variables juga punya nilai; yang dari web dipakai.</p>
                         )}
                       </div>
                     )}

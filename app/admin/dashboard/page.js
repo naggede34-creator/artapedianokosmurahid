@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import AdminSwitcher from "@/components/AdminSwitcher";
+import PanduanTab from "@/components/AdminPanduan";
+import AdminAlamatApi from "@/components/AdminAlamatApi";
 import { sesiHabis } from "@/components/AdminSesi";
 import { OTP_SERVERS } from "@/lib/otpServers";
 import { DAFTAR_PUBLIK, channelAktifUntuk } from "@/lib/channelNotifTypes";
@@ -2231,6 +2233,8 @@ export default function AdminDashboardPage() {
           </div>
         );
       })()}
+
+      <PanduanTab key={activeTab} id={activeTab} />
 
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* TAB: RINGKASAN                                                */}
@@ -6215,6 +6219,9 @@ export default function AdminDashboardPage() {
               )}
             </div>
           </div>
+
+          {/* Alamat API untuk dokumentasi */}
+          <AdminAlamatApi />
 
           {/* Pengaturan Situs */}
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">

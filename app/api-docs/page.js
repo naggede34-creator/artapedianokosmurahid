@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
-const BASE = typeof window !== "undefined" ? window.location.origin : "https://artapedianokosmurahid.vercel.app";
+const FALLBACK_BASE = "https://artapedianokosmurahid.vercel.app";
 
 /* ───────── small helpers ───────── */
 function Badge({ children, color = "amber" }) {
@@ -149,6 +149,18 @@ function EndpointCard({ method, path, title, description, auth = true, params, r
 
 /* ───────── main page ───────── */
 export default function ApiDocsPage() {
+  // Base URL diatur admin (Pengaturan Umum → Alamat API). Dibaca dari server,
+  // bukan window.location: dokumentasi ini dibaca untuk DISALIN ke server
+  // developer, dan alamat yang ikut tempat halaman dibuka akan menghasilkan
+  // contoh yang menunjuk ke localhost.
+  const [B, setB] = useState(FALLBACK_BASE);
+  useEffect(() => {
+    fetch("/api/settings/public", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => { if (d?.docs?.api) setB(d.docs.api); })
+      .catch(() => {});
+  }, []);
+
   const [apiKey, setApiKey] = useState("");
   const [tryResult, setTryResult] = useState(null);
   const [tryLoading, setTryLoading] = useState(false);
@@ -180,10 +192,12 @@ export default function ApiDocsPage() {
     { id: "ep-orders", label: "GET /v1/orders" },
     { id: "ep-order-status", label: "GET /v1/orders/status" },
     { id: "ep-order-create", label: "POST /v1/order" },
+    { id: "ep-order-cancel", label: "POST /v1/orders/cancel" },
     { id: "deposit", label: "Deposit otomatis" },
     { id: "ep-dep-methods", label: "GET /v1/deposit/methods" },
     { id: "ep-dep-create", label: "POST /v1/deposit" },
     { id: "ep-dep-status", label: "GET /v1/deposit" },
+    { id: "ep-dep-cancel", label: "POST /v1/deposit/cancel" },
     { id: "try", label: "Try it out" }
   ];
 
@@ -240,7 +254,10 @@ export default function ApiDocsPage() {
             <p className="text-muted mb-3">
               Semua endpoint berada di bawah base URL berikut. Semua response menggunakan format <code className="font-mono text-xs bg-surface2 px-1.5 py-0.5 rounded border border-line">application/json</code>.
             </p>
-            <CodeBlock lang="text" code={`Base URL: https://artapedianokosmurahid.vercel.app/api/v1`} />
+            <CodeBlock lang="text" code={`Base URL: ${B}/api/v1`} />
+            <p className="text-xs text-muted mt-2">
+              Semua contoh di halaman ini otomatis memakai alamat di atas — kamu tinggal salin. Kalau alamat ini berubah, contoh di sini ikut berubah.
+            </p>
             <div className="grid sm:grid-cols-3 gap-4 mt-6">
               {[
                 { icon: "🔑", title: "API Key auth", desc: "Autentikasi via header Bearer atau query param" },
@@ -296,11 +313,11 @@ export default function ApiDocsPage() {
               <div>
                 <p className="text-xs text-muted mb-1">1. Header <code className="font-mono text-amber">Authorization: Bearer</code> (direkomendasikan)</p>
                 <CodeBlock lang="bash" code={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  https://artapedianokosmurahid.vercel.app/api/v1/me`} />
+  ${B}/api/v1/me`} />
               </div>
               <div>
                 <p className="text-xs text-muted mb-1">2. Query parameter <code className="font-mono text-amber">?api_key=</code></p>
-                <CodeBlock lang="bash" code={`curl "https://artapedianokosmurahid.vercel.app/api/v1/me?api_key=YOUR_API_KEY"`} />
+                <CodeBlock lang="bash" code={`curl "${B}/api/v1/me?api_key=YOUR_API_KEY"`} />
               </div>
             </div>
             <div className="mt-5 p-4 rounded-xl bg-rose/5 border border-rose/20">
@@ -320,7 +337,8 @@ export default function ApiDocsPage() {
               {[
                 ["60 / menit", "Semua endpoint v1 (baca): me, servers, services, countries, orders, deposit status & methods"],
                 ["20 / menit", "POST /v1/order — membuat pesanan OTP (ikut hitungan 60/menit di atas)"],
-                ["6 / menit", "POST /v1/deposit — membuat QRIS deposit (ikut hitungan 60/menit di atas)"]
+                ["6 / menit", "POST /v1/deposit — membuat QRIS deposit (ikut hitungan 60/menit di atas)"],
+                ["20 / menit", "POST /v1/orders/cancel dan POST /v1/deposit/cancel — pembatalan (ikut hitungan 60/menit di atas)"]
               ].map(([batas, ket]) => (
                 <div key={batas} className="flex items-start gap-4 px-4 py-3 border-b border-line last:border-0">
                   <Badge color="amber">{batas}</Badge>
@@ -355,8 +373,10 @@ export default function ApiDocsPage() {
                 ["401", "rose", "Unauthorized", "API key tidak ada, salah format, atau tidak ditemukan"],
                 ["403", "rose", "Forbidden", "Akun ditangguhkan"],
                 ["404", "rose", "Not Found", "Resource (pesanan dll) tidak ditemukan"],
+                ["409", "rose", "Conflict", "Aksi bentrok dengan keadaan terkini — mis. batal order tapi OTP baru saja masuk, atau batal deposit tapi sudah dibayar"],
                 ["429", "rose", "Too Many Requests", "Melewati rate limit API key — lihat header Retry-After"],
-                ["500", "rose", "Server Error", "Kesalahan internal, coba lagi nanti"]
+                ["500", "rose", "Server Error", "Kesalahan internal, coba lagi nanti"],
+                ["503", "rose", "Service Unavailable", "Server nokos sedang dimatikan admin, atau status pesanan belum bisa dicek ke provider — coba lagi sebentar"]
               ].map(([code, color, label, desc]) => (
                 <div key={code} className="flex items-start gap-4 px-4 py-3 border-b border-line last:border-0">
                   <Badge color={color}>{code}</Badge>
@@ -389,8 +409,8 @@ export default function ApiDocsPage() {
                 </>
               }
               curl={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  https://artapedianokosmurahid.vercel.app/api/v1/me`}
-              jsCode={`const res = await fetch("https://artapedianokosmurahid.vercel.app/api/v1/me", {
+  ${B}/api/v1/me`}
+              jsCode={`const res = await fetch("${B}/api/v1/me", {
   headers: { "Authorization": "Bearer YOUR_API_KEY" }
 });
 const data = await res.json();
@@ -398,7 +418,7 @@ console.log(data.balance); // e.g. 50000`}
               pythonCode={`import requests
 
 r = requests.get(
-    "https://artapedianokosmurahid.vercel.app/api/v1/me",
+    "${B}/api/v1/me",
     headers={"Authorization": "Bearer YOUR_API_KEY"}
 )
 print(r.json())`}
@@ -460,8 +480,8 @@ print(r.json())`}
                 </>
               }
               curl={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  https://artapedianokosmurahid.vercel.app/api/v1/servers`}
-              jsCode={`const res = await fetch("https://artapedianokosmurahid.vercel.app/api/v1/servers", {
+  ${B}/api/v1/servers`}
+              jsCode={`const res = await fetch("${B}/api/v1/servers", {
   headers: { "Authorization": "Bearer YOUR_API_KEY" }
 });
 const { items } = await res.json();
@@ -470,7 +490,7 @@ const server = items[0].server;`}
               pythonCode={`import requests
 
 r = requests.get(
-    "https://artapedianokosmurahid.vercel.app/api/v1/servers",
+    "${B}/api/v1/servers",
     headers={"Authorization": "Bearer YOUR_API_KEY"}
 )
 for s in r.json()["items"]:
@@ -508,9 +528,9 @@ for s in r.json()["items"]:
                 </>
               }
               curl={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://artapedianokosmurahid.vercel.app/api/v1/services?server=dibanana"`}
+  "${B}/api/v1/services?server=dibanana"`}
               jsCode={`const res = await fetch(
-  "https://artapedianokosmurahid.vercel.app/api/v1/services?server=dibanana",
+  "${B}/api/v1/services?server=dibanana",
   { headers: { "Authorization": "Bearer YOUR_API_KEY" } }
 );
 const { items } = await res.json();
@@ -518,7 +538,7 @@ const { items } = await res.json();
               pythonCode={`import requests
 
 r = requests.get(
-    "https://artapedianokosmurahid.vercel.app/api/v1/services",
+    "${B}/api/v1/services",
     params={"server": "warungnokos_s1"},
     headers={"Authorization": "Bearer YOUR_API_KEY"}
 )
@@ -568,9 +588,9 @@ for svc in r.json()["items"]:
                 </>
               }
               curl={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://artapedianokosmurahid.vercel.app/api/v1/countries?server=dibanana&service_id=wa"`}
+  "${B}/api/v1/countries?server=dibanana&service_id=wa"`}
               jsCode={`const res = await fetch(
-  "https://artapedianokosmurahid.vercel.app/api/v1/countries?server=dibanana&service_id=wa",
+  "${B}/api/v1/countries?server=dibanana&service_id=wa",
   { headers: { "Authorization": "Bearer YOUR_API_KEY" } }
 );
 const { items } = await res.json();
@@ -582,7 +602,7 @@ console.log("termurah:", offers[0].sell_price);`}
               pythonCode={`import requests
 
 r = requests.get(
-    "https://artapedianokosmurahid.vercel.app/api/v1/countries",
+    "${B}/api/v1/countries",
     params={"server": "warungnokos_s1", "service_id": "13"},
     headers={"Authorization": "Bearer YOUR_API_KEY"}
 )
@@ -638,16 +658,16 @@ for c in r.json()["items"]:
                   <ResponseField name="items[].serviceName" type="string">Nama layanan (mis: WhatsApp)</ResponseField>
                   <ResponseField name="items[].phoneNumber" type="string">Nomor telepon yang dipesan</ResponseField>
                   <ResponseField name="items[].price" type="number">Harga dalam Rupiah</ResponseField>
-                  <ResponseField name="items[].status" type="string">pending | success | expired | cancelled</ResponseField>
+                  <ResponseField name="items[].status" type="string">pending | done | expired | canceled</ResponseField>
                   <ResponseField name="items[].otpCode" type="string|null">Kode OTP (null jika belum/direfund)</ResponseField>
                   <ResponseField name="items[].refunded" type="boolean">Apakah sudah direfund</ResponseField>
                   <ResponseField name="items[].createdAt" type="string">ISO timestamp pembuatan</ResponseField>
                 </>
               }
               curl={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://artapedianokosmurahid.vercel.app/api/v1/orders?limit=10&page=1"`}
+  "${B}/api/v1/orders?limit=10&page=1"`}
               jsCode={`const res = await fetch(
-  "https://artapedianokosmurahid.vercel.app/api/v1/orders?limit=10",
+  "${B}/api/v1/orders?limit=10",
   { headers: { "Authorization": "Bearer YOUR_API_KEY" } }
 );
 const { items } = await res.json();
@@ -655,7 +675,7 @@ items.forEach(o => console.log(o.orderId, o.status, o.otpCode));`}
               pythonCode={`import requests
 
 r = requests.get(
-    "https://artapedianokosmurahid.vercel.app/api/v1/orders",
+    "${B}/api/v1/orders",
     params={"limit": 10, "page": 1},
     headers={"Authorization": "Bearer YOUR_API_KEY"}
 )
@@ -680,7 +700,7 @@ for order in r.json()["items"]:
               response={
                 <>
                   <ResponseField name="orderId" type="string">ID pesanan</ResponseField>
-                  <ResponseField name="status" type="string">pending | success | expired | cancelled</ResponseField>
+                  <ResponseField name="status" type="string">pending | done | expired | canceled</ResponseField>
                   <ResponseField name="otpCode" type="string|null">Kode OTP (null jika belum tersedia)</ResponseField>
                   <ResponseField name="otpMsg" type="string|null">Pesan SMS lengkap</ResponseField>
                   <ResponseField name="phoneNumber" type="string">Nomor telepon</ResponseField>
@@ -689,17 +709,17 @@ for order in r.json()["items"]:
                 </>
               }
               curl={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://artapedianokosmurahid.vercel.app/api/v1/orders/status?order_id=123456"`}
-              jsCode={`// Poll setiap 5 detik sampai status = 'success'
+  "${B}/api/v1/orders/status?order_id=123456"`}
+              jsCode={`// Poll setiap 5 detik sampai status = 'done' (OTP masuk)
 async function waitForOtp(orderId, apiKey) {
   while (true) {
     const r = await fetch(
-      \`https://artapedianokosmurahid.vercel.app/api/v1/orders/status?order_id=\${orderId}\`,
+      \`${B}/api/v1/orders/status?order_id=\${orderId}\`,
       { headers: { Authorization: \`Bearer \${apiKey}\` } }
     );
     const data = await r.json();
-    if (data.status === "success") return data.otpCode;
-    if (data.status === "expired") throw new Error("Order expired");
+    if (data.status === "done") return data.otpCode;
+    if (data.status === "expired" || data.status === "canceled") throw new Error("Order " + data.status);
     await new Promise(res => setTimeout(res, 5000));
   }
 }`}
@@ -708,21 +728,21 @@ async function waitForOtp(orderId, apiKey) {
 def wait_for_otp(order_id, api_key):
     while True:
         r = requests.get(
-            "https://artapedianokosmurahid.vercel.app/api/v1/orders/status",
+            "${B}/api/v1/orders/status",
             params={"order_id": order_id},
             headers={"Authorization": f"Bearer {api_key}"}
         )
         data = r.json()
-        if data["status"] == "success":
+        if data["status"] == "done":
             return data["otpCode"]
-        if data["status"] == "expired":
-            raise Exception("Order expired")
+        if data["status"] in ("expired", "canceled"):
+            raise Exception("Order " + data["status"])
         time.sleep(5)`}
             />
             <CodeBlock lang="json" code={`// 200 OK (OTP sudah diterima)
 {
   "orderId": "123456",
-  "status": "success",
+  "status": "done",
   "otpCode": "483921",
   "otpMsg": "Your WhatsApp code is 483921",
   "phoneNumber": "+62812xxxxxxx",
@@ -743,6 +763,7 @@ def wait_for_otp(order_id, api_key):
                 <li>Ambil negara &amp; harga: <code className="font-mono text-amber">GET /v1/countries?server=…&amp;service_id=…</code>.</li>
                 <li>POST <code className="font-mono text-amber">/v1/order</code> dengan parameter sesuai server (tabel di bawah).</li>
                 <li>Polling <code className="font-mono text-amber">GET /v1/orders/status?order_id=…</code> sampai OTP masuk.</li>
+                <li>Tidak jadi / OTP tidak kunjung datang? <code className="font-mono text-amber">POST /v1/orders/cancel</code> — saldo kembali penuh (minimal 3 menit setelah beli).</li>
               </ol>
             </div>
 
@@ -801,7 +822,7 @@ def wait_for_otp(order_id, api_key):
                   <ResponseField name="balance" type="number">Saldo tersisa setelah transaksi</ResponseField>
                 </>
               }
-              curl={`curl -X POST https://artapedianokosmurahid.vercel.app/api/v1/order \\
+              curl={`curl -X POST ${B}/api/v1/order \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -817,7 +838,7 @@ def wait_for_otp(order_id, api_key):
 # -d '{"server":"rumahotp","serviceId":"1","numberId":"62","providerId":"5"}'
 # Server WarungNokos memakai countryId:
 # -d '{"server":"warungnokos_s1","serviceId":"wa","countryId":"6"}'`}
-              jsCode={`const res = await fetch("https://artapedianokosmurahid.vercel.app/api/v1/order", {
+              jsCode={`const res = await fetch("${B}/api/v1/order", {
   method: "POST",
   headers: {
     "Authorization": "Bearer YOUR_API_KEY",
@@ -837,7 +858,7 @@ console.log(\`Got \${phoneNumber} dari \${server}, order \${orderId}, Rp\${price
               pythonCode={`import requests
 
 r = requests.post(
-    "https://artapedianokosmurahid.vercel.app/api/v1/order",
+    "${B}/api/v1/order",
     headers={
         "Authorization": "Bearer YOUR_API_KEY",
         "Content-Type": "application/json"
@@ -865,6 +886,123 @@ print(f"Phone: {data['phoneNumber']}, Order: {data['orderId']}")`}
 }`} />
           </Section>
 
+          {/* POST /v1/orders/cancel */}
+          <Section id="ep-order-cancel">
+            <h2 className="text-display-sm font-display text-ink mb-2">Batal Order Nokos</h2>
+            <p className="text-muted mb-4">
+              Batalkan pesanan yang <b>belum menerima OTP</b> dan dapatkan saldo kembali. Jalurnya sama persis dengan tombol
+              “Batalkan” di web dan bot Telegram, jadi refund tidak mungkin terhitung dua kali.
+            </p>
+
+            <div className="rounded-xl border border-line overflow-hidden mb-4">
+              <div className="px-4 py-2.5 border-b border-line bg-surface2">
+                <p className="text-sm font-semibold text-ink">Kapan pesanan boleh dibatalkan?</p>
+              </div>
+              {[
+                ["✅ Boleh", "OTP belum masuk dan pesanan sudah berumur minimal 3 menit sejak dibeli."],
+                ["⏳ Terlalu cepat", "Sebelum 3 menit dibalas 400 beserta retry_after (detik yang harus ditunggu). Ini aturan yang sama dengan di web."],
+                ["🚫 Tidak boleh", "OTP sudah masuk — dibalas 400 (atau 409 kalau OTP baru saja masuk saat kamu menekan batal, otpCode ikut dikirim)."],
+                ["🔁 Aman diulang", "Memanggil batal untuk pesanan yang sudah dibatalkan membalas 200 tanpa menambah saldo lagi."]
+              ].map(([k, v]) => (
+                <div key={k} className="flex flex-col sm:flex-row gap-1 sm:gap-4 px-4 py-3 border-b border-line last:border-0">
+                  <span className="text-sm font-semibold text-ink w-36 flex-shrink-0">{k}</span>
+                  <p className="text-sm text-muted">{v}</p>
+                </div>
+              ))}
+            </div>
+
+            <EndpointCard
+              method="POST"
+              path="/api/v1/orders/cancel"
+              title="Batalkan pesanan nokos"
+              description="Membatalkan pesanan di provider lalu mengembalikan saldo ke akunmu (termasuk biaya jaminan kalau ada). Batas: 20 permintaan/menit."
+              params={
+                <>
+                  <Param name="order_id" type="string" required>ID pesanan dari POST /v1/order (field orderId). Penulisan orderId juga diterima.</Param>
+                </>
+              }
+              response={
+                <>
+                  <ResponseField name="success" type="boolean">true kalau pesanan berhasil dibatalkan</ResponseField>
+                  <ResponseField name="order_id" type="string">ID pesanan yang dibatalkan</ResponseField>
+                  <ResponseField name="status" type="string">Selalu canceled</ResponseField>
+                  <ResponseField name="refunded" type="boolean">true = saldo sudah dikembalikan</ResponseField>
+                  <ResponseField name="balance" type="number">Saldo terbaru setelah refund (Rupiah)</ResponseField>
+                  <ResponseField name="message" type="string">Keterangan singkat</ResponseField>
+                </>
+              }
+              curl={`curl -X POST ${B}/api/v1/orders/cancel \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"order_id": "789012"}'`}
+              jsCode={`const res = await fetch("${B}/api/v1/orders/cancel", {
+  method: "POST",
+  headers: {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ order_id: "789012" })
+});
+const data = await res.json();
+
+if (res.ok) {
+  console.log("Saldo sekarang:", data.balance);
+} else if (res.status === 400 && data.retry_after) {
+  // Belum 3 menit sejak dibeli — coba lagi setelah data.retry_after detik
+  console.log("Tunggu", data.retry_after, "detik");
+} else if (res.status === 409 && data.otpCode) {
+  // OTP baru saja masuk, pesanan tidak jadi dibatalkan
+  console.log("OTP:", data.otpCode);
+} else {
+  console.error(data.error);
+}`}
+              pythonCode={`import requests
+
+r = requests.post(
+    "${B}/api/v1/orders/cancel",
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
+    json={"order_id": "789012"},
+)
+data = r.json()
+if r.ok:
+    print("Saldo sekarang:", data["balance"])
+elif r.status_code == 400 and "retry_after" in data:
+    print("Tunggu", data["retry_after"], "detik")
+elif r.status_code == 409 and "otpCode" in data:
+    print("OTP sudah masuk:", data["otpCode"])
+else:
+    print(data["error"])`}
+            />
+            <CodeBlock lang="json" code={`// 200 OK
+{
+  "success": true,
+  "order_id": "789012",
+  "status": "canceled",
+  "refunded": true,
+  "balance": 50000,
+  "message": "Pesanan dibatalkan dan saldo dikembalikan."
+}
+
+// 400 — belum 3 menit sejak dibeli
+{
+  "error": "Pesanan baru bisa dibatalkan 3 menit setelah dibeli. Tunggu 94 detik lagi.",
+  "retry_after": 94
+}
+
+// 409 — OTP baru saja masuk
+{
+  "error": "Kode OTP baru saja masuk, pesanan tidak bisa dibatalkan.",
+  "otpCode": "483921",
+  "status": "done"
+}`} />
+            <div className="mt-4 p-4 rounded-xl bg-amber/5 border border-amber/20">
+              <p className="text-xs text-muted">
+                💡 Tidak perlu membatalkan manual kalau OTP memang tidak datang sampai habis waktu: pesanan yang kedaluwarsa direfund otomatis.
+                Pakai endpoint ini kalau kamu mau saldo kembali <b>lebih cepat</b> dari masa kedaluwarsa.
+              </p>
+            </div>
+          </Section>
+
           {/* DEPOSIT OTOMATIS */}
           <Section id="deposit">
             <h2 className="text-display-sm font-display text-ink mb-2">Deposit Otomatis</h2>
@@ -879,6 +1017,7 @@ print(f"Phone: {data['phoneNumber']}, Order: {data['orderId']}")`}
                 <li><code className="font-mono text-amber">POST /v1/deposit</code> → dapat <code className="font-mono">qr_image</code> / <code className="font-mono">qr_string</code> (QRIS) dan <code className="font-mono">total_amount</code>.</li>
                 <li>Bayar <b>persis</b> <code className="font-mono">total_amount</code> lewat aplikasi bank/e-wallet apa pun sebelum <code className="font-mono">expired_at</code>.</li>
                 <li>Cek <code className="font-mono text-amber">GET /v1/deposit?order_id=…</code> tiap 5 detik sampai <code className="font-mono">status</code> = <code className="font-mono">completed</code> — saldo sudah bertambah saat itu juga.</li>
+                <li>Tidak jadi bayar? <code className="font-mono text-amber">POST /v1/deposit/cancel</code> untuk menutup tagihan QRIS yang masih pending.</li>
               </ol>
               <p className="text-xs text-muted mt-2">Sistem juga memeriksa deposit yang menggantung secara berkala, jadi saldo tetap masuk walau kamu tidak sempat memanggil endpoint status.</p>
             </div>
@@ -898,7 +1037,7 @@ print(f"Phone: {data['phoneNumber']}, Order: {data['orderId']}")`}
                 </>
               }
               curl={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  https://artapedianokosmurahid.vercel.app/api/v1/deposit/methods`}
+  ${B}/api/v1/deposit/methods`}
             />
           </Section>
 
@@ -924,11 +1063,11 @@ print(f"Phone: {data['phoneNumber']}, Order: {data['orderId']}")`}
                   <ResponseField name="expired_at" type="string">Batas waktu pembayaran</ResponseField>
                 </>
               }
-              curl={`curl -X POST https://artapedianokosmurahid.vercel.app/api/v1/deposit \\
+              curl={`curl -X POST ${B}/api/v1/deposit \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"amount": 20000, "provider": "pakasir"}'`}
-              jsCode={`const res = await fetch("https://artapedianokosmurahid.vercel.app/api/v1/deposit", {
+              jsCode={`const res = await fetch("${B}/api/v1/deposit", {
   method: "POST",
   headers: { "Authorization": "Bearer YOUR_API_KEY", "Content-Type": "application/json" },
   body: JSON.stringify({ amount: 20000, provider: "pakasir" })
@@ -938,7 +1077,7 @@ console.log(dep.order_id, dep.total_amount); // tampilkan dep.qr_image ke pembay
               pythonCode={`import requests
 
 r = requests.post(
-    "https://artapedianokosmurahid.vercel.app/api/v1/deposit",
+    "${B}/api/v1/deposit",
     headers={"Authorization": "Bearer YOUR_API_KEY"},
     json={"amount": 20000, "provider": "pakasir"},
 )
@@ -962,7 +1101,7 @@ print(dep["order_id"], dep["total_amount"])`}
                 </>
               }
               curl={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "https://artapedianokosmurahid.vercel.app/api/v1/deposit?order_id=DP1727700000000123"`}
+  "${B}/api/v1/deposit?order_id=DP1727700000000123"`}
               jsCode={`// polling tiap 5 detik sampai selesai
 let d;
 do {
@@ -971,6 +1110,106 @@ do {
 } while (d.status === "pending");
 console.log(d.status, d.balance);`}
             />
+          </Section>
+
+          <Section id="ep-dep-cancel">
+            <h2 className="text-display-sm font-display text-ink mb-2">Batal Deposit</h2>
+            <p className="text-muted mb-4">
+              Tutup tagihan QRIS yang <b>belum dibayar</b>. Berguna kalau jumlahnya salah, penggunamu berubah pikiran, atau kamu mau
+              membuat tagihan baru tanpa menumpuk yang lama (jumlah QRIS pending per akun dibatasi).
+            </p>
+
+            <div className="rounded-xl border border-line overflow-hidden mb-4">
+              <div className="px-4 py-2.5 border-b border-line bg-surface2">
+                <p className="text-sm font-semibold text-ink">Hasil tergantung status tagihan</p>
+              </div>
+              {[
+                ["pending", "200 — tagihan ditutup, status menjadi canceled."],
+                ["sudah dibayar", "409 — sistem mengecek ke penyedia dulu. Kalau ternyata sudah dibayar, saldo DIKREDITKAN dan tagihan tidak dibatalkan (status completed)."],
+                ["completed", "400 — deposit sudah berhasil, tidak bisa dibatalkan."],
+                ["expired / canceled / failed", "200 — sudah tidak aktif, tidak ada yang berubah (aman diulang)."]
+              ].map(([k, v]) => (
+                <div key={k} className="flex flex-col sm:flex-row gap-1 sm:gap-4 px-4 py-3 border-b border-line last:border-0">
+                  <code className="font-mono text-sm text-amber w-52 flex-shrink-0">{k}</code>
+                  <p className="text-sm text-muted">{v}</p>
+                </div>
+              ))}
+            </div>
+
+            <EndpointCard
+              method="POST"
+              path="/api/v1/deposit/cancel"
+              title="Batalkan deposit QRIS"
+              description="Membatalkan tagihan QRIS deposit yang masih pending. Batas: 20 permintaan/menit."
+              params={
+                <>
+                  <Param name="order_id" type="string" required>ID deposit dari POST /v1/deposit (field order_id). Penulisan orderId juga diterima.</Param>
+                </>
+              }
+              response={
+                <>
+                  <ResponseField name="success" type="boolean">true kalau permintaan diproses tanpa masalah</ResponseField>
+                  <ResponseField name="order_id" type="string">ID deposit</ResponseField>
+                  <ResponseField name="status" type="string">canceled — atau status terakhir kalau tagihan memang sudah tidak aktif</ResponseField>
+                  <ResponseField name="message" type="string">Keterangan singkat (mis. tagihan sudah tidak aktif)</ResponseField>
+                </>
+              }
+              curl={`curl -X POST ${B}/api/v1/deposit/cancel \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"order_id": "DP1727700000000123"}'`}
+              jsCode={`const res = await fetch("${B}/api/v1/deposit/cancel", {
+  method: "POST",
+  headers: {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ order_id: "DP1727700000000123" })
+});
+const data = await res.json();
+
+if (res.ok) {
+  console.log("Status:", data.status); // canceled
+} else if (res.status === 409) {
+  // Ternyata sudah dibayar — saldo sudah masuk, jangan dibatalkan
+  console.log("Sudah dibayar:", data.error);
+} else {
+  console.error(data.error);
+}`}
+              pythonCode={`import requests
+
+r = requests.post(
+    "${B}/api/v1/deposit/cancel",
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
+    json={"order_id": "DP1727700000000123"},
+)
+data = r.json()
+if r.ok:
+    print("Status:", data["status"])
+elif r.status_code == 409:
+    print("Sudah dibayar, saldo sudah masuk:", data["error"])
+else:
+    print(data["error"])`}
+            />
+            <CodeBlock lang="json" code={`// 200 OK
+{
+  "success": true,
+  "order_id": "DP1727700000000123",
+  "status": "canceled",
+  "message": "Deposit dibatalkan."
+}
+
+// 409 — ternyata sudah dibayar
+{
+  "error": "Pembayaran sudah diterima, saldo sudah masuk. Transaksi tidak dibatalkan.",
+  "status": "completed"
+}`} />
+            <div className="mt-4 p-4 rounded-xl bg-rose/5 border border-rose/20">
+              <p className="text-xs text-muted">
+                ⚠️ <b className="text-ink">Jangan bayar QRIS yang sudah dibatalkan.</b> Kalau pembayaran tetap masuk setelah dibatalkan,
+                sistem tetap mengkreditkan saldonya lewat pengecekan berkala — tapi lebih baik jangan mengandalkan itu.
+              </p>
+            </div>
           </Section>
 
           {/* TRY IT OUT */}
@@ -1025,7 +1264,7 @@ console.log(d.status, d.balance);`}
               <li>Semua waktu dalam format ISO 8601 UTC.</li>
               <li>Saldo selalu dalam Rupiah (IDR) tanpa desimal.</li>
               <li>API key bersifat privat — 1 key per akun. Regenerate di Dashboard kapan saja.</li>
-              <li>Batas laju per key: 60 request/menit (order 20/menit, buat deposit 6/menit) — lihat bagian Rate Limit.</li>
+              <li>Batas laju per key: 60 request/menit (order 20/menit, batal 20/menit, buat deposit 6/menit) — lihat bagian Rate Limit.</li>
               <li>Butuh bantuan? Buka tiket di halaman <Link href="/dashboard" className="text-amber underline">Dashboard → Support</Link>.</li>
             </ul>
           </div>

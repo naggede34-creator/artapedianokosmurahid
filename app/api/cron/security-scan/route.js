@@ -2,21 +2,18 @@
 // Mendeteksi pola mencurigakan dan membekukan akun bermasalah. Logikanya di lib/keamanan.js.
 // GET /api/cron/security-scan?secret=CRON_SECRET
 import { NextResponse } from "next/server";
+import { cronSah } from "@/lib/cronAuth";
 import { pindaiKeamanan } from "@/lib/keamanan";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-function isAuthorized(req) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true;
-  const auth = req.headers.get("authorization") || "";
-  if (auth === `Bearer ${secret}`) return true;
-  return new URL(req.url).searchParams.get("secret") === secret;
+async function isAuthorized(req) {
+  return cronSah(req);
 }
 
 export async function GET(req) {
-  if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!(await isAuthorized(req))) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const hasil = await pindaiKeamanan({ kabarBersih: true });
     return NextResponse.json({ ok: true, flagged: hasil.flagged, autoSuspended: hasil.ditangguhkan, flags: hasil.temuan });

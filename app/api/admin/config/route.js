@@ -19,6 +19,23 @@ import { daftarUntukAdmin, simpanCfg, catatRiwayat, bacaRiwayat, konfigTerbaca }
 import { rateLimit } from "@/lib/rateLimit";
 import { PETA } from "@/lib/configRegistry";
 import { lupakanCacheMusim } from "@/lib/musim";
+import {
+  bacaOverrideDb,
+  simpanOverrideDb,
+  hapusOverrideDb,
+  validasiUriMongo,
+  ujiKoneksiMongo,
+  terapkanDbSekarang,
+  uriBoot
+} from "@/lib/db";
+
+// Alamat tanpa kata sandi, cukup untuk dikenali: mongodb+srv://user:••••@host/nama
+function samarkanUri(uri) {
+  const v = String(uri || "");
+  const m = /^(mongodb(?:\+srv)?:\/\/)(?:([^:@/]+)(?::[^@/]*)?@)?(.*)$/i.exec(v);
+  if (!m) return v ? "••••••••" : "";
+  return `${m[1]}${m[2] ? `${m[2]}:••••@` : ""}${m[3]}`;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -26,15 +43,26 @@ async function ringkasan() {
   const kode = await statusKodeAdmin();
   // ADMIN_CODE tidak lewat cfg() (disimpan sebagai hash), jadi statusnya
   // diisi dari statusKodeAdmin.
+  let db = { adaOverride: false, rusak: false, aktif: "", boot: samarkanUri(uriBoot()) };
+  try {
+    const o = await bacaOverrideDb();
+    db = { adaOverride: !!o.uri, rusak: o.rusak, aktif: samarkanUri(o.uri || uriBoot()), boot: samarkanUri(uriBoot()) };
+  } catch {}
   const ekstra = {
     ADMIN_CODE: {
       sumber: kode.web ? "web" : kode.env ? "vercel" : "bawaan",
       adaWeb: kode.web,
       terisi: true
+    },
+    MONGODB_URI: {
+      sumber: db.adaOverride ? "web" : uriBoot() ? "vercel" : "kosong",
+      adaWeb: db.adaOverride,
+      terisi: !!uriBoot() || db.adaOverride
     }
   };
   return {
     terbaca: await konfigTerbaca(),
+    db,
     kodeAdmin: kode,
     item: await daftarUntukAdmin(ekstra),
     riwayat: await bacaRiwayat()
@@ -77,7 +105,11 @@ export async function POST(req) {
       const r = await simpanCfg(nama, body?.nilai);
       if (/^MUSIM_/.test(nama)) lupakanCacheMusim(); // saklar/batas event berlaku seketika, bukan setelah cache 45 dtk
       if (!r.ok) return NextResponse.json({ error: r.alasan }, { status: 400 });
-      return NextResponse.json({ ok: true, pesan: `${def.label} disimpan dan langsung berlaku.`, ...(await ringkasan()) });
+      const res = NextResponse.json({ ok: true, pesan: `${def.label} disimpan dan langsung berlaku.`, ...(await ringkasan()) });
+      // Rahasia tanda tangan sesi ikut diturunkan dari CRON_SECRET: sesi ini diterbitkan ulang
+      // supaya admin yang sedang mengganti rahasia cron tidak terlempar keluar.
+      if (nama === "CRON_SECRET") res.cookies.set(ADMIN_COOKIE, await createAdminSession(), adminCookieOptions());
+      return res;
     }
 
     if (aksi === "hapus") {
@@ -87,9 +119,62 @@ export async function POST(req) {
       const r = await simpanCfg(nama, "");
       if (/^MUSIM_/.test(nama)) lupakanCacheMusim();
       if (!r.ok) return NextResponse.json({ error: r.alasan }, { status: 400 });
+      const res = NextResponse.json({
+        ok: true,
+        pesan: `${def.label} dihapus dari web. Kalau ada di Environment Variables, nilai itu yang dipakai lagi.`,
+        ...(await ringkasan())
+      });
+      if (nama === "CRON_SECRET") res.cookies.set(ADMIN_COOKIE, await createAdminSession(), adminCookieOptions());
+      return res;
+    }
+
+    // ── Alamat database MongoDB (data pengguna) ────────────────────────────
+    if (aksi === "db-uji" || aksi === "db-simpan" || aksi === "db-hapus") {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      if (!rateLimit(`${ip}:admin-db`, 10, 5 * 60_000)) {
+        return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi dalam 5 menit." }, { status: 429 });
+      }
+
+      if (aksi === "db-uji") {
+        const uri = String(body?.uri || "").trim();
+        const salah = validasiUriMongo(uri);
+        if (salah) return NextResponse.json({ error: salah }, { status: 400 });
+        const h = await ujiKoneksiMongo(uri);
+        if (!h.ok) return NextResponse.json({ error: `Tidak bisa terhubung: ${h.alasan}` }, { status: 400 });
+        return NextResponse.json({
+          ok: true,
+          uji: { namaDb: h.namaDb, pengguna: h.pengguna },
+          pesan:
+            `Terhubung ke database "${h.namaDb}". ` +
+            (h.pengguna == null ? "" : h.pengguna === 0 ? "Koleksi pengguna KOSONG (database baru)." : `Berisi ${h.pengguna} pengguna.`)
+        });
+      }
+
+      // Mengganti/menghapus database = memindahkan seluruh data situs. Sesi aktif
+      // saja tidak cukup (cookie yang dicuri tidak boleh mengarahkan situs ke
+      // database lain): kode admin diminta ulang, sama seperti ganti kode.
+      if (!(await adminCodeMatches(body?.kodeSekarang))) {
+        return NextResponse.json({ error: "Kode admin yang sekarang salah." }, { status: 401 });
+      }
+
+      if (aksi === "db-hapus") {
+        await hapusOverrideDb();
+        await terapkanDbSekarang();
+        await catatRiwayat("MONGODB_URI", "kembali ke alamat env");
+        return NextResponse.json({ ok: true, pesan: "Kembali memakai alamat dari Environment Variables.", ...(await ringkasan()) });
+      }
+
+      const uri = String(body?.uri || "").trim();
+      const salah = validasiUriMongo(uri);
+      if (salah) return NextResponse.json({ error: salah }, { status: 400 });
+      const h = await ujiKoneksiMongo(uri); // diuji lagi: jangan pernah menyimpan alamat yang tak bisa dibuka
+      if (!h.ok) return NextResponse.json({ error: `Tidak bisa terhubung: ${h.alasan}` }, { status: 400 });
+      await simpanOverrideDb(uri);
+      await terapkanDbSekarang();
+      await catatRiwayat("MONGODB_URI", "diganti");
       return NextResponse.json({
         ok: true,
-        pesan: `${def.label} dihapus dari web. Kalau ada di Vercel, nilai itu yang dipakai lagi.`,
+        pesan: `Database data dipindah ke "${h.namaDb}". Instance lain ikut pindah dalam ±30 detik. Data lama tidak ikut disalin.`,
         ...(await ringkasan())
       });
     }

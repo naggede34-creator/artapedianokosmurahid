@@ -9,6 +9,7 @@
 // jadi request dari Vercel sendiri tidak perlu query ?secret= — endpoint ini
 // menerima dua-duanya.
 import { NextResponse } from "next/server";
+import { cronSah } from "@/lib/cronAuth";
 import { getServices } from "@/lib/rumahotp";
 import { usersCol, depositsCol } from "@/lib/db";
 import { runCleanup } from "@/lib/cleanup";
@@ -20,14 +21,8 @@ import { cfg } from "@/lib/config";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-function isAuthorized(req) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // belum diset = endpoint dibuka publik, cocok buat setup awal saja
-  const auth = req.headers.get("authorization") || "";
-  if (auth === `Bearer ${secret}`) return true;
-  const { searchParams } = new URL(req.url);
-  if (searchParams.get("secret") === secret) return true;
-  return false;
+async function isAuthorized(req) {
+  return cronSah(req);
 }
 
 async function checkRumahOtp() {
@@ -83,7 +78,7 @@ async function checkMongo() {
 }
 
 export async function GET(req) {
-  if (!isAuthorized(req)) {
+  if (!(await isAuthorized(req))) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 

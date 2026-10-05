@@ -9,22 +9,19 @@
 // settleWeek mengklaim penandanya secara atomik per minggu, memanggilnya tiap
 // hari aman: hari-hari sesudah minggu itu lunas tidak melakukan apa-apa.
 import { NextResponse } from "next/server";
+import { cronSah } from "@/lib/cronAuth";
 import { getSettings } from "@/lib/settings";
 import { settleWeek } from "@/lib/leaderboard";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-function isAuthorized(req) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // belum diset = terbuka, cocok untuk setup awal saja
-  const auth = req.headers.get("authorization") || "";
-  if (auth === `Bearer ${secret}`) return true;
-  return new URL(req.url).searchParams.get("secret") === secret;
+async function isAuthorized(req) {
+  return cronSah(req);
 }
 
 export async function GET(req) {
-  if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!(await isAuthorized(req))) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const settings = await getSettings();
   if (settings.leaderboard?.enabled === false || settings.leaderboard?.autoPay === false) {

@@ -5,6 +5,7 @@
 // pun yang membuka DevTools di dasbor admin bisa memicu seluruh cron situs ini
 // dari luar, termasuk yang menyentuh saldo.
 import { NextResponse } from "next/server";
+import { rahasiaCronSah, rahasiaCronUtama } from "@/lib/cronAuth";
 import { adminSah } from "@/lib/adminAuth";
 import { getSettings, updateSettings } from "@/lib/settings";
 import { tokenPengirim, tujuanBackup } from "@/lib/kirimBerkas";
@@ -29,7 +30,7 @@ export async function GET(req) {
       // rahasia — id chat sendiri terlihat di bot mana pun.
       tujuan: sah,
       ditolak,
-      cronSecretAda: !!process.env.CRON_SECRET
+      cronSecretAda: (await rahasiaCronSah()).length > 0
     });
   } catch (err) {
     console.error("[admin/backup GET]", err?.message || err);
@@ -60,6 +61,7 @@ export async function POST(req) {
       const base =
         (process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`) ||
         (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ||
+        process.env.RENDER_EXTERNAL_URL ||
         new URL(req.url).origin;
 
       const url = new URL("/api/cron/backup", base);
@@ -67,8 +69,9 @@ export async function POST(req) {
       // bukan jadwal.
       url.searchParams.set("paksa", "1");
 
+      const rahasiaCron = await rahasiaCronUtama();
       const r = await fetch(url, {
-        headers: process.env.CRON_SECRET ? { authorization: `Bearer ${process.env.CRON_SECRET}` } : {},
+        headers: rahasiaCron ? { authorization: `Bearer ${rahasiaCron}` } : {},
         signal: AbortSignal.timeout(280000)
       });
       const d = await r.json().catch(() => null);

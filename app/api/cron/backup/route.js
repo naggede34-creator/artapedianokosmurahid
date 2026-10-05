@@ -24,6 +24,7 @@
 // terkirim.
 // ─────────────────────────────────────────────────────────────────────────
 import { NextResponse } from "next/server";
+import { cronSah } from "@/lib/cronAuth";
 import { getSettings, updateSettings } from "@/lib/settings";
 import { bangunBackupPenuh, bangunDatabaseAkun } from "@/lib/backupData";
 import {
@@ -38,12 +39,8 @@ import {
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-function isAuthorized(req) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // belum diset = terbuka, cocok untuk setup awal saja
-  const auth = req.headers.get("authorization") || "";
-  if (auth === `Bearer ${secret}`) return true;
-  return new URL(req.url).searchParams.get("secret") === secret;
+async function isAuthorized(req) {
+  return cronSah(req);
 }
 
 function tanggalWIB(d = new Date()) {
@@ -58,7 +55,7 @@ function tanggalWIB(d = new Date()) {
 }
 
 export async function GET(req) {
-  if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!(await isAuthorized(req))) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const paksa = new URL(req.url).searchParams.get("paksa") === "1";
 

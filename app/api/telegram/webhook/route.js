@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rahasiaCronSah } from "@/lib/cronAuth";
 import { usersCol } from "@/lib/db";
 import { sendMessage, isOwner, rupiah, HELP_TEXT } from "@/lib/telegramBot";
 import { logBalance } from "@/lib/ledger";
@@ -275,7 +276,7 @@ async function catatanOwner() {
 
 async function handleLinkWebhook(chatId, origin) {
   const target = (await webhookUrl(origin)) || `${origin}/api/bot/webhook`;
-  const punyaCron = Boolean((process.env.CRON_SECRET || "").trim());
+  const punyaCron = (await rahasiaCronSah()).length > 0;
 
   await sendMessage(
     chatId,
@@ -287,7 +288,7 @@ async function handleLinkWebhook(chatId, origin) {
       `<b>Cek status lewat browser:</b>\n` +
       `<code>${esc(target.replace(/\/webhook$/, "/setup"))}?action=info${punyaCron ? "&secret=ISI_CRON_SECRET" : ""}</code>\n\n` +
       (punyaCron
-        ? `Ganti <code>ISI_CRON_SECRET</code> dengan nilai CRON_SECRET di Vercel. `
+        ? `Ganti <code>ISI_CRON_SECRET</code> dengan Rahasia cron (dasbor admin → Konfigurasi, atau CRON_SECRET di env). `
         : `CRON_SECRET belum diisi, jadi alamat di atas bisa dibuka tanpa secret. `) +
       `Atau lebih gampang: kirim /pasangwebhook di sini.`
   );

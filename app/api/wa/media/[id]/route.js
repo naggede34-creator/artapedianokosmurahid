@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 // Gambar & catatan suara. Id-nya acak 128-bit (kapabilitas): hanya yang
 // menerima pesannya yang tahu. Isinya tidak berubah, jadi boleh di-cache.
 export async function GET(req, { params }) {
-  const m = await ambilMedia(params.id);
+  const m = await ambilMedia((await params).id);
   if (!m) return new Response(null, { status: 404 });
   // Dokumen selalu diunduh (tidak dibuka di dalam situs); nama berkas dari ?n= dibersihkan.
   const dokumen = !/^(image|audio)\//.test(m.mime);
