@@ -1,0 +1,24 @@
+# Render Blueprint: New → Blueprint → pilih repo ini.
+services:
+  - type: web
+    name: artapedia
+    runtime: node
+    plan: starter            # "free" bisa dipakai, tapi tidur setelah 15 menit tanpa trafik
+    region: singapore
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: INTERNAL_CRON   # penjadwal internal (lib/jadwalInternal.js), pengganti vercel.json
+        value: "1"
+      - key: MONGODB_URI     # WAJIB, diisi manual di dashboard Render
+        sync: false
+      - key: CRON_SECRET     # opsional; boleh juga diisi di dasbor admin situs
+        sync: false
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false
+      - key: ADMIN_CODE
+        sync: false

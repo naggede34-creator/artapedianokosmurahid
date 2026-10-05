@@ -1,20 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: { ignoreDuringBuilds: true },
-  // Exclude native/WASM packages from Next.js bundling so Node.js resolves them
-  // directly at runtime (required for @resvg/resvg-js and satori's HarfBuzz WASM).
-  experimental: {
-    serverComponentsExternalPackages: ["@resvg/resvg-js", "satori", "harfbuzzjs", "tesseract.js", "tesseract.js-core"],
-    // Banner sambutan bot dikirim ke Telegram sebagai berkas, bukan lewat URL,
-    // supaya tidak bergantung pada alamat situs yang bisa salah isi. Berkas di
-    // public/ tidak ikut terbawa ke fungsi serverless kecuali disebut di sini.
-    outputFileTracingIncludes: {
-      // OCR bukti transfer: pekerja tesseract, inti WASM, dan data bahasa dimuat lewat path dinamis,
-      // jadi harus disebut agar ikut terbawa ke fungsi serverless.
-      "/api/deposit/confirm": ["./node_modules/tesseract.js/**/*", "./node_modules/tesseract.js-core/**/*", "./lib/ocr/data/*"],
-      "/api/bot/webhook/[botId]": ["./node_modules/tesseract.js/**/*", "./node_modules/tesseract.js-core/**/*", "./lib/ocr/data/*"],
-      "/api/bot/webhook": ["./public/bot-welcome.jpg", "./node_modules/tesseract.js/**/*", "./node_modules/tesseract.js-core/**/*", "./lib/ocr/data/*"],
-    },
+  // Paket native/WASM tidak ikut dibundel Next.js, dimuat langsung oleh Node saat jalan
+  // (butuh @resvg/resvg-js dan HarfBuzz WASM milik satori). Next 15: opsi ini sudah
+  // stabil di tingkat atas (dulu experimental.serverComponentsExternalPackages).
+  serverExternalPackages: ["@resvg/resvg-js", "satori", "harfbuzzjs", "tesseract.js", "tesseract.js-core"],
+  // Berkas yang dimuat lewat path dinamis tidak terlacak otomatis, jadi harus disebut agar
+  // ikut terbawa ke fungsi serverless (Vercel/Netlify). Dulu experimental.outputFileTracingIncludes.
+  outputFileTracingIncludes: {
+    // OCR bukti transfer: pekerja tesseract, inti WASM, dan data bahasa.
+    "/api/deposit/confirm": ["./node_modules/tesseract.js/**/*", "./node_modules/tesseract.js-core/**/*", "./lib/ocr/data/*"],
+    "/api/bot/webhook/[botId]": ["./node_modules/tesseract.js/**/*", "./node_modules/tesseract.js-core/**/*", "./lib/ocr/data/*"],
+    // Banner sambutan bot dikirim ke Telegram sebagai berkas, bukan lewat URL.
+    "/api/bot/webhook": ["./public/bot-welcome.jpg", "./node_modules/tesseract.js/**/*", "./node_modules/tesseract.js-core/**/*", "./lib/ocr/data/*"],
   },
   // Browser bawaan Telegram (dibuka lewat tombol link biasa, bukan web_app) suka
   // nyimpen cache halaman HTML lebih agresif daripada Chrome/Safari biasa, jadi
