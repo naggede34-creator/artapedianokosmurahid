@@ -286,97 +286,162 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
 
   if (!open) return null;
 
+  // Langkah yang sedang aktif untuk penunjuk di header. Layar operator masih
+  // bagian dari langkah negara.
+  const langkahAktif = screen === "server" ? 0 : screen === "apps" ? 1 : 2;
+  const LANGKAH = ["Server", "Aplikasi", "Negara"];
+  function loncatKe(n) {
+    if (n === 0) setScreen("server");
+    else if (n === 1 && server) setScreen("apps");
+  }
+
   return (
     <div className="fixed inset-0 z-[70]">
-      <div className="animate-fade-in absolute inset-0" style={{ background: "rgb(var(--c-navy-bright) / 0.5)" }} onClick={onClose} />
+      <div
+        className="animate-fade-in absolute inset-0 backdrop-blur-[3px]"
+        style={{ background: "rgb(var(--c-navy-bright) / 0.55)" }}
+        onClick={onClose}
+      />
 
-      <div className="animate-sheet-up absolute inset-x-0 bottom-0 mx-auto flex max-h-[88dvh] max-w-2xl flex-col rounded-t-[28px] border border-line bg-surface shadow-lift">
-        <div className="mx-auto mt-2.5 h-1.5 w-12 shrink-0 rounded-full bg-line" />
+      <div className="animate-sheet-up absolute inset-x-0 bottom-0 mx-auto flex max-h-[90dvh] max-w-2xl flex-col overflow-hidden rounded-t-[32px] border border-line/10 bg-surface shadow-lift">
+        {/* ───────── Header ───────── */}
+        <div className="relative shrink-0 overflow-hidden px-5 pb-4 pt-3">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-16 -top-20 h-52 w-52 rounded-full opacity-70 blur-2xl"
+            style={{ background: "radial-gradient(circle, rgb(var(--c-blue) / 0.28), transparent 65%)" }}
+          />
+          <div className="relative mx-auto mb-3 h-1 w-10 rounded-full bg-line/20" />
 
-        <div className="shrink-0 px-5 pb-3 pt-2">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-extrabold tracking-tight text-ink">Beli nomor virtual</h3>
-              <p className="text-xs text-muted">
+          <div className="relative flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-xl font-extrabold tracking-tight text-ink">Beli nomor virtual</h3>
+              <p className="mt-0.5 truncate text-xs text-muted">
                 {screen === "server"
-                  ? "Langkah 1 · pilih server"
-                  : `${serverLabel(server)} · ${screen === "apps" ? "pilih aplikasi" : "pilih negara"}`}
+                  ? "Pilih server yang mau dipakai"
+                  : screen === "apps"
+                  ? `${serverLabel(server)} · pilih aplikasi`
+                  : screen === "operators"
+                  ? `${selectedService?.service_name || ""} · pilih operator`
+                  : `${serverLabel(server)} · ${selectedService?.service_name || "pilih negara"}`}
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-[11px] text-muted">Saldo</p>
-              <p className="text-sm font-bold tabular-nums text-ink">Rp{Number(balance || 0).toLocaleString("id-ID")}</p>
+            <div className="flex shrink-0 items-center gap-2">
+              <div className="flex items-center gap-1.5 rounded-full border border-line/10 bg-surface2 py-1.5 pl-2.5 pr-3">
+                <IkonDompet />
+                <span className="text-xs font-bold tabular-nums text-ink">Rp{Number(balance || 0).toLocaleString("id-ID")}</span>
+              </div>
+              <button
+                onClick={onClose}
+                aria-label="Tutup"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-surface2 text-muted transition-colors hover:text-ink"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
+              </button>
             </div>
           </div>
+
+          {/* Penunjuk langkah: urutannya memang berurutan, jadi diberi nomor. */}
+          <ol className="relative mt-4 flex items-center" aria-label="Langkah pembelian">
+            {LANGKAH.map((nama, n) => {
+              const selesai = n < langkahAktif;
+              const aktif = n === langkahAktif;
+              const bisaKlik = selesai && (n === 0 || (n === 1 && server));
+              return (
+                <li key={nama} className="flex flex-1 items-center last:flex-none">
+                  <button
+                    type="button"
+                    disabled={!bisaKlik}
+                    onClick={() => loncatKe(n)}
+                    aria-current={aktif ? "step" : undefined}
+                    className="flex items-center gap-2 disabled:cursor-default"
+                  >
+                    <span
+                      className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black transition-all ${
+                        selesai
+                          ? "bg-success text-white"
+                          : aktif
+                          ? "bg-blue text-white ring-4 ring-blue/20"
+                          : "bg-surface2 text-muted"
+                      }`}
+                    >
+                      {selesai ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" /></svg> : n + 1}
+                    </span>
+                    <span className={`text-xs font-bold ${aktif ? "text-ink" : selesai ? "text-ink/80" : "text-muted"}`}>{nama}</span>
+                  </button>
+                  {n < LANGKAH.length - 1 && (
+                    <span className={`mx-2 h-0.5 min-w-[16px] flex-1 rounded-full transition-colors ${n < langkahAktif ? "bg-success" : "bg-line/10"}`} />
+                  )}
+                </li>
+              );
+            })}
+          </ol>
         </div>
 
-        <div className="gulir-aman min-h-0 flex-1 px-5">
+        {/* ───────── Isi ───────── */}
+        <div className="gulir-aman min-h-0 flex-1 border-t border-line/10 px-5 pb-6 pt-4">
+          {/* — Pilih server — */}
           {screen === "server" && (
-            <div className="fade-up anim-stagger space-y-3">
-              {serverDijawab && serverList.length === 0 ? (
-                <div className="card-flat p-6 text-center">
-                  <p className="text-3xl">🛠️</p>
-                  <p className="mt-2 text-sm font-bold text-ink">Semua server sedang ditutup</p>
+            <div className="fade-up space-y-3">
+              {serverDijawab && serverList.length === 0 && (
+                <div className="rounded-2xl border border-line/10 bg-surface2 p-6 text-center">
+                  <p className="text-sm font-bold text-ink">Semua server sedang ditutup</p>
                   <p className="mt-1 text-xs leading-relaxed text-muted">
-                    Admin sedang menonaktifkan seluruh server nokos. Coba lagi nanti, atau pantau channel
-                    untuk info pembukaannya.
+                    Admin sedang menonaktifkan seluruh server nokos. Coba lagi nanti, atau pantau channel untuk info pembukaannya.
                   </p>
                 </div>
-              ) : (
-                <p className="text-sm text-muted">Mau pakai server yang mana?</p>
               )}
-              {serverList.map((sv, i) => {
+              {serverList.map((sv) => {
                 const on = available[sv.key] !== false;
-                // Tiap provider punya warna & ikonnya sendiri supaya mudah dibedakan sekilas.
                 const look =
                   sv.key === "rumahotp"
-                    ? { icon: "💸", ring: "rgb(var(--c-success))", soft: "bg-success-soft", text: "text-success" }
+                    ? { warna: "--c-success", ikon: <IkonDaun /> }
                     : sv.key === "dibanana"
-                    ? { icon: "🍌", ring: "rgb(var(--c-amber))", soft: "bg-amber-soft", text: "text-amber-bright" }
-                    : { icon: "⚡", ring: "rgb(var(--c-blue))", soft: "bg-blue-soft", text: "text-blue-bright" };
+                    ? { warna: "--c-orange", ikon: <IkonPetir /> }
+                    : { warna: "--c-blue", ikon: <IkonRoket /> };
                 return (
                   <button
                     key={sv.key}
                     onClick={() => on && chooseServer(sv.key)}
                     disabled={!on}
-                    className={`press relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border-2 px-4 py-4 text-left transition-all duration-200 ${
-                      on ? `stagger-${(i % 5) + 1} fade-up border-ink/15 bg-surface hover:-translate-y-0.5` : "cursor-not-allowed border-line opacity-45"
+                    className={`group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border bg-surface p-4 text-left transition-all duration-200 ${
+                      on
+                        ? "border-line/10 hover:-translate-y-0.5 hover:border-line/25 hover:shadow-lift active:scale-[0.99]"
+                        : "cursor-not-allowed border-line/10 opacity-50"
                     }`}
-                    style={on ? { boxShadow: `4px 4px 0 ${look.ring}33` } : undefined}
                   >
-                    {/* Pita warna tipis sebagai penanda provider */}
-                    <span className="absolute inset-y-0 left-0 w-1" style={{ background: look.ring }} />
-
                     <span
-                      className={`float-slow flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 border-ink/10 text-2xl ${look.soft}`}
-                      style={{ boxShadow: `2px 2px 0 ${look.ring}44` }}
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                      style={{ background: `linear-gradient(110deg, rgb(var(${look.warna}) / 0.09), transparent 55%)` }}
+                    />
+                    <span
+                      className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
+                      style={{
+                        background: `linear-gradient(145deg, rgb(var(${look.warna}) / 0.22), rgb(var(${look.warna}) / 0.08))`,
+                        color: `rgb(var(${look.warna}))`
+                      }}
                     >
-                      {look.icon}
+                      {look.ikon}
                     </span>
 
-                    <span className="min-w-0 flex-1">
+                    <span className="relative min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-2">
-                        <span className="min-w-0 break-words text-[15px] font-extrabold tracking-tight text-ink">{sv.name}</span>
+                        <span className="min-w-0 break-words text-base font-extrabold tracking-tight text-ink">{sv.name}</span>
                         {sv.badge ? (
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${look.soft} ${look.text}`}>
+                          <span
+                            className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                            style={{ background: `rgb(var(${look.warna}) / 0.14)`, color: `rgb(var(${look.warna}))` }}
+                          >
                             {sv.badge}
                           </span>
                         ) : null}
-                        {!on && (
-                          <span className="rounded-full bg-rose-soft px-2 py-0.5 text-[10px] font-bold text-rose">nonaktif</span>
-                        )}
+                        {!on && <span className="rounded-full bg-rose-soft px-2 py-0.5 text-[10px] font-bold text-rose">Nonaktif</span>}
                       </span>
-                      <span className="mt-1 block text-xs leading-relaxed text-muted">
-                        {!on && sv.offlineMsg ? sv.offlineMsg : sv.desc}
-                      </span>
-                      {sv.provider ? (
-                        <span className="mt-1.5 block font-mono text-[10px] uppercase tracking-wider text-muted opacity-60">
-                          via {sv.provider}
-                        </span>
-                      ) : null}
+                      <span className="mt-1 block text-xs leading-relaxed text-muted">{!on && sv.offlineMsg ? sv.offlineMsg : sv.desc}</span>
                     </span>
 
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="mt-1 shrink-0 text-muted">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="relative shrink-0 text-muted transition-transform group-hover:translate-x-0.5">
                       <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
@@ -385,130 +450,120 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
             </div>
           )}
 
+          {/* — Pilih aplikasi — */}
           {screen === "apps" && (
             <div className="fade-up">
-              <button onClick={() => setScreen("server")} className="underline-grow mb-3 text-xs text-muted hover:text-ink">
-                ← Ganti server
-              </button>
-              <input
-                value={appSearch}
-                onChange={(e) => setAppSearch(e.target.value)}
-                placeholder="Cari nama aplikasi..."
-                className="field"
-              />
+              <KolomCari value={appSearch} onChange={setAppSearch} placeholder="Cari aplikasi, misalnya WhatsApp" />
 
               {activeLoading ? (
-                <div className="mt-5 grid grid-cols-2 gap-3">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="skeleton h-[84px] rounded-2xl border border-line" />
+                <div className="mt-5 grid grid-cols-3 gap-3">
+                  {Array.from({ length: 9 }).map((_, i) => (
+                    <div key={i} className="skeleton h-[92px] rounded-2xl" />
                   ))}
                 </div>
               ) : remoteError ? (
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-rose">{remoteError}</p>
+                <div className="mt-6 rounded-2xl bg-rose-soft p-5 text-center">
+                  <p className="text-sm font-semibold text-rose">{remoteError}</p>
                   <button onClick={() => loadRemoteServices(server)} className="btn-ghost mt-3">Coba lagi</button>
                 </div>
               ) : activeServices.length === 0 ? (
-                <p className="mt-6 text-sm text-muted">Belum ada layanan di server ini.</p>
+                <p className="mt-6 text-center text-sm text-muted">Belum ada layanan di server ini.</p>
               ) : appSearch.trim() ? (
-                <div className="mt-4 divide-y divide-line">
-                  {filteredApps.length === 0 && <p className="py-6 text-sm text-muted">Aplikasi tidak ditemukan.</p>}
-                  {filteredApps.map((s) => (
-                    <AppRow key={s.service_code} s={s} onClick={() => chooseService(s)} />
-                  ))}
+                <div className="mt-4">
+                  {filteredApps.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-muted">Tidak ada aplikasi bernama “{appSearch.trim()}”.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {filteredApps.map((sv) => (
+                        <AppRow key={sv.service_code} s={sv} onClick={() => chooseService(sv)} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
-                  <p className="mt-5 text-sm font-semibold text-ink">Aplikasi Populer</p>
-                  <div className="anim-stagger mt-3 grid grid-cols-2 gap-3">
-                    {popular.map((s) => (
+                  <p className="mb-3 mt-5 text-sm font-bold text-ink">Paling sering dibeli</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {popular.map((sv) => (
                       <button
-                        key={s.service_code}
-                        onClick={() => chooseService(s)}
-                        className="pick-3d depth-pop flex flex-col items-center gap-2 px-3 py-4"
+                        key={sv.service_code}
+                        onClick={() => chooseService(sv)}
+                        className="group flex flex-col items-center gap-2.5 rounded-2xl border border-line/10 bg-surface px-2 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue/40 hover:shadow-lift active:scale-[0.97]"
                       >
-                        {s.service_img ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={s.service_img} alt="" className="h-10 w-10 rounded-xl object-contain shadow-[0_3px_0_rgb(var(--c-line))]" />
-                        ) : (
-                          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-soft text-base font-extrabold text-amber-bright shadow-[0_3px_0_rgb(var(--c-orange)/0.3)]">
-                            {(s.service_name || "?")[0]}
-                          </span>
-                        )}
-                        <span className="line-clamp-1 text-xs font-medium text-ink">{s.service_name}</span>
+                        <LogoApp s={sv} ukuran={44} />
+                        <span className="line-clamp-1 w-full text-center text-xs font-semibold text-ink">{sv.service_name}</span>
                       </button>
                     ))}
                   </div>
 
-                  <p className="mt-6 text-sm font-semibold text-ink">Semua Aplikasi</p>
-                  <div className="mt-3 divide-y divide-line">
-                    {activeServices.slice(6).map((s) => (
-                      <AppRow key={s.service_code} s={s} onClick={() => chooseService(s)} />
-                    ))}
-                  </div>
+                  {activeServices.length > 6 && (
+                    <>
+                      <p className="mb-3 mt-7 text-sm font-bold text-ink">
+                        Semua aplikasi <span className="font-medium text-muted">({activeServices.length})</span>
+                      </p>
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {activeServices.slice(6).map((sv) => (
+                          <AppRow key={sv.service_code} s={sv} onClick={() => chooseService(sv)} />
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
           )}
 
+          {/* — Pilih negara & paket — */}
           {screen === "countries" && selectedService && (
             <div className="fade-up">
               <button
                 onClick={() => setScreen("apps")}
-                className="panel-3d flex w-full items-center gap-3 px-4 py-3 text-left"
+                className="flex w-full items-center gap-3 rounded-2xl border border-line/10 bg-surface2 px-3.5 py-2.5 text-left transition-colors hover:border-line/25"
               >
-                {selectedService.service_img ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={selectedService.service_img} alt="" className="h-8 w-8 rounded object-contain" />
-                ) : (
-                  <span className="flex h-8 w-8 items-center justify-center rounded bg-surface2 text-xs text-muted">
-                    {(selectedService.service_name || "?")[0]}
-                  </span>
-                )}
+                <LogoApp s={selectedService} ukuran={36} />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-ink">{selectedService.service_name}</span>
-                  <span className="block text-xs text-muted">Aplikasi yang dipilih</span>
+                  <span className="block truncate text-sm font-bold text-ink">{selectedService.service_name}</span>
+                  <span className="block text-[11px] text-muted">Ketuk untuk ganti aplikasi</span>
                 </span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-muted">
-                  <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <span className="rounded-full bg-surface px-2.5 py-1 text-[11px] font-bold text-muted">Ganti</span>
               </button>
 
-              <input
-                value={countrySearch}
-                onChange={(e) => setCountrySearch(e.target.value)}
-                placeholder="Cari nama negara..."
-                className="field mt-3"
-              />
+              <KolomCari value={countrySearch} onChange={setCountrySearch} placeholder="Cari negara" className="mt-3" />
 
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              {/* Pengurutan sebagai kontrol segmen */}
+              <div className="mt-3 flex rounded-xl bg-surface2 p-1" role="tablist" aria-label="Urutkan negara">
                 {[
-                  { id: "rate", label: "Paling sukses", icon: "" },
-                  { id: "harga", label: "Termurah", icon: "" }
+                  { id: "rate", label: "Paling sukses" },
+                  { id: "harga", label: "Termurah" }
                 ].map((tab) => (
                   <button
                     key={tab.id}
+                    role="tab"
+                    aria-selected={sortMode === tab.id}
                     onClick={() => setSortMode(tab.id)}
-                    data-on={sortMode === tab.id}
-                    className={`chip-3d px-3 py-2.5 text-sm font-bold ${
-                      sortMode === tab.id ? "text-amber-bright" : "text-muted"
+                    className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${
+                      sortMode === tab.id ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"
                     }`}
                   >
-                    {tab.icon} {tab.label}
+                    {tab.label}
                   </button>
                 ))}
               </div>
 
               {jaminanInfo.aktif && (
-                <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-surface2 px-3 py-2.5">
+                <label
+                  className={`mt-3 flex cursor-pointer items-start gap-3 rounded-2xl border px-3.5 py-3 transition-colors ${
+                    pakaiJaminan ? "border-success/40 bg-success-soft" : "border-line/10 bg-surface2"
+                  }`}
+                >
                   <input
                     type="checkbox"
                     checked={pakaiJaminan}
                     onChange={(e) => ubahJaminan(e.target.checked)}
-                    className="mt-1 h-4 w-4 accent-amber"
+                    className="mt-0.5 h-4 w-4 accent-[rgb(var(--c-success))]"
                   />
                   <span className="text-xs leading-relaxed text-muted">
-                    <b className="text-ink">🛡 Jaminan OTP (+{jaminanInfo.persen}% dari harga)</b>
+                    <b className="text-ink">Jaminan OTP · +{jaminanInfo.persen}% dari harga</b>
                     <br />
                     Kode belum masuk dalam {jaminanInfo.menit} menit? Nomor diganti otomatis. Kalau tetap gagal, semuanya
                     dikembalikan — biaya jaminan hanya terpakai kalau kodenya masuk.
@@ -516,45 +571,40 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                 </label>
               )}
 
-              {buyError && (
-                <div className="mt-3 rounded-xl bg-rose-soft px-3 py-2 text-sm text-rose">
-                  <p>{buyError}</p>
-                  {topupNominal > 0 && (
-                    <a
-                      href={`/deposit?nominal=${topupNominal}`}
-                      className="mt-2 inline-flex items-center rounded-lg bg-rose px-3 py-1.5 text-xs font-bold text-white"
-                    >
-                      💳 Top-up Rp{topupNominal.toLocaleString("id-ID")} sekarang
-                    </a>
-                  )}
-                </div>
-              )}
+              {buyError && <GalatBeli pesan={buyError} topup={topupNominal} />}
 
               {countriesLoading ? (
                 <div className="mt-4 space-y-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="skeleton h-[68px] rounded-2xl border border-line" />
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="skeleton h-[72px] rounded-2xl" />
                   ))}
                 </div>
               ) : filteredCountries.length === 0 ? (
-                <div className="mt-6">
-                  <p className="text-sm text-muted">Belum ada stok untuk layanan ini.</p>
+                <div className="mt-6 rounded-2xl border border-dashed border-line/20 p-6 text-center">
+                  <p className="text-sm font-bold text-ink">
+                    {countries.length === 0 ? "Stok sedang kosong" : "Negara tidak ditemukan"}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    {countries.length === 0
+                      ? "Belum ada nomor untuk aplikasi ini di server ini. Coba server lain, atau minta kabar saat stok kembali."
+                      : "Coba ketik nama negara dengan ejaan lain."}
+                  </p>
                   {countries.length === 0 && (
-                    <div className="mt-3">
+                    <div className="mt-4">
                       <button
                         type="button"
                         disabled={pantau.sibuk || pantau.ok}
                         onClick={pantauStok}
-                        className="btn-3d rounded-xl border border-amber/40 bg-amber-soft px-4 py-2.5 text-sm font-bold text-amber-bright disabled:opacity-70"
+                        className="rounded-xl bg-blue px-4 py-2.5 text-sm font-bold text-white transition-opacity disabled:opacity-70"
                       >
-                        {pantau.ok ? "✅ Oke, kami kabari kalau stok ada" : pantau.sibuk ? "Menyimpan…" : "🔔 Kabari saya kalau stok ada"}
+                        {pantau.ok ? "Oke, kami kabari saat stok ada" : pantau.sibuk ? "Menyimpan…" : "Kabari saya saat stok ada"}
                       </button>
                       {pantau.pesan && <p className="mt-2 text-xs text-muted">{pantau.pesan}</p>}
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="mt-4 space-y-3">
+                <div className="mt-4 space-y-2.5">
                   {filteredCountries.map((c) => {
                     const list = c.pricelist || [];
                     const minPrice = list.length ? Math.min(...list.map((p) => Number(p.sell_price ?? p.price ?? 0))) : null;
@@ -567,19 +617,16 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                     return (
                       <div
                         key={c.number_id}
-                        className={`overflow-hidden rounded-2xl border-2 transition-all duration-200 ${
-                          isOpen ? "border-amber bg-surface" : "border-ink/15 bg-surface hover:border-amber/50"
+                        className={`overflow-hidden rounded-2xl border bg-surface transition-all duration-200 ${
+                          isOpen ? "border-blue/50 shadow-lift" : "border-line/10 hover:border-line/25"
                         }`}
-                        style={{ boxShadow: isOpen ? "5px 5px 0 rgb(var(--c-amber) / 0.35)" : "3px 3px 0 rgb(var(--c-ink) / 0.12)" }}
                       >
                         <button
                           onClick={() => setExpandedCountry(isOpen ? null : c.number_id)}
-                          className="press flex w-full items-center gap-3 px-3.5 py-3 text-left"
+                          aria-expanded={isOpen}
+                          className="flex w-full items-center gap-3 px-3.5 py-3 text-left active:bg-surface2/60"
                         >
-                          <span
-                            className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-ink/20 bg-surface2 text-xl"
-                            style={{ boxShadow: "2px 2px 0 rgb(var(--c-ink) / 0.15)" }}
-                          >
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface2 text-2xl">
                             {c.flag ? (
                               c.flag
                             ) : c.img ? (
@@ -594,47 +641,36 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                             <span className="flex flex-wrap items-center gap-1.5">
                               <span className="truncate text-sm font-extrabold tracking-tight text-ink">{c.name}</span>
                               {dial && (
-                                <span className="shrink-0 rounded-md bg-surface2 px-1.5 py-0.5 font-mono text-[10px] text-muted">
+                                <span className="shrink-0 rounded-md bg-surface2 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted">
                                   +{String(dial).replace("+", "")}
                                 </span>
                               )}
                             </span>
-                            <span className="mt-1 flex items-center gap-1.5 text-[11px] text-muted">
-                              <span className="font-semibold">{list.length} paket</span>
+                            <span className="mt-1 flex items-center gap-2 text-[11px] text-muted">
+                              <span>{list.length} paket</span>
                               {totalStock != null && (
-                                <>
-                                  <span className="opacity-40">•</span>
-                                  <span className="inline-flex items-center gap-1">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                                    {totalStock.toLocaleString("id-ID")} stok
-                                  </span>
-                                </>
+                                <span className="inline-flex items-center gap-1">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-success" />
+                                  {totalStock.toLocaleString("id-ID")} nomor
+                                </span>
                               )}
                             </span>
                           </span>
 
                           {minPrice != null && (
                             <span className="shrink-0 text-right">
-                              <span className="block text-[9px] font-bold uppercase tracking-wider text-muted">mulai</span>
-                              <span className="block text-sm font-black tabular-nums text-amber-bright">
-                                Rp{minPrice.toLocaleString("id-ID")}
-                              </span>
+                              <span className="block text-[10px] font-medium text-muted">Mulai dari</span>
+                              <span className="block text-[15px] font-black tabular-nums text-amber-bright">Rp{minPrice.toLocaleString("id-ID")}</span>
                             </span>
                           )}
 
-                          <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            className={`shrink-0 text-muted transition-transform duration-200 ${isOpen ? "rotate-180 text-amber-bright" : ""}`}
-                          >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className={`shrink-0 text-muted transition-transform duration-200 ${isOpen ? "rotate-180 text-blue" : ""}`}>
                             <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         </button>
 
                         {isOpen && (
-                          <div className="expand-down border-t-2 border-dashed border-line bg-surface2/30">
+                          <div className="expand-down border-t border-line/10 bg-surface2/40 p-2">
                             {list.map((p, i) => {
                               const rate = pick(p, ["success_rate", "rate", "completion_rate", "percent"], null);
                               const providerLabel = pick(p, ["provider_name", "server_name", "name"], `Server ${p.provider_id}`);
@@ -645,64 +681,46 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                               return (
                                 <div
                                   key={p.provider_id}
-                                  className="flex items-center gap-3 border-b border-line/60 px-3.5 py-3 last:border-0"
+                                  className={`flex items-center gap-3 rounded-xl bg-surface px-3 py-2.5 ${i > 0 ? "mt-2" : ""} ${cheapest ? "ring-1 ring-amber/40" : ""}`}
                                 >
-                                  <span
-                                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-black ${
-                                      cheapest ? "bg-amber text-white" : "bg-surface2 text-muted"
-                                    }`}
-                                    style={cheapest ? { boxShadow: "2px 2px 0 rgb(var(--c-ink) / 0.2)" } : undefined}
-                                  >
-                                    {i + 1}
-                                  </span>
-
                                   <div className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-center gap-1.5">
-                                      <span className="text-xs font-bold text-ink">{providerLabel}</span>
-                                      {cheapest && (
-                                        <span className="rounded-full bg-amber-soft px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-bright">
-                                          Termurah
-                                        </span>
-                                      )}
+                                      <span className="text-[13px] font-bold text-ink">{providerLabel}</span>
+                                      {cheapest && <span className="rounded-full bg-amber-soft px-2 py-0.5 text-[10px] font-bold text-amber-bright">Termurah</span>}
                                       {rate != null && (
-                                        <span className="rounded-full bg-success-soft px-1.5 py-0.5 text-[9px] font-bold text-success">
+                                        <span className="rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-bold text-success">
                                           {Number(rate).toFixed(0)}% sukses
                                         </span>
                                       )}
                                     </div>
-
-                                    {ratio != null && (
-                                      <div className="mt-1.5 flex items-center gap-2">
-                                        <span className="h-1.5 w-20 overflow-hidden rounded-full bg-surface3">
+                                    <div className="mt-1.5 flex items-center gap-2">
+                                      {ratio != null && (
+                                        <span className="h-1.5 w-16 overflow-hidden rounded-full bg-surface3">
                                           <span
-                                            className="block h-full rounded-full transition-all"
+                                            className="block h-full rounded-full"
                                             style={{
-                                              width: `${Math.max(6, Math.round(ratio * 100))}%`,
-                                              background:
-                                                ratio > 0.5
-                                                  ? "linear-gradient(90deg, rgb(var(--c-success)), rgb(var(--c-success)))"
-                                                  : "linear-gradient(90deg, rgb(var(--c-warn)), rgb(var(--c-amber-bright)))"
+                                              width: `${Math.max(8, Math.round(Math.min(1, ratio) * 100))}%`,
+                                              background: ratio > 0.5 ? "rgb(var(--c-success))" : "rgb(var(--c-warn))"
                                             }}
                                           />
                                         </span>
-                                        <span className="text-[10px] font-medium text-muted">
-                                          {p.stock != null ? `${Number(p.stock).toLocaleString("id-ID")} nomor` : "tersedia"}
-                                        </span>
-                                      </div>
-                                    )}
+                                      )}
+                                      <span className="text-[11px] text-muted">
+                                        {p.stock != null ? `${Number(p.stock).toLocaleString("id-ID")} nomor` : "Tersedia"}
+                                      </span>
+                                    </div>
                                   </div>
 
-                                  <div className="flex shrink-0 flex-col items-end gap-1.5">
-                                    <span className="text-sm font-black tabular-nums text-ink">
+                                  <div className="flex shrink-0 items-center gap-3">
+                                    <span className="text-[15px] font-black tabular-nums text-ink">
                                       Rp{Number(p.sell_price ?? p.price ?? 0).toLocaleString("id-ID")}
                                     </span>
                                     <button
                                       onClick={() => handleOrderClick(c, p)}
                                       disabled={disabled || busy}
-                                      className="shine press rounded-lg border-2 border-ink/15 bg-amber px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wide text-white transition-colors hover:bg-amber-bright disabled:cursor-not-allowed disabled:opacity-40"
-                                      style={{ boxShadow: "2px 2px 0 rgb(var(--c-ink) / 0.18)" }}
+                                      className="min-w-[68px] rounded-xl bg-amber px-4 py-2 text-xs font-extrabold text-white shadow-sm transition-all hover:bg-amber-bright active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                                     >
-                                      {busy ? "..." : "Order"}
+                                      {busy ? "Memproses" : disabled ? "Habis" : "Beli"}
                                     </button>
                                   </div>
                                 </div>
@@ -718,39 +736,35 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
             </div>
           )}
 
+          {/* — Pilih operator — */}
           {screen === "operators" && operatorTarget && (
             <div className="fade-up">
-              <button onClick={() => setScreen("countries")} className="underline-grow text-xs text-muted hover:text-ink">
-                ← Kembali
+              <button onClick={() => setScreen("countries")} className="flex items-center gap-1 text-xs font-semibold text-muted hover:text-ink">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                Kembali ke negara
               </button>
-              <h4 className="mt-3 font-display text-base font-medium text-ink">Pilih operator</h4>
-              <p className="mt-1 text-xs text-muted">
-                {operatorTarget.country.name} · Rp{Number(operatorTarget.provider.sell_price ?? operatorTarget.provider.price).toLocaleString("id-ID")}
-              </p>
-              {buyError && (
-                <div className="mt-3 rounded-xl bg-rose-soft px-3 py-2 text-sm text-rose">
-                  <p>{buyError}</p>
-                  {topupNominal > 0 && (
-                    <a
-                      href={`/deposit?nominal=${topupNominal}`}
-                      className="mt-2 inline-flex items-center rounded-lg bg-rose px-3 py-1.5 text-xs font-bold text-white"
+              <div className="mt-3 rounded-2xl border border-line/10 bg-surface2 px-4 py-3">
+                <p className="text-sm font-bold text-ink">{operatorTarget.country.name}</p>
+                <p className="mt-0.5 text-xs text-muted">
+                  Harga Rp{Number(operatorTarget.provider.sell_price ?? operatorTarget.provider.price).toLocaleString("id-ID")}
+                </p>
+              </div>
+              <p className="mb-2 mt-5 text-sm font-bold text-ink">Pilih operator nomor</p>
+              {buyError && <GalatBeli pesan={buyError} topup={topupNominal} />}
+              <div className="grid grid-cols-2 gap-2.5">
+                {operatorTarget.operators.map((op) => {
+                  const sibuk = buyingKey === operatorTarget.provider.provider_id;
+                  return (
+                    <button
+                      key={op.id}
+                      onClick={() => submitOrder(operatorTarget.country, operatorTarget.provider, op.id, op.name)}
+                      disabled={sibuk}
+                      className="rounded-2xl border border-line/10 bg-surface px-4 py-3.5 text-sm font-bold capitalize text-ink transition-all hover:-translate-y-0.5 hover:border-blue/40 hover:shadow-lift active:scale-[0.97] disabled:opacity-50"
                     >
-                      💳 Top-up Rp{topupNominal.toLocaleString("id-ID")} sekarang
-                    </a>
-                  )}
-                </div>
-              )}
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {operatorTarget.operators.map((op) => (
-                  <button
-                    key={op.id}
-                    onClick={() => submitOrder(operatorTarget.country, operatorTarget.provider, op.id, op.name)}
-                    disabled={buyingKey === operatorTarget.provider.provider_id}
-                    className="btn-ghost"
-                  >
-                    {buyingKey === operatorTarget.provider.provider_id ? "Memproses..." : op.name}
-                  </button>
-                ))}
+                      {sibuk ? "Memproses…" : op.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -762,19 +776,99 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   );
 }
 
+// ───────────────────────── Komponen kecil ─────────────────────────
+
+function LogoApp({ s, ukuran = 40 }) {
+  const gaya = { width: ukuran, height: ukuran };
+  return s.service_img ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={s.service_img} alt="" style={gaya} className="shrink-0 rounded-xl object-contain" />
+  ) : (
+    <span
+      style={{ ...gaya, fontSize: Math.round(ukuran * 0.4) }}
+      className="flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue/25 to-blue/10 font-extrabold text-blue-bright"
+    >
+      {(s.service_name || "?")[0].toUpperCase()}
+    </span>
+  );
+}
+
+function KolomCari({ value, onChange, placeholder, className = "" }) {
+  return (
+    <div className={`relative ${className}`}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">
+        <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2.2" />
+        <path d="M20 20l-3.5-3.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      </svg>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        className="w-full rounded-xl border border-line/10 bg-surface2 py-3 pl-10 pr-4 text-sm text-ink outline-none transition-colors placeholder:text-muted focus:border-blue/60 focus:bg-surface"
+      />
+    </div>
+  );
+}
+
+function GalatBeli({ pesan, topup }) {
+  return (
+    <div className="mt-3 rounded-2xl bg-rose-soft px-4 py-3 text-sm text-rose" role="alert">
+      <p className="font-medium">{pesan}</p>
+      {topup > 0 && (
+        <a href={`/deposit?nominal=${topup}`} className="mt-2 inline-flex items-center rounded-lg bg-rose px-3 py-1.5 text-xs font-bold text-white">
+          Isi saldo Rp{topup.toLocaleString("id-ID")}
+        </a>
+      )}
+    </div>
+  );
+}
+
 function AppRow({ s, onClick }) {
   return (
-    <button onClick={onClick} className="flex w-full items-center gap-3 py-3 text-left transition-colors hover:text-amber-bright">
-      {s.service_img ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={s.service_img} alt="" className="h-8 w-8 rounded object-contain" />
-      ) : (
-        <span className="flex h-8 w-8 items-center justify-center rounded bg-surface2 text-xs text-muted">{(s.service_name || "?")[0]}</span>
-      )}
-      <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{s.service_name}</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-muted">
-        <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <button
+      onClick={onClick}
+      className="group flex w-full items-center gap-3 rounded-xl border border-line/10 bg-surface px-3 py-2.5 text-left transition-all hover:border-blue/40 hover:bg-surface2/50 active:scale-[0.98]"
+    >
+      <LogoApp s={s} ukuran={34} />
+      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{s.service_name}</span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5">
+        <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </button>
+  );
+}
+
+function IkonDompet() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-muted">
+      <path d="M4 7.5A2.5 2.5 0 016.5 5H18a1 1 0 011 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <rect x="3.5" y="7.5" width="17" height="12" rx="2.5" stroke="currentColor" strokeWidth="2" />
+      <circle cx="16.5" cy="13.5" r="1.2" fill="currentColor" />
+    </svg>
+  );
+}
+function IkonDaun() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+      <path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M5 19c3-4 6-6 9-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IkonPetir() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+      <path d="M13 3L5 13.5h6L10 21l8-10.5h-6L13 3z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IkonRoket() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+      <path d="M14 4c3.5-.5 5.5 1.5 6 6-1.5 3.5-4 6-7.5 7.5L8 13c1.5-3.500 3-6.500 6-9z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <circle cx="14.500" cy="9.500" r="1.500" fill="currentColor" />
+      <path d="M8 13l-3 1 2 3m3.500 .5l-1 3-3-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
