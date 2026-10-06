@@ -6,12 +6,7 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
-import SupportWidget from "@/components/SupportWidget";
 import BroadcastBar from "@/components/BroadcastBar";
-import MascotGreeting from "@/components/MascotGreeting";
-import ComicIntro from "@/components/ComicIntro";
-import MascotNudge from "@/components/MascotNudge";
-import WelcomeBonusPopup from "@/components/WelcomeBonusPopup";
 import InfoModal from "@/components/InfoModal";
 import LogoLoader from "@/components/LogoLoader";
 import RevealOnScroll from "@/components/RevealOnScroll";
@@ -20,8 +15,6 @@ import PanelTransition from "@/components/PanelTransition";
 import PasangAplikasi from "@/components/PasangAplikasi";
 import AuthGate from "@/components/AuthGate";
 import LayarBan from "@/components/LayarBan";
-import PembaruanModal from "@/components/PembaruanModal";
-import MusimPenerap from "@/components/MusimPenerap";
 import PopupAdmin from "@/components/PopupAdmin";
 import { useUser } from "@/app/providers";
 
@@ -34,11 +27,6 @@ export default function SiteChrome({ children }) {
   const isAdmin = pathname?.startsWith("/admin");
   // Login wajib menyala dan belum punya akun: gerbang menutup halaman.
   const tampilGerbang = perluMasuk && !TANPA_LOGIN.some((p) => pathname === p || pathname?.startsWith(`${p}/`));
-  // Room Chat itu satu layar penuh ala aplikasi chat: navbar, footer, dan
-  // bottom nav situs tidak ikut ditampilkan. Sebelumnya ketiganya tetap
-  // dirender di belakang overlay-nya — tidak terlihat, tapi ikut menambah
-  // tinggi halaman sehingga muncul gulungan kosong di bawah layar chat.
-  const isChat = pathname === "/chat";
 
   const [checked, setChecked] = useState(false);
   const [maintenance, setMaintenance] = useState(false);
@@ -46,8 +34,6 @@ export default function SiteChrome({ children }) {
   const [maintenanceTitle, setMaintenanceTitle] = useState("Sedang Maintenance");
   const [maintenanceBtnLabel, setMaintenanceBtnLabel] = useState("");
   const [maintenanceBtnUrl, setMaintenanceBtnUrl] = useState("");
-  const [channelInfo, setChannelInfo] = useState(CHANNEL_URL);
-  const [csUsername, setCsUsername] = useState("teatlas");
 
   useEffect(() => {
     if (isAdmin) {
@@ -62,8 +48,6 @@ export default function SiteChrome({ children }) {
         if (d.maintenanceTitle) setMaintenanceTitle(d.maintenanceTitle);
         setMaintenanceBtnLabel(d.maintenanceButtonLabel || "");
         setMaintenanceBtnUrl(d.maintenanceButtonUrl || "");
-        if (d.channelInfo) setChannelInfo(d.channelInfo);
-        if (d.csUsername) setCsUsername(d.csUsername);
       })
       .catch(() => setMaintenance(false))
       .finally(() => setChecked(true));
@@ -86,14 +70,6 @@ export default function SiteChrome({ children }) {
     );
   }
 
-  // SESUDAH gerbang maintenance, bukan sebelumnya: Room Chat bukan halaman
-  // admin, jadi saat situs ditutup dia harus ikut tertutup.
-  //
-  // Tanpa RevealOnScroll di sini: halaman ini tidak memakai kelas animasi
-  // masuk apa pun, dan pengamat mutasinya justru akan bekerja terus-menerus
-  // di DOM chat yang isinya berubah setiap pesan datang.
-  if (isChat) return <>{tampilGerbang && <AuthGate />}{!tampilGerbang && <><PembaruanModal langsung /><PopupAdmin langsung /></>}{children}</>;
-
   return (
     <>
       {tampilGerbang && <AuthGate />}
@@ -101,28 +77,18 @@ export default function SiteChrome({ children }) {
       <Depth3D />
       <PanelTransition />
       <LogoLoader />
-      {/* Sapaan maskot & popup pembuka menunggu animasi loading selesai
-          (lihat lib/introGate.js) supaya tidak tertimbun di belakangnya. */}
-      {/* Selama gerbang daftar/masuk tampil, popup pembuka ditunda: jangan
-          bertumpuk di depan layar yang harus diisi dulu. */}
+      {/* Popup pembuka menunggu animasi loading selesai (lib/introGate.js) dan ditunda selama gerbang masuk tampil. */}
       {!tampilGerbang && (
         <>
-          <ComicIntro />
-          <MascotNudge />
-          <MascotGreeting />
           <InfoModal />
-          <PembaruanModal />
-          <WelcomeBonusPopup />
           <PopupAdmin />
         </>
       )}
-      <MusimPenerap />
       <BroadcastBar />
       <Navbar />
       <main className="pb-24 md:pb-0">{children}</main>
       <Footer />
       <BottomNav />
-      <SupportWidget channelInfo={channelInfo} csUsername={csUsername} />
       <PasangAplikasi />
     </>
   );

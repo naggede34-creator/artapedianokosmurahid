@@ -39,8 +39,8 @@ const TUTORIAL = [
     body: "Masukkan nomor yang didapat ke aplikasi yang dituju. Kode OTP akan muncul sendiri di halaman pesanan."
   },
   {
-    title: "Pantau WEARTA CHAT",
-    body: "Info stok, gangguan server, dan promo selalu diumumkan lebih dulu di WEARTA CHAT. Biasakan mengeceknya sebelum membeli."
+    title: "Pantau channel Telegram",
+    body: "Info stok, gangguan server, dan promo diumumkan lebih dulu di channel Telegram. Biasakan mengeceknya sebelum membeli."
   }
 ];
 
@@ -233,20 +233,6 @@ export default function InfoModal() {
             <span className="shrink-0 text-muted">↗</span>
           </a>
 
-          <Link
-            href="/chat"
-            onClick={close}
-            className="btn-3d mt-2.5 flex items-center gap-3 rounded-2xl border border-teal/40 bg-teal-soft px-4 py-3 transition-colors hover:border-teal"
-          >
-            <span className="text-lg">💬</span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-bold text-ink">Buka WEARTA CHAT</span>
-              <span className="block text-[11px] leading-relaxed text-muted">
-                Info stok, gangguan, dan promo diumumkan di sini lebih dulu. Cek sebelum beli.
-              </span>
-            </span>
-            <span className="shrink-0 text-muted">›</span>
-          </Link>
 
           <Link
             href="/gateway"

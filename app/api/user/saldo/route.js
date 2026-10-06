@@ -3,6 +3,7 @@ import { pastikanDepositBalance } from "@/lib/saldoDeposit";
 import { usersCol } from "@/lib/db";
 import { rateLimit } from "@/lib/rateLimit";
 import { catatIpAkun, ipDariReq } from "@/lib/blokirIp";
+import { bacaPerangkat, catatPerangkat } from "@/lib/perangkat";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export async function POST(req) {
     }
     if (u.suspended) return NextResponse.json({ error: "Akun dibanned.", suspended: true }, { status: 403, headers: { "Cache-Control": "no-store" } });
     catatIpAkun(token, ipDariReq(req)).catch(() => {});
+    catatPerangkat(token, bacaPerangkat(req)).catch(() => {});
     return NextResponse.json({ balance: u.balance ?? 0, saldoGame: u.saldoGame ?? 0, depositBalance: u.depositBalance ?? null }, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
     console.error(err);

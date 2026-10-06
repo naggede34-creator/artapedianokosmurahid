@@ -6,13 +6,10 @@ import { useSearchParams } from "next/navigation";
 import { useUser } from "@/app/providers";
 import OtpOrderPanel from "@/components/OtpOrderPanel";
 import BuySheet from "@/components/BuySheet";
-import MysteryBoxModal from "@/components/MysteryBoxModal";
-import LuckyHourBanner from "@/components/LuckyHourBanner";
-import FlashSaleTimer from "@/components/FlashSaleTimer";
 import BannerRail from "@/components/BannerRail";
 import { Icon } from "@/components/ui";
 
-// WhatsApp selalu tampil paling atas, sisanya tetap mengikuti urutan asli dari RumahOTP (Server Murah).
+// WhatsApp selalu tampil paling atas, sisanya tetap mengikuti urutan asli dari server.
 function sortWithWaFirst(items) {
   const rank = (name = "") => {
     const n = name.toLowerCase();
@@ -56,8 +53,6 @@ function OtpPageInner() {
   const [refreshSignal, setRefreshSignal] = useState(0);
   const [favorites, setFavorites] = useState([]);
   const [recentServices, setRecentServices] = useState([]);
-  const [mysteryOrderId, setMysteryOrderId] = useState(null);
-  const [mysteryOpen, setMysteryOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/otp/services")
@@ -112,10 +107,6 @@ function OtpPageInner() {
     setOrder(newOrder);
     setSheetOpen(false);
     refreshBalance();
-    if (newOrder?.orderId) {
-      setMysteryOrderId(newOrder.orderId);
-      setMysteryOpen(true);
-    }
     try {
       localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify({ token, order: newOrder }));
       // Track recently used service
@@ -145,11 +136,6 @@ function OtpPageInner() {
 
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
-      <div className="mb-4 space-y-2">
-        <FlashSaleTimer />
-        <LuckyHourBanner />
-      </div>
-
       {/* ───────── Hero ───────── */}
       <section className="relative overflow-hidden rounded-[28px] border border-line/10 bg-surface p-5 shadow-soft sm:p-7">
         <div
@@ -330,12 +316,6 @@ function OtpPageInner() {
         balance={balance}
         onOrderCreated={handleOrderCreated}
         initialQuery={cariSaran || searchParams.get("q") || ""}
-      />
-      <MysteryBoxModal
-        open={mysteryOpen}
-        onClose={() => { setMysteryOpen(false); setMysteryOrderId(null); }}
-        token={token}
-        orderId={mysteryOrderId}
       />
     </div>
   );

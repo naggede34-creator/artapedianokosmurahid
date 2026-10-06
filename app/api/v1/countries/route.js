@@ -1,3 +1,4 @@
+import { DEFAULT_SERVER } from "@/lib/otpServers";
 import { NextResponse } from "next/server";
 import { resolveApiKey, jsonV1 } from "@/lib/apiKeyAuth";
 import { getSettings } from "@/lib/settings";
@@ -13,7 +14,7 @@ export async function GET(req) {
 
   const { searchParams } = new URL(req.url);
   const serviceId = searchParams.get("service_id") || searchParams.get("serviceId");
-  const server = searchParams.get("server") || "rumahotp";
+  const server = searchParams.get("server") || DEFAULT_SERVER;
   if (!serviceId) return jsonV1(req, { error: "service_id is required." }, { status: 400 });
 
   try {

@@ -61,7 +61,7 @@ export default function AdminKeamanan() {
       {galat && <p className="mt-3 rounded-lg bg-rose-soft px-3 py-2 text-xs font-bold text-rose">{galat}</p>}
       {info && <p className="mt-3 rounded-lg bg-teal-soft px-3 py-2 text-xs font-bold text-teal-bright">{info}</p>}
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {[["Temuan berat 24 jam", d.tinggi24jam], ["Login admin gagal 24 jam", d.loginGagal24jam], ["Akun dibekukan 24 jam", d.suspend24jam], ["Ban anti-curang game 7 hari", d.game?.ban7hari ?? 0]].map(([k, v]) => (
+        {[["Temuan berat 24 jam", d.tinggi24jam], ["Login admin gagal 24 jam", d.loginGagal24jam], ["Akun dibekukan 24 jam", d.suspend24jam]].map(([k, v]) => (
           <div key={k} className="rounded-xl border border-line bg-surface p-3 text-center"><b className="block text-xl text-ink">{v}</b><span className="text-[11px] text-muted">{k}</span></div>
         ))}
       </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useLembarTerbuka } from "@/lib/lembarTerbuka";
-import { OTP_SERVERS, serverLabel } from "@/lib/otpServers";
+import { OTP_SERVERS, DEFAULT_SERVER, serverLabel } from "@/lib/otpServers";
 import { onoOrderSukses } from "@/lib/ono";
 
 // Ambil field yang mungkin berbeda nama antar respons API, tanpa merusak tampilan kalau tidak ada.
@@ -15,9 +15,9 @@ function pick(obj, keys, fallback) {
 
 export default function BuySheet({ open, onClose, services, servicesLoading, token, balance, onOrderCreated, initialQuery = "" }) {
   // Kedua server memakai alur yang sama: pilih server -> aplikasi -> negara -> order.
-  const [screen, setScreen] = useState("server"); // server | apps | countries | operators
-  const [server, setServer] = useState(null); // rumahotp | warungnokos_s1 | warungnokos_s2 | dibanana
-  const [available, setAvailable] = useState({ rumahotp: true });
+  const [screen, setScreen] = useState("server"); // server | apps | countries
+  const [server, setServer] = useState(null); // warungnokos_s1 | warungnokos_s2
+  const [available, setAvailable] = useState({});
   // Nama, label, dan keterangan server datang dari pengaturan admin. OTP_SERVERS
   // hanya dipakai sebagai cadangan kalau API-nya belum sempat menjawab.
   const [serverList, setServerList] = useState(() =>
@@ -27,8 +27,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   // dibedakan dari daftar sungguhan — dan saat admin mematikan SEMUA server,
   // yang tampil justru daftar cadangan berisi server yang sudah dimatikan.
   const [serverDijawab, setServerDijawab] = useState(false);
-  // Daftar aplikasi tiap server WarungNokos diambil saat server itu dipilih; daftar
-  // Server Murah sudah dikirim halaman induk lewat prop `services`.
+  // Daftar aplikasi tiap server diambil saat server itu dipilih.
   const [remoteServices, setRemoteServices] = useState({});
   const [remoteLoading, setRemoteLoading] = useState(false);
   const [remoteError, setRemoteError] = useState("");
@@ -52,7 +51,6 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   const [countriesLoading, setCountriesLoading] = useState(false);
   const [expandedCountry, setExpandedCountry] = useState(null);
 
-  const [operatorTarget, setOperatorTarget] = useState(null); // { country, provider, operators }
   const [buyingKey, setBuyingKey] = useState(null);
   const [buyError, setBuyError] = useState("");
   // Diisi saat order ditolak karena saldo kurang: nominal top-up yang menutup selisihnya.
@@ -77,7 +75,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
       const res = await fetch("/api/stok/watch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, server: server || "rumahotp", serviceId: selectedService.service_code, serviceName: selectedService.service_name })
+        body: JSON.stringify({ token, server: server || DEFAULT_SERVER, serviceId: selectedService.service_code, serviceName: selectedService.service_name })
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Gagal menyimpan.");
@@ -96,9 +94,8 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   }
 
   // Daftar aplikasi & status loading milik server yang sedang dipilih.
-  const isRemote = server !== null && server !== "rumahotp";
-  const activeServices = isRemote ? remoteServices[server] || [] : services;
-  const activeLoading = isRemote ? remoteLoading : servicesLoading;
+  const activeServices = server !== null ? remoteServices[server] || [] : [];
+  const activeLoading = remoteLoading;
 
   useEffect(() => {
     if (!open) return;
@@ -121,8 +118,9 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
   useEffect(() => {
     if (open && initialQuery) {
       setAppSearch(initialQuery);
-      setServer("rumahotp");
+      setServer(DEFAULT_SERVER);
       setScreen("apps");
+      if (!remoteServices[DEFAULT_SERVER]) loadRemoteServices(DEFAULT_SERVER);
     }
   }, [open, initialQuery]);
 
@@ -138,7 +136,6 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
         setSelectedService(null);
         setCountries([]);
         setExpandedCountry(null);
-        setOperatorTarget(null);
         setBuyError(""); setTopupNominal(0);
       }, 250);
       return () => clearTimeout(t);
@@ -173,7 +170,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
     setAppSearch("");
     setServer(key);
     setScreen("apps");
-    if (key !== "rumahotp" && !remoteServices[key]) loadRemoteServices(key);
+    if (!remoteServices[key]) loadRemoteServices(key);
   }
 
   async function loadRemoteServices(key) {
@@ -199,7 +196,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
     setCountriesLoading(true);
     setBuyError(""); setTopupNominal(0);
     try {
-      const params = new URLSearchParams({ service_id: svc.service_code, server: server || "rumahotp" });
+      const params = new URLSearchParams({ service_id: svc.service_code, server: server || DEFAULT_SERVER });
       const res = await fetch(`/api/otp/countries?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal memuat negara.");
@@ -212,28 +209,8 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
     }
   }
 
-  async function handleOrderClick(country, provider) {
-    setBuyError(""); setTopupNominal(0);
-    setBuyingKey(provider.provider_id);
-    try {
-      const params =
-        provider.server && provider.server !== "rumahotp"
-          ? new URLSearchParams({ server: provider.server })
-          : new URLSearchParams({ country: country.name, provider_id: provider.provider_id });
-      const res = await fetch(`/api/otp/operators?${params}`);
-      const data = await res.json();
-      const ops = Array.isArray(data.items) ? data.items : [];
-      if (ops.length > 1) {
-        setOperatorTarget({ country, provider, operators: ops });
-        setScreen("operators");
-        setBuyingKey(null);
-        return;
-      }
-      await submitOrder(country, provider, ops[0]?.id || null, ops[0]?.name || null);
-    } catch (e) {
-      setBuyError("Gagal memuat operator. Coba lagi.");
-      setBuyingKey(null);
-    }
+  function handleOrderClick(country, provider) {
+    return submitOrder(country, provider, null, null);
   }
 
   async function submitOrder(country, provider, operatorId, operatorName) {
@@ -243,21 +220,15 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
       const body = {
         token,
         serviceId: selectedService.service_code,
-        numberId: country.number_id,
         providerId: provider.provider_id,
         operatorId: operatorId || null,
         operatorName: operatorName || null,
         serviceName: selectedService.service_name,
         countryName: country.name,
-        server: provider.server || server || "rumahotp",
+        server: provider.server || server || DEFAULT_SERVER,
+        countryId: provider.country_id,
         jaminan: jaminanInfo.aktif && pakaiJaminan
       };
-      // Server non-RumahOTP memakai kunci service + country_id (+ index tier harga
-      // untuk dibanana, karena id produknya diambil ulang di server).
-      if (body.server !== "rumahotp") {
-        body.countryId = provider.country_id;
-        if (provider.providerIndex !== undefined) body.providerIndex = provider.providerIndex;
-      }
       const res = await fetch("/api/otp/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -334,8 +305,6 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                   ? "Pilih server yang mau dipakai"
                   : screen === "apps"
                   ? `${serverLabel(server)} · pilih aplikasi`
-                  : screen === "operators"
-                  ? `${selectedService?.service_name || ""} · pilih operator`
                   : `${serverLabel(server)} · ${selectedService?.service_name || "pilih negara"}`}
               </p>
             </div>
@@ -406,12 +375,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
               )}
               {serverList.map((sv) => {
                 const on = available[sv.key] !== false;
-                const look =
-                  sv.key === "rumahotp"
-                    ? { warna: "--c-success", ikon: <IkonDaun /> }
-                    : sv.key === "dibanana"
-                    ? { warna: "--c-orange", ikon: <IkonPetir /> }
-                    : { warna: "--c-blue", ikon: <IkonRoket /> };
+                const look = sv.key.endsWith("_s2") ? { warna: "--c-orange", ikon: <IkonPetir /> } : { warna: "--c-blue", ikon: <IkonRoket /> };
                 return (
                   <button
                     key={sv.key}
@@ -768,39 +732,6 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
               )}
             </div>
           )}
-
-          {/* — Pilih operator — */}
-          {screen === "operators" && operatorTarget && (
-            <div className="fade-up">
-              <button onClick={() => setScreen("countries")} className="flex items-center gap-1 text-xs font-semibold text-muted hover:text-ink">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                Kembali ke negara
-              </button>
-              <div className="mt-3 rounded-2xl border border-line/10 bg-surface2 px-4 py-3">
-                <p className="text-sm font-bold text-ink">{operatorTarget.country.name}</p>
-                <p className="mt-0.5 text-xs text-muted">
-                  Harga Rp{Number(operatorTarget.provider.sell_price ?? operatorTarget.provider.price).toLocaleString("id-ID")}
-                </p>
-              </div>
-              <p className="mb-2 mt-5 text-sm font-bold text-ink">Pilih operator nomor</p>
-              {buyError && <GalatBeli pesan={buyError} topup={topupNominal} />}
-              <div className="grid grid-cols-2 gap-2.5">
-                {operatorTarget.operators.map((op) => {
-                  const sibuk = buyingKey === operatorTarget.provider.provider_id;
-                  return (
-                    <button
-                      key={op.id}
-                      onClick={() => submitOrder(operatorTarget.country, operatorTarget.provider, op.id, op.name)}
-                      disabled={sibuk}
-                      className="rounded-2xl border border-line/10 bg-surface px-4 py-3.5 text-sm font-bold capitalize text-ink transition-all hover:-translate-y-0.5 hover:border-blue/40 hover:shadow-lift active:scale-[0.97] disabled:opacity-50"
-                    >
-                      {sibuk ? "Memproses…" : op.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="h-[env(safe-area-inset-bottom)] shrink-0" />
@@ -878,14 +809,6 @@ function IkonDompet() {
       <path d="M4 7.5A2.5 2.5 0 016.5 5H18a1 1 0 011 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       <rect x="3.5" y="7.5" width="17" height="12" rx="2.5" stroke="currentColor" strokeWidth="2" />
       <circle cx="16.5" cy="13.5" r="1.2" fill="currentColor" />
-    </svg>
-  );
-}
-function IkonDaun() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-      <path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M5 19c3-4 6-6 9-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }

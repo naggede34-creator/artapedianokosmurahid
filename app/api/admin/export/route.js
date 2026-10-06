@@ -4,7 +4,7 @@
 // type=deposits → CSV deposit
 // type=transactions → CSV transaksi OTP
 import { NextResponse } from "next/server";
-import { usersCol, depositsCol, otpOrdersCol, petsCol } from "@/lib/db";
+import { usersCol, depositsCol, otpOrdersCol } from "@/lib/db";
 import { adminSah } from "@/lib/adminAuth";
 import { bangunBackupPenuh, barisAkun, PROYEKSI_AKUN, KETERANGAN_AKUN } from "@/lib/backupData";
 
@@ -44,7 +44,7 @@ export async function GET(req) {
     let filename = "";
 
     if (type === "akun") {
-      // Ekspor ringkas: token, nama, saldo, koin, poin, pet. TITIK.
+      // Ekspor ringkas: token, nama, saldo. TITIK.
       //
       // Riwayat pembelian sengaja TIDAK ikut. Bukan demi ukuran berkas: di
       // riwayat itu ada nomor telepon dan kode OTP orang. Berkas seperti ini
@@ -65,24 +65,6 @@ export async function GET(req) {
       const BATAS = Math.min(Math.max(Number.isFinite(diminta) ? diminta : 200000, 1), 500000);
 
       const total = await users.countDocuments({});
-
-      // Pet dibaca SEKALI untuk semua baris, bukan satu kueri per pengguna.
-      // Dengan batas 200.000, satu kueri per baris berarti 200.000 perjalanan
-      // ke database — cukup untuk membuat ekspornya tidak pernah selesai.
-      const petMap = new Map();
-      try {
-        const pets = await petsCol();
-        const daftarPet = await pets
-          .find({})
-          .project({ _id: 0, token: 1, nama: 1, level: 1, xp: 1, totalHariDirawat: 1, bornAt: 1 })
-          .toArray();
-        for (const p of daftarPet) if (p.token) petMap.set(p.token, p);
-      } catch (e) {
-        // Pet gagal dibaca tidak boleh menggagalkan seluruh ekspor; kolomnya
-        // jadi null dan itu jujur, berbeda dengan angka 0 yang terbaca seperti
-        // "pet-nya ada tapi levelnya nol".
-        console.error("[export/akun] pets gagal:", e?.message || e);
-      }
 
       const cursor = users
         .find({})
@@ -114,11 +96,10 @@ export async function GET(req) {
 
             let n = 0;
             for await (const u of cursor) {
-              const p = petMap.get(u.token);
               // barisAkun() dipakai bersama backup otomatis: kalau kolomnya
               // ditentukan dua kali, suatu saat yang satu ikut menyertakan apa
               // yang di satu lagi sengaja dibuang.
-              const baris = barisAkun(u, p);
+              const baris = barisAkun(u);
               controller.enqueue(enc.encode((n === 0 ? "\n    " : ",\n    ") + JSON.stringify(baris)));
               n += 1;
             }
@@ -161,10 +142,10 @@ export async function GET(req) {
       const users = await usersCol();
       const filter = from || to ? { createdAt: dateFilter } : {};
       const rows = await users.find(filter).sort({ createdAt: -1 }).limit(BATAS_CSV).toArray();
-      const headers = ["Token", "Nama", "Saldo", "Total Deposit", "Poin", "Tier", "Referral", "Ditangguhkan", "Daftar (WIB)"];
+      const headers = ["Token", "Nama", "Saldo", "Total Deposit", "Referral", "Ditangguhkan", "Daftar (WIB)"];
       csv = headers.join(",") + "\n" + rows.map((u) => [
         u.token, u.name || "", u.balance || 0, u.depositTotal || 0,
-        u.points || 0, u.lastKnownTier || "Bronze", u.referralCount || 0,
+        u.referralCount || 0,
         u.suspended ? "Ya" : "Tidak", toWIB(u.createdAt)
       ].map(escCsv).join(",")).join("\n");
       filename = `artapedia-users-${Date.now()}.csv`;

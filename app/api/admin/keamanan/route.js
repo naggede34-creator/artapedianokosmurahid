@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
 import { adminSah } from "@/lib/adminAuth";
 import { ringkasanKeamanan, pindaiKeamanan } from "@/lib/keamanan";
-import { ringkasanAntiCurang } from "@/lib/anticurang";
 
 export const dynamic = "force-dynamic";
 
-// GET  → ringkasan keamanan (kejadian terbaru, status pemindaian) + ringkasan anti-curang game
+// GET  → ringkasan keamanan (kejadian terbaru, status pemindaian)
 // POST { aksi: "pindai" } → jalankan pemindaian sekarang
 export async function GET(req) {
   if (!(await adminSah(req))) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
-    return NextResponse.json({ ...(await ringkasanKeamanan()), game: await ringkasanAntiCurang() });
+    return NextResponse.json(await ringkasanKeamanan());
   } catch (e) {
     console.error("[admin/keamanan]", e?.message || e);
     return NextResponse.json({ error: "Gagal memuat ringkasan keamanan." }, { status: 500 });

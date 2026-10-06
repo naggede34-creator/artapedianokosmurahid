@@ -4,19 +4,6 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef } f
 import { usePathname } from "next/navigation";
 import { pasangPenyadapPerangkat } from "@/lib/perangkatKlien";
 
-// Mini app Telegram dibuka lewat tombol bot (?startapp=tarung / game / klan): langsung ke Arena Pendekar / tab Game / Klan.
-if (typeof window !== "undefined") {
-  try {
-    const cari = (s) => new URLSearchParams(s).get("tgWebAppStartParam");
-    const sp = cari(window.location.search) || cari(window.location.hash.slice(1)) || window.Telegram?.WebApp?.initDataUnsafe?.start_param;
-    const tujuan = sp === "tarung" ? "/chat?game=tarung" : sp === "game" ? "/chat?game=1" : sp === "klan" ? "/klan" : null;
-    if (tujuan && sessionStorage.getItem("artapedia_startapp") !== sp && !window.location.pathname.startsWith("/chat")) {
-      sessionStorage.setItem("artapedia_startapp", sp);
-      window.location.replace(tujuan);
-    }
-  } catch {}
-}
-
 const THEME_KEY = "artapedia_theme";
 const ThemeContext = createContext(null);
 
@@ -67,18 +54,15 @@ export function useTheme() {
 
 const UserContext = createContext(null);
 
-// Setiap permintaan /api/ membawa sidik perangkat (deteksi akun ganda untuk keamanan game).
+// Setiap permintaan /api/ membawa sidik perangkat (deteksi akun ganda untuk keamanan).
 if (typeof window !== "undefined") pasangPenyadapPerangkat();
 
 export function UserProvider({ children }) {
   const [token, setToken] = useState(null);
   const [balance, setBalance] = useState(0);
-  // Saldo game: dompet terpisah dari saldo nokos.
-  const [gameBalance, setGameBalance] = useState(0);
   const [depositBalance, setDepositBalance] = useState(null);
   const [name, setName] = useState(null);
   const [joinedAt, setJoinedAt] = useState(null);
-  const [tourDone, setTourDone] = useState(false);
   const [ready, setReady] = useState(false);
   // true = admin mewajibkan daftar/masuk dan pengunjung belum punya akun aktif.
   const [perluMasuk, setPerluMasuk] = useState(false);
@@ -112,11 +96,9 @@ export function UserProvider({ children }) {
       try { localStorage.removeItem("artapedia_keluar"); } catch {}
       setToken(data.token);
       setBalance(data.balance);
-      setGameBalance(data.saldoGame ?? 0);
       setDepositBalance(data.depositBalance ?? null);
       setName(data.name || null);
       setJoinedAt(data.createdAt || null);
-      setTourDone(data.tourDone === true);
       return data;
     }
     const err = new Error(data.error || "Gagal memuat akun.");
@@ -226,13 +208,12 @@ export function UserProvider({ children }) {
       });
       const data = await res.json();
       if (res.status === 403 && data.suspended) { setBanned(true); return; }
-      if (res.ok) { setBalance(data.balance); setGameBalance(data.saldoGame ?? 0); if (data.depositBalance !== undefined) setDepositBalance(data.depositBalance); }
+      if (res.ok) { setBalance(data.balance); if (data.depositBalance !== undefined) setDepositBalance(data.depositBalance); }
     } catch {}
   }, [token]);
 
-  // Saldo yang tampil (terutama POIN GAME) harus selalu sama dengan server: game memotong/menambah poin
-  // di server, sedangkan konteks ini hidup terus selama pengguna berpindah halaman. Karena itu disegarkan
-  // saat pindah halaman, saat tab kembali aktif, berkala, dan ketika game memberi tahu lewat event.
+  // Saldo yang tampil harus selalu sama dengan server. Disegarkan saat pindah halaman, saat tab kembali
+  // aktif, berkala (60 dtk, hanya ketika tab terlihat), dan ketika halaman lain memberi tahu lewat event.
   const pathname = usePathname();
   const terakhirSegar = useRef(0);
   useEffect(() => {
@@ -253,7 +234,7 @@ export function UserProvider({ children }) {
     window.addEventListener("focus", saatFokus);
     document.addEventListener("visibilitychange", saatFokus);
     window.addEventListener("artapedia:saldo", saatEvent);
-    const id = setInterval(() => segar(false), 30000);
+    const id = setInterval(() => segar(false), 60000);
     return () => {
       window.removeEventListener("focus", saatFokus);
       document.removeEventListener("visibilitychange", saatFokus);
@@ -287,21 +268,9 @@ export function UserProvider({ children }) {
     [token]
   );
 
-  const completeTour = useCallback(async () => {
-    setTourDone(true);
-    try { localStorage.setItem("artapedia_tour_done", "1"); } catch {}
-    if (token) {
-      fetch("/api/user/tour-done", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token })
-      }).catch(() => {});
-    }
-  }, [token]);
-
   return (
     <UserContext.Provider
-      value={{ token, balance, gameBalance, depositBalance, name, joinedAt, tourDone, ready, perluMasuk, loginWajib, banned, daftar, masuk, keluar, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
+      value={{ token, balance, depositBalance, name, joinedAt, ready, perluMasuk, loginWajib, banned, daftar, masuk, keluar, setBalance, refreshBalance, restoreToken, updateName }}
     >
       {children}
     </UserContext.Provider>

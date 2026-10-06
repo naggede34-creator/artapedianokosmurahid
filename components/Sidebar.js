@@ -9,13 +9,6 @@ import { useUser } from "@/app/providers";
 import { Icon } from "@/components/ui";
 
 const I = {
-  cart: (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
-      <circle cx="9" cy="20" r="1.4" fill="currentColor" />
-      <circle cx="18" cy="20" r="1.4" fill="currentColor" />
-      <path d="M2.5 3h2.2l1.9 11.1a2 2 0 0 0 2 1.65h8.4a2 2 0 0 0 2-1.6L20.8 7H6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
   tag: (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
       <path d="M11.5 3h-6a1 1 0 0 0-1 1v6c0 .27.1.52.29.71l9 9a1 1 0 0 0 1.42 0l6-6a1 1 0 0 0 0-1.42l-9-9A1 1 0 0 0 11.5 3Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
@@ -46,64 +39,53 @@ const sections = [
   {
     items: [
       { href: "/dashboard", label: "Beranda", icon: <Icon.home width={19} height={19} /> },
-      { href: "/profil", label: "Profil Akun", icon: <span className="text-[17px] leading-none">👤</span>, badge: "Baru" },
-      { href: "/chat?game=tarung", label: "Arena Pendekar (Tarung)", icon: <span className="text-[17px] leading-none">🥋</span>, badge: "Baru" },
-      { href: "/chat?game=1", label: "Duel Game (UNO, Catur…)", icon: <span className="text-[17px] leading-none">🎮</span> },
-      // Tautan keluar ke channel Telegram. Ditaruh paling atas bersama Beranda,
-      // bukan diselipkan di Bantuan: ini yang dipakai orang untuk memastikan
-      // tokonya benar-benar jalan sebelum mereka mengisi saldo.
-      {
-        href: CHANNEL_URL,
-        label: "Notifikasi Pembelian",
-        icon: <span className="text-[17px] leading-none">📢</span>,
-        badge: "Live",
-        external: true
-      }
+      { href: "/profil", label: "Profil Akun", icon: <span className="text-[17px] leading-none">👤</span> },
+      // Tautan keluar ke channel Telegram: dipakai orang untuk memastikan toko benar-benar jalan sebelum mengisi saldo.
+      { href: CHANNEL_URL, label: "Notifikasi Pembelian", icon: <span className="text-[17px] leading-none">📢</span>, badge: "Live", external: true }
     ]
   },
   {
-    title: "Belanja",
+    title: "Nokos",
     items: [
       { href: "/otp", label: "Beli Nokos (OTP)", icon: <Icon.phone width={19} height={19} /> },
-      { href: "/harga", label: "Daftar Harga Nokos", icon: I.tag },
-      { href: "/chat", label: "WEARTA CHAT", icon: <span style={{ fontSize: 17 }}>💬</span>, badge: "Live" }
+      { href: "/harga", label: "Daftar Harga", icon: I.tag },
+      { href: "/riwayat", label: "Riwayat Pesanan", icon: <Icon.history width={19} height={19} /> },
+      { href: "/status", label: "Status Layanan", icon: <span className="text-[17px] leading-none">🟢</span> }
     ]
   },
   {
     title: "Saldo",
     items: [
       { href: "/deposit", label: "Isi Saldo (QRIS)", icon: <Icon.qris width={19} height={19} /> },
-      { href: "/gateway", label: "QRIS Gateway", icon: <span className="text-[17px] leading-none">💸</span>, badge: "Baru" },
-      { href: "/reseller", label: "Bot Reseller", icon: <span className="text-[17px] leading-none">🤖</span>, badge: "Baru" },
-      { href: "/giveaway", label: "Giveaway", icon: <span className="text-[17px] leading-none">🎁</span>, badge: "Baru" },
-      { href: "/tampilan", label: "Tampilan & Tema", icon: <span className="text-[17px] leading-none">🎨</span>, badge: "Baru" },
-      { href: "/tarik", label: "Tarik Saldo", icon: <span className="text-[17px] leading-none">💸</span> },
-      { href: "/transfer", label: "Transfer Saldo", icon: <Icon.transfer width={19} height={19} /> },
       { href: "/mutasi", label: "Mutasi Saldo", icon: <Icon.ledger width={19} height={19} /> },
-      { href: "/riwayat", label: "Riwayat Transaksi", icon: <Icon.history width={19} height={19} /> }
+      { href: "/tarik", label: "Tarik Saldo", icon: <span className="text-[17px] leading-none">💸</span> },
+      { href: "/transfer", label: "Transfer Saldo", icon: <Icon.transfer width={19} height={19} /> }
     ]
   },
   {
-    title: "Hadiah",
+    title: "Bisnis & Developer",
     items: [
-      { href: "/pet", label: "Pet Arta Pedia", icon: <span className="text-[17px] leading-none">🥚</span>, badge: "Baru" },
-      { href: "/loyalitas", label: "Poin & Level", icon: <Icon.star width={19} height={19} /> },
-      { href: "/toko-poin", label: "Toko Poin", icon: I.cart, badge: "Baru" },
-      { href: "/misi", label: "Misi & Tantangan", icon: I.trophy, badge: "Baru" },
-      { href: "/klan", label: "Klan", icon: <span className="text-[17px] leading-none">🛡</span>, badge: "Baru" },
-      { href: "/vip", label: "Level VIP", icon: I.tag },
+      { href: "/gateway", label: "QRIS Gateway", icon: <span className="text-[17px] leading-none">💸</span> },
+      { href: "/apikey", label: "API Key Nokos", icon: <Icon.key width={19} height={19} />, badge: "Dev" },
+      { href: "/api-docs", label: "Dokumentasi API", icon: I.book },
+      { href: "/reseller", label: "Bot Reseller", icon: <span className="text-[17px] leading-none">🤖</span> }
+    ]
+  },
+  {
+    title: "Bonus",
+    items: [
       { href: "/referral", label: "Undang Teman", icon: <Icon.gift width={19} height={19} /> },
-      { href: "/leaderboard", label: "Leaderboard", icon: I.trophy }
+      { href: "/leaderboard", label: "Leaderboard", icon: I.trophy },
+      { href: "/giveaway", label: "Giveaway", icon: <span className="text-[17px] leading-none">🎁</span> }
     ]
   },
   {
     title: "Bantuan",
     items: [
-      { href: "/apikey", label: "API Key Developer", icon: <Icon.key width={19} height={19} />, badge: "Dev" },
-      { href: "/api-docs", label: "Dokumentasi API", icon: I.book },
       { href: "/informasi", label: "Pusat Informasi", icon: I.info },
       { href: "/cara-pakai", label: "Cara Pakai", icon: I.book },
-      { href: "/faq", label: "FAQ", icon: <Icon.help width={19} height={19} /> }
+      { href: "/faq", label: "FAQ", icon: <Icon.help width={19} height={19} /> },
+      { href: "/tampilan", label: "Tampilan & Tema", icon: <span className="text-[17px] leading-none">🎨</span> }
     ]
   }
 ];

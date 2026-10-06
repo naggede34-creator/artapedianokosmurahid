@@ -435,18 +435,16 @@ print(r.json())`}
           <Section id="ep-servers">
             <h2 className="text-display-sm font-display text-ink mb-2">Server Nokos</h2>
             <p className="text-muted mb-4">
-              Artapedia menyambung ke beberapa provider sekaligus. Tiap provider disebut <b>server</b>, punya daftar
+              Artapedia punya dua jalur pembelian, masing-masing disebut <b>server</b>, dengan daftar
               aplikasi, negara, dan harga sendiri. Semua endpoint katalog &amp; order menerima parameter{" "}
               <code className="font-mono text-xs bg-surface2 px-1.5 py-0.5 rounded border border-line">server</code>.
-              Kalau tidak dikirim, nilainya otomatis <code className="font-mono text-xs">rumahotp</code>.
+              Kalau tidak dikirim, nilainya otomatis <code className="font-mono text-xs">warungnokos_s1</code>.
             </p>
 
             <div className="rounded-xl border border-line overflow-hidden mb-4">
               {[
-                ["rumahotp", "Server Nokos Murah", "Harga paling hemat, cakupan aplikasi & negara terluas."],
-                ["warungnokos_s1", "Server Plus", "Jalur utama WarungNokos (H2H), stok melimpah & rate sukses tertinggi."],
-                ["warungnokos_s2", "Server Express", "Jalur kedua WarungNokos (API v3). Kode layanannya berupa nama huruf kecil, mis. whatsapp; stok tidak ditampilkan angkanya."],
-                ["dibanana", "OTP Fast Murah", "OTP masuk cepat & murah. Negara: ID, MY, SG, US, UK."]
+                ["warungnokos_s1", "Server 1", "Jalur utama, stok melimpah untuk layanan populer."],
+                ["warungnokos_s2", "Server 2", "Jalur kedua dengan pilihan harga lain, dipakai saat stok Server 1 kosong."]
               ].map(([id, name, desc]) => (
                 <div key={id} className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 px-4 py-3 border-b border-line last:border-0">
                   <code className="font-mono text-sm text-amber w-36 flex-shrink-0">{id}</code>
@@ -499,10 +497,8 @@ for s in r.json()["items"]:
             <CodeBlock lang="json" code={`// 200 OK
 {
   "items": [
-    { "server": "rumahotp",    "name": "Server Nokos Murah", "badge": "Murah",    "provider": "RumahOTP" },
-    { "server": "warungnokos_s1", "name": "Server Plus",        "badge": "Utama",    "provider": "WarungNokos" },
-    { "server": "warungnokos_s2", "name": "Server Express",     "badge": "Global",   "provider": "WarungNokos S2" },
-    { "server": "dibanana",    "name": "OTP Fast Murah",     "badge": "Fast",     "provider": "dibanana" }
+    { "server": "warungnokos_s1", "name": "Server 1", "badge": "Utama",    "provider": "WarungNokos" },
+    { "server": "warungnokos_s2", "name": "Server 2", "badge": "Cadangan", "provider": "WarungNokos" }
   ]
 }`} />
           </Section>
@@ -517,7 +513,7 @@ for s in r.json()["items"]:
               description="Mengembalikan aplikasi yang tersedia di satu server (WhatsApp, Telegram, Shopee, dll). Tiap server punya daftar yang berbeda."
               params={
                 <>
-                  <Param name="server" type="string">Kode server dari /v1/servers. Default: rumahotp.</Param>
+                  <Param name="server" type="string">Kode server dari /v1/servers. Default: warungnokos_s1.</Param>
                 </>
               }
               response={
@@ -528,9 +524,9 @@ for s in r.json()["items"]:
                 </>
               }
               curl={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "${B}/api/v1/services?server=dibanana"`}
+  "${B}/api/v1/services?server=warungnokos_s1"`}
               jsCode={`const res = await fetch(
-  "${B}/api/v1/services?server=dibanana",
+  "${B}/api/v1/services?server=warungnokos_s1",
   { headers: { "Authorization": "Bearer YOUR_API_KEY" } }
 );
 const { items } = await res.json();
@@ -547,10 +543,10 @@ for svc in r.json()["items"]:
             />
             <CodeBlock lang="json" code={`// 200 OK
 {
-  "server": "dibanana",
+  "server": "warungnokos_s1",
   "items": [
-    { "service_code": "wa", "service_name": "WhatsApp", "service_img": null, "server": "dibanana" },
-    { "service_code": "tg", "service_name": "Telegram", "service_img": null, "server": "dibanana" }
+    { "service_code": "wa", "service_name": "WhatsApp", "service_img": null, "server": "warungnokos_s1" },
+    { "service_code": "tg", "service_name": "Telegram", "service_img": null, "server": "warungnokos_s1" }
   ]
 }`} />
           </Section>
@@ -559,7 +555,7 @@ for svc in r.json()["items"]:
           <Section id="ep-countries">
             <h2 className="text-display-sm font-display text-ink mb-2">Negara &amp; Harga</h2>
             <p className="text-muted mb-4">
-              Endpoint ini yang memberi kamu <code className="font-mono text-xs">numberId</code>,{" "}
+              Endpoint ini yang memberi kamu <code className="font-mono text-xs">countryId</code>,{" "}
               <code className="font-mono text-xs">providerId</code>, dan harga jual final.
               Nilai <code className="font-mono text-xs">sell_price</code> sudah termasuk markup — itulah nominal yang
               dipotong dari saldo. <code className="font-mono text-xs">price</code> adalah harga modal, jangan dipakai
@@ -573,24 +569,22 @@ for svc in r.json()["items"]:
               params={
                 <>
                   <Param name="service_id" type="string" required>Kode layanan dari /v1/services</Param>
-                  <Param name="server" type="string">Kode server. Default: rumahotp.</Param>
+                  <Param name="server" type="string">Kode server. Default: warungnokos_s1.</Param>
                 </>
               }
               response={
                 <>
-                  <ResponseField name="items[].number_id" type="string">Dipakai sebagai numberId saat order (server rumahotp)</ResponseField>
                   <ResponseField name="items[].name" type="string">Nama negara</ResponseField>
                   <ResponseField name="items[].pricelist[].provider_id" type="string">Dipakai sebagai providerId saat order</ResponseField>
                   <ResponseField name="items[].pricelist[].sell_price" type="number">Harga jual final (sudah termasuk markup)</ResponseField>
                   <ResponseField name="items[].pricelist[].stock" type="number">Sisa stok, null kalau provider tidak melaporkannya</ResponseField>
-                  <ResponseField name="items[].pricelist[].country_id" type="string">Dipakai sebagai countryId untuk server WarungNokos &amp; dibanana</ResponseField>
-                  <ResponseField name="items[].pricelist[].providerIndex" type="number">Dipakai sebagai providerIndex untuk server dibanana</ResponseField>
+                  <ResponseField name="items[].pricelist[].country_id" type="string">Dipakai sebagai countryId saat order</ResponseField>
                 </>
               }
               curl={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "${B}/api/v1/countries?server=dibanana&service_id=wa"`}
+  "${B}/api/v1/countries?server=warungnokos_s1&service_id=wa"`}
               jsCode={`const res = await fetch(
-  "${B}/api/v1/countries?server=dibanana&service_id=wa",
+  "${B}/api/v1/countries?server=warungnokos_s1&service_id=wa",
   { headers: { "Authorization": "Bearer YOUR_API_KEY" } }
 );
 const { items } = await res.json();
@@ -610,24 +604,22 @@ for c in r.json()["items"]:
     for p in c["pricelist"]:
         print(c["name"], p["sell_price"], p["stock"])`}
             />
-            <CodeBlock lang="json" code={`// 200 OK — server "dibanana"
+            <CodeBlock lang="json" code={`// 200 OK — server "warungnokos_s1"
 {
-  "server": "dibanana",
+  "server": "warungnokos_s1",
   "items": [
     {
-      "number_id": "bn:id",
+      "number_id": "warungnokos_s1:6",
       "name": "Indonesia",
-      "flag": "\u{1F1EE}\u{1F1E9}",
       "pricelist": [
         {
-          "provider_id": "bn:id:0",
+          "provider_id": "wa-id-1",
           "provider_name": "Paket Termurah",
           "price": 900,
           "sell_price": 1100,
           "stock": 245,
-          "country_id": "id",
-          "providerIndex": 0,
-          "server": "dibanana"
+          "country_id": "6",
+          "server": "warungnokos_s1"
         }
       ]
     }
@@ -772,9 +764,7 @@ def wait_for_otp(order_id, api_key):
                 <p className="text-sm font-semibold text-ink">Parameter wajib per server</p>
               </div>
               {[
-                ["rumahotp", "serviceId, numberId, providerId", "operatorId"],
-                ["warungnokos_s1 / warungnokos_s2", "serviceId, countryId, providerId", "operatorId (default: any)"],
-                ["dibanana", "serviceId, countryId, providerIndex", "—"]
+                ["warungnokos_s1 / warungnokos_s2", "serviceId, countryId, providerId", "operatorId (default: any)"]
               ].map(([srv, req, opt]) => (
                 <div key={srv} className="flex flex-col sm:flex-row gap-1 sm:gap-4 px-4 py-3 border-b border-line last:border-0">
                   <code className="font-mono text-sm text-amber w-52 flex-shrink-0">{srv}</code>
@@ -800,12 +790,10 @@ def wait_for_otp(order_id, api_key):
               description="Memotong saldo dan memesan nomor OTP baru dari provider. Pastikan saldo mencukupi."
               params={
                 <>
-                  <Param name="server" type="string">Kode server dari /v1/servers. Default: rumahotp.</Param>
+                  <Param name="server" type="string">Kode server dari /v1/servers. Default: warungnokos_s1.</Param>
                   <Param name="serviceId" type="string" required>Kode layanan (service_code dari /v1/services)</Param>
-                  <Param name="numberId" type="string">Wajib untuk server rumahotp — number_id dari /v1/countries</Param>
-                  <Param name="providerId" type="string">Wajib untuk server rumahotp — provider_id dari /v1/countries</Param>
-                  <Param name="countryId" type="string">Wajib untuk warungnokos_s1, warungnokos_s2 &amp; dibanana — country_id dari /v1/countries</Param>
-                  <Param name="providerIndex" type="number">Wajib untuk dibanana — providerIndex dari /v1/countries (0 = termurah)</Param>
+                  <Param name="providerId" type="string">provider_id dari /v1/countries (pilihan harga di negara itu)</Param>
+                  <Param name="countryId" type="string">Wajib — country_id dari /v1/countries</Param>
                   <Param name="operatorId" type="string">ID operator (opsional). WarungNokos memakai &quot;any&quot; kalau kosong.</Param>
                   <Param name="operatorName" type="string">Nama operator (opsional, untuk pencatatan)</Param>
                   <Param name="serviceName" type="string">Nama layanan (opsional, untuk pencatatan)</Param>
@@ -826,17 +814,14 @@ def wait_for_otp(order_id, api_key):
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "server": "dibanana",
+    "server": "warungnokos_s1",
     "serviceId": "wa",
     "countryId": "id",
-    "providerIndex": 0,
     "serviceName": "WhatsApp",
     "countryName": "Indonesia"
   }'
 
-# Server rumahotp memakai numberId + providerId:
-# -d '{"server":"rumahotp","serviceId":"1","numberId":"62","providerId":"5"}'
-# Server WarungNokos memakai countryId:
+# Contoh:
 # -d '{"server":"warungnokos_s1","serviceId":"wa","countryId":"6"}'`}
               jsCode={`const res = await fetch("${B}/api/v1/order", {
   method: "POST",
@@ -845,10 +830,9 @@ def wait_for_otp(order_id, api_key):
     "Content-Type": "application/json"
   },
   body: JSON.stringify({
-    server: "dibanana",        // dari /v1/servers
+    server: "warungnokos_s1",  // dari /v1/servers
     serviceId: "wa",           // service_code dari /v1/services
     countryId: "id",           // country_id dari /v1/countries
-    providerIndex: 0,          // khusus dibanana, 0 = paket termurah
     serviceName: "WhatsApp",
     countryName: "Indonesia"
   })
@@ -877,7 +861,7 @@ print(f"Phone: {data['phoneNumber']}, Order: {data['orderId']}")`}
             <CodeBlock lang="json" code={`// 200 OK
 {
   "orderId": "789012",
-  "server": "dibanana",
+  "server": "warungnokos_s1",
   "phoneNumber": "+62812xxxxxxx",
   "price": 3500,
   "expiredAt": 1717235400000,

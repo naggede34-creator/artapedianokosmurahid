@@ -1,3 +1,4 @@
+import { DEFAULT_SERVER } from "@/lib/otpServers";
 import { NextResponse } from "next/server";
 import { otpOrdersCol } from "@/lib/db";
 
@@ -14,7 +15,7 @@ export async function GET(req) {
   return NextResponse.json({
     items: list.map((o) => ({
       orderId: o.orderId,
-      provider: o.provider || "rumahotp",
+      provider: o.provider || DEFAULT_SERVER,
       serviceName: o.serviceName,
       countryName: o.countryName,
       phoneNumber: o.phoneNumber,

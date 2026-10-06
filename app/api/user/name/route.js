@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { usersCol, waProfilCol } from "@/lib/db";
-import { lupakanCache } from "@/lib/wa/inti";
+import { usersCol } from "@/lib/db";
 
 export async function POST(req) {
   try {
@@ -14,14 +13,6 @@ export async function POST(req) {
     if (!existing) return NextResponse.json({ error: "Akun tidak ditemukan." }, { status: 404 });
 
     await users.updateOne({ token }, { $set: { name: name || null } });
-
-    // Nama di WEARTA CHAT ikut berubah (satu identitas).
-    if (name.length >= 2) {
-      try {
-        await (await waProfilCol()).updateOne({ token }, { $set: { nama: name } });
-        lupakanCache(token);
-      } catch {}
-    }
 
     return NextResponse.json({ token, name: name || null });
   } catch (err) {

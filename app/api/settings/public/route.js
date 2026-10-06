@@ -21,7 +21,6 @@ import { sapuDepositTertunda } from "@/lib/depositService";
 import { tahan } from "@/lib/tahan";
 import { pindaiDiLatar } from "@/lib/keamanan";
 import { sapuWdInstan } from "@/lib/wdInstan";
-import { sapuSetorGmail } from "@/lib/setorGmail";
 import { pengingatDeposit } from "@/lib/depositPengingat";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +34,6 @@ export async function GET() {
   // cadangan bila webhook provider tidak sampai dan cron eksternal belum dipasang.
   tahan(sapuDepositTertunda({ maks: 6, jeda: 30000, anggaranMs: 8000 }).catch(() => {}));
   tahan(sapuWdInstan({ maks: 6, jeda: 30000 }).catch(() => {}));
-  tahan(sapuSetorGmail({ maks: 6, jeda: 30000 }).catch(() => {}));
   tahan(pengingatDeposit({ maks: 10, jeda: 30000 }).catch(() => {}));
   pindaiDiLatar(); // pemindaian keamanan berkala (maks 1× per 10 menit di seluruh sistem)
   const limits = depositLimits();

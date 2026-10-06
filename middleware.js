@@ -23,8 +23,6 @@ const batasUang = new Map(); // "ip|jalur" → { n, t0 }
 // [pola, maks per menit]
 const JALUR_UANG = [
   [/^\/api\/tarik/, 20],
-  [/^\/api\/setor-gmail/, 40],
-  [/^\/api\/game\/dompet/, 30],
   [/^\/api\/deposit\/(create|confirm)/, 20],
   [/^\/api\/transfer/, 20],
   [/^\/api\/admin\/login/, 12],

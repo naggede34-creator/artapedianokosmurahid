@@ -10,11 +10,10 @@ export default function AdminPusat() {
   useEffect(() => { fetch("/api/admin/pusat", { cache: "no-store" }).then((r) => r.json()).then((x) => { if (!x.error) setD(x); }).catch(() => {}); }, []);
   const lencana = {
     pengguna: d ? `${d.dibekukan} dibekukan` : "",
-    uang: d && (d.depositManual || d.tarikPoin) ? `${d.depositManual} deposit manual · ${d.tarikPoin} tarik poin menunggu` : "",
-    setor: d && d.setorMenunggu ? `${d.setorMenunggu} setoran menunggu persetujuan` : "",
+    uang: d && d.depositManual ? `${d.depositManual} deposit manual menunggu` : "",
     konten: d && d.klaimGaransi ? `${d.klaimGaransi} klaim garansi menunggu` : ""
   };
-  const mendesak = { setor: d && d.setorMenunggu > 0, uang: d && (d.depositManual || d.tarikPoin) > 0, konten: d && d.klaimGaransi > 0 };
+  const mendesak = { uang: d && d.depositManual > 0, konten: d && d.klaimGaransi > 0 };
   return (
     <div className="mx-auto max-w-5xl px-4 pb-16 pt-8">
       <h1 className="font-display text-2xl font-black text-ink sm:text-3xl">Pusat Admin</h1>

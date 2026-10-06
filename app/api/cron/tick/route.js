@@ -13,13 +13,11 @@ import { cronSah } from "@/lib/cronAuth";
 import { otpOrdersCol } from "@/lib/db";
 import { reconcileOtpOrder } from "@/lib/orderReconcile";
 import { periksaStokWatch } from "@/lib/stokWatch";
-import { sapuGame } from "@/lib/game/inti";
 import { sapuDepositTertunda } from "@/lib/depositService";
 import { pengingatDeposit } from "@/lib/depositPengingat";
 import { sapuBanSementara } from "@/lib/penggunaAdmin";
 import { prosesSiaran } from "@/lib/siaran";
 import { sapuWdInstan } from "@/lib/wdInstan";
-import { sapuSetorGmail } from "@/lib/setorGmail";
 import { pindaiBerkala } from "@/lib/keamanan";
 
 export const dynamic = "force-dynamic";
@@ -94,23 +92,11 @@ export async function GET(req) {
   } catch (err) {
     hasil.galat.push(`wd: ${err?.message || err}`);
   }
-  // Stor Gmail: baca hasil setoran dari penyedia, kreditkan upah yang diterima, pulihkan kiriman yang tak pasti.
-  try {
-    hasil.setorGmail = await sapuSetorGmail({ maks: 20, jeda: 0 });
-  } catch (err) {
-    hasil.galat.push(`setor-gmail: ${err?.message || err}`);
-  }
   // Pemindaian keamanan otomatis (jalan sendiri tiap ±10 menit; di luar jadwal ini dilewati).
   try {
     hasil.keamanan = await pindaiBerkala();
   } catch (err) {
     hasil.galat.push(`keamanan: ${err?.message || err}`);
-  }
-  // Duel permainan: waktu habis, tantangan basi, pembayaran tertunda.
-  try {
-    hasil.game = await sapuGame();
-  } catch (err) {
-    hasil.galat.push(`game: ${err?.message || err}`);
   }
   return NextResponse.json({ ok: true, ...hasil });
 }

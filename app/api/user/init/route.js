@@ -4,6 +4,7 @@ import { sendMonitorLog, userLoginLog } from "@/lib/monitor";
 import { rateLimit } from "@/lib/rateLimit";
 import { loginWajib, buatAkunBaru } from "@/lib/webAuth";
 import { catatIpAkun, blokirIpAkun, ipDariReq } from "@/lib/blokirIp";
+import { bacaPerangkat, catatPerangkat } from "@/lib/perangkat";
 
 export async function POST(req) {
   try {
@@ -28,11 +29,12 @@ export async function POST(req) {
       }
       if (existing) {
         catatIpAkun(existing.token, ipDariReq(req)).catch(() => {});
+        catatPerangkat(existing.token, bacaPerangkat(req)).catch(() => {});
         sendMonitorLog(userLoginLog({ token: existing.token, isNew: false }));
         return NextResponse.json({
           token: existing.token,
           balance: existing.balance,
-          saldoGame: existing.saldoGame ?? 0,
+          
           depositBalance: existing.depositBalance ?? null,
           name: existing.name || null,
           createdAt: existing.createdAt || null,
@@ -61,6 +63,7 @@ export async function POST(req) {
 
     const { token, createdAt } = await buatAkunBaru({ req, ref: body.ref, sumber: "Website" });
     catatIpAkun(token, ipDariReq(req)).catch(() => {});
+    catatPerangkat(token, bacaPerangkat(req)).catch(() => {});
     return NextResponse.json({ token, balance: 0, createdAt, tourDone: false });
   } catch (err) {
     console.error(err);

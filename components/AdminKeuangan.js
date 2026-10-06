@@ -82,7 +82,7 @@ function Koreksi() {
   }
   return (
     <Kartu judul="Koreksi saldo massal (CSV)">
-      <p className="text-[11px] leading-relaxed text-muted">Satu baris per akun: <code>kode_akun,jumlah,alasan[,game]</code>. Jumlah negatif = kurangi. Kolom ke-4 <code>game</code> = saldo game (bawaan: saldo nokos). Baris judul boleh ada. Maks 500 baris.</p>
+      <p className="text-[11px] leading-relaxed text-muted">Satu baris per akun: <code>kode_akun,jumlah,alasan</code>. Jumlah negatif = kurangi. Baris judul boleh ada. Maks 500 baris.</p>
       <textarea className={`${inp} mt-2 h-32 font-mono text-xs`} value={csv} onChange={(e) => { setCsv(e.target.value); setPr(null); }} placeholder={"AP-XXXX-0001,5000,ganti rugi error\nAP-XXXX-0002,-2000,koreksi dobel"} data-testid="kr-csv" />
       <button type="button" disabled={sibuk || !csv.trim()} onClick={pratinjau} className="btn-3d mt-2 w-full rounded-xl border-2 border-line bg-surface px-4 py-2 text-sm font-black text-ink disabled:opacity-60" data-testid="kr-pratinjau">🔍 Pratinjau (tidak mengubah apa pun)</button>
       {pr && (
@@ -94,7 +94,7 @@ function Koreksi() {
               <tbody>{pr.baris.map((b) => (
                 <tr key={b.no} className={b.valid ? "" : "bg-rose-soft"} data-testid={b.valid ? "kr-baris-ok" : "kr-baris-salah"}>
                   <td className="px-2 py-1">{b.no}</td><td className="font-mono">{b.token}{b.nama ? ` (${b.nama})` : ""}</td>
-                  <td className={b.jumlah < 0 ? "text-rose" : "text-success"}>{Number.isFinite(b.jumlah) ? (b.jumlah > 0 ? "+" : "") + b.jumlah.toLocaleString("id-ID") : "?"}{b.dompet === "game" ? " (game)" : ""}</td>
+                  <td className={b.jumlah < 0 ? "text-rose" : "text-success"}>{Number.isFinite(b.jumlah) ? (b.jumlah > 0 ? "+" : "") + b.jumlah.toLocaleString("id-ID") : "?"}</td>
                   <td>{b.valid ? `${rp(b.sebelum)} → ${rp(b.sesudah)}` : "—"}</td><td>{b.valid ? "✅" : `❌ ${b.galat}`}</td>
                 </tr>))}</tbody>
             </table>

@@ -13,11 +13,9 @@ export async function GET() {
     ]);
     return NextResponse.json({
       users: userCount,
-      orders: orderCount,
-      services: 500,
-      countries: 150
+      orders: orderCount
     });
   } catch {
-    return NextResponse.json({ users: 50000, orders: 500000, services: 500, countries: 150 });
+    return NextResponse.json({ users: 0, orders: 0 });
   }
 }

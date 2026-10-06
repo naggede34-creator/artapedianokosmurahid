@@ -16,9 +16,7 @@ const KUNCI = [
   { nama: "AUSTINPAY_PROXY", judul: "Proxy keluar (opsional)", ket: "http://user:pass@host:port — untuk IP tetap bila whitelist IP dipakai.", contoh: "http://…" }
 ];
 const SAKLAR = [
-  { nama: "WD_NOKOS_AKTIF", judul: "Tarik saldo nokos → e-wallet", ket: "Pengguna menarik saldo hasil deposit ke e-wallet (otomatis)." },
-  { nama: "GAME_TARIK_OTOMATIS", judul: "Tarik poin game otomatis", ket: "Mati = antrean admin manual seperti dulu." },
-  { nama: "GAME_TARIK_AKTIF", judul: "Tarik poin game (semua)", ket: "Saklar utama penarikan poin game." }
+  { nama: "WD_NOKOS_AKTIF", judul: "Tarik saldo nokos → e-wallet", ket: "Pengguna menarik saldo hasil deposit ke e-wallet (otomatis)." }
 ];
 const ANGKA = [
   { nama: "WD_NOKOS_MIN_RP", judul: "Nokos — minimal diterima (Rp)" },
@@ -26,8 +24,6 @@ const ANGKA = [
   { nama: "WD_NOKOS_MAKS_HARI", judul: "Nokos — maks penarikan / akun / hari (×)" },
   { nama: "WD_NOKOS_MAKS_RP", judul: "Nokos — maks per penarikan (Rp)" },
   { nama: "WD_NOKOS_MAKS_RP_HARI", judul: "Nokos — maks total / akun / hari (Rp)" },
-  { nama: "GAME_TARIK_MIN_RP", judul: "Poin game — minimal tarik (Rp)" },
-  { nama: "GAME_TARIK_FEE_RP", judul: "Poin game — biaya tarik (Rp)" },
   { nama: "WD_AKUN_PER_NOMOR", judul: "Keamanan — maks akun per nomor tujuan" },
   { nama: "WD_UMUR_AKUN_JAM", judul: "Keamanan — umur akun minimal (jam)" },
   { nama: "WD_ALERT_RP", judul: "Keamanan — kabari admin bila ≥ (Rp)" }
@@ -110,7 +106,7 @@ export default function AdminAustinPay() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-extrabold text-ink">⚡ AustinPay — QRIS FAST & Tarik Otomatis</h2>
-            <p className="mt-1 text-xs leading-relaxed text-muted">Deposit QRIS FAST, penarikan otomatis saldo nokos & poin game, serta saldo AustinPay milikmu.</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted">Deposit QRIS FAST, penarikan otomatis saldo nokos, serta saldo AustinPay milikmu.</p>
           </div>
           <button onClick={cek} disabled={sibuk === "cek"} className="btn-3d rounded-xl bg-amber px-3 py-2 text-xs font-black text-white disabled:opacity-60" data-testid="ap-cek">{sibuk === "cek" ? "…" : "Cek koneksi"}</button>
         </div>

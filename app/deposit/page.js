@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useUser } from "@/app/providers";
 import { DEPOSIT_PROVIDERS, providerName } from "@/lib/paymentProviders";
 import { PageHeader, Icon, Alert, Row, CopyButton, Spinner, Badge, rupiah, fmtWIB } from "@/components/ui";
-import ScratchCard from "@/components/ScratchCard";
 import BannerRail from "@/components/BannerRail";
 
 const QUICK = [10000, 20000, 50000, 100000, 200000, 500000];
@@ -68,7 +67,6 @@ export default function DepositPage() {
   const [order, setOrder] = useState(null);
   const [status, setStatus] = useState("pending");
   const [cashback, setCashback] = useState(0);
-  const [scratchOpen, setScratchOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -140,12 +138,6 @@ export default function DepositPage() {
           clearInterval(pollRef.current);
           if (data.status === "completed") {
             refreshBalance();
-            // Issue a scratch card for this deposit
-            fetch("/api/scratch-card", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ token, action: "issue", depositId: orderId }),
-            }).then(() => setScratchOpen(true)).catch(() => {});
           }
         }
         return data.status;
@@ -718,18 +710,12 @@ export default function DepositPage() {
             <div className="scale-in">
               {status === "completed" ? (
                 <div className="py-6 text-center">
-                  {scratchOpen && token && (
-                    <ScratchCard token={token} onClose={() => setScratchOpen(false)} onClaimed={() => refreshBalance()} />
-                  )}
                   <span className="bounce-in mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-soft text-success shadow-[0_4px_0_rgb(var(--c-success)/0.35)]">
                     <Icon.check width={30} height={30} />
                   </span>
                   <h2 className="mt-4 text-xl font-extrabold text-ink">Saldo masuk {rupiah(order.amount)}</h2>
                   {cashback > 0 && <p className="mt-1 text-sm font-semibold text-success">+ cashback {rupiah(cashback)}</p>}
                   <p className="mt-2 text-sm text-muted">Pembayaran via {order.rute ? "QRIS" : methodName(order.provider)} sudah terkonfirmasi.</p>
-                  <button onClick={() => setScratchOpen(true)} className="mt-4 flex items-center gap-2 mx-auto rounded-2xl border-2 border-amber/60 bg-amber/10 px-5 py-2.5 text-sm font-extrabold text-amber-bright press animate-pulse hover:animate-none hover:bg-amber/20">
-                    🎫 Buka Kartu Gores Kamu!
-                  </button>
                   <div className="mt-6 flex flex-wrap justify-center gap-2">
                     <Link href="/otp" className="btn-primary">
                       Beli nokos
@@ -1039,7 +1025,7 @@ export default function DepositPage() {
                 );
               })}
             </div>
-            <p className="mt-2 text-[11px] text-muted">*Bonus berupa cashback poin yang langsung masuk ke akunmu.</p>
+            <p className="mt-2 text-[11px] text-muted">*Bonus berupa cashback yang langsung masuk ke saldomu.</p>
           </div>
 
           <div className="card-flat p-5">

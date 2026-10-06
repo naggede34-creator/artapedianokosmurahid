@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { rumahOtpConfigured } from "@/lib/rumahotp";
 import { warungNokosConfigured } from "@/lib/warungnokos";
-import { dibananaConfigured } from "@/lib/dibanana";
 import { getSettings, serverDisplay } from "@/lib/settings";
 import { OTP_SERVERS } from "@/lib/otpServers";
 
@@ -10,8 +8,6 @@ export const dynamic = "force-dynamic";
 // Apakah kredensial providernya sudah terisi. Server tanpa kredensial tidak
 // pernah bisa dipakai walaupun admin menyalakannya.
 async function providerReady(key) {
-  if (key === "rumahotp") return (await rumahOtpConfigured());
-  if (key === "dibanana") return (await dibananaConfigured());
   if (key.startsWith("warungnokos")) return (await warungNokosConfigured());
   return false;
 }

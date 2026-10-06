@@ -11,11 +11,11 @@ import NotificationBell from "@/components/NotificationBell";
 
 const links = [
   { href: "/dashboard", label: "Beranda" },
-  { href: "/otp", label: "Nokos" },
+  { href: "/otp", label: "Beli Nokos" },
   { href: "/deposit", label: "Deposit" },
-  { href: "/produk", label: "Produk" },
   { href: "/riwayat", label: "Riwayat" },
-  { href: "/chat", label: "WEARTA CHAT" },
+  { href: "/gateway", label: "QRIS Gateway" },
+  { href: "/apikey", label: "API" },
   { href: "/harga", label: "Harga" }
 ];
 

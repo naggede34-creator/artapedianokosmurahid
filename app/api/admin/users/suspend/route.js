@@ -11,7 +11,7 @@ export async function POST(req) {
   try {
     const { token, suspend, reason } = await req.json().catch(() => ({}));
     if (!token) return NextResponse.json({ error: "Token wajib diisi." }, { status: 400 });
-    const r = await ubahBlokir({ token, aksi: suspend ? "ban" : "unban", alasan: reason || (suspend ? "Ditangguhkan oleh admin" : ""), bebasAntiCurang: true, kabari: true });
+    const r = await ubahBlokir({ token, aksi: suspend ? "ban" : "unban", alasan: reason || (suspend ? "Ditangguhkan oleh admin" : ""), kabari: true });
     if (!r.ok) {
       // Perilaku lama: membuka akun yang memang tidak dibekukan tetap sukses (idempoten).
       if (r.status === 400 && /tidak sedang dibekukan|sudah dibekukan/.test(r.alasan)) return NextResponse.json({ ok: true, suspended: !!suspend });

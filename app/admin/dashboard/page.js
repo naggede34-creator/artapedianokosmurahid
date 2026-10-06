@@ -11,14 +11,8 @@ import { OTP_SERVERS } from "@/lib/otpServers";
 import { DAFTAR_PUBLIK, channelAktifUntuk } from "@/lib/channelNotifTypes";
 import AdminKonfigurasi, { PeringatanKodeAdmin } from "@/components/AdminKonfigurasi";
 import AdminReferral from "@/components/AdminReferral";
-import AdminAfiliasi from "@/components/AdminAfiliasi";
-import AdminLencana from "@/components/AdminLencana";
-import AdminGame from "@/components/AdminGame";
-import AdminPembaruan from "@/components/AdminPembaruan";
-import AdminTarikPoin from "@/components/AdminTarikPoin";
 import AdminKeamanan from "@/components/AdminKeamanan";
 import AdminAustinPay from "@/components/AdminAustinPay";
-import AdminMusim from "@/components/AdminMusim";
 import { CHANNEL_ID, CHANNEL_URL } from "@/lib/links";
 
 function fmtDate(d) {
@@ -41,19 +35,11 @@ const TABS = [
   { id: "austinpay", label: "AustinPay", icon: "⚡" },
   { id: "gateway", label: "QRIS Gateway", icon: "💸" },
   { id: "referral", label: "Referral", icon: "🛡" },
-  { id: "kreator", label: "Kreator", icon: "🎬" },
-  { id: "lencana", label: "Lencana", icon: "🎖" },
-  { id: "game", label: "Game", icon: "🎮" },
-  { id: "pembaruan", label: "Pembaruan", icon: "✨" },
-  { id: "musim", label: "Event Musiman", icon: "🎉" },
-  { id: "tarikpoin", label: "Poin Game", icon: "💸" },
   { id: "konfigurasi", label: "Konfigurasi", icon: "🔑" },
   { id: "bot", label: "Bot Telegram", icon: "🤖" },
   { id: "reseller", label: "Bot Reseller", icon: "🏪" },
   { id: "giveaway", label: "Giveaway", icon: "🎁" },
   { id: "juara", label: "Pembeli Terbanyak", icon: "🏆" },
-  { id: "produk", label: "Produk", icon: "🛍️" },
-  { id: "job", label: "Job/Saldo", icon: "💰" },
   { id: "tiket", label: "Tiket", icon: "🎫" },
   { id: "pengaturan", label: "Pengaturan Umum", icon: "⚙️" },
   { id: "tools", label: "Tools", icon: "🛠️" },
@@ -62,9 +48,8 @@ const TABS = [
 // Kelompok menu admin (semua id tab harus ada di TABS; yang tidak terdaftar di sini tetap diberi kelompok "Lainnya").
 const KELOMPOK_TAB = [
   { id: "ringkas", label: "Ringkasan", icon: "📊", tabs: ["ringkasan", "transaksi"] },
-  { id: "uang", label: "Pengguna & Uang", icon: "👥", tabs: ["pengguna", "depositmanual", "austinpay", "tarikpoin", "tarik", "referral", "kreator", "giveaway", "juara", "job"] },
-  { id: "game", label: "Game & Chat", icon: "🎮", tabs: ["game", "pembaruan", "lencana", "musim"] },
-  { id: "konten", label: "Konten & Toko", icon: "🛍️", tabs: ["konten", "banner", "produk", "tiket"] },
+  { id: "uang", label: "Pengguna & Uang", icon: "👥", tabs: ["pengguna", "depositmanual", "austinpay", "tarik", "referral", "giveaway", "juara"] },
+  { id: "konten", label: "Konten & Bantuan", icon: "📝", tabs: ["konten", "banner", "tiket"] },
   { id: "integrasi", label: "Integrasi", icon: "🔌", tabs: ["gateway", "bot", "reseller", "konfigurasi"] },
   { id: "sistem", label: "Sistem", icon: "⚙️", tabs: ["pengaturan", "tools"] }
 ];
@@ -74,8 +59,7 @@ const KELOMPOK_TAB = [
 const JUDUL_DASBOR = {
   ringkas: { judul: "Ringkasan & Transaksi", ikon: "📊" },
   uang: { judul: "Keuangan", ikon: "💰" },
-  game: { judul: "Game & Chat", ikon: "🎮" },
-  konten: { judul: "Konten & Toko", ikon: "🛍️" },
+  konten: { judul: "Konten & Bantuan", ikon: "🛍️" },
   integrasi: { judul: "Integrasi", ikon: "🔌" },
   sistem: { judul: "Sistem", ikon: "⚙️" }
 };
@@ -102,14 +86,8 @@ export default function AdminDashboardPage() {
 
   const [balanceForm, setBalanceForm] = useState({ token: "", amount: "", note: "" });
   const [balanceAction, setBalanceAction] = useState("add");
-  // Dompet yang diubah: saldo nokos atau saldo game (terpisah).
-  const [balanceWallet, setBalanceWallet] = useState("nokos");
   const [balanceSubmitting, setBalanceSubmitting] = useState(false);
   const [balanceMsg, setBalanceMsg] = useState("");
-  const [pointsForm, setPointsForm] = useState({ token: "", amount: "", note: "" });
-  const [pointsAction, setPointsAction] = useState("add");
-  const [pointsSubmitting, setPointsSubmitting] = useState(false);
-  const [pointsMsg, setPointsMsg] = useState("");
   const formRef = useRef(null);
 
   const [stats, setStats] = useState(null);
@@ -157,7 +135,6 @@ export default function AdminDashboardPage() {
   const [otpServersMsg, setOtpServersMsg] = useState("");
 
   const [providerDiag, setProviderDiag] = useState(null);
-  const [dibanana, setDibanana] = useState(null);
   const [providerDiagLoading, setProviderDiagLoading] = useState(false);
 
   const [maintenanceBtnForm, setMaintenanceBtnForm] = useState({ label: "", url: "" });
@@ -195,10 +172,6 @@ export default function AdminDashboardPage() {
   const [savingChannelNotif, setSavingChannelNotif] = useState("");
   const [channelNotifMsg, setChannelNotifMsg] = useState("");
   // Room Chat: buka/tutup dari dasbor.
-  const [chatCfg, setChatCfg] = useState(null);
-  const [chatMsgDraft, setChatMsgDraft] = useState("");
-  const [chatBusy, setChatBusy] = useState(false);
-  const [chatSaveMsg, setChatSaveMsg] = useState("");
   const [manualMsg, setManualMsg] = useState("");
   // Antrean deposit manual yang menunggu dicek.
   const [manualDeposits, setManualDeposits] = useState([]);
@@ -226,9 +199,6 @@ export default function AdminDashboardPage() {
   const [lbMsg, setLbMsg] = useState("");
   const [lbPrizes, setLbPrizes] = useState("5000, 3000, 1000");
   const [lbGift, setLbGift] = useState({ rank: "1", amount: "", note: "" });
-  const [petForm, setPetForm] = useState(null);
-  const [petBusy, setPetBusy] = useState(false);
-  const [petMsg, setPetMsg] = useState("");
 
   const [atlDiag, setAtlDiag] = useState(null);
   const [atlBusy, setAtlBusy] = useState(false);
@@ -243,15 +213,7 @@ export default function AdminDashboardPage() {
 
   const [suspendMsg, setSuspendMsg] = useState("");
 
-  const [flashSales, setFlashSales] = useState([]);
-  const [flashSaleForm, setFlashSaleForm] = useState({ title: "", discountPercent: "", durationHours: "2", serviceFilter: "" });
-  const [flashSaleMsg, setFlashSaleMsg] = useState("");
-  const [flashSaleLoading, setFlashSaleLoading] = useState(false);
 
-  const [luckyHours, setLuckyHours] = useState([]);
-  const [luckyHourForm, setLuckyHourForm] = useState({ startHour: "", endHour: "", discountPercent: "", label: "" });
-  const [luckyHourMsg, setLuckyHourMsg] = useState("");
-  const [luckyHourLoading, setLuckyHourLoading] = useState(false);
 
   const [notifTarget, setNotifTarget] = useState("all");
   const [notifToken, setNotifToken] = useState("");
@@ -261,8 +223,6 @@ export default function AdminDashboardPage() {
   const [notifMsg, setNotifMsg] = useState("");
   const [notifLoading, setNotifLoading] = useState(false);
 
-  const [gamStats, setGamStats] = useState(null);
-  const [gamStatsLoading, setGamStatsLoading] = useState(false);
 
   const [platformMarkups, setPlatformMarkups] = useState([]);
   const [platformMarkupLoading, setPlatformMarkupLoading] = useState(false);
@@ -279,13 +239,6 @@ export default function AdminDashboardPage() {
   const [activityPages, setActivityPages] = useState(1);
 
   // Products state
-  const [adminProducts, setAdminProducts] = useState([]);
-  const [adminProductsLoading, setAdminProductsLoading] = useState(false);
-  const [productForm, setProductForm] = useState({ name: "", description: "", price: "", category: "Umum", stock: "-1", imageUrl: "", deliveryType: "text", deliveryContent: "" });
-  const [productMsg, setProductMsg] = useState("");
-  const [productSubmitting, setProductSubmitting] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [stockAddForm, setStockAddForm] = useState({ id: "", amount: "" });
 
   // Banner state
   const [banners, setBanners] = useState([]);
@@ -309,16 +262,6 @@ export default function AdminDashboardPage() {
   const [siteSettingsSubmitting, setSiteSettingsSubmitting] = useState(false);
 
   // Jobs state
-  const [adminJobs, setAdminJobs] = useState([]);
-  const [adminJobsLoading, setAdminJobsLoading] = useState(false);
-  const [jobForm, setJobForm] = useState({ title: "", description: "", reward: "", maxCompletions: "0", proofType: "text", proofRequired: true, category: "Umum", imageUrl: "" });
-  const [jobMsg, setJobMsg] = useState("");
-  const [jobSubmitting, setJobSubmitting] = useState(false);
-  const [editingJob, setEditingJob] = useState(null);
-  const [jobSubmissions, setJobSubmissions] = useState([]);
-  const [jobSubmissionsLoading, setJobSubmissionsLoading] = useState(false);
-  const [jobSubFilter, setJobSubFilter] = useState("pending");
-  const [jobSubMsg, setJobSubMsg] = useState("");
 
   // Hero Chars editor
   const DEFAULT_HERO_CHARS = [
@@ -700,113 +643,17 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const loadAdminProducts = useCallback(async () => {
-    setAdminProductsLoading(true);
-    try {
-      const res = await fetch("/api/admin/products");
-      if (res.status === 401) return sesiHabis();
-      const d = await res.json();
-      setAdminProducts(Array.isArray(d.items) ? d.items : []);
-    } finally { setAdminProductsLoading(false); }
-  }, [router]);
 
-  const loadAdminJobs = useCallback(async () => {
-    setAdminJobsLoading(true);
-    try {
-      const res = await fetch("/api/admin/jobs");
-      if (res.status === 401) return sesiHabis();
-      const d = await res.json();
-      setAdminJobs(Array.isArray(d.items) ? d.items : []);
-    } finally { setAdminJobsLoading(false); }
-  }, [router]);
 
-  const loadJobSubmissions = useCallback(async (status = jobSubFilter) => {
-    setJobSubmissionsLoading(true);
-    try {
-      const res = await fetch(`/api/admin/jobs/submissions?status=${status}`);
-      if (res.ok) { const d = await res.json(); setJobSubmissions(Array.isArray(d.items) ? d.items : []); }
-    } finally { setJobSubmissionsLoading(false); }
-  }, [jobSubFilter]);
 
-  async function submitProduct(e) {
-    e.preventDefault(); setProductMsg(""); setProductSubmitting(true);
-    try {
-      const action = editingProduct ? "edit" : "create";
-      const body = { action, ...productForm, price: Number(productForm.price), stock: Number(productForm.stock) };
-      if (editingProduct) body.id = editingProduct;
-      const res = await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || "Gagal.");
-      setProductMsg(editingProduct ? "Produk diperbarui!" : "Produk ditambahkan!");
-      setProductForm({ name: "", description: "", price: "", category: "Umum", stock: "-1", imageUrl: "", deliveryType: "text", deliveryContent: "" });
-      setEditingProduct(null);
-      loadAdminProducts();
-    } catch (err) { setProductMsg(err.message); }
-    finally { setProductSubmitting(false); setTimeout(() => setProductMsg(""), 3000); }
-  }
 
-  async function addProductStock(e) {
-    e.preventDefault();
-    const res = await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add-stock", id: stockAddForm.id, amount: Number(stockAddForm.amount) }) });
-    const d = await res.json();
-    if (d.ok) { setProductMsg("Stok ditambahkan!"); setStockAddForm({ id: "", amount: "" }); loadAdminProducts(); }
-    else setProductMsg(d.error || "Gagal.");
-    setTimeout(() => setProductMsg(""), 3000);
-  }
 
-  async function toggleProduct(id) {
-    await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
-    loadAdminProducts();
-  }
 
-  async function deleteProduct(id) {
-    if (!confirm("Hapus produk ini?")) return;
-    await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
-    loadAdminProducts();
-  }
 
-  function editProductFill(p) {
-    setEditingProduct(p.id);
-    setProductForm({ name: p.name, description: p.description || "", price: String(p.price), category: p.category || "Umum", stock: String(p.stock ?? -1), imageUrl: p.imageUrl || "", deliveryType: p.deliveryType || "text", deliveryContent: p.deliveryContent || "" });
-    document.getElementById("product-form-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 
-  async function submitJob(e) {
-    e.preventDefault(); setJobMsg(""); setJobSubmitting(true);
-    try {
-      const action = editingJob ? "edit" : "create";
-      const body = { action, ...jobForm, reward: Number(jobForm.reward), maxCompletions: Number(jobForm.maxCompletions) };
-      if (editingJob) body.id = editingJob;
-      const res = await fetch("/api/admin/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || "Gagal.");
-      setJobMsg(editingJob ? "Job diperbarui!" : "Job ditambahkan!");
-      setJobForm({ title: "", description: "", reward: "", maxCompletions: "0", proofType: "text", proofRequired: true, category: "Umum", imageUrl: "" });
-      setEditingJob(null);
-      loadAdminJobs();
-    } catch (err) { setJobMsg(err.message); }
-    finally { setJobSubmitting(false); setTimeout(() => setJobMsg(""), 3000); }
-  }
 
-  async function toggleJob(id) {
-    await fetch("/api/admin/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
-    loadAdminJobs();
-  }
 
-  async function deleteJob(id) {
-    if (!confirm("Hapus job ini?")) return;
-    await fetch("/api/admin/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
-    loadAdminJobs();
-  }
 
-  async function reviewJobSub(id, action, reason) {
-    setJobSubMsg("");
-    const res = await fetch("/api/admin/jobs/submissions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, action, rejectionReason: reason || "" }) });
-    const d = await res.json();
-    if (d.ok) { setJobSubMsg(action === "approve" ? "Disetujui & saldo dikreditkan." : "Ditolak."); loadJobSubmissions(jobSubFilter); }
-    else setJobSubMsg(d.error || "Gagal.");
-    setTimeout(() => setJobSubMsg(""), 3000);
-  }
 
   const loadWarrantyClaims = useCallback(async () => {
     setWarrantyLoading(true);
@@ -820,14 +667,6 @@ export default function AdminDashboardPage() {
     }
   }, [router]);
 
-  const loadDibanana = useCallback(async () => {
-    try {
-      const res = await fetch("/api/admin/dibanana");
-      if (res.ok) setDibanana(await res.json());
-    } catch {
-      setDibanana({ configured: false, balance: null, error: "Gagal memuat." });
-    }
-  }, []);
 
   const loadWarungnokos = useCallback(async () => {
     try {
@@ -922,61 +761,10 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const loadChatCfg = useCallback(async () => {
-    try {
-      const res = await fetch("/api/chat/group-settings");
-      const d = await res.json();
-      setChatCfg(d);
-      setChatMsgDraft(d.closedMsg || "");
-    } catch {
-      setChatCfg(null);
-    }
-  }, []);
 
   // Buka/tutup Room Chat. Penutupannya ditegakkan di server juga, jadi tombol
   // ini benar-benar menutup grupnya — bukan cuma mematikan kolom ketik.
-  async function setChatClosed(closed) {
-    if (closed && !confirm("Tutup WEARTA CHAT? Semua pengguna tidak akan bisa mengirim pesan sampai dibuka lagi.")) return;
-    setChatBusy(true);
-    setChatSaveMsg("");
-    try {
-      const res = await fetch("/api/chat/group-settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ closed, closedMsg: chatMsgDraft })
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error);
-      setChatSaveMsg(closed ? "WEARTA CHAT ditutup." : "WEARTA CHAT dibuka.");
-      loadChatCfg();
-    } catch (err) {
-      setChatSaveMsg(err.message || "Gagal mengubah status.");
-    } finally {
-      setChatBusy(false);
-      setTimeout(() => setChatSaveMsg(""), 3000);
-    }
-  }
 
-  async function saveChatClosedMsg() {
-    setChatBusy(true);
-    setChatSaveMsg("");
-    try {
-      const res = await fetch("/api/chat/group-settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ closedMsg: chatMsgDraft })
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error);
-      setChatSaveMsg("Pesan penutupan tersimpan.");
-      loadChatCfg();
-    } catch (err) {
-      setChatSaveMsg(err.message || "Gagal menyimpan.");
-    } finally {
-      setChatBusy(false);
-      setTimeout(() => setChatSaveMsg(""), 3000);
-    }
-  }
 
   // Gambar QRIS dikecilkan dulu di browser. Yang diunggah orang biasanya
   // tangkapan layar 3–5 MB, dan itu ikut diunduh SETIAP user yang memilih
@@ -1126,32 +914,6 @@ export default function AdminDashboardPage() {
     }
   }
 
-  async function savePetSettings(patch) {
-    setPetBusy(true);
-    setPetMsg("");
-    try {
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pet: patch })
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error);
-      setSettings(d);
-      setPetForm((f) => ({
-        ...f,
-        enabled: d.pet?.enabled !== false,
-        bonusPerLevel: String(d.pet?.bonusPerLevel ?? 0.1),
-        maxBonus: String(d.pet?.maxBonus ?? 2)
-      }));
-      setPetMsg("Pengaturan pet tersimpan.");
-    } catch (err) {
-      setPetMsg(err.message || "Gagal menyimpan.");
-    } finally {
-      setPetBusy(false);
-      setTimeout(() => setPetMsg(""), 3500);
-    }
-  }
 
   async function saveLbSettings(patch) {
     setLbBusy(true);
@@ -1427,14 +1189,6 @@ export default function AdminDashboardPage() {
         ])
       )
     );
-    setPetForm({
-      enabled: data.pet?.enabled !== false,
-      bonusPerLevel: String(data.pet?.bonusPerLevel ?? 0.1),
-      maxBonus: String(data.pet?.maxBonus ?? 2),
-      xpBeriMakan: String(data.pet?.xpBeriMakan ?? 15),
-      xpBermain: String(data.pet?.xpBermain ?? 10),
-      xpHarian: String(data.pet?.xpHarian ?? 5)
-    });
     setManualForm({
       qrImage: data.manualDeposit?.qrImage || "",
       accountName: data.manualDeposit?.accountName || "",
@@ -1547,21 +1301,7 @@ export default function AdminDashboardPage() {
     }
   }, [router]);
 
-  async function loadFlashSales() {
-    setFlashSaleLoading(true);
-    try {
-      const res = await fetch("/api/admin/flashsale");
-      if (res.ok) { const d = await res.json(); setFlashSales(Array.isArray(d.items) ? d.items : []); }
-    } finally { setFlashSaleLoading(false); }
-  }
 
-  async function loadLuckyHours() {
-    setLuckyHourLoading(true);
-    try {
-      const res = await fetch("/api/admin/lucky-hours");
-      if (res.ok) { const d = await res.json(); setLuckyHours(Array.isArray(d.items) ? d.items : []); }
-    } finally { setLuckyHourLoading(false); }
-  }
 
   async function loadActivityLog(pg = activityPage) {
     setActivityLoading(true);
@@ -1581,59 +1321,11 @@ export default function AdminDashboardPage() {
     }
   }
 
-  async function createFlashSale(e) {
-    e.preventDefault();
-    setFlashSaleMsg("");
-    const { title, discountPercent, durationHours, serviceFilter } = flashSaleForm;
-    if (!title || !discountPercent) { setFlashSaleMsg("Judul dan diskon wajib diisi."); return; }
-    const startAt = new Date();
-    const endAt = new Date(startAt.getTime() + Number(durationHours) * 3600000);
-    const res = await fetch("/api/admin/flashsale", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, discountPercent: Number(discountPercent), startAt, endAt, serviceFilter }),
-    });
-    const d = await res.json();
-    if (d.ok) { setFlashSaleMsg("Flash sale dibuat!"); setFlashSaleForm({ title: "", discountPercent: "", durationHours: "2", serviceFilter: "" }); loadFlashSales(); }
-    else setFlashSaleMsg(d.error || "Gagal.");
-    setTimeout(() => setFlashSaleMsg(""), 3000);
-  }
 
-  async function toggleFlashSale(id) {
-    await fetch("/api/admin/flashsale", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
-    loadFlashSales();
-  }
 
-  async function deleteFlashSale(id) {
-    await fetch("/api/admin/flashsale", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
-    loadFlashSales();
-  }
 
-  async function createLuckyHour(e) {
-    e.preventDefault();
-    setLuckyHourMsg("");
-    const { startHour, endHour, discountPercent, label } = luckyHourForm;
-    if (startHour === "" || endHour === "" || !discountPercent) { setLuckyHourMsg("Semua field wajib diisi."); return; }
-    const res = await fetch("/api/admin/lucky-hours", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ startHour: Number(startHour), endHour: Number(endHour), discountPercent: Number(discountPercent), label }),
-    });
-    const d = await res.json();
-    if (d.ok) { setLuckyHourMsg("Lucky hour dibuat!"); setLuckyHourForm({ startHour: "", endHour: "", discountPercent: "", label: "" }); loadLuckyHours(); }
-    else setLuckyHourMsg(d.error || "Gagal.");
-    setTimeout(() => setLuckyHourMsg(""), 3000);
-  }
 
-  async function toggleLuckyHour(id) {
-    await fetch("/api/admin/lucky-hours", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
-    loadLuckyHours();
-  }
 
-  async function deleteLuckyHour(id) {
-    await fetch("/api/admin/lucky-hours", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
-    loadLuckyHours();
-  }
 
   async function sendBlastNotif(e) {
     e.preventDefault();
@@ -1656,13 +1348,6 @@ export default function AdminDashboardPage() {
     }
   }
 
-  async function loadGamStats() {
-    setGamStatsLoading(true);
-    try {
-      const res = await fetch("/api/admin/gamification-stats");
-      if (res.ok) setGamStats(await res.json());
-    } finally { setGamStatsLoading(false); }
-  }
 
   async function loadPlatformMarkups() {
     setPlatformMarkupLoading(true);
@@ -1701,23 +1386,18 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     loadSettings();
     loadWarungnokos();
-    loadDibanana();
     loadUsers("");
     loadStats();
     loadVouchers();
     loadBroadcasts();
     loadAnnouncements();
     loadWarrantyClaims();
-    loadFlashSales();
-    loadLuckyHours();
-    loadGamStats();
     loadPlatformMarkups();
     loadBanners();
     loadTickets();
     // Antrean deposit manual ikut dimuat sejak awal supaya lencana jumlahnya
     // terlihat tanpa harus membuka tabnya dulu.
     loadManualDeposits("review");
-    loadChatCfg();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -2041,11 +1721,11 @@ export default function AdminDashboardPage() {
       const res = await fetch("/api/admin/users/balance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: balanceForm.token.trim(), amount: Number(balanceForm.amount), action: balanceAction, note: balanceForm.note.trim(), wallet: balanceWallet === "game" ? "game" : undefined })
+        body: JSON.stringify({ token: balanceForm.token.trim(), amount: Number(balanceForm.amount), action: balanceAction, note: balanceForm.note.trim() })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal memproses.");
-      setBalanceMsg(`Berhasil. ${balanceWallet === "game" ? "Saldo game" : "Saldo"} terbaru: ${fmtRp(data.balance)}`);
+      setBalanceMsg(`Berhasil. Saldo terbaru: ${fmtRp(data.balance)}`);
       setBalanceForm({ token: "", amount: "", note: "" });
       loadUsers();
     } catch (err) {
@@ -2055,32 +1735,6 @@ export default function AdminDashboardPage() {
     }
   }
 
-  async function submitPoints(e) {
-    e.preventDefault();
-    setPointsMsg("");
-    setPointsSubmitting(true);
-    try {
-      const res = await fetch("/api/admin/users/points", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: pointsForm.token.trim(),
-          amount: Number(pointsForm.amount),
-          action: pointsAction,
-          note: pointsForm.note.trim()
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal memproses.");
-      setPointsMsg(`Berhasil. Poin terbaru: ${Number(data.points).toLocaleString("id-ID")}`);
-      setPointsForm({ token: "", amount: "", note: "" });
-      loadUsers();
-    } catch (err) {
-      setPointsMsg(err.message);
-    } finally {
-      setPointsSubmitting(false);
-    }
-  }
 
   function quickFill(token, action) {
     setBalanceAction(action);
@@ -2344,16 +1998,6 @@ export default function AdminDashboardPage() {
                   placeholder="Catatan (opsional)"
                   className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
                 />
-                <select
-                  value={balanceWallet}
-                  onChange={(e) => setBalanceWallet(e.target.value)}
-                  aria-label="Dompet"
-                  className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm font-semibold text-ink outline-none focus:border-amber"
-                  data-testid="admin-dompet"
-                >
-                  <option value="nokos">💳 Saldo nokos</option>
-                  <option value="game">🎮 Saldo game</option>
-                </select>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -2383,70 +2027,6 @@ export default function AdminDashboardPage() {
                 {balanceSubmitting ? "Memproses..." : "Proses"}
               </button>
               {balanceMsg && <p className="mt-3 text-sm text-ink">{balanceMsg}</p>}
-            </form>
-
-            {/* Poin dipisah dari saldo, bukan digabung jadi satu form dengan
-                pilihan jenis. Keduanya sering dipakai bersamaan saat menangani
-                komplain, dan satu form yang mode-nya harus digeser dulu adalah
-                cara paling mudah untuk salah menambah saldo padahal maksudnya
-                poin. */}
-            <form onSubmit={submitPoints} className="mt-4 rounded-2xl bg-surface p-5 shadow-card-3d sm:p-6">
-              <h2 className="font-display text-base font-semibold text-ink">Tambah / Kurangi Poin</h2>
-              <p className="mt-1 text-xs text-muted">
-                Poin yang dipakai di Toko Poin dan penukaran hadiah. Tidak mengubah saldo.
-              </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-[1.3fr_1fr_1.3fr_auto]">
-                <input
-                  value={pointsForm.token}
-                  onChange={(e) => setPointsForm((f) => ({ ...f, token: e.target.value }))}
-                  placeholder="Kode akun user"
-                  required
-                  className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
-                />
-                <input
-                  type="number"
-                  value={pointsForm.amount}
-                  onChange={(e) => setPointsForm((f) => ({ ...f, amount: e.target.value }))}
-                  placeholder="Jumlah poin"
-                  required
-                  min="1"
-                  className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
-                />
-                <input
-                  value={pointsForm.note}
-                  onChange={(e) => setPointsForm((f) => ({ ...f, note: e.target.value }))}
-                  placeholder="Catatan (opsional)"
-                  className="rounded-lg border border-line bg-bg px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
-                />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPointsAction("add")}
-                    className={`btn-3d flex-1 rounded-lg border px-3 py-2.5 text-sm font-medium sm:flex-none ${
-                      pointsAction === "add" ? "border-teal bg-teal-soft text-teal-bright" : "border-line text-muted"
-                    }`}
-                  >
-                    + Tambah
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPointsAction("sub")}
-                    className={`btn-3d flex-1 rounded-lg border px-3 py-2.5 text-sm font-medium sm:flex-none ${
-                      pointsAction === "sub" ? "border-rose bg-rose-soft text-rose" : "border-line text-muted"
-                    }`}
-                  >
-                    − Kurangi
-                  </button>
-                </div>
-              </div>
-              <button
-                type="submit"
-                disabled={pointsSubmitting}
-                className="btn-3d mt-4 rounded-lg bg-gradient-to-r from-amber to-amber-bright px-5 py-2.5 text-sm font-medium text-white shadow-3d disabled:opacity-60"
-              >
-                {pointsSubmitting ? "Memproses..." : "Proses Poin"}
-              </button>
-              {pointsMsg && <p className="mt-3 text-sm text-ink">{pointsMsg}</p>}
             </form>
           </div>
 
@@ -2496,7 +2076,7 @@ export default function AdminDashboardPage() {
                     users.map((u) => (
                       <tr key={u.token} className={`border-b border-line last:border-0 ${u.suspended ? "bg-rose-soft/30" : ""}`}>
                         <td className="px-4 py-3 font-mono text-xs text-ink">{u.token}{u.name ? ` · ${u.name}` : ""}</td>
-                        <td className="px-4 py-3 font-medium text-ink">{fmtRp(u.balance)}<span className="block text-[10px] font-normal text-muted">🎮 {fmtRp(u.saldoGame || 0)}</span></td>
+                        <td className="px-4 py-3 font-medium text-ink">{fmtRp(u.balance)}</td>
                         <td className="px-4 py-3 text-xs text-muted">{u.referralCount} orang</td>
                         <td className="px-4 py-3 text-xs text-muted">{fmtDate(u.createdAt)}</td>
                         <td className="px-4 py-3">
@@ -2690,71 +2270,6 @@ export default function AdminDashboardPage() {
       {activeTab === "konten" && (
         <div className="mt-5 space-y-5">
 
-          {/* Room Chat: buka / tutup */}
-          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
-            <h2 className="font-display text-base font-semibold text-ink">💬 WEARTA CHAT</h2>
-            <p className="mt-1 text-xs leading-relaxed text-muted">
-              Saat ditutup, <b>tidak ada pengguna yang bisa mengirim pesan</b> — penutupannya diperiksa di server,
-              bukan cuma mematikan kolom ketik. Pesan lama tetap bisa dibaca, dan admin tetap bisa menulis.
-            </p>
-
-            {!chatCfg ? (
-              <p className="mt-4 text-sm text-muted">Memuat status…</p>
-            ) : (
-              <>
-                <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3">
-                  <span
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl text-lg ${
-                      chatCfg.closed ? "bg-rose-soft text-rose" : "bg-teal-soft text-teal-bright"
-                    }`}
-                  >
-                    {chatCfg.closed ? "🔒" : "🔓"}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-ink">
-                      {chatCfg.closed ? "WEARTA CHAT sedang DITUTUP" : "WEARTA CHAT sedang DIBUKA"}
-                    </p>
-                    <p className="text-[11px] text-muted">
-                      {chatCfg.closed
-                        ? "Pengguna hanya bisa membaca, tidak bisa mengirim pesan."
-                        : "Semua pengguna bisa mengirim pesan seperti biasa."}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setChatClosed(!chatCfg.closed)}
-                    disabled={chatBusy}
-                    className={`btn-3d shrink-0 rounded-lg px-4 py-2 text-xs font-black text-white disabled:opacity-60 ${
-                      chatCfg.closed ? "bg-teal" : "bg-rose"
-                    }`}
-                  >
-                    {chatBusy ? "…" : chatCfg.closed ? "🔓 Buka WEARTA CHAT" : "🔒 Tutup WEARTA CHAT"}
-                  </button>
-                </div>
-
-                <div className="mt-3">
-                  <label className="text-xs font-medium text-muted">Pesan saat ditutup (dilihat pengguna)</label>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    <input
-                      value={chatMsgDraft}
-                      onChange={(e) => setChatMsgDraft(e.target.value.slice(0, 200))}
-                      placeholder="WEARTA CHAT sedang ditutup admin. Coba lagi nanti ya."
-                      className="min-w-[200px] flex-1 rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
-                    />
-                    <button
-                      onClick={saveChatClosedMsg}
-                      disabled={chatBusy}
-                      className="btn-3d shrink-0 rounded-lg bg-amber px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
-                    >
-                      Simpan
-                    </button>
-                  </div>
-                  <p className="mt-1 text-[10px] text-muted">Kosongkan untuk memakai kalimat bawaan.</p>
-                </div>
-
-                {chatSaveMsg && <p className="mt-2 text-xs font-medium text-teal-bright">{chatSaveMsg}</p>}
-              </>
-            )}
-          </div>
 
           {/* Broadcast */}
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
@@ -3185,12 +2700,7 @@ export default function AdminDashboardPage() {
                         {!d.otomatis && d.ocr && !d.ocr.setuju && d.ocr.alasan?.length > 0 && (
                           <p className="mt-1 text-[11px] text-amber-bright" data-testid="chip-ocr-gagal">🤖 OCR tidak lolos: {d.ocr.alasan.join(" ")}</p>
                         )}
-                        {d.wallet === "game" && (
-                          <p className="mt-1 inline-block rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-bold text-purple-700" data-testid="chip-wallet-game">
-                            🎮 Deposit POIN GAME · {Math.round(d.amount / 500)} poin
-                          </p>
-                        )}
-                        {d.kodeUnik > 0 && <p className="mt-0.5 text-[11px] text-muted">Kode unik Rp{d.kodeUnik}{d.wallet === "game" ? " (tidak jadi poin)" : ""}</p>}
+                        {d.kodeUnik > 0 && <p className="mt-0.5 text-[11px] text-muted">Kode unik Rp{d.kodeUnik}</p>}
                         {d.userNote && <p className="mt-1 text-xs text-ink">📝 {d.userNote}</p>}
                         {d.adminNote && <p className="mt-1 text-xs text-rose">Catatan admin: {d.adminNote}</p>}
                       </div>
@@ -3276,13 +2786,7 @@ export default function AdminDashboardPage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === "konfigurasi" && <AdminKonfigurasi />}
       {activeTab === "referral" && <AdminReferral />}
-      {activeTab === "kreator" && <AdminAfiliasi />}
-      {activeTab === "lencana" && <AdminLencana />}
-      {activeTab === "game" && <AdminGame />}
-      {activeTab === "pembaruan" && <AdminPembaruan />}
-      {activeTab === "tarikpoin" && <AdminTarikPoin />}
       {activeTab === "austinpay" && <AdminAustinPay />}
-      {activeTab === "musim" && <AdminMusim />}
 
       {activeTab === "giveaway" && (
         <div className="mt-5 space-y-5">
@@ -3315,7 +2819,7 @@ export default function AdminDashboardPage() {
               <div>
                 <label className="block text-xs font-semibold text-muted">Jenis hadiah</label>
                 <div className="mt-1.5 flex gap-2">
-                  {[["saldo", "💰 Saldo"], ["poin", "⭐ Poin"]].map(([v, l]) => (
+                  {[["saldo", "💰 Saldo"]].map(([v, l]) => (
                     <button
                       key={v}
                       onClick={() => setGwForm((f) => ({ ...f, jenisHadiah: v }))}
@@ -4729,340 +4233,6 @@ export default function AdminDashboardPage() {
             msg={warrantyMsg}
             onAction={handleWarrantyAction}
           />
-
-          {/* Flash Sale */}
-          <div className="glass rounded-2xl p-5 shadow-soft">
-            <h2 className="text-base font-bold text-ink mb-4">⚡ Manajemen Flash Sale</h2>
-            <form onSubmit={createFlashSale} className="grid gap-3 sm:grid-cols-2 mb-4">
-              <input value={flashSaleForm.title} onChange={(e) => setFlashSaleForm((f) => ({...f, title: e.target.value}))} placeholder="Judul flash sale" className="input text-sm" />
-              <input value={flashSaleForm.discountPercent} onChange={(e) => setFlashSaleForm((f) => ({...f, discountPercent: e.target.value}))} type="number" min="1" max="90" placeholder="Diskon (%)" className="input text-sm" />
-              <input value={flashSaleForm.durationHours} onChange={(e) => setFlashSaleForm((f) => ({...f, durationHours: e.target.value}))} type="number" min="1" placeholder="Durasi (jam)" className="input text-sm" />
-              <input value={flashSaleForm.serviceFilter} onChange={(e) => setFlashSaleForm((f) => ({...f, serviceFilter: e.target.value}))} placeholder="Filter layanan (opsional)" className="input text-sm" />
-              <button type="submit" className="sm:col-span-2 rounded-xl bg-rose py-2 text-sm font-bold text-white press">Buat Flash Sale</button>
-            </form>
-            {flashSaleMsg && <p className="text-xs text-teal-bright mb-3">{flashSaleMsg}</p>}
-            {flashSaleLoading ? <div className="skeleton h-16 rounded-xl" /> : flashSales.length === 0 ? (
-              <p className="text-sm text-muted">Belum ada flash sale.</p>
-            ) : (
-              <div className="space-y-2">
-                {flashSales.map((s) => (
-                  <div key={s.id} className="flex items-center gap-3 rounded-xl border border-line p-3">
-                    <span className={`h-2 w-2 rounded-full shrink-0 ${s.active ? "bg-teal-bright" : "bg-rose"}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-ink">{s.title}</p>
-                      <p className="text-xs text-muted">{s.discountPercent}% OFF · {s.serviceFilter || "Semua"} · Berakhir {new Date(s.endAt).toLocaleString("id-ID")}</p>
-                    </div>
-                    <button onClick={() => toggleFlashSale(s.id)} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">{s.active ? "Nonaktif" : "Aktif"}</button>
-                    <button onClick={() => deleteFlashSale(s.id)} className="text-xs text-rose border border-rose/40 rounded-lg px-2 py-1 press">Hapus</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Lucky Hours */}
-          <div className="glass rounded-2xl p-5 shadow-soft">
-            <h2 className="text-base font-bold text-ink mb-4">⏰ Manajemen Lucky Hours</h2>
-            <form onSubmit={createLuckyHour} className="grid gap-3 sm:grid-cols-2 mb-4">
-              <input value={luckyHourForm.startHour} onChange={(e) => setLuckyHourForm((f) => ({...f, startHour: e.target.value}))} type="number" min="0" max="23" placeholder="Jam mulai (0-23)" className="input text-sm" />
-              <input value={luckyHourForm.endHour} onChange={(e) => setLuckyHourForm((f) => ({...f, endHour: e.target.value}))} type="number" min="0" max="23" placeholder="Jam selesai (0-23)" className="input text-sm" />
-              <input value={luckyHourForm.discountPercent} onChange={(e) => setLuckyHourForm((f) => ({...f, discountPercent: e.target.value}))} type="number" min="1" max="90" placeholder="Diskon (%)" className="input text-sm" />
-              <input value={luckyHourForm.label} onChange={(e) => setLuckyHourForm((f) => ({...f, label: e.target.value}))} placeholder="Label (opsional)" className="input text-sm" />
-              <button type="submit" className="sm:col-span-2 rounded-xl bg-amber py-2 text-sm font-bold text-white press">Tambah Lucky Hour</button>
-            </form>
-            {luckyHourMsg && <p className="text-xs text-teal-bright mb-3">{luckyHourMsg}</p>}
-            {luckyHourLoading ? <div className="skeleton h-16 rounded-xl" /> : luckyHours.length === 0 ? (
-              <p className="text-sm text-muted">Belum ada lucky hour.</p>
-            ) : (
-              <div className="space-y-2">
-                {luckyHours.map((h) => (
-                  <div key={h.id} className="flex items-center gap-3 rounded-xl border border-line p-3">
-                    <span className={`h-2 w-2 rounded-full shrink-0 ${h.active ? "bg-amber" : "bg-muted/40"}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-ink">{h.label}</p>
-                      <p className="text-xs text-muted">{h.startHour}:00 – {h.endHour}:00 · {h.discountPercent}% OFF</p>
-                    </div>
-                    <button onClick={() => toggleLuckyHour(h.id)} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">{h.active ? "Nonaktif" : "Aktif"}</button>
-                    <button onClick={() => deleteLuckyHour(h.id)} className="text-xs text-rose border border-rose/40 rounded-lg px-2 py-1 press">Hapus</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {/* TAB: PRODUK                                                  */}
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {activeTab === "produk" && (
-        <div className="mt-5 space-y-5">
-
-          {/* Form Tambah/Edit Produk */}
-          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
-            <h2 className="font-display text-base font-semibold text-ink mb-4">
-              {editingProduct ? "✏️ Edit Produk" : "➕ Tambah Produk Baru"}
-            </h2>
-            {productMsg && <p className="mb-3 text-xs font-medium text-teal-bright">{productMsg}</p>}
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-medium text-muted">Nama Produk *</label>
-                <input value={productForm.name} onChange={(e) => setProductForm((f) => ({...f, name: e.target.value}))} placeholder="Nama produk" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Harga (Rp) *</label>
-                <input type="number" value={productForm.price} onChange={(e) => setProductForm((f) => ({...f, price: e.target.value}))} placeholder="10000" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Kategori</label>
-                <input value={productForm.category} onChange={(e) => setProductForm((f) => ({...f, category: e.target.value}))} placeholder="digital, game, voucher..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Stok (-1 = unlimited)</label>
-                <input type="number" value={productForm.stock} onChange={(e) => setProductForm((f) => ({...f, stock: e.target.value}))} placeholder="-1" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs font-medium text-muted">Deskripsi</label>
-                <textarea value={productForm.description} onChange={(e) => setProductForm((f) => ({...f, description: e.target.value}))} placeholder="Deskripsi produk... (Enter untuk baris baru)" rows={4} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
-                <p className="text-[10px] text-muted mt-0.5">Tekan Enter untuk baris baru. Formatnya akan ditampilkan ke user.</p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">URL Gambar</label>
-                <input value={productForm.imageUrl} onChange={(e) => setProductForm((f) => ({...f, imageUrl: e.target.value}))} placeholder="https://..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Tipe Pengiriman</label>
-                <select value={productForm.deliveryType} onChange={(e) => setProductForm((f) => ({...f, deliveryType: e.target.value}))} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber">
-                  <option value="text">Teks</option>
-                  <option value="image">Gambar (URL)</option>
-                  <option value="file">File (URL)</option>
-                </select>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs font-medium text-muted">Konten Pengiriman *</label>
-                <textarea value={productForm.deliveryContent} onChange={(e) => setProductForm((f) => ({...f, deliveryContent: e.target.value}))} placeholder="Konten yang dikirim ke pembeli setelah berhasil beli..." rows={3} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber resize-none" />
-              </div>
-            </div>
-            <div className="mt-4 flex gap-2.5">
-              {editingProduct && (
-                <button onClick={() => { setEditingProduct(null); setProductForm({ name:"", description:"", price:"", category:"", stock:"-1", imageUrl:"", deliveryType:"text", deliveryContent:"" }); setProductMsg(""); }} className="flex-1 rounded-xl border-2 border-line py-2.5 text-sm font-bold text-ink press">Batal</button>
-              )}
-              <button onClick={submitProduct} disabled={productSubmitting} className="flex-1 rounded-xl bg-amber py-2.5 text-sm font-black text-white press hover:bg-amber-bright disabled:opacity-50" style={{ boxShadow: "0 4px 0 0 rgba(180,100,0,0.4)" }}>
-                {productSubmitting ? "Menyimpan..." : editingProduct ? "Simpan Perubahan" : "Tambah Produk"}
-              </button>
-            </div>
-          </div>
-
-          {/* Tambah Stok */}
-          <div className="glass rounded-2xl p-5 shadow-soft">
-            <h2 className="text-base font-bold text-ink mb-3">📦 Tambah Stok Produk</h2>
-            <div className="flex gap-2.5">
-              <select value={stockAddForm.id} onChange={(e) => setStockAddForm((f) => ({...f, id: e.target.value}))} className="flex-1 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber">
-                <option value="">— Pilih Produk —</option>
-                {adminProducts.map((p) => <option key={p.id} value={p.id}>{p.name} (stok: {p.stock === -1 ? "∞" : p.stock})</option>)}
-              </select>
-              <input type="number" value={stockAddForm.amount} onChange={(e) => setStockAddForm((f) => ({...f, amount: e.target.value}))} placeholder="Jumlah" className="w-24 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
-              <button onClick={addProductStock} className="rounded-xl bg-teal px-4 py-2.5 text-sm font-bold text-white press">Tambah</button>
-            </div>
-          </div>
-
-          {/* Daftar Produk */}
-          <div className="glass rounded-2xl p-5 shadow-soft">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-ink">🛍️ Daftar Produk</h2>
-              <button onClick={loadAdminProducts} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-3 py-1 press">Refresh</button>
-            </div>
-            {adminProductsLoading ? (
-              <div className="space-y-2">{[1,2,3].map((i) => <div key={i} className="skeleton h-14 rounded-xl" />)}</div>
-            ) : adminProducts.length === 0 ? (
-              <p className="text-sm text-muted text-center py-6">Belum ada produk.</p>
-            ) : (
-              <div className="space-y-3">
-                {adminProducts.map((p) => (
-                  <div key={p.id} className={`rounded-2xl border-2 p-4 transition-all ${p.active ? "border-line bg-surface" : "border-line bg-surface2 opacity-70"}`} style={{ boxShadow: "3px 3px 0 0 rgba(0,0,0,0.06)" }}>
-                    <div className="flex items-start gap-3">
-                      {p.imageUrl && <img src={p.imageUrl} alt={p.name} className="h-14 w-14 shrink-0 rounded-xl object-cover border border-line" />}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 flex-wrap">
-                          <div>
-                            <p className="text-sm font-black text-ink">{p.name}</p>
-                            <p className="text-xs text-muted mt-0.5">{p.category || "—"} · Stok: {p.stock === -1 ? "∞" : p.stock} · Terjual: {p.soldCount || 0}</p>
-                          </div>
-                          <p className="text-sm font-black text-amber-bright shrink-0">Rp{Number(p.price).toLocaleString("id-ID")}</p>
-                        </div>
-                        {p.description && <p className="text-xs text-muted mt-1 line-clamp-1">{p.description}</p>}
-                        <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-                          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${p.active ? "border-teal/40 text-teal-bright" : "border-line text-muted"}`}>{p.active ? "Aktif" : "Nonaktif"}</span>
-                          <span className="rounded-full border border-line px-2 py-0.5 text-[10px] text-muted">{p.deliveryType}</span>
-                          <div className="flex gap-1.5 ml-auto">
-                            <button onClick={() => editProductFill(p)} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">Edit</button>
-                            <button onClick={() => toggleProduct(p.id)} className="text-xs text-teal-bright border border-teal/40 rounded-lg px-2 py-1 press">{p.active ? "Nonaktif" : "Aktif"}</button>
-                            <button onClick={() => deleteProduct(p.id)} className="text-xs text-rose border border-rose/30 rounded-lg px-2 py-1 press">Hapus</button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {/* TAB: JOB/SALDO GRATIS                                        */}
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {activeTab === "job" && (
-        <div className="mt-5 space-y-5">
-
-          {/* Form Tambah/Edit Job */}
-          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
-            <h2 className="font-display text-base font-semibold text-ink mb-4">
-              {editingJob ? "✏️ Edit Job" : "➕ Tambah Job Baru"}
-            </h2>
-            {jobMsg && <p className="mb-3 text-xs font-medium text-teal-bright">{jobMsg}</p>}
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-medium text-muted">Judul Job *</label>
-                <input value={jobForm.title} onChange={(e) => setJobForm((f) => ({...f, title: e.target.value}))} placeholder="Judul job..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Reward (Rp) *</label>
-                <input type="number" value={jobForm.reward} onChange={(e) => setJobForm((f) => ({...f, reward: e.target.value}))} placeholder="5000" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Maks Penyelesaian (0 = unlimited)</label>
-                <input type="number" value={jobForm.maxCompletions} onChange={(e) => setJobForm((f) => ({...f, maxCompletions: e.target.value}))} placeholder="0" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Tipe Bukti</label>
-                <select value={jobForm.proofType} onChange={(e) => setJobForm((f) => ({...f, proofType: e.target.value}))} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber">
-                  <option value="text">Teks</option>
-                  <option value="image">Gambar (URL)</option>
-                  <option value="url">URL</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Kategori</label>
-                <input value={jobForm.category} onChange={(e) => setJobForm((f) => ({...f, category: e.target.value}))} placeholder="sosmed, review, tugas..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">URL Gambar</label>
-                <input value={jobForm.imageUrl} onChange={(e) => setJobForm((f) => ({...f, imageUrl: e.target.value}))} placeholder="https://..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs font-medium text-muted">Deskripsi / Instruksi</label>
-                <textarea value={jobForm.description} onChange={(e) => setJobForm((f) => ({...f, description: e.target.value}))} placeholder={"Instruksi yang harus dilakukan user...\nContoh:\n1. Follow akun @artapedia\n2. Like postingan terbaru\n3. Screenshot buktinya"} rows={5} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber font-mono" />
-                <p className="text-[10px] text-muted mt-0.5">Tekan Enter untuk baris baru. Format akan ditampilkan rapi ke user.</p>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={jobForm.proofRequired} onChange={(e) => setJobForm((f) => ({...f, proofRequired: e.target.checked}))} className="h-4 w-4 rounded border-line accent-amber" />
-                  <span className="text-sm font-medium text-ink">Bukti wajib diisi</span>
-                </label>
-              </div>
-            </div>
-            <div className="mt-4 flex gap-2.5">
-              {editingJob && (
-                <button onClick={() => { setEditingJob(null); setJobForm({ title:"", description:"", reward:"", maxCompletions:"0", proofRequired:true, proofType:"text", category:"", imageUrl:"" }); setJobMsg(""); }} className="flex-1 rounded-xl border-2 border-line py-2.5 text-sm font-bold text-ink press">Batal</button>
-              )}
-              <button onClick={submitJob} disabled={jobSubmitting} className="flex-1 rounded-xl bg-teal py-2.5 text-sm font-black text-white press hover:bg-teal-bright disabled:opacity-50" style={{ boxShadow: "0 4px 0 0 rgba(0,100,80,0.4)" }}>
-                {jobSubmitting ? "Menyimpan..." : editingJob ? "Simpan Perubahan" : "Tambah Job"}
-              </button>
-            </div>
-          </div>
-
-          {/* Daftar Job */}
-          <div className="glass rounded-2xl p-5 shadow-soft">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-ink">💼 Daftar Job</h2>
-              <button onClick={loadAdminJobs} className="text-xs text-teal-bright border border-teal/40 rounded-lg px-3 py-1 press">Refresh</button>
-            </div>
-            {adminJobsLoading ? (
-              <div className="space-y-2">{[1,2].map((i) => <div key={i} className="skeleton h-16 rounded-xl" />)}</div>
-            ) : adminJobs.length === 0 ? (
-              <p className="text-sm text-muted text-center py-6">Belum ada job.</p>
-            ) : (
-              <div className="space-y-3">
-                {adminJobs.map((j) => (
-                  <div key={j.id} className={`rounded-2xl border-2 p-4 ${j.active ? "border-line bg-surface" : "border-line bg-surface2 opacity-70"}`} style={{ boxShadow: "3px 3px 0 0 rgba(0,0,0,0.06)" }}>
-                    <div className="flex items-start justify-between gap-2 flex-wrap">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-black text-ink">{j.title}</p>
-                        <p className="text-xs text-muted mt-0.5">
-                          Reward: <span className="text-teal-bright font-bold">Rp{Number(j.reward).toLocaleString("id-ID")}</span>
-                          {j.maxCompletions > 0 && ` · Kuota: ${j.completedCount || 0}/${j.maxCompletions}`}
-                          {j.category && ` · ${j.category}`}
-                        </p>
-                        {j.description && <p className="text-xs text-muted mt-1 line-clamp-1">{j.description}</p>}
-                      </div>
-                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold shrink-0 ${j.active ? "border-teal/40 text-teal-bright" : "border-line text-muted"}`}>{j.active ? "Aktif" : "Nonaktif"}</span>
-                    </div>
-                    <div className="flex gap-1.5 mt-2.5">
-                      <button onClick={() => { setEditingJob(j); setJobForm({ title: j.title, description: j.description || "", reward: String(j.reward), maxCompletions: String(j.maxCompletions || 0), proofRequired: j.proofRequired !== false, proofType: j.proofType || "text", category: j.category || "", imageUrl: j.imageUrl || "" }); }} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">Edit</button>
-                      <button onClick={() => toggleJob(j.id)} className="text-xs text-teal-bright border border-teal/40 rounded-lg px-2 py-1 press">{j.active ? "Nonaktif" : "Aktif"}</button>
-                      <button onClick={() => deleteJob(j.id)} className="text-xs text-rose border border-rose/30 rounded-lg px-2 py-1 press">Hapus</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Review Pengajuan Job */}
-          <div className="glass rounded-2xl p-5 shadow-soft">
-            <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-              <h2 className="text-base font-bold text-ink">📋 Review Pengajuan</h2>
-              <div className="flex gap-2">
-                {[["pending", "⏳ Menunggu"], ["all", "📜 Semua"]].map(([v, l]) => (
-                  <button key={v} onClick={() => { setJobSubFilter(v); loadJobSubmissions(v); }} className={`rounded-xl border px-3 py-1.5 text-xs font-bold press ${jobSubFilter === v ? "bg-ink text-white border-ink" : "border-line text-ink hover:border-amber"}`}>{l}</button>
-                ))}
-              </div>
-            </div>
-            {jobSubMsg && <p className="mb-3 text-xs font-medium text-teal-bright">{jobSubMsg}</p>}
-            {jobSubmissionsLoading ? (
-              <div className="space-y-2">{[1,2,3].map((i) => <div key={i} className="skeleton h-20 rounded-xl" />)}</div>
-            ) : jobSubmissions.length === 0 ? (
-              <p className="text-sm text-muted text-center py-8">Tidak ada pengajuan.</p>
-            ) : (
-              <div className="space-y-3">
-                {jobSubmissions.map((s) => (
-                  <div key={s.id} className="rounded-2xl border-2 border-line bg-surface p-4" style={{ boxShadow: "3px 3px 0 0 rgba(0,0,0,0.06)" }}>
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-black text-ink">{s.jobTitle}</p>
-                        <p className="text-xs text-muted font-mono mt-0.5 truncate">Token: {s.token}</p>
-                        <p className="text-xs text-muted mt-0.5">
-                          Reward: <span className="text-teal-bright font-bold">Rp{Number(s.reward).toLocaleString("id-ID")}</span>
-                          {" · "}{new Date(s.submittedAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                      </div>
-                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold shrink-0 ${s.status === "approved" ? "border-teal/40 text-teal-bright" : s.status === "rejected" ? "border-rose/30 text-rose" : "border-amber/40 text-amber-bright"}`}>
-                        {s.status === "approved" ? "Disetujui" : s.status === "rejected" ? "Ditolak" : "Menunggu"}
-                      </span>
-                    </div>
-                    {s.proof && (
-                      <div className="mb-2 rounded-xl bg-surface2 p-2.5">
-                        <p className="text-[10px] font-bold text-muted mb-1">Bukti:</p>
-                        <p className="text-xs text-ink font-mono break-all line-clamp-3">{s.proof}</p>
-                      </div>
-                    )}
-                    {s.status === "pending" && (
-                      <div className="flex gap-2">
-                        <button onClick={() => reviewJobSub(s.id, "approve")} className="flex-1 rounded-xl bg-teal py-2 text-xs font-black text-white press">✓ Setujui</button>
-                        <div className="flex flex-1 gap-1.5">
-                          <input placeholder="Alasan penolakan..." className="flex-1 min-w-0 rounded-xl border border-line bg-surface px-2.5 py-1.5 text-xs text-ink outline-none focus:border-rose" id={`reject-reason-${s.id}`} />
-                          <button onClick={() => { const el = document.getElementById(`reject-reason-${s.id}`); reviewJobSub(s.id, "reject", el?.value || ""); }} className="rounded-xl bg-rose px-3 py-2 text-xs font-black text-white press">✗ Tolak</button>
-                        </div>
-                      </div>
-                    )}
-                    {s.status === "rejected" && s.rejectionReason && <p className="text-xs text-rose mt-1">Alasan: {s.rejectionReason}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       )}
 
@@ -5548,108 +4718,12 @@ export default function AdminDashboardPage() {
             {settingsMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{settingsMsg}</p>}
           </div>
 
-          {/* Pet Arta Pedia */}
-          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
-            <h2 className="font-display text-base font-semibold text-ink">🥚 Pet Arta Pedia</h2>
-            <p className="mt-1 text-xs leading-relaxed text-muted">
-              Level pet menambah <b>persen cashback deposit</b> — ini uang sungguhan yang keluar tiap kali orang isi
-              saldo. Bonus akhirnya = level × bonus per level, dan <b>selalu</b> dibatasi bonus maksimum, berapa pun
-              yang diisi di kolom pertama.
-            </p>
-
-            {petForm && (
-              <>
-                <div className="mt-4 flex items-center justify-between rounded-lg border border-line bg-surface px-3.5 py-2.5">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-ink">Fitur pet aktif</p>
-                    <p className="text-[11px] text-muted">Kalau dimatikan, halaman petnya tertutup dan bonusnya jadi 0.</p>
-                  </div>
-                  <button
-                    onClick={() => savePetSettings({ enabled: !petForm.enabled })}
-                    disabled={petBusy}
-                    className={`btn-3d relative h-7 w-12 shrink-0 rounded-full transition-colors ${petForm.enabled ? "bg-teal" : "bg-line"}`}
-                    aria-label="Toggle fitur pet"
-                  >
-                    <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${petForm.enabled ? "translate-x-6" : "translate-x-1"}`} />
-                  </button>
-                </div>
-
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {[
-                    { k: "bonusPerLevel", label: "Bonus cashback per level (%)", step: "0.01", max: "1", hint: "mis. 0,1 = tiap level menambah 0,1%" },
-                    { k: "maxBonus", label: "Bonus maksimum (%)", step: "0.1", max: "10", hint: "batas atas, tidak bisa dilewati" },
-                    { k: "xpBeriMakan", label: "XP sekali beri makan", step: "1", max: "100", hint: "100 XP = naik satu level" },
-                    { k: "xpBermain", label: "XP sekali diajak main", step: "1", max: "100", hint: "sekali sehari, sama seperti makan" },
-                    { k: "xpHarian", label: "XP harian tanpa dirawat", step: "1", max: "100", hint: "supaya pet tetap tumbuh pelan" }
-                  ].map((f) => (
-                    <div key={f.k}>
-                      <label className="text-[11px] font-medium text-muted">{f.label}</label>
-                      <input
-                        type="number"
-                        step={f.step}
-                        min="0"
-                        max={f.max}
-                        value={petForm[f.k]}
-                        onChange={(e) => setPetForm((x) => ({ ...x, [f.k]: e.target.value }))}
-                        className="mt-1 w-full rounded-lg border border-line bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-amber"
-                      />
-                      <p className="mt-0.5 text-[10px] text-muted">{f.hint}</p>
-                    </div>
-                  ))}
-
-                  <div className="sm:col-span-2">
-                    <p className="mb-2 rounded-lg border border-amber/30 bg-amber/5 px-3 py-2 text-[11px] text-ink">
-                      Contoh dengan angka sekarang: pet level 10 menambah{" "}
-                      <b>
-                        +
-                        {Math.min(
-                          Number(petForm.maxBonus) || 0,
-                          Number(((Number(petForm.bonusPerLevel) || 0) * 10).toFixed(2))
-                        )}
-                        %
-                      </b>{" "}
-                      cashback, dan level 30 (tertinggi) menambah{" "}
-                      <b>
-                        +
-                        {Math.min(
-                          Number(petForm.maxBonus) || 0,
-                          Number(((Number(petForm.bonusPerLevel) || 0) * 30).toFixed(2))
-                        )}
-                        %
-                      </b>
-                      .
-                    </p>
-                    <button
-                      onClick={() =>
-                        savePetSettings({
-                          bonusPerLevel: Number(petForm.bonusPerLevel) || 0,
-                          maxBonus: Number(petForm.maxBonus) || 0,
-                          xpBeriMakan: Number(petForm.xpBeriMakan) || 0,
-                          xpBermain: Number(petForm.xpBermain) || 0,
-                          xpHarian: Number(petForm.xpHarian) || 0
-                        })
-                      }
-                      disabled={petBusy}
-                      className="btn-3d rounded-lg bg-amber px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
-                    >
-                      {petBusy ? "Menyimpan…" : "Simpan pengaturan pet"}
-                    </button>
-                    {petMsg && <span className="ml-2 text-xs font-medium text-teal-bright">{petMsg}</span>}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
           {/* Loyalitas */}
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
-            <h2 className="font-display text-base font-semibold text-ink">Loyalitas & Cashback</h2>
-            <p className="mt-1 text-xs text-muted">Poin dari transaksi OTP sukses, cashback dari deposit, badge dari total transaksi.</p>
+            <h2 className="font-display text-base font-semibold text-ink">Cashback Deposit</h2>
+            <p className="mt-1 text-xs text-muted">Persen cashback yang masuk ke saldo setiap deposit berhasil (QRIS manual boleh punya angka sendiri di pengaturannya).</p>
             <div className="mt-4 grid gap-5 sm:grid-cols-2">
               {[
-                { key: "pointsPerRupiah", label: "Poin per Rp1.000 transaksi OTP sukses", step: "0.1" },
-                { key: "pointRupiahValue", label: "Nilai tukar 1 poin (Rp)", step: "1" },
-                { key: "minRedeemPoints", label: "Minimal poin untuk ditukar", step: "1", min: "1" },
                 { key: "cashbackDepositPercent", label: "Cashback deposit (%)", step: "0.1" },
               ].map((field) => (
                 <div key={field.key}>
@@ -5666,14 +4740,6 @@ export default function AdminDashboardPage() {
                   />
                 </div>
               ))}
-              <div>
-                <label className="text-xs font-medium text-muted">Threshold badge Silver (total Rp)</label>
-                <input key={`bts-${settings?.loyalty?.badgeThresholds?.silver}`} type="number" min="0" defaultValue={settings?.loyalty?.badgeThresholds?.silver ?? 0} onBlur={(e) => saveLoyalty({ badgeThresholds: { silver: e.target.value } })} disabled={!settings || savingLoyalty} className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Threshold badge Gold (total Rp)</label>
-                <input key={`btg-${settings?.loyalty?.badgeThresholds?.gold}`} type="number" min="0" defaultValue={settings?.loyalty?.badgeThresholds?.gold ?? 0} onBlur={(e) => saveLoyalty({ badgeThresholds: { gold: e.target.value } })} disabled={!settings || savingLoyalty} className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
-              </div>
             </div>
             {loyaltyMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{loyaltyMsg}</p>}
           </div>
@@ -6192,23 +5258,6 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
 
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
-                <div>
-                  <span className="text-sm font-medium text-ink">Koneksi dibanana</span>
-                  <span className="ml-2 text-[11px] text-muted">
-                    {dibanana == null
-                      ? "memuat..."
-                      : dibanana.configured === false
-                      ? "API key belum diisi"
-                      : dibanana.balance != null
-                      ? `saldo Rp${Number(dibanana.balance).toLocaleString("id-ID")}`
-                      : dibanana.error || "gagal cek"}
-                  </span>
-                </div>
-                <button onClick={() => runProviderDiagnose("dibanana")} disabled={providerDiagLoading} className="btn-ghost text-xs">
-                  {providerDiagLoading ? "Mengecek..." : "Diagnosa koneksi"}
-                </button>
-              </div>
               {providerDiag && (
                 <div className="mt-3">
                   <p className="text-xs font-semibold text-ink">{providerDiag.verdict || providerDiag.error}</p>
@@ -6498,39 +5547,6 @@ export default function AdminDashboardPage() {
               </button>
             </form>
             {notifMsg && <p className="text-xs mt-2 text-teal-bright font-semibold">{notifMsg}</p>}
-          </div>
-
-          {/* Statistik Gamifikasi */}
-          <div className="glass rounded-2xl p-5 shadow-soft">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-ink">📊 Statistik Gamifikasi</h2>
-              <button onClick={loadGamStats} disabled={gamStatsLoading} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-3 py-1.5 press disabled:opacity-50">
-                {gamStatsLoading ? "…" : "Refresh"}
-              </button>
-            </div>
-            {!gamStats ? (
-              <p className="text-sm text-muted">Tekan Refresh untuk memuat data.</p>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-                  {[
-                    { label: "Misi Diklaim (7hr)", value: gamStats.weekly.missionsClaimed, icon: "🎯" },
-                    { label: "Mystery Box (7hr)", value: gamStats.weekly.mysteryBoxOpened, icon: "🎁" },
-                    { label: "Kartu Gores (7hr)", value: gamStats.weekly.scratchCardScratched, icon: "🎫" },
-                    { label: "Hadiah Leaderboard", value: gamStats.weekly.weeklyPrizesClaimed, icon: "🏆" },
-                    { label: "Challenge Selesai", value: gamStats.weekly.challengeCompleted, icon: "⚡" },
-                    { label: "User Aktif (7hr)", value: gamStats.weekly.activeUsersWeek, icon: "👥" },
-                  ].map((s) => (
-                    <div key={s.label} className="rounded-xl border border-line bg-surface p-3">
-                      <p className="text-lg">{s.icon}</p>
-                      <p className="text-xl font-extrabold text-ink">{s.value}</p>
-                      <p className="text-[10px] text-muted leading-tight">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[10px] text-muted">Total user: {gamStats.totalUsers} · Data per {new Date(gamStats.asOf).toLocaleString("id-ID")}</p>
-              </>
-            )}
           </div>
         </div>
       )}
