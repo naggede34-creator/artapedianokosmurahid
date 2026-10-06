@@ -20,16 +20,17 @@ export async function GET(req) {
       });
     }
     const d = await diagnoseWarungNokos();
-    const allOk = d.warungnokos_s1?.ok && d.warungnokos_s2?.ok;
+    const allOk = d.warungnokos_s1?.ok && d.warungnokos_s2?.ok && d.api?.ok && d.layanan?.ok !== false && d.produk?.ok !== false;
     const balance = d.profile?.balance;
+    const gagalLangkah = [d.api, d.layanan, d.produk].find((x) => x && !x.ok);
     return NextResponse.json({
       ...d,
       verdict: allOk
-        ? `Koneksi WarungNokos normal.${
+        ? `Koneksi WarungNokos normal (API baru warkosv3): ${d.api.negara} negara, ${d.layanan?.layanan ?? "?"} layanan di ${d.layanan?.negaraUji ?? "-"}.${
             balance != null ? ` Saldo akun: Rp${Number(balance).toLocaleString("id-ID")}.` : ""
           }`
-        : d.profile?.error
-        ? `API key ditolak atau tidak bisa dihubungi: ${d.profile.error}`
+        : gagalLangkah
+        ? `Gagal di ${gagalLangkah.jalur}${gagalLangkah.status ? ` (HTTP ${gagalLangkah.status})` : ""}: ${gagalLangkah.error}${[401, 403].includes(gagalLangkah.status) ? " — cek API key / whitelist IP di dashboard WarungNokos." : ""}`
         : "Sebagian server WarungNokos tidak bisa dihubungi — lihat rincian di bawah."
     });
   } catch (err) {

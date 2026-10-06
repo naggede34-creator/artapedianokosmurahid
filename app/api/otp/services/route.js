@@ -13,7 +13,7 @@ export async function GET(req) {
     }
     return NextResponse.json({ items: await listServices(server) });
   } catch (err) {
-    console.error("[otp/services]", err?.response?.data || err?.message || err);
+    console.error("[otp/services]", server, err?.status || "", err?.path || "", err?.response?.data || err?.message || err);
     return NextResponse.json({ error: err?.message || "Gagal mengambil daftar layanan." }, { status: 502 });
   }
 }
