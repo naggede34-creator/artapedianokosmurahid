@@ -34,6 +34,15 @@ function PanelRuteDeposit() {
     } catch (e) { setGalat(e.message); }
   }, []);
   useEffect(() => { muat(); }, [muat]);
+  const [tes, setTes] = useState({}); // key → { sibuk } | hasil
+  async function jalankanTes(key) {
+    setTes((t) => ({ ...t, [key]: { sibuk: true } }));
+    try {
+      const r = await fetch("/api/admin/rute-deposit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ aksi: "tes", penyedia: key }) });
+      const j = await r.json().catch(() => ({}));
+      setTes((t) => ({ ...t, [key]: r.ok ? j : { ok: false, pesan: j.error || "Gagal." } }));
+    } catch (e) { setTes((t) => ({ ...t, [key]: { ok: false, pesan: e.message } })); }
+  }
   const modeTeks = { utama: "QRIS UTAMA (acak semua nominal)", nominal: "Rute per nominal", mati: "Rute mati (pembeli memilih sendiri)" };
   return (
     <section className="rounded-2xl border-2 border-ink/10 bg-surface p-4 shadow-soft sm:p-5" data-testid="panel-rute">
@@ -53,7 +62,17 @@ function PanelRuteDeposit() {
                   <span className={`text-[11px] font-black ${p.siap ? "text-success" : "text-rose"}`}>{p.siap ? "✅ siap ikut acak" : "⛔ DILEWATI"}</span>
                 </div>
                 {!p.siap && <p className="mt-1 text-[11px] font-bold text-rose">{p.alasan}</p>}
-                <p className="mt-1 text-[11px] text-muted">24 jam: {p.sukses} berhasil · {p.gagal} gagal</p>
+                <p className="mt-1 text-[11px] text-muted">24 jam: {p.sukses} berhasil · {p.gagal} gagal{p.siap ? ` · peluang terpilih ±${p.peluang}%` : ""}</p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  <button type="button" onClick={() => jalankanTes(p.key)} disabled={tes[p.key]?.sibuk} className="rounded-lg border border-line bg-surface px-2.5 py-1 text-[11px] font-black text-ink disabled:opacity-60" data-testid={`rute-tes-${p.key}`}>
+                    {tes[p.key]?.sibuk ? "Menguji…" : "🔌 Tes koneksi"}
+                  </button>
+                  {tes[p.key] && !tes[p.key].sibuk && (
+                    <span className={`text-[11px] font-bold ${tes[p.key].ok ? "text-success" : "text-rose"}`} data-testid={`rute-tes-hasil-${p.key}`}>
+                      {tes[p.key].ok ? "✅" : "❌"} {tes[p.key].pesan}{tes[p.key].ms != null ? ` (${tes[p.key].ms} ms)` : ""}
+                    </span>
+                  )}
+                </div>
                 {p.galatTerakhir && (
                   <p className="mt-1 break-words text-[11px] font-semibold text-amber-bright">
                     Galat terakhir ({new Date(p.galatTerakhir.at).toLocaleString("id-ID")}, Rp{Number(p.galatTerakhir.nominal).toLocaleString("id-ID")}): {p.galatTerakhir.alasan}
