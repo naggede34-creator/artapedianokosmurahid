@@ -1,0 +1,17 @@
+{
+  // Konfigurasi Cloudflare Workers (OpenNext). Nama Worker HARUS sama dengan nama proyek
+  // di dashboard Cloudflare (Workers & Pages) dan dengan service WORKER_SELF_REFERENCE —
+  // kalau beda, deploy gagal: "Service binding 'WORKER_SELF_REFERENCE' references Worker ... not found".
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "artapedianokosmurahid",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // `npx wrangler deploy` otomatis membangun dulu lewat OpenNext, jadi perintah build/deploy
+  // bawaan dashboard Cloudflare (npm run build + npx wrangler deploy) tidak perlu diubah.
+  "build": { "command": "npx opennextjs-cloudflare build" },
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "artapedianokosmurahid" }],
+  "images": { "binding": "IMAGES" },
+  "observability": { "enabled": true }
+}

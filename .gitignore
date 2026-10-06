@@ -4,3 +4,6 @@ node_modules
 .env.local
 .DS_Store
 shot.mjs
+.open-next
+.wrangler
+.dev.vars

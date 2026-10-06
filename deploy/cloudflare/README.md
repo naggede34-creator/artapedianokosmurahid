@@ -3,15 +3,20 @@
 Cloudflare tidak menjalankan Next.js secara langsung; dipakai adaptor resmi
 **OpenNext** (`@opennextjs/cloudflare`). Vercel dan Netlify TIDAK butuh langkah ini.
 
-```bash
-# dari akar proyek
-cp deploy/cloudflare/wrangler.jsonc .
-cp deploy/cloudflare/open-next.config.ts .
-npm install
-npm install -D @opennextjs/cloudflare wrangler
+Berkas `wrangler.jsonc` dan `open-next.config.ts` sudah ada di akar proyek, dan
+`@opennextjs/cloudflare` + `wrangler` sudah terdaftar di devDependencies.
 
+**Lewat Cloudflare Workers Builds (hubungkan repo GitHub):** biarkan Build command
+`npm run build` dan Deploy command `npx wrangler deploy`. `wrangler.jsonc` menjalankan
+`opennextjs-cloudflare build` sendiri sebelum mengunggah.
+Nama proyek di dashboard Cloudflare harus sama dengan `"name"` di `wrangler.jsonc`
+(`artapedianokosmurahid`). Kalau mau ganti nama, ubah `name` DAN `services[0].service`.
+
+**Dari komputer sendiri:**
+```bash
+npm install
 npx opennextjs-cloudflare build
-npx opennextjs-cloudflare deploy      # atau: npx opennextjs-cloudflare preview
+npx wrangler deploy        # atau: npx opennextjs-cloudflare preview
 ```
 
 Isi variabel lewat dashboard Cloudflare (Workers → Settings → Variables and Secrets)
@@ -20,8 +25,8 @@ dari dasbor admin situs (Konfigurasi).
 
 ## Batasan yang perlu diketahui (belum diuji di sini)
 
-- **Ukuran Worker**: batas 3 MiB (gratis) / 10 MiB (berbayar) setelah kompresi. Situs ini
-  besar; kemungkinan besar butuh paket berbayar.
+- **Ukuran Worker**: batas 3 MiB (gratis) / 10 MiB (berbayar) setelah kompresi. Build terakhir
+  ±3,3 MiB (gzip) — di atas batas gratis, jadi butuh paket Workers berbayar.
 - **Modul native/WASM** tidak jalan di Workers: OCR bukti transfer (`tesseract.js`) dan
   pembuat gambar struk (`@resvg/resvg-js`). OCR otomatis gagal dan bukti diserahkan ke
   pengecekan admin (sudah begitu desain kodenya).
