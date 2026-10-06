@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 //   2. Tingginya dikunci lewat rasio, bukan dibiarkan mengikuti gambar. Banner
 //      dengan rasio aneh kalau tidak dikunci akan mendorong seluruh isi halaman
 //      ke bawah saat gambarnya selesai diunduh.
-export default function BannerRail({ placement = "homepage", title = "", className = "" }) {
+export default function BannerRail({ placement = "homepage", title = "", className = "", kompak = false }) {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
@@ -30,7 +30,9 @@ export default function BannerRail({ placement = "homepage", title = "", classNa
 
   if (items.length === 0) return null;
 
-  const satu = items.length === 1;
+  // kompak = dipasang di kolom samping yang sempit: tersusun satu kolom, tanpa
+  // keterangan di atas gambar (gambarnya sudah memuat tulisannya sendiri).
+  const satu = items.length === 1 || kompak;
 
   return (
     <section className={`reveal ${className}`} aria-label="Banner">
@@ -44,7 +46,7 @@ export default function BannerRail({ placement = "homepage", title = "", classNa
       <div
         className={
           satu
-            ? "grid grid-cols-1"
+            ? "grid grid-cols-1 gap-3"
             : // Satu baris yang bisa digeser di layar kecil, kisi rapi di layar besar.
               "flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 scrollbar-none md:grid md:grid-cols-2 md:overflow-visible"
         }
@@ -59,12 +61,12 @@ export default function BannerRail({ placement = "homepage", title = "", classNa
                 loading="lazy"
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
               />
-              {b.label && (
+              {!kompak && b.label && (
                 <span className="absolute left-3 top-3 rounded-full bg-amber px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow-[0_2px_0_rgb(var(--c-orange-bright))]">
                   {b.label}
                 </span>
               )}
-              {b.title && (
+              {!kompak && b.title && (
                 <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-2.5 pt-8 text-left text-xs font-bold text-white">
                   {b.title}
                 </span>

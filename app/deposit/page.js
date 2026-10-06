@@ -972,7 +972,7 @@ export default function DepositPage() {
           {/* Banner di kolom samping, bukan di atas borangnya: yang membuka
               halaman ini sedang di tengah membayar, dan menyisipkan iklan di
               jalur itu membuat orang salah tekan. */}
-          <BannerRail placement="deposit" />
+          <BannerRail placement="deposit" kompak />
 
           <div className="panel-3d p-5">
             <h2 className="title-3d text-base font-extrabold text-ink">Punya kode voucher?</h2>
