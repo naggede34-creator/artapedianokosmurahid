@@ -2,6 +2,7 @@ import { ambilRute } from "@/lib/depositRute";
 import { NextResponse } from "next/server";
 import {
   getSettings,
+  alamatDokumentasi,
   depositLimits,
   depositDisplay,
   manualDepositReady,
@@ -13,7 +14,7 @@ import { warungNokosConfigured } from "@/lib/warungnokos";
 import { rumahOtpConfigured } from "@/lib/rumahotp";
 import { atlanticConfigured } from "@/lib/atlantic";
 import { austinConfigured } from "@/lib/austinpay";
-import { CHANNEL_URL } from "@/lib/links";
+import { CHANNEL_URL, SITE_URL } from "@/lib/links";
 import { infoJaminan } from "@/lib/jaminan";
 import { loginWajib } from "@/lib/webAuth";
 import { sapuDepositTertunda } from "@/lib/depositService";
@@ -130,6 +131,8 @@ export async function GET() {
       comicIntroEnabled: settings.comicIntroEnabled !== false,
       heroChars: settings.heroCharsEnabled === false ? [] : heroChars || [],
       warranty: { enabled: settings.warranty?.enabled !== false, note: settings.warranty?.note || "" },
+      // Alamat dasar yang ditampilkan di dokumentasi API (diatur admin).
+      docs: alamatDokumentasi(settings, SITE_URL),
       ...CHANNELS()
     });
   } catch (err) {
@@ -148,6 +151,7 @@ export async function GET() {
       csUsername: "teatlas",
       depositMin: limits.min,
       depositMax: limits.max,
+      docs: { api: SITE_URL, gateway: SITE_URL },
       ...CHANNELS()
     });
   }

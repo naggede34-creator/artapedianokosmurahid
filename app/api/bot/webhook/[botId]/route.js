@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function GET(req, { params }) {
-  const bot = await ambilBot(params?.botId);
+  const bot = await ambilBot((await params)?.botId);
   return NextResponse.json({
     ok: true,
     endpoint: "webhook bot toko tambahan",
@@ -28,7 +28,7 @@ export async function GET(req, { params }) {
 }
 
 export async function POST(req, { params }) {
-  const botId = String(params?.botId || "");
+  const botId = String((await params)?.botId || "");
   const bot = await ambilBot(botId);
 
   // Bot tidak terdaftar atau sudah dihapus: dibalas 200 supaya Telegram

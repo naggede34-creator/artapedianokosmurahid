@@ -8,7 +8,7 @@ import { PageHeader, Icon } from "@/components/ui";
 const SERVERS = [
   { id: "rumahotp", name: "Server Nokos Murah", badge: "Murah", desc: "Harga paling hemat, cakupan aplikasi & negara terluas." },
   { id: "warungnokos_s1", name: "Server Plus", badge: "Utama", desc: "Jalur utama WarungNokos, stok melimpah." },
-  { id: "warungnokos_s2", name: "Server Express", badge: "Global", desc: "Server2 WarungNokos, pilihan cadangan." },
+  { id: "warungnokos_s2", name: "Server Express", badge: "Global", desc: "Jalur kedua WarungNokos, pilihan cadangan." },
   { id: "dibanana", name: "OTP Fast Murah", badge: "Fast", desc: "OTP masuk cepat, harga hemat, 5 negara." }
 ];
 
@@ -36,6 +36,15 @@ export default function ApiKeyPage() {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  // Base URL diatur admin (Pengaturan Umum → Alamat API).
+  const [baseApi, setBaseApi] = useState("https://artapedianokosmurahid.vercel.app");
+
+  useEffect(() => {
+    fetch("/api/settings/public", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => { if (d?.docs?.api) setBaseApi(d.docs.api); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -148,7 +157,9 @@ export default function ApiKeyPage() {
               ["Ambil daftar aplikasi", "GET /api/v1/services?server=…"],
               ["Ambil negara & harga", "GET /api/v1/countries?server=…&service_id=…"],
               ["Buat pesanan", "POST /api/v1/order"],
-              ["Pantau OTP masuk", "GET /api/v1/orders/status?order_id=…"]
+              ["Pantau OTP masuk", "GET /api/v1/orders/status?order_id=…"],
+              ["Tidak jadi? Batalkan order", "POST /api/v1/orders/cancel"],
+              ["Batalkan tagihan deposit", "POST /api/v1/deposit/cancel"]
             ].map(([step, ep], i) => (
               <li key={ep} className="flex gap-2.5">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-soft text-[10px] font-extrabold text-amber-bright">
@@ -162,6 +173,18 @@ export default function ApiKeyPage() {
               </li>
             ))}
           </ol>
+        </div>
+      </div>
+
+      {/* Base URL */}
+      <div className="fade-up delay-2 card-shadow mt-4 rounded-2xl border border-line bg-surface p-5">
+        <h2 className="text-sm font-bold text-ink">Base URL</h2>
+        <p className="mt-0.5 text-xs text-muted">
+          Alamat dasar semua endpoint. Tambahkan path di belakangnya, mis. <code className="rounded bg-surface2 px-1 py-0.5 font-mono text-[11px]">/api/v1/me</code>.
+        </p>
+        <div className="mt-3 flex items-center gap-2">
+          <code className="flex-1 truncate rounded-lg border border-line bg-surface2 px-3 py-2 font-mono text-xs text-ink">{baseApi}/api/v1</code>
+          <Copy value={`${baseApi}/api/v1`} />
         </div>
       </div>
 

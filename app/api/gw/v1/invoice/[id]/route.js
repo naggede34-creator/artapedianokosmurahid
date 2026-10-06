@@ -18,7 +18,7 @@ export async function GET(req, { params }) {
     return balas(false, { error: "Terlalu banyak permintaan." }, 429);
   }
 
-  const id = params?.id;
+  const id = (await params)?.id;
   const col = await gatewayInvoicesCol();
   const ada = await col.findOne({ invoiceId: id });
   // Milik merchant lain diperlakukan sama dengan tidak ada. Membedakannya

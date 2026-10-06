@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 // Foto profil / grup. Diberi ?v=<versi>, jadi aman di-cache "selamanya":
 // mengganti foto mengubah versinya dan URL-nya.
 export async function GET(req, { params }) {
-  const id = String(params.id || "");
+  const id = String((await params).id || "");
   const kunci = id === "umum" ? "foto:umum" : id.startsWith("g_") ? `foto:${id.slice(2)}` : `foto:${id}`;
   let m = await ambilMedia(kunci);
   if (!m && id === "umum") {

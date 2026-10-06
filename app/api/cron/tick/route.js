@@ -9,6 +9,7 @@
 //
 // Ringan sengaja: hanya pesanan yang masih hidup (≤ 35 menit) yang disentuh.
 import { NextResponse } from "next/server";
+import { cronSah } from "@/lib/cronAuth";
 import { otpOrdersCol } from "@/lib/db";
 import { reconcileOtpOrder } from "@/lib/orderReconcile";
 import { periksaStokWatch } from "@/lib/stokWatch";
@@ -26,15 +27,12 @@ export const maxDuration = 60;
 const UMUR_MAKS_MS = 35 * 60 * 1000;
 const MAKS_PER_DENYUT = 40;
 
-function isAuthorized(req) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true;
-  if ((req.headers.get("authorization") || "") === `Bearer ${secret}`) return true;
-  return new URL(req.url).searchParams.get("secret") === secret;
+async function isAuthorized(req) {
+  return cronSah(req);
 }
 
 export async function GET(req) {
-  if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!(await isAuthorized(req))) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const hasil = { pesanan: 0, otpMasuk: 0, refund: 0, diganti: 0, galat: [] };
   try {

@@ -8,6 +8,7 @@
 // Logika pemasangannya sendiri ada di lib/botWebhook.js supaya jalur tombol dan
 // jalur bot owner tidak punya versi masing-masing yang lama-lama berbeda.
 import { NextResponse } from "next/server";
+import { cronSah, rahasiaCronSah } from "@/lib/cronAuth";
 import { adminSah } from "@/lib/adminAuth";
 import { shopBotConfigured, shopBotOwners, rawWebhookSecret, webhookSecretValid } from "@/lib/shopBot";
 import {
@@ -23,19 +24,17 @@ export const dynamic = "force-dynamic";
 async function authorize(req) {
   if (await adminSah(req)) return { ok: true, via: "admin" };
 
-  const secret = (process.env.CRON_SECRET || "").trim();
   const given = new URL(req.url).searchParams.get("secret");
-  const header = req.headers.get("authorization");
 
-  if (!secret) return { ok: true, via: "terbuka" };
-  if (given === secret || header === `Bearer ${secret}`) return { ok: true, via: "secret" };
+  if (!(await rahasiaCronSah()).length) return { ok: true, via: "terbuka" };
+  if (await cronSah(req)) return { ok: true, via: "secret" };
 
   return {
     ok: false,
     error:
       "Butuh izin. Tiga caranya: login dulu di /admin lalu pakai tombol di Dashboard Admin, " +
-      "tambahkan ?secret=NILAI_CRON_SECRET di URL (nilainya ada di Environment Variables " +
-      "Vercel, bukan ditebak), atau kirim /pasangwebhook ke bot owner.",
+      "tambahkan ?secret=NILAI_CRON_SECRET di URL (nilainya ada di dasbor admin → Konfigurasi → Rahasia cron, " +
+      "atau di Environment Variables, bukan ditebak), atau kirim /pasangwebhook ke bot owner.",
     hint: given ? "Secret yang kamu kirim tidak cocok dengan CRON_SECRET." : "Kamu belum mengirim ?secret= sama sekali."
   };
 }

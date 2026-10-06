@@ -11,6 +11,7 @@
 // kirim beberapa kali sehari, pakai cron eksternal (cron-job.org / UptimeRobot)
 // yang memanggil URL di atas, jangan tambah jadwal di vercel.json.
 import { NextResponse } from "next/server";
+import { cronSah } from "@/lib/cronAuth";
 import { getSettings, serverDisplay } from "@/lib/settings";
 import { buildStockReport, DEFAULT_REPORT_SERVICES } from "@/lib/stockReport";
 import { stockReportNotif } from "@/lib/telegram";
@@ -19,16 +20,12 @@ import { umumkan } from "@/lib/notifyHub";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-function isAuthorized(req) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // belum diset = terbuka, cocok untuk setup awal saja
-  const auth = req.headers.get("authorization") || "";
-  if (auth === `Bearer ${secret}`) return true;
-  return new URL(req.url).searchParams.get("secret") === secret;
+async function isAuthorized(req) {
+  return cronSah(req);
 }
 
 export async function GET(req) {
-  if (!isAuthorized(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!(await isAuthorized(req))) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const raw = new URL(req.url).searchParams.get("services");
     const services = raw

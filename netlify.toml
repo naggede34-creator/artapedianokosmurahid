@@ -5,5 +5,10 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Netlify memasang adaptor Next.js (v5) otomatis; baris ini hanya mengunci pemakaiannya.
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Netlify tidak punya cron bawaan untuk rute Next.js: panggil
+#   https://DOMAINMU/api/cron/tick?secret=RAHASIA_CRON
+# dari cron eksternal (cron-job.org dll) tiap 1 menit. Rahasia diisi di dasbor admin → Konfigurasi.

@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 // Belum masuk → formulir kode admin tampil DI TEMPAT (URL yang sama), bukan dilempar ke /admin/login: selesai masuk, halaman ini langsung terbuka.
 export default async function AdminTampilanLayout({ children }) {
-  const isAdmin = await adminSahCookieStore(cookies());
+  const isAdmin = await adminSahCookieStore(await cookies());
   if (!isAdmin) return <AdminGerbang />;
   return <div className="min-h-screen bg-bg"><AdminSesi />{children}</div>;
 }
