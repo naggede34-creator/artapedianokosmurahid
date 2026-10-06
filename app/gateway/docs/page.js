@@ -174,20 +174,37 @@ export default function GatewayDocsPage() {
       <div className="card mt-4 p-5">
         <h2 className="font-display text-base font-black text-ink">📡 Callback</h2>
         <p className="mt-2 text-xs leading-relaxed text-muted">
-          Saat tagihan dibayar, kami POST ke callback URL kamu dengan badan seperti di bawah.
+          Saat tagihan dibayar, kami POST JSON ke callback URL kamu (bawaan dari dasbor, atau
+          <code> callback_url</code> per tagihan). Syaratnya: <b>https</b>, domain publik (bukan IP / localhost),
+          port 443 atau 8443, tanpa redirect. Balas status <b>2xx</b> kalau sudah kamu terima.
         </p>
-        <Blok judul="Yang kami kirim" kode={`{
+        <Blok judul="Yang kami kirim" kode={`POST /callback-kamu
+Content-Type: application/json
+X-Artapedia-Event: invoice.paid
+X-Artapedia-Signature: <hex HMAC-SHA256 dari badan mentah, kunci = API key kamu>
+
+{
   "invoice_id": "INV-A1B2C3D4E5F6G7",
   "status": "paid",
   "amount": 25000,
+  "pay_amount": 25137,
   "net_amount": ${25000 - BIAYA_QRIS},
-  "merchant_ref": "ORDER-123"
+  "merchant_ref": "ORDER-123",
+  "paid_at": "2026-09-24T10:25:00.000Z"
 }`} />
+        <p className="mt-3 text-[11px] leading-relaxed text-muted">
+          Kalau balasanmu bukan 2xx atau server-mu tak terjangkau, kami mengulang: 1, 5, 15 menit, 1 jam,
+          lalu 6 jam kemudian (total 6 percobaan). Callback bisa datang lebih dari sekali untuk tagihan yang sama —
+          proses berdasarkan <code>invoice_id</code> dan abaikan yang sudah kamu tandai lunas.
+        </p>
+        <Blok judul="Verifikasi tanda tangan (Node.js)" kode={`import crypto from "node:crypto";
+
+// pakai badan MENTAH (sebelum di-parse JSON)
+const hitung = crypto.createHmac("sha256", process.env.ARTAPEDIA_GW_KEY).update(rawBody).digest("hex");
+const sah = crypto.timingSafeEqual(Buffer.from(hitung), Buffer.from(req.headers["x-artapedia-signature"] || ""));`} />
         <p className="mt-3 rounded-xl border-2 border-amber/40 bg-amber-soft px-3 py-2 text-[11px] leading-relaxed text-ink">
-          ⚠️ <b>Jangan percaya isi callback begitu saja.</b> Alamat callback kamu terbuka di internet, dan
-          siapa pun yang menebaknya bisa mengirim <code>{"{\"status\":\"paid\"}\""}</code> palsu ke sana.
-          Selalu panggil balik <code>GET /api/gw/v1/invoice/{"{id}"}</code> untuk memastikan sebelum
-          mengirim barang. Itu juga yang kami lakukan terhadap callback dari penyedia pembayaran kami.
+          ⚠️ Tetap <b>konfirmasi</b> dengan <code>GET /api/gw/v1/invoice/{"{id}"}</code> sebelum mengirim barang
+          kalau tanda tangannya tidak kamu periksa. Jangan pernah mempercayai callback yang tidak bertanda tangan sah.
         </p>
       </div>
 
