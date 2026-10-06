@@ -8,7 +8,7 @@ Berkas `wrangler.jsonc` dan `open-next.config.ts` sudah ada di akar proyek, dan
 
 **Lewat Cloudflare Workers Builds (hubungkan repo GitHub):** biarkan Build command
 `npm run build` dan Deploy command `npx wrangler deploy`. `wrangler.jsonc` menjalankan
-`opennextjs-cloudflare build` sendiri sebelum mengunggah.
+`opennextjs-cloudflare build` otomatis lewat skrip `postbuild` (hanya aktif di Cloudflare, env `WORKERS_CI=1`).
 Nama proyek di dashboard Cloudflare harus sama dengan `"name"` di `wrangler.jsonc`
 (`artapedianokosmurahid`). Kalau mau ganti nama, ubah `name` DAN `services[0].service`.
 
@@ -16,7 +16,8 @@ Nama proyek di dashboard Cloudflare harus sama dengan `"name"` di `wrangler.json
 ```bash
 npm install
 npx opennextjs-cloudflare build
-npx wrangler deploy        # atau: npx opennextjs-cloudflare preview
+CF_OPENNEXT=1 npm run build   # atau: npx opennextjs-cloudflare build
+npx wrangler deploy
 ```
 
 Isi variabel lewat dashboard Cloudflare (Workers → Settings → Variables and Secrets)
