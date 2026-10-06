@@ -3474,17 +3474,18 @@ export default function AdminDashboardPage() {
               )}
             </div>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              Penarikan <b>tidak otomatis</b>. Kirim uangnya sendiri ke e-wallet di bawah, baru tandai
-              <b> Sudah Dikirim</b>.
+              Penarikan merchant dikirim <b>otomatis lewat AustinPay</b> (min Rp10.000, biaya Rp1.000). Di sini hanya yang
+              butuh keputusanmu: permintaan yang masuk saat penarikan otomatis dimatikan, dan yang <b>hasilnya belum pasti</b>.
             </p>
             <p className="mt-2 rounded-xl border border-amber/30 bg-amber/10 px-3 py-2 text-[11px] leading-relaxed text-ink">
-              ⚠️ Saldo penggunanya <b>sudah dipotong</b> sejak ia mengajukan. Jadi kalau kamu menolak,
-              saldonya dikembalikan penuh termasuk biaya — dan kalau kamu menandai “Sudah Dikirim” padahal
-              belum mengirim, uang itu hilang dari sisi pengguna tanpa pernah sampai.
+              ⚠️ Saldo merchant <b>sudah dipotong</b> sejak ia mengajukan. Menolak mengembalikan saldo penuh termasuk biaya.
+              Untuk status <b>DICEK</b> (belum pasti), lihat dulu riwayat di AustinPay — tandai “Sudah Dikirim” hanya bila uangnya
+              benar-benar terkirim, dan “Tolak” hanya bila tidak ada jejaknya. Sistem juga mencocokkan sendiri tiap menit.
+              Penarikan otomatis yang dimatikan sendiri karena AustinPay bermasalah dinyalakan lagi lewat Konfigurasi (<code>GW_WD_OTOMATIS</code>).
             </p>
 
             <div className="mt-4 flex gap-2">
-              {[["pending", "Menunggu"], ["done", "Selesai"], ["rejected", "Ditolak"], ["all", "Semua"]].map(([v, l]) => (
+              {[["pending", "Perlu keputusan"], ["proses", "Diproses"], ["done", "Selesai"], ["rejected", "Gagal/Ditolak"], ["all", "Semua"]].map(([v, l]) => (
                 <button
                   key={v}
                   onClick={() => { setGwFilter(v); setTimeout(loadGateway, 0); }}
@@ -3512,15 +3513,16 @@ export default function AdminDashboardPage() {
                       <div className="min-w-0">
                         <p className="text-lg font-black tabular-nums text-ink">{fmtRp(w.diterima)}</p>
                         <p className="text-[11px] text-muted">
-                          ditarik {fmtRp(w.amount)} − biaya {fmtRp(w.biaya)}
+                          saldo terpotong {fmtRp(w.amount)} = diterima {fmtRp(w.diterima)} + biaya {fmtRp(w.biaya)}
+                          {w.otomatis ? " · otomatis" : " · manual"}
                         </p>
                       </div>
                       <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${
-                        w.status === "pending" ? "border-amber text-amber-bright"
-                          : w.status === "done" ? "border-teal/40 text-teal-bright"
-                          : "border-rose/40 text-rose"
+                        w.status === "done" ? "border-teal/40 text-teal-bright"
+                          : w.status === "rejected" ? "border-rose/40 text-rose"
+                          : "border-amber text-amber-bright"
                       }`}>
-                        {w.status === "pending" ? "MENUNGGU" : w.status === "done" ? "SELESAI" : "DITOLAK"}
+                        {{ pending: "MENUNGGU ADMIN", "tidak-pasti": "DICEK", baru: "DIKIRIM", dikirim: "DIKIRIM", proses: "DIPROSES", done: "SELESAI", rejected: "GAGAL / DITOLAK" }[w.status] || String(w.status).toUpperCase()}
                       </span>
                     </div>
 
@@ -3555,13 +3557,15 @@ export default function AdminDashboardPage() {
                     </dl>
 
                     {w.alasan && <p className="mt-2 text-[11px] text-rose">Alasan: {w.alasan}</p>}
+                    {w.providerId && <p className="mt-1 text-[11px] text-muted">ID AustinPay: <code>{w.providerId}</code></p>}
+                    {w.status === "tidak-pasti" && w.pesanProvider && <p className="mt-1 text-[11px] text-amber-bright">{w.pesanProvider}</p>}
 
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         onClick={() => { navigator.clipboard?.writeText(w.nomor); setGwMsg("Nomor e-wallet disalin."); }}
                         className="rounded-xl border border-line px-3 py-2 text-xs font-bold text-ink press"
                       >📋 Salin nomor</button>
-                      {w.status === "pending" && (
+                      {(w.status === "pending" || w.status === "tidak-pasti") && (
                         <>
                           <button
                             onClick={() => gatewayAksi(w.wdId, "selesai")}

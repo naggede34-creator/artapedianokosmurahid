@@ -9,7 +9,8 @@
 //   3. Stempel waktu `sentAt` yang terlalu lama (> 10 menit) ditolak (anti replay).
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
-import { depositsCol } from "@/lib/db";
+import { depositsCol, gatewayInvoicesCol } from "@/lib/db";
+import { periksaDanKabari } from "@/lib/gatewayBayar";
 import { syncDeposit } from "@/lib/depositService";
 import { cfg } from "@/lib/config";
 import { catatKejadian } from "@/lib/keamanan";
@@ -41,7 +42,15 @@ export async function POST(req) {
   if (!trx) return NextResponse.json({ error: "transactionId kosong." }, { status: 400 });
   try {
     const deposit = await (await depositsCol()).findOne({ provider: "qrisfast", providerRef: trx });
-    if (!deposit) return NextResponse.json({ ok: true, tidakDikenal: true }); // 200 agar AustinPay tidak mengulang terus
+    if (!deposit) {
+      // Bukan deposit pengguna: mungkin tagihan QRIS Gateway milik merchant.
+      const tagihan = await (await gatewayInvoicesCol()).findOne({ provider: "austinpay", txnId: trx });
+      if (tagihan) {
+        const r = await periksaDanKabari(tagihan.invoiceId);
+        return NextResponse.json({ ok: true, gateway: true, status: r.invoice?.status || null });
+      }
+      return NextResponse.json({ ok: true, tidakDikenal: true }); // 200 agar AustinPay tidak mengulang terus
+    }
     const hasil = await syncDeposit(deposit);
     return NextResponse.json({ ok: true, status: hasil.status });
   } catch (err) {

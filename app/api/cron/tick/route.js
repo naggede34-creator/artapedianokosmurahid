@@ -18,6 +18,8 @@ import { pengingatDeposit } from "@/lib/depositPengingat";
 import { sapuBanSementara } from "@/lib/penggunaAdmin";
 import { prosesSiaran } from "@/lib/siaran";
 import { sapuWdInstan } from "@/lib/wdInstan";
+import { sapuWdGateway, cekSaldoAustinGateway } from "@/lib/gatewayWd";
+import { sapuTagihanGateway } from "@/lib/gatewayBayar";
 import { pindaiBerkala } from "@/lib/keamanan";
 
 export const dynamic = "force-dynamic";
@@ -91,6 +93,16 @@ export async function GET(req) {
     hasil.wd = await sapuWdInstan({ maks: 20, jeda: 0 });
   } catch (err) {
     hasil.galat.push(`wd: ${err?.message || err}`);
+  }
+  // QRIS Gateway: tagihan yang sudah dibayar tapi webhook-nya tidak sampai, dan penarikan merchant yang macet / belum pasti.
+  try {
+    hasil.gateway = {
+      tagihan: await sapuTagihanGateway({ maks: 20 }),
+      wd: await sapuWdGateway({ maks: 20, jeda: 0 })
+    };
+    await cekSaldoAustinGateway().catch(() => {});
+  } catch (err) {
+    hasil.galat.push(`gateway: ${err?.message || err}`);
   }
   // Pemindaian keamanan otomatis (jalan sendiri tiap ±10 menit; di luar jadwal ini dilewati).
   try {

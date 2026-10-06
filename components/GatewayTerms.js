@@ -33,12 +33,13 @@ const PASAL = [
   },
   {
     ikon: "🏦",
-    judul: "Penarikan diperiksa manusia",
+    judul: "Penarikan otomatis",
     isi: [
-      `Minimal ${rp(WD_MIN)}, biaya ${rp(BIAYA_WD)} per penarikan.`,
-      "Bukan otomatis — admin memeriksa dulu, biasanya 1×24 jam pada hari kerja.",
+      `Minimal ${rp(WD_MIN)} (yang diterima di e-wallet), biaya ${rp(BIAYA_WD)} per penarikan — biayanya ditambahkan di atas nominal dan ikut dipotong dari saldo gateway.`,
+      "Dikirim otomatis lewat AustinPay, biasanya selesai dalam hitungan menit. Bila layanan sedang gangguan, permintaan masuk antrean dan diproses admin.",
+      "Ada batas jumlah penarikan per hari, dan satu nomor e-wallet tidak bisa dipakai banyak akun. Penarikan yang mencurigakan bisa ditahan untuk diperiksa.",
       "NOMOR E-WALLET YANG SALAH TIDAK BISA DITARIK KEMBALI. Periksa dua kali sebelum mengirim; kami tidak bisa membatalkan uang yang sudah sampai ke orang lain.",
-      "Penarikan yang ditolak mengembalikan saldomu penuh, termasuk biayanya."
+      "Penarikan yang gagal atau ditolak mengembalikan saldomu penuh, termasuk biayanya."
     ]
   },
   {

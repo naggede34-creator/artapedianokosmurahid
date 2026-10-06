@@ -12,7 +12,10 @@ Dibangun dengan Next.js 15 (App Router) + MongoDB, tema komik 3D, bisa dipasang 
   manual + OCR bukti. Rute deposit dipilih acak/berbobot oleh admin, ada cashback deposit.
 - **Undang teman** (bonus deposit pertama + level), **Leaderboard**, **Giveaway**, voucher, transfer
   saldo, tarik saldo, riwayat & mutasi.
-- **API Key + dokumentasi** untuk nokos dan QRIS gateway (`/api-docs`, `/gateway`).
+- **QRIS Gateway** untuk merchant: tagihan QRIS dibuat lewat **AustinPay** (QRIS FAST), saldo masuk otomatis (biaya Rp250 per tagihan dibayar),
+  dan **penarikan ke e-wallet otomatis lewat AustinPay** (minimal Rp10.000 yang diterima, biaya Rp1.000 ditambahkan di atasnya).
+  Kalau AustinPay bermasalah berulang, penarikan otomatis mati sendiri dan permintaan masuk antrean manual admin.
+- **API Key + dokumentasi** untuk nokos dan QRIS gateway (`/api-docs`, `/gateway/docs`).
 - **Notifikasi** ke channel Telegram (order nokos, deposit, dll.), bot utama, dan **bot reseller**.
 
 **Admin** (`/admin`)

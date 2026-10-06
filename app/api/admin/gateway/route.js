@@ -1,8 +1,12 @@
 // Panel admin QRIS Gateway: antrean penarikan + tindakan atasnya.
 //
-// Penarikan sengaja MANUAL. Tidak ada jalur otomatis yang mengirim uang keluar
-// tanpa ada manusia yang melihat tujuannya — kalau ada akun yang diambil alih
-// orang lain, jeda ini satu-satunya kesempatan menangkapnya sebelum uangnya
+// Penarikan merchant dikirim OTOMATIS lewat AustinPay (lib/gatewayWd.js). Antrean
+// di sini berisi yang butuh keputusan manusia: permintaan yang masuk saat
+// penarikan otomatis dimatikan ("pending") dan yang hasilnya belum pasti
+// ("tidak-pasti"). Daftar lainnya hanya untuk dipantau.
+//
+// (Catatan lama, tetap berlaku untuk antrean manual: kalau ada akun yang diambil
+// alih orang lain, jeda ini satu-satunya kesempatan menangkapnya sebelum uangnya
 // pergi dan tidak bisa ditarik kembali.
 import { NextResponse } from "next/server";
 import { adminSah } from "@/lib/adminAuth";
@@ -14,13 +18,21 @@ export const dynamic = "force-dynamic";
 
 const rp = (n) => `Rp${Number(n || 0).toLocaleString("id-ID")}`;
 
+// "pending" di tab admin = yang butuh keputusan admin; "proses" = sedang dikirim otomatis.
+function filterStatus(status) {
+  if (status === "all") return { status: { $ne: "disiapkan" } };
+  if (status === "pending") return { status: { $in: ["pending", "tidak-pasti"] } };
+  if (status === "proses") return { status: { $in: ["baru", "dikirim", "proses"] } };
+  return { status };
+}
+
 export async function GET(req) {
   if (!await adminSah(req)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   const status = new URL(req.url).searchParams.get("status") || "pending";
   const col = await gatewayWithdrawalsCol();
   const daftar = await col
-    .find(status === "all" ? {} : { status })
+    .find(filterStatus(status))
     .sort({ createdAt: -1 })
     .limit(200)
     .toArray();
@@ -36,7 +48,7 @@ export async function GET(req) {
   const akun = await akunCol.find({ token: { $in: tokens } }).toArray();
   const saldo = Object.fromEntries(akun.map((a) => [a.token, a.balance || 0]));
 
-  const pending = await col.countDocuments({ status: "pending" });
+  const pending = await col.countDocuments({ status: { $in: ["pending", "tidak-pasti"] } });
 
   return NextResponse.json({
     pending,
@@ -54,6 +66,9 @@ export async function GET(req) {
       atasNama: w.atasNama,
       status: w.status,
       alasan: w.alasan || "",
+      otomatis: Boolean(w.otomatis),
+      providerId: w.providerId || null,
+      pesanProvider: w.pesanProvider || "",
       createdAt: w.createdAt,
       selesaiAt: w.selesaiAt || null
     }))

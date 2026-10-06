@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ajukanPenarikan } from "@/lib/gateway";
+import { publikWdGateway } from "@/lib/gatewayWd";
 import { rateLimit } from "@/lib/rateLimit";
 import { kabariAdmin, gwPenarikanNotif } from "@/lib/gatewayNotify";
 
@@ -15,9 +16,12 @@ export async function POST(req) {
     return NextResponse.json({ error: "Terlalu banyak permintaan penarikan. Coba lagi 5 menit lagi." }, { status: 429 });
   }
 
-  const r = await ajukanPenarikan({ token, amount, ewallet, nomor, atasNama });
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
+  const r = await ajukanPenarikan({ token, amount, ewallet, nomor, atasNama, ip });
   if (!r.ok) return NextResponse.json({ error: r.error }, { status: r.status || 400 });
 
-  kabariAdmin(gwPenarikanNotif({ ...r.penarikan, token })).catch(() => {});
-  return NextResponse.json({ ok: true, penarikan: r.penarikan, saldo: r.saldo });
+  // Penarikan otomatis dikabari admin oleh gatewayWd saat selesai/gagal; yang manual
+  // perlu diproses admin, jadi dikabari sekarang.
+  if (!r.otomatis) kabariAdmin(gwPenarikanNotif({ ...r.penarikan, token })).catch(() => {});
+  return NextResponse.json({ ok: true, penarikan: publikWdGateway(r.penarikan), saldo: r.saldo, otomatis: r.otomatis });
 }

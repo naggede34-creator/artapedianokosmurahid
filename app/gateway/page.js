@@ -29,7 +29,11 @@ function Lencana({ status }) {
     pending: { t: "MENUNGGU", c: "bg-amber-soft text-amber-bright border-amber" },
     expired: { t: "KEDALUWARSA", c: "bg-rose-soft text-rose border-rose/60" },
     done: { t: "SELESAI", c: "bg-success-soft text-success border-success" },
-    rejected: { t: "DITOLAK", c: "bg-rose-soft text-rose border-rose/60" }
+    rejected: { t: "GAGAL / DITOLAK", c: "bg-rose-soft text-rose border-rose/60" },
+    baru: { t: "DIKIRIM", c: "bg-amber-soft text-amber-bright border-amber" },
+    dikirim: { t: "DIKIRIM", c: "bg-amber-soft text-amber-bright border-amber" },
+    proses: { t: "DIPROSES", c: "bg-amber-soft text-amber-bright border-amber" },
+    "tidak-pasti": { t: "DICEK", c: "bg-amber-soft text-amber-bright border-amber" }
   };
   const p = peta[status] || { t: String(status || "-").toUpperCase(), c: "bg-surface2 text-muted border-line" };
   return <span className={`shrink-0 rounded-full border-2 px-2 py-0.5 text-[10px] font-black ${p.c}`}>{p.t}</span>;
@@ -48,7 +52,7 @@ export default function GatewayPage() {
   const [tagihanAktif, setTagihanAktif] = useState(null);
 
   const [wdNominal, setWdNominal] = useState("");
-  const [wdEwallet, setWdEwallet] = useState("dana");
+  const [wdEwallet, setWdEwallet] = useState("");
   const [wdNomor, setWdNomor] = useState("");
   const [wdNama, setWdNama] = useState("");
   const [wdSibuk, setWdSibuk] = useState(false);
@@ -73,6 +77,7 @@ export default function GatewayPage() {
       if (r.ok) {
         setData(d);
         setCbUrl(d.callbackUrl || "");
+        setWdEwallet((cur) => (d.batas?.ewallet?.some((e) => e.kode === cur) ? cur : d.batas?.ewallet?.[0]?.kode || ""));
       }
     } catch {}
     setMemuat(false);
@@ -96,6 +101,14 @@ export default function GatewayPage() {
     }, 4000);
     return () => clearInterval(t);
   }, [tagihanAktif, token, muat]);
+
+  // Penarikan otomatis yang belum final dipantau sampai selesai, supaya statusnya berubah tanpa memuat ulang.
+  const adaWdBerjalan = !!data?.penarikan?.some((w) => ["baru", "dikirim", "proses", "tidak-pasti"].includes(w.status));
+  useEffect(() => {
+    if (!adaWdBerjalan) return undefined;
+    const t = setInterval(muat, 6000);
+    return () => clearInterval(t);
+  }, [adaWdBerjalan, muat]);
 
   async function buatQris(e) {
     e.preventDefault();
@@ -124,7 +137,9 @@ export default function GatewayPage() {
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Gagal mengajukan penarikan.");
-      kabar("Penarikan diajukan. Admin memproses biasanya dalam 1×24 jam.");
+      kabar(d.otomatis
+        ? (d.penarikan?.status === "done" ? "Penarikan berhasil dikirim ke e-wallet." : "Penarikan sedang dikirim otomatis. Statusnya muncul di bawah.")
+        : "Penarikan diajukan. Admin memproses biasanya dalam 1×24 jam.");
       setWdNominal("");
       muat();
     } catch (err) { kabar(err.message, false); }
@@ -263,12 +278,18 @@ export default function GatewayPage() {
                 Diterima bersih {rupiah(tagihanAktif.diterima)} · biaya {rupiah(tagihanAktif.biaya)}
               </p>
 
-              {tagihanAktif.status === "pending" && tagihanAktif.qrString && (
+              {tagihanAktif.status === "pending" && (tagihanAktif.qrImage || tagihanAktif.qrString) && (
                 <img
                   alt="QRIS pembayaran"
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(tagihanAktif.qrString)}`}
+                  src={tagihanAktif.qrImage || `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(tagihanAktif.qrString)}`}
                   className="mx-auto mt-4 h-60 w-60 rounded-2xl border-2 border-ink bg-white p-2"
                 />
+              )}
+              {tagihanAktif.status === "pending" && tagihanAktif.bayar > 0 && (
+                <p className="mt-3 text-xs font-bold text-ink">
+                  Pembeli membayar <span className="text-amber-bright">{rupiah(tagihanAktif.bayar)}</span>
+                  <span className="block font-medium text-muted">sudah termasuk kode unik &amp; biaya penyedia — nominal harus pas</span>
+                </p>
               )}
               {tagihanAktif.status === "paid" && <p className="mt-4 text-5xl">✅</p>}
               {tagihanAktif.status === "expired" && <p className="mt-4 text-5xl">⏰</p>}
@@ -359,16 +380,18 @@ export default function GatewayPage() {
           <form onSubmit={tarik} className="card p-5">
             <h2 className="font-display text-base font-black text-ink">🏦 Tarik ke e-wallet</h2>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              Min {rupiah(b?.wdMin ?? 5000)} · biaya {rupiah(b?.biayaWd ?? 1000)} per penarikan.
-              Diproses admin, biasanya 1×24 jam.
+              Min {rupiah(b?.wdMin ?? 10000)} · biaya {rupiah(b?.biayaWd ?? 1000)} per penarikan.{" "}
+              {b?.wdOtomatis
+                ? "Dikirim otomatis lewat AustinPay, biasanya selesai dalam hitungan menit."
+                : "Sedang diproses manual oleh admin, biasanya 1×24 jam."}
             </p>
 
-            <label className="mt-3 block text-xs font-black uppercase tracking-wide text-muted">Nominal</label>
+            <label className="mt-3 block text-xs font-black uppercase tracking-wide text-muted">Nominal yang diterima</label>
             <input type="number" inputMode="numeric" value={wdNominal} onChange={(e) => setWdNominal(e.target.value)}
-              min={b?.wdMin} required placeholder={String(b?.wdMin ?? 5000)} className="mt-1.5 input w-full text-sm" />
-            {Number(wdNominal) >= (b?.wdMin ?? 5000) && (
+              min={b?.wdMin} max={b?.wdMax} required placeholder={String(b?.wdMin ?? 10000)} className="mt-1.5 input w-full text-sm" />
+            {Number(wdNominal) >= (b?.wdMin ?? 10000) && (
               <p className="mt-1 text-[11px] font-bold text-success">
-                Sampai ke e-wallet: {rupiah(Number(wdNominal) - (b?.biayaWd ?? 1000))}
+                Sampai ke e-wallet: {rupiah(Number(wdNominal))} · saldo gateway terpotong {rupiah(Number(wdNominal) + (b?.biayaWd ?? 1000))}
               </p>
             )}
 
@@ -395,8 +418,8 @@ export default function GatewayPage() {
               ⚠️ Periksa nomornya dua kali. Uang yang terkirim ke nomor yang salah tidak bisa ditarik kembali.
             </p>
 
-            <button type="submit" disabled={wdSibuk || data?.dibekukan} className="btn-primary press mt-3 w-full">
-              {wdSibuk ? "Mengajukan…" : "Ajukan Penarikan"}
+            <button type="submit" disabled={wdSibuk || data?.dibekukan || !wdEwallet} className="btn-primary press mt-3 w-full">
+              {wdSibuk ? "Memproses…" : b?.wdOtomatis ? "Tarik Sekarang" : "Ajukan Penarikan"}
             </button>
           </form>
 

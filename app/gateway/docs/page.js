@@ -90,7 +90,7 @@ export default function GatewayDocsPage() {
           <tbody>
             <Baris nama="Nominal tagihan" tipe="" ket={`${rp(INVOICE_MIN)} sampai ${rp(INVOICE_MAX)}`} />
             <Baris nama="Biaya per tagihan" tipe="" ket={`${rp(BIAYA_QRIS)}, dipotong hanya kalau tagihannya DIBAYAR. Tagihan yang tidak dibayar tidak dikenai apa pun.`} />
-            <Baris nama="Penarikan" tipe="" ket={`Minimal ${rp(WD_MIN)}, biaya ${rp(BIAYA_WD)} per penarikan.`} />
+            <Baris nama="Penarikan" tipe="" ket={`Otomatis lewat AustinPay. Minimal ${rp(WD_MIN)} yang diterima di e-wallet, biaya ${rp(BIAYA_WD)} per penarikan (ditambahkan di atas nominal).`} />
             <Baris nama="Konversi ke saldo Arta Pedia" tipe="" ket="Tanpa biaya." />
             <Baris nama="Batas permintaan" tipe="" ket="60 tagihan per menit per akun." />
           </tbody>
@@ -125,14 +125,22 @@ export default function GatewayDocsPage() {
   "amount": 25000,
   "fee": ${BIAYA_QRIS},
   "net_amount": ${25000 - BIAYA_QRIS},
+  "pay_amount": 25137,
   "qr_string": "00020101021226...",
-  "payment_url": "https://...",
+  "qr_image": "data:image/png;base64,...",
+  "payment_url": null,
   "status": "pending",
   "merchant_ref": "ORDER-123",
   "expired_at": "2026-09-24T10:30:00.000Z"
 }`} />
 
         <p className="mt-3 text-[11px] leading-relaxed text-muted">
+          <b>pay_amount</b> adalah nominal yang HARUS dibayar pembeli: nominal tagihan ditambah kode unik dan
+          biaya penyedia (QRIS FAST). Tampilkan angka ini ke pembeli — nominal yang tidak pas tidak terdeteksi.
+          Saldomu bertambah sebesar <b>net_amount</b>. <b>qr_image</b> adalah gambar QR siap tampil
+          (boleh kosong).
+        </p>
+        <p className="mt-2 text-[11px] leading-relaxed text-muted">
           <b>qr_string</b> adalah isi kode QRIS mentah. Ubah jadi gambar QR dengan pustaka QR apa pun di
           sisimu — jangan mengirim string ini ke layanan pembuat QR pihak ketiga, karena itu berarti
           membocorkan data pembayaran pembelimu ke pihak yang tidak perlu tahu.
