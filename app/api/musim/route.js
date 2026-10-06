@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { musimSekarang } from "@/lib/musim";
 
-export const dynamic = "force-dynamic";
+// Tanpa `dynamic = "force-dynamic"`: di Next 15 itu menimpa Cache-Control buatan sendiri jadi "no-store". GET handler memang tidak di-cache bawaan.
 
 // Publik: event musiman yang sedang berjalan (banner, diskon, tema otomatis) + 4 event berikutnya.
 export async function GET() {

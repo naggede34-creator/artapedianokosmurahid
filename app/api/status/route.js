@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { statusLayanan } from "@/lib/statusLayanan";
 
-export const dynamic = "force-dynamic";
+// Tanpa `dynamic = "force-dynamic"`: di Next 15 itu menimpa Cache-Control buatan sendiri jadi "no-store". GET handler memang tidak di-cache bawaan.
 
 // Publik, tanpa login. Hanya angka ringkas per layanan — tidak ada nama penyedia, kunci, maupun data pengguna.
 export async function GET() {

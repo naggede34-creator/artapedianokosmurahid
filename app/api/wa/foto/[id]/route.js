@@ -1,6 +1,6 @@
 import { ambilMedia } from "@/lib/wa/inti";
 
-export const dynamic = "force-dynamic";
+// Tanpa `dynamic = "force-dynamic"`: di Next 15 itu menimpa Cache-Control buatan sendiri jadi "no-store". GET handler memang tidak di-cache bawaan.
 
 // Foto profil / grup. Diberi ?v=<versi>, jadi aman di-cache "selamanya":
 // mengganti foto mengubah versinya dan URL-nya.

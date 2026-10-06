@@ -1,6 +1,6 @@
 import { gambarBan } from "@/lib/tampilanBan";
 
-export const dynamic = "force-dynamic";
+// Tanpa `dynamic = "force-dynamic"`: di Next 15 itu menimpa Cache-Control buatan sendiri jadi "no-store". GET handler memang tidak di-cache bawaan.
 
 // GET ?k=gambar|gambarLatar&v=<versi> — gambar tampilan ban (versi di URL → boleh di-cache lama).
 export async function GET(req) {

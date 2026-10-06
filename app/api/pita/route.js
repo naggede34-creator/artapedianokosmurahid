@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { samarkan } from "@/lib/samarkan";
 import { otpOrdersCol, gameMatchCol, usersCol } from "@/lib/db";
 
-export const dynamic = "force-dynamic";
+// Tanpa `dynamic = "force-dynamic"`: di Next 15 itu menimpa Cache-Control buatan sendiri jadi "no-store". GET handler memang tidak di-cache bawaan.
 
 let cache = { t: 0, v: null };
 

@@ -1,6 +1,6 @@
 import { ambilMedia } from "@/lib/wa/inti";
 
-export const dynamic = "force-dynamic";
+// Tanpa `dynamic = "force-dynamic"`: di Next 15 itu menimpa Cache-Control buatan sendiri jadi "no-store". GET handler memang tidak di-cache bawaan.
 
 // Gambar & catatan suara. Id-nya acak 128-bit (kapabilitas): hanya yang
 // menerima pesannya yang tahu. Isinya tidak berubah, jadi boleh di-cache.

@@ -21,11 +21,11 @@ const nextConfig = {
   // /_next/static, itu tetap boleh di-cache lama karena namanya sudah pakai hash
   // unik per build) untuk selalu dicek ulang ke server, bukan diambil dari cache.
   async headers() {
-    return [
-      {
-        source: "/((?!_next/static|_next/image|favicon.ico).*)",
-        headers: [
-          { key: "Cache-Control", value: "no-store, must-revalidate" },
+    // Rute yang sengaja di-cache publik (gambar versi-di-URL, status ringan): Cache-Control-nya diatur rutenya sendiri.
+    // Di Next 15 header dari config MENIMPA header rute, jadi rute-rute ini dikecualikan dari aturan no-store di bawah
+    // (header keamanan tetap dipasang lewat aturan kedua).
+    const CACHE_SENDIRI = "api/wa/foto|api/wa/media|api/ban-tampilan/gambar|api/musim|api/pita|api/status";
+    const keamanan = [
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-XSS-Protection", value: "1; mode=block" },
@@ -55,8 +55,10 @@ const nextConfig = {
           { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }
-        ]
-      }
+    ];
+    return [
+      { source: `/((?!_next/static|_next/image|favicon.ico|${CACHE_SENDIRI}).*)`, headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }, ...keamanan] },
+      { source: `/:path((?:${CACHE_SENDIRI}).*)`, headers: keamanan }
     ];
   }
 };
