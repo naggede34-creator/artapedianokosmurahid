@@ -1401,6 +1401,19 @@ export default function AdminDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Mode dasbor terpisah: tab pertama kelompok itu dibuka langsung, jadi datanya dimuat sekali di sini.
+  useEffect(() => {
+    if (!modeK) return;
+    const id = tabModeK[0];
+    if (id === "depositmanual") loadManualDeposits(manualFilter);
+    if (id === "tarik") loadWithdrawals();
+    if (id === "juara") loadLeaderboard(lbOffset);
+    if (id === "gateway") loadGateway();
+    if (id === "bot") loadBots();
+    if (id === "reseller") loadReseller();
+    if (id === "giveaway") loadGw2();
+  }, [modeK]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function handleWarrantyAction(id, action) {
     const adminNote = action === "reject" ? (prompt("Alasan penolakan (opsional):") ?? "") : "";
     setWarrantyMsg("");
@@ -5869,18 +5882,6 @@ function ExportSection() {
   }, []);
 
   useEffect(() => { loadAutoBackup(); }, [loadAutoBackup]);
-  // Mode dasbor terpisah: tab pertama kelompok itu dibuka langsung, jadi datanya dimuat sekali di sini.
-  useEffect(() => {
-    if (!modeK) return;
-    const id = tabModeK[0];
-    if (id === "depositmanual") loadManualDeposits(manualFilter);
-    if (id === "tarik") loadWithdrawals();
-    if (id === "juara") loadLeaderboard(lbOffset);
-    if (id === "gateway") loadGateway();
-    if (id === "bot") loadBots();
-    if (id === "reseller") loadReseller();
-    if (id === "giveaway") loadGw2();
-  }, [modeK]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function abSimpan(patch) {
     setAbBusy("simpan"); setAbMsg(""); setAbErr("");

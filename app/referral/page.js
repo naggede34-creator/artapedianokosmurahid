@@ -79,9 +79,9 @@ export default function ReferralPage() {
         <div className="pointer-events-none absolute -bottom-20 left-6 h-52 w-52 rounded-full bg-teal/25 blur-3xl" />
         <div className="relative">
           <p className="text-xs font-semibold text-teal-soft/90">Link undanganmu</p>
-          <p className="mt-3 break-all rounded-xl bg-white/10 px-4 py-3 font-mono text-sm text-white">
+          <div className="mt-3 break-all rounded-xl bg-white/10 px-4 py-3 font-mono text-sm text-white">
             {link || <Skel className="inline-block h-4 w-56 align-middle" />}
-          </p>
+          </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               onClick={copyLink}
