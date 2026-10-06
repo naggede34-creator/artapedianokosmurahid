@@ -26,6 +26,7 @@ const cols = [
       { href: "/cara-pakai", label: "Cara pakai" },
       { href: "/faq", label: "FAQ" },
       { href: "/informasi", label: "Pusat informasi" },
+      { href: "/status", label: "Status layanan" },
       { href: "/syarat", label: "Syarat & ketentuan" }
     ]
   }

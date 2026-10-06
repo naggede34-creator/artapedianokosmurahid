@@ -1,5 +1,6 @@
 "use client";
 
+import { SkelHalaman, SkelBaris, Skel } from "@/components/Skeleton";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useUser } from "@/app/providers";
@@ -92,7 +93,7 @@ export default function GiveawayPage() {
       {err && <p className="mt-4 rounded-xl border border-rose/30 bg-rose-soft px-3 py-2.5 text-sm font-bold text-rose">{err}</p>}
 
       {loading ? (
-        <p className="mt-5 text-sm text-muted">Memuat…</p>
+        <SkelBaris jumlah={3} tinggi="h-24" className="mt-5" />
       ) : items.length === 0 ? (
         <div className="mt-5 rounded-2xl border-2 border-dashed border-line p-10 text-center">
           <p className="text-4xl">🎁</p>

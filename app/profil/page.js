@@ -2,6 +2,7 @@
 
 // Profil Akun: identitas, level, statistik, kode akun, tautan cepat, preferensi,
 // dan keluar dari akun. Semua data diambil dari endpoint yang sudah ada.
+import { SkelHalaman, SkelBaris, Skel } from "@/components/Skeleton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useUser } from "@/app/providers";
@@ -137,7 +138,7 @@ export default function ProfilPage() {
   const fotoWa = wa?.fotoV ? `/api/wa/foto/${wa.pid}?v=${wa.fotoV}` : null;
   const tampilNama = name || "Pengguna Artapedia";
 
-  if (!ready) return <div className="mx-auto max-w-content px-4 py-10 text-sm text-muted">Memuat profil…</div>;
+  if (!ready) return <SkelHalaman kartu={4} />;
   if (!token) {
     return (
       <div className="mx-auto max-w-content px-4 py-16 text-center">

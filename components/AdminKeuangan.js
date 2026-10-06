@@ -2,9 +2,11 @@
 
 // Dasbor "Laporan & Ekspor" (admin): ekspor CSV, koreksi saldo massal dari CSV (pratinjau → terapkan), dan pembukuan pengeluaran + laba.
 import { useCallback, useEffect, useState } from "react";
+import AdminSiaran from "@/components/AdminSiaran";
+import AdminAkun from "@/components/AdminAkun";
 
 const rp = (n) => `Rp${Number(n || 0).toLocaleString("id-ID")}`;
-const TAB = [{ id: "ekspor", l: "📤 Ekspor CSV" }, { id: "koreksi", l: "🧮 Koreksi saldo massal" }, { id: "buku", l: "📒 Pembukuan & laba" }];
+const TAB = [{ id: "ekspor", l: "📤 Ekspor CSV" }, { id: "koreksi", l: "🧮 Koreksi saldo massal" }, { id: "buku", l: "📒 Pembukuan & laba" }, { id: "siaran", l: "📣 Pesan siaran" }, { id: "akun", l: "👮 Akun admin" }];
 
 async function api(path, body) {
   const r = await fetch(path, { method: body ? "POST" : "GET", headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined, cache: "no-store" });
@@ -159,8 +161,8 @@ export default function AdminKeuangan() {
   return (
     <main className="mx-auto max-w-3xl space-y-4 px-4 py-5" data-testid="admin-keuangan">
       <header>
-        <h1 className="font-display text-xl font-black text-ink">🧾 Laporan & Ekspor</h1>
-        <p className="text-xs text-muted">Ekspor data, koreksi saldo massal, dan pembukuan pengeluaran.</p>
+        <h1 className="font-display text-xl font-black text-ink">🧰 Alat Admin</h1>
+        <p className="text-xs text-muted">Ekspor data, koreksi saldo massal, pembukuan, pesan siaran, dan akun admin berperan.</p>
       </header>
       <div role="tablist" className="flex gap-1 overflow-x-auto">
         {TAB.map((t) => (
@@ -171,6 +173,8 @@ export default function AdminKeuangan() {
       {tab === "ekspor" && <Ekspor />}
       {tab === "koreksi" && <Koreksi />}
       {tab === "buku" && <Buku />}
+      {tab === "siaran" && <AdminSiaran />}
+      {tab === "akun" && <AdminAkun />}
     </main>
   );
 }

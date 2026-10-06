@@ -14,10 +14,12 @@ export async function GET(req) {
     const out = await ambilBanPublik();
     const t = String(new URL(req.url).searchParams.get("t") || "").trim().toUpperCase().slice(0, 40);
     if (t) {
-      await sapuBanSementara({ token: t }).catch(() => {});
+      const sapu = await sapuBanSementara({ token: t }).catch(() => ({ dibuka: 0 }));
       const u = await (await usersCol()).findOne({ token: t }, { projection: { suspended: 1, suspendedSampai: 1 } }).catch(() => null);
-      if (u && !u.suspended) out.dibuka = true;
-      else if (u?.suspendedSampai) out.sampai = new Date(u.suspendedSampai).getTime();
+      // `dibuka` = klien perlu memuat ulang: ban SEMENTARA baru saja berakhir (disapu di sini), atau layar yang sedang menghitung mundur
+      // (?c=1) mendapati akunnya sudah tidak dibekukan. Akun yang tidak dibekukan tapi IP-nya diblokir TIDAK memicu muat ulang.
+      if (sapu.dibuka > 0 || (new URL(req.url).searchParams.get("c") === "1" && u && !u.suspended)) out.dibuka = true;
+      else if (u?.suspended && u.suspendedSampai) out.sampai = new Date(u.suspendedSampai).getTime();
     }
     return NextResponse.json(out, { headers: H });
   } catch { return NextResponse.json({ aktif: false }, { headers: H }); }

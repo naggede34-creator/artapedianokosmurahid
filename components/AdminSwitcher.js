@@ -8,7 +8,7 @@ export const DASBOR_ADMIN = [
   { id: "pusat", href: "/admin", label: "Pusat", ikon: "🏠", ket: "Semua dasbor di satu tempat" },
   { id: "pengguna", href: "/admin/pengguna", label: "Pengguna & Blokir", ikon: "👥", ket: "Cari pengguna, lihat detail, blokir / buka blokir" },
   { id: "setor", href: "/admin/setor-gmail", label: "Stor Gmail", ikon: "📧", ket: "Untung per email, room, setoran, upah, penarikan saldo Stor" },
-  { id: "laporan", href: "/admin/keuangan", label: "Laporan & Ekspor", ikon: "🧾", ket: "Ekspor CSV, koreksi saldo massal, pembukuan & laba" },
+  { id: "laporan", href: "/admin/keuangan", label: "Alat Admin", ikon: "🧰", ket: "Ekspor CSV, koreksi saldo massal, pembukuan, pesan siaran, akun admin berperan" },
   { id: "tampilan", href: "/admin/tampilan", label: "Popup & Tampilan", ikon: "🎨", ket: "Popup pengumuman untuk pengguna & layar akun di-ban" },
   { id: "ringkas", href: "/admin/dashboard?k=ringkas", label: "Ringkasan", ikon: "📊", ket: "Statistik & semua transaksi" },
   { id: "uang", href: "/admin/dashboard?k=uang", label: "Keuangan", ikon: "💰", ket: "Deposit manual, tarik saldo, AustinPay, referral, giveaway, juara, job" },

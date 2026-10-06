@@ -1,5 +1,6 @@
 "use client";
 
+import { SkelHalaman, SkelBaris, Skel } from "@/components/Skeleton";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useUser } from "@/app/providers";
@@ -274,7 +275,7 @@ export default function ResellerPage() {
       )}
 
       {loading ? (
-        <p className="mt-5 text-sm text-muted">Memuat…</p>
+        <SkelBaris jumlah={3} tinggi="h-24" className="mt-5" />
       ) : items.length === 0 ? (
         <div className="mt-3 rounded-2xl border-2 border-dashed border-line p-8 text-center">
           <p className="text-3xl">🤖</p>

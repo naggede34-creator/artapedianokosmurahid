@@ -17,6 +17,7 @@ import { sapuGame } from "@/lib/game/inti";
 import { sapuDepositTertunda } from "@/lib/depositService";
 import { pengingatDeposit } from "@/lib/depositPengingat";
 import { sapuBanSementara } from "@/lib/penggunaAdmin";
+import { prosesSiaran } from "@/lib/siaran";
 import { sapuWdInstan } from "@/lib/wdInstan";
 import { sapuSetorGmail } from "@/lib/setorGmail";
 import { pindaiBerkala } from "@/lib/keamanan";
@@ -68,6 +69,12 @@ export async function GET(req) {
     hasil.deposit = await sapuDepositTertunda({ maks: 30, anggaranMs: 30000 });
   } catch (err) {
     hasil.galat.push(`deposit: ${err?.message || err}`);
+  }
+  // Pesan siaran yang masih berjalan: kirim satu kelompok lagi.
+  try {
+    hasil.siaran = await prosesSiaran({ kelompok: 300 });
+  } catch (err) {
+    hasil.galat.push(`siaran: ${err?.message || err}`);
   }
   // Ban sementara yang sudah lewat waktunya dibuka otomatis.
   try {

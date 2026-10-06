@@ -76,7 +76,7 @@ export default function LayarBan() {
     const t = setTimeout(async () => {
       try {
         const k = localStorage.getItem("artapedia_token") || "";
-        const r = await fetch(`/api/ban-tampilan?t=${encodeURIComponent(k)}`, { cache: "no-store" }).then((x) => x.json());
+        const r = await fetch(`/api/ban-tampilan?t=${encodeURIComponent(k)}&c=1`, { cache: "no-store" }).then((x) => x.json());
         if (r.dibuka) window.location.reload();
       } catch {}
     }, Math.min(tunggu, 2147483000));

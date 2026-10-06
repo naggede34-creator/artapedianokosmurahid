@@ -1,5 +1,6 @@
 "use client";
 
+import { SkelHalaman, SkelBaris, Skel } from "@/components/Skeleton";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useLembarTerbuka } from "@/lib/lembarTerbuka";
@@ -37,7 +38,7 @@ function downloadCsv(filename, csv) {
 
 export default function RiwayatPage() {
   return (
-    <Suspense fallback={<div className="mx-auto max-w-content px-5 py-10 text-sm text-muted">Memuat…</div>}>
+    <Suspense fallback={<div className="mx-auto max-w-content px-5 py-10"><SkelBaris jumlah={6} /></div>}>
       <RiwayatInner />
     </Suspense>
   );

@@ -21,6 +21,32 @@ function countdown(ms) {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
+/**
+ * Timer QRIS: cincin sisa waktu + hitung mundur besar. Hijau → kuning (separuh waktu lewat) → merah berdenyut (≤ 5 menit).
+ * `totalMs` = masa berlaku penuh (dibuat → kedaluwarsa); bila tak diketahui, cincin memakai sisa awal yang pertama terlihat.
+ */
+function TimerQris({ sisaMs, totalMs }) {
+  const awal = useRef(0);
+  awal.current = Math.max(awal.current, sisaMs, totalMs || 0);
+  const total = Math.max(awal.current, 1);
+  const frac = Math.max(0, Math.min(1, sisaMs / total));
+  const kritis = sisaMs <= 5 * 60_000;
+  const warna = kritis ? "rgb(var(--c-danger, 225 29 72))" : frac <= 0.5 ? "rgb(var(--c-amber, 245 158 11))" : "rgb(var(--c-success, 16 185 129))";
+  const R = 22, K = 2 * Math.PI * R;
+  return (
+    <div className={`flex items-center gap-2.5 ${kritis ? "animate-pulse" : ""}`} data-testid="timer-qris" data-kritis={kritis ? "1" : "0"} role="timer" aria-label="Sisa waktu pembayaran">
+      <svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true">
+        <circle cx="26" cy="26" r={R} fill="none" stroke="currentColor" strokeOpacity="0.12" strokeWidth="5" />
+        <circle cx="26" cy="26" r={R} fill="none" stroke={warna} strokeWidth="5" strokeLinecap="round" strokeDasharray={K} strokeDashoffset={K * (1 - frac)} transform="rotate(-90 26 26)" style={{ transition: "stroke-dashoffset 1s linear, stroke .4s" }} />
+      </svg>
+      <div className="leading-tight">
+        <span className="block font-mono text-xl font-extrabold tabular-nums text-ink" data-testid="timer-qris-angka">{countdown(sisaMs)}</span>
+        <span className="block text-[10px] font-bold uppercase tracking-wide" style={{ color: warna }}>{kritis ? "Segera bayar!" : "sisa waktu bayar"}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function DepositPage() {
   const { token, balance, refreshBalance } = useUser();
 
@@ -395,7 +421,8 @@ export default function DepositPage() {
   const expiresIn = order?.expiredAt ? new Date(order.expiredAt).getTime() - now : null;
   const timeUp = status === "pending" && expiresIn !== null && expiresIn <= 0;
   const payTotal = order ? Number(order.totalAmount || order.amount) : 0;
-  const stepIndex = { amount: 0, method: 1, payment: 2 }[step];
+  // Langkah ke-4 "Selesai" menyala saat pembayaran terkonfirmasi (saldo sudah masuk).
+  const stepIndex = status === "completed" && step === "payment" ? 3 : { amount: 0, method: 1, payment: 2 }[step];
 
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
@@ -499,7 +526,7 @@ export default function DepositPage() {
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="manga-card manga-rush halftone hd-paper anim-drop p-5 sm:p-6">
           <ol className="mb-6 flex items-center gap-2 text-xs font-semibold" aria-label="Langkah deposit">
-            {["Nominal", "Metode", "Bayar"].map((label, i) => (
+            {["Nominal", "Metode", "Bayar", "Selesai"].map((label, i) => (
               <li key={label} className="flex flex-1 items-center gap-2">
                 <span
                   data-state={i < stepIndex ? "done" : i === stepIndex ? "now" : "next"}
@@ -510,7 +537,7 @@ export default function DepositPage() {
                   {i < stepIndex ? "✓" : i + 1}
                 </span>
                 <span className={i === stepIndex ? "text-ink" : "text-muted"}>{label}</span>
-                {i < 2 && (
+                {i < 3 && (
                   <span
                     className={`h-1 flex-1 rounded-full ${i < stepIndex ? "bg-success" : "bg-line"}`}
                   />
@@ -775,9 +802,7 @@ export default function DepositPage() {
                       Menunggu pembayaran
                     </Badge>
                     {expiresIn !== null && (
-                      <span className="font-mono text-sm font-semibold tabular-nums text-ink" aria-label="Sisa waktu">
-                        {countdown(expiresIn)}
-                      </span>
+                      <TimerQris sisaMs={expiresIn} totalMs={order?.createdAt && order?.expiredAt ? new Date(order.expiredAt).getTime() - new Date(order.createdAt).getTime() : 0} />
                     )}
                   </div>
 

@@ -12,7 +12,12 @@ const PERPANJANG_MS = 10 * 60_000;
 
 /** Dipanggil kode halaman admin saat menerima 401: memunculkan jendela masuk (bukan pindah halaman). */
 export function sesiHabis() {
-  if (typeof window !== "undefined") window.dispatchEvent(new Event("admin:sesi-habis"));
+  if (typeof window === "undefined") return undefined;
+  // 401 juga dijawab untuk jalur yang TIDAK diizinkan bagi peran akun admin tambahan: bila sesinya sebenarnya masih sah,
+  // jangan munculkan jendela masuk (itu bukan sesi habis) — cukup abaikan.
+  fetch("/api/admin/sesi", { method: "POST", cache: "no-store" })
+    .then((r) => { if (!r.ok) window.dispatchEvent(new Event("admin:sesi-habis")); return r.text().catch(() => ""); })
+    .catch(() => window.dispatchEvent(new Event("admin:sesi-habis")));
   return undefined;
 }
 
@@ -36,7 +41,7 @@ export default function AdminSesi() {
         if (admin && r.status === 401) {
           // Gangguan sesaat (mis. konfigurasi belum terbaca) atau sesi hampir habis: perpanjang lalu ulangi sekali.
           if (await perpanjang()) { try { return await asli(input, init); } catch { return r; } }
-          sesiHabis();
+          window.dispatchEvent(new Event("admin:sesi-habis"));
         }
         return r;
       };

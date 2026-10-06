@@ -1,5 +1,6 @@
 "use client";
 
+import { SkelHalaman, SkelBaris, Skel } from "@/components/Skeleton";
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useUser } from "@/app/providers";
@@ -32,7 +33,7 @@ function sortWithWaFirst(items) {
 
 export default function OtpPage() {
   return (
-    <Suspense fallback={<div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10 text-sm text-muted">Memuat...</div>}>
+    <Suspense fallback={<SkelHalaman kartu={4} />}>
       <OtpPageInner />
     </Suspense>
   );

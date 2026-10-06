@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { ADMIN_COOKIE, adminCodeMatches, adminCodeIsDefault, createAdminSession, adminCookieOptions } from "@/lib/adminAuth";
+import { ADMIN_COOKIE, adminCodeMatches, adminCodeIsDefault, createAdminSession, createAdminSessionAkun, adminCookieOptions } from "@/lib/adminAuth";
+import { cariAkunDariKode, catatMasuk } from "@/lib/adminAkun";
 import { sendMonitorLog, adminLoginLog } from "@/lib/monitor";
 import { rateLimit } from "@/lib/rateLimit";
 import { adminTerkunci, catatLoginAdminGagal, loginAdminBerhasil } from "@/lib/keamanan";
@@ -15,7 +16,18 @@ export async function POST(req) {
       return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi dalam 5 menit." }, { status: 429 });
     }
 
-    if (!code || !(await adminCodeMatches(code))) {
+    // Kode utama → Owner. Bukan kode utama → cari di akun admin tambahan (peran terbatas).
+    const owner = !!code && (await adminCodeMatches(code));
+    const akun = !owner && code ? await cariAkunDariKode(code).catch(() => null) : null;
+    if (akun) {
+      sendMonitorLog(`🔑 <b>LOGIN ADMIN (${akun.peran})</b>\n👤 ${String(akun.nama).replace(/[<>&]/g, "")}\n🌐 ${ip || "-"}`);
+      loginAdminBerhasil(ip);
+      catatMasuk(akun.id);
+      const r = NextResponse.json({ ok: true, peran: akun.peran, nama: akun.nama });
+      r.cookies.set(ADMIN_COOKIE, await createAdminSessionAkun(akun.id), adminCookieOptions());
+      return r;
+    }
+    if (!code || !owner) {
       sendMonitorLog(adminLoginLog({ success: false, ip }));
       await catatLoginAdminGagal(ip).catch(() => {});
       return NextResponse.json({ error: "Kode admin salah." }, { status: 401 });
