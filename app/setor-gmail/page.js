@@ -2,6 +2,8 @@
 
 // Stor Gmail (freelance): generate email → buat akun PERSIS sesuai → setor ke room → upah masuk ke saldo Stor
 // (dompet terpisah) → tarik ke e-wallet otomatis. Semua perhitungan upah & status ada di server (lib/setorGmail.js).
+import { useCsBuka } from "@/lib/useCsBuka";
+import { CS_JAM_TEKS } from "@/lib/jamCs";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useUser } from "@/app/providers";
@@ -36,6 +38,7 @@ export default function SetorGmailPage() {
   const [galat, setGalat] = useState("");
   const [tab, setTab] = useState("setor");
   const poll = useRef(null);
+  const csBuka = useCsBuka();
   const [cs, setCs] = useState("teatlas");
   useEffect(() => { fetch("/api/settings/public").then((r) => r.json()).then((d) => { if (d?.csUsername) setCs(String(d.csUsername).replace(/^@/, "")); }).catch(() => {}); }, []);
 
@@ -108,7 +111,11 @@ export default function SetorGmailPage() {
             <div className="panel-3d p-4">
               <p className="text-sm font-extrabold text-ink">Kontak</p>
               <p className="mt-1 text-xs text-muted">Ada kendala setoran atau upah? Hubungi admin.</p>
-              <a href={`https://t.me/${cs}`} target="_blank" rel="noopener noreferrer" className="btn-ghost mt-3 block text-center" data-testid="setor-kontak">💬 Chat admin @{cs}</a>
+              {csBuka === false ? (
+                <div role="button" aria-disabled="true" tabIndex={-1} className="btn-ghost mt-3 block cursor-not-allowed text-center opacity-60" data-testid="setor-kontak-tutup">💬 Sedang di luar jam kerja (buka {CS_JAM_TEKS})</div>
+              ) : (
+                <a href={`https://t.me/${cs}`} target="_blank" rel="noopener noreferrer" className="btn-ghost mt-3 block text-center" data-testid="setor-kontak">💬 Chat admin @{cs}</a>
+              )}
             </div>
           </aside>
         </div>

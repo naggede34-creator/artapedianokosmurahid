@@ -6,6 +6,7 @@ import { useUser } from "@/app/providers";
 import { DEPOSIT_PROVIDERS, providerName } from "@/lib/paymentProviders";
 import { PageHeader, Icon, Alert, Row, CopyButton, Spinner, Badge, rupiah, fmtWIB } from "@/components/ui";
 import BannerRail from "@/components/BannerRail";
+import "@/components/deposit.css";
 
 const QUICK = [10000, 20000, 50000, 100000, 200000, 500000];
 const FINAL = ["completed", "canceled", "expired", "failed"];
@@ -429,11 +430,27 @@ export default function DepositPage() {
 
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
-      <PageHeader
-        icon={<Icon.qris />}
-        title="Isi saldo"
-        desc={`Bayar pakai QRIS dari e-wallet atau m-banking apa pun. Minimal ${rupiah(cfg.min)}, maksimal ${rupiah(cfg.max)} per transaksi.`}
-      />
+      <section className="dp-hero fade-up" data-testid="deposit-hero">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0 max-w-xl">
+            <p className="text-[11px] font-black uppercase tracking-widest text-white/75">Isi saldo nokos</p>
+            <h1 className="comic-head mt-1 text-[30px] leading-tight sm:text-[38px]">Isi saldo, langsung jajan nomor ⚡</h1>
+            <p className="mt-2 text-sm leading-relaxed text-white/85">
+              Bayar pakai QRIS dari e-wallet atau m-banking apa pun. Minimal {rupiah(cfg.min)}, maksimal {rupiah(cfg.max)} per transaksi.
+            </p>
+          </div>
+          <div className="dp-saldo" data-testid="deposit-saldo-hero">
+            <p className="text-[10px] font-black uppercase tracking-widest text-white/70">Saldo kamu</p>
+            <p className="kg-angka text-2xl font-black tabular-nums">{rupiah(balance)}</p>
+            {cb?.tier && <p className="mt-0.5 text-[11px] font-bold text-white/80">{cb.tier.ikon} Tingkat {cb.tier.nama}</p>}
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="dp-lencana">🔒 Pembayaran aman</span>
+          <span className="dp-lencana">⚡ Saldo masuk otomatis</span>
+          <span className="dp-lencana">🎁 Dapat cashback</span>
+        </div>
+      </section>
 
       {/* items-start: tanpa ini panel langkah ikut diregangkan setinggi kolom
           kanan, dan di langkah pertama yang isinya pendek jadi ada ruang
@@ -528,23 +545,11 @@ export default function DepositPage() {
 
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="manga-card manga-rush halftone hd-paper anim-drop p-5 sm:p-6">
-          <ol className="mb-6 flex items-center gap-2 text-xs font-semibold" aria-label="Langkah deposit">
+          <ol className="dp-steps" aria-label="Langkah deposit">
             {["Nominal", "Metode", "Bayar", "Selesai"].map((label, i) => (
-              <li key={label} className="flex flex-1 items-center gap-2">
-                <span
-                  data-state={i < stepIndex ? "done" : i === stepIndex ? "now" : "next"}
-                  className={`step-dot-3d flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold ${
-                    i <= stepIndex ? "text-white" : "bg-surface2 text-muted"
-                  }`}
-                >
-                  {i < stepIndex ? "✓" : i + 1}
-                </span>
-                <span className={i === stepIndex ? "text-ink" : "text-muted"}>{label}</span>
-                {i < 3 && (
-                  <span
-                    className={`h-1 flex-1 rounded-full ${i < stepIndex ? "bg-success" : "bg-line"}`}
-                  />
-                )}
+              <li key={label} className="dp-step" data-state={i < stepIndex ? "done" : i === stepIndex ? "now" : "next"} aria-current={i === stepIndex ? "step" : undefined}>
+                <i />
+                {i < stepIndex ? "✓ " : ""}{label}
               </li>
             ))}
           </ol>
@@ -554,8 +559,8 @@ export default function DepositPage() {
               <label className="label" htmlFor="amount">
                 Mau isi berapa?
               </label>
-              <div className="field-3d flex items-center px-4">
-                <span className="text-lg font-extrabold text-amber-bright">Rp</span>
+              <div className="dp-amount">
+                <span className="rp">Rp</span>
                 <input
                   id="amount"
                   inputMode="numeric"
@@ -563,36 +568,48 @@ export default function DepositPage() {
                   value={amount ? Number(amount).toLocaleString("id-ID") : ""}
                   onChange={(e) => setAmount(e.target.value.replace(/\D/g, "").slice(0, 9))}
                   placeholder="0"
-                  className="w-full bg-transparent px-2 py-4 text-2xl font-extrabold tabular-nums text-ink outline-none placeholder:text-muted/40"
                 />
               </div>
+              {amt > 0 && (amt < cfg.min || amt > cfg.max) && (
+                <p className="mt-2 text-xs font-bold text-rose">Nominal harus antara {rupiah(cfg.min)} dan {rupiah(cfg.max)}.</p>
+              )}
+              {cb?.simulasi && amt >= cfg.min && amt <= cfg.max && cb.simulasi.cashback > 0 && (
+                <div className="dp-estimasi" data-testid="deposit-estimasi">
+                  <span className="text-xl" aria-hidden="true">🎁</span>
+                  <span>Kamu dapat cashback <b>+{rupiah(cb.simulasi.cashback)}</b> ({cb.simulasi.persen}%) — total saldo masuk ≈ <b>{rupiah(amt + cb.simulasi.cashback)}</b></span>
+                </div>
+              )}
               {biasa.filter((b) => b.amount >= cfg.min && b.amount <= cfg.max).length > 0 && (
                 <div className="mt-3" data-testid="deposit-biasa">
                   <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wide text-muted">⚡ Biasa kamu</p>
                   <div className="grid grid-cols-2 gap-2">
                     {biasa.filter((b) => b.amount >= cfg.min && b.amount <= cfg.max).map((b) => (
                       <button key={b.amount} type="button" onClick={() => setAmount(String(b.amount))} data-on={amt === b.amount} data-testid="deposit-biasa-chip"
-                        className={`chip-3d px-2 py-2.5 text-sm font-extrabold tabular-nums ${amt === b.amount ? "text-amber-bright" : "text-ink"}`}>
+                        className="dp-chip">
                         {rupiah(b.amount)}{b.n > 1 && <span className="ml-1 text-[10px] font-bold text-muted">{b.n}×</span>}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
-              <div className="anim-stagger mt-3 grid grid-cols-3 gap-2">
-                {QUICK.filter((v) => v >= cfg.min && v <= cfg.max).map((v) => (
+              <div className="anim-stagger mt-4 grid grid-cols-3 gap-3">
+                {QUICK.filter((v) => v >= cfg.min && v <= cfg.max).map((v, i, arr) => (
                   <button
                     key={v}
                     type="button"
                     onClick={() => setAmount(String(v))}
                     data-on={amt === v}
-                    className={`chip-3d px-2 py-2.5 text-sm font-extrabold tabular-nums ${
-                      amt === v ? "text-amber-bright" : "text-ink"
-                    }`}
+                    className="dp-chip"
                   >
+                    {i === Math.min(2, arr.length - 1) && <span className="hot">POPULER</span>}
                     {rupiah(v)}
                   </button>
                 ))}
+              </div>
+              <div className="dp-jaminan">
+                <div><b>⚡</b>Masuk otomatis dalam detik</div>
+                <div><b>🔒</b>Dilindungi, tanpa kode OTP</div>
+                <div><b>🕒</b>QRIS aktif 24 jam</div>
               </div>
 
               {error && <Alert className="mt-4">{error}</Alert>}

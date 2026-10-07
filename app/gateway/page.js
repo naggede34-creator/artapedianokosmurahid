@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useUser } from "@/app/providers";
 import { rupiah } from "@/components/ui";
 import GatewayTerms from "@/components/GatewayTerms";
+import "@/components/gateway.css";
 
 const TAB = [
   { id: "buat", label: "Buat QRIS", ikon: "⚡" },
@@ -199,64 +200,45 @@ export default function GatewayPage() {
       {/* Syarat & ketentuan, sekali per akun sebelum fiturnya dipakai. */}
       <GatewayTerms token={token} />
       {/* ── Kepala ── */}
-      <div className="gw-hero card balok-3d tepi-tebal relative overflow-hidden p-5 sm:p-7">
-        <span className="gw-hero-glow" aria-hidden="true" />
-        <div className="relative timbul">
-          <div className="flex items-center gap-2">
-            <span className="rounded-full border-2 border-ink bg-amber px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
-              Gateway
-            </span>
-            <span className="text-[11px] font-bold uppercase tracking-widest text-muted">Tanpa berkas usaha</span>
-          </div>
-          <h1 className="font-display mt-2 text-2xl font-black leading-tight tracking-tight text-ink sm:text-3xl">
-            QRIS GATEWAY
-          </h1>
-          <p className="mt-1.5 max-w-md text-sm leading-relaxed text-muted">
-            Terima pembayaran QRIS otomatis. Tinggal masukkan nominal, QR-nya jadi — atau sambungkan ke
-            bot dan web kamu sendiri lewat API.
-          </p>
-
-          <div className="mt-5 rounded-2xl border-2 border-ink bg-surface2 p-4">
-            <p className="text-[11px] font-black uppercase tracking-widest text-muted">Saldo gateway</p>
-            {memuat ? (
-              <div className="skeleton mt-1 h-9 w-40 rounded-lg" />
-            ) : (
-              <Uang nilai={data?.saldo} besar warna="text-success" />
-            )}
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-              {[
-                ["Lunas", data?.jumlahLunas ?? 0],
-                ["Menunggu", data?.jumlahPending ?? 0],
-                ["Total masuk", rupiah(data?.totalMasuk ?? 0)]
-              ].map(([l, v]) => (
-                <div key={l} className="rounded-xl border-2 border-ink/15 bg-surface p-2">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted">{l}</p>
-                  <p className="mt-0.5 text-sm font-black tabular-nums text-ink">{v}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {data?.dibekukan && (
-            <p className="mt-3 rounded-xl border-2 border-rose bg-rose-soft px-3 py-2 text-xs font-bold text-rose">
-              ⚠️ Akun gateway kamu sedang dibekukan admin. Tagihan baru dan penarikan tidak bisa dibuat.
-            </p>
-          )}
+      <section className="gwx-hero fade-up" data-testid="gateway-hero">
+        <svg className="gwx-qr" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20h1" /></svg>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="dx-pill">🏦 QRIS Gateway</span>
+          <span className="dx-pill">Tanpa berkas usaha</span>
+          <span className="dx-pill">Via AustinPay</span>
         </div>
-      </div>
+        <p className="mt-4 text-[11px] font-black uppercase tracking-widest text-white/75">Saldo gateway</p>
+        {memuat ? <div className="skeleton mt-1 h-11 w-52 rounded-xl" /> : <p className="gwx-saldo" data-testid="gateway-saldo">{rupiah(data?.saldo || 0)}</p>}
+        <p className="mt-1 max-w-md text-xs leading-relaxed text-white/80">
+          Terima pembayaran QRIS otomatis, tarik ke e-wallet kapan saja (minimal {rupiah(b?.wdMin ?? 11000)}, biaya {rupiah(b?.biayaWd ?? 1000)}).
+        </p>
+        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+          {[
+            ["Lunas", data?.jumlahLunas ?? 0],
+            ["Menunggu", data?.jumlahPending ?? 0],
+            ["Total masuk", rupiah(data?.totalMasuk ?? 0)]
+          ].map(([l, v]) => (
+            <div key={l} className="gwx-stat"><p>{l}</p><p>{v}</p></div>
+          ))}
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button type="button" onClick={() => setTab("buat")} className="gwx-aksi utama">⚡ Buat QRIS</button>
+          <button type="button" onClick={() => setTab("tarik")} className="gwx-aksi kedua">🏦 Tarik saldo</button>
+          <Link href="/gateway/docs" className="gwx-aksi kedua">📘 Dokumentasi API</Link>
+        </div>
+        {data?.dibekukan && (
+          <p className="mt-3 rounded-xl bg-rose px-3 py-2 text-xs font-bold text-white">
+            ⚠️ Akun gateway kamu sedang dibekukan admin. Tagihan baru dan penarikan tidak bisa dibuat.
+          </p>
+        )}
+      </section>
 
       {/* ── Tab ── */}
-      <div className="mt-5 grid grid-cols-4 gap-1.5">
+      <div className="gwx-tab" role="tablist" aria-label="Menu gateway">
         {TAB.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`press rounded-2xl border-2 px-2 py-2.5 text-center transition ${
-              tab === t.id ? "border-ink bg-amber text-white" : "border-line bg-surface text-muted"
-            }`}
-          >
-            <span className="block text-base leading-none">{t.ikon}</span>
-            <span className="mt-1 block text-[10px] font-black uppercase tracking-wide">{t.label}</span>
+          <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)} className="press">
+            <span className="i">{t.ikon}</span>
+            <span className="t">{t.label}</span>
           </button>
         ))}
       </div>
@@ -307,9 +289,11 @@ export default function GatewayPage() {
               </button>
             </div>
           ) : (
-            <form onSubmit={buatQris} className="card p-5">
-              <label className="text-xs font-black uppercase tracking-wide text-muted">Nominal tagihan</label>
-              <div className="mt-1.5 flex items-center gap-2 rounded-2xl border-2 border-ink bg-surface px-3 py-3">
+            <form onSubmit={buatQris} className="gwx-panel">
+              <h2 className="text-ink">⚡ Buat tagihan QRIS</h2>
+              <p className="mt-0.5 text-xs text-muted">Pembeli cukup scan QR dengan e-wallet atau m-banking apa pun.</p>
+              <label className="mt-4 block text-xs font-black uppercase tracking-wide text-muted">Nominal tagihan</label>
+              <div className="mt-1.5 flex items-center gap-2 rounded-2xl border-2 border-line bg-surface2 px-4 py-2 focus-within:border-amber focus-within:shadow-[0_0_0_5px_rgb(var(--c-orange)/0.16)]">
                 <span className="text-lg font-black text-amber-bright">Rp</span>
                 <input
                   type="number" inputMode="numeric" value={nominal}
@@ -327,7 +311,7 @@ export default function GatewayPage() {
               <div className="mt-3 grid grid-cols-3 gap-2">
                 {CEPAT.map((v) => (
                   <button key={v} type="button" onClick={() => setNominal(String(v))}
-                    className="press rounded-xl border-2 border-ink bg-surface py-2 text-xs font-black text-ink">
+                    className="press rounded-xl border-2 border-line bg-surface py-2.5 text-xs font-black text-ink transition hover:-translate-y-0.5 hover:border-amber">
                     {rupiah(v)}
                   </button>
                 ))}
@@ -342,6 +326,11 @@ export default function GatewayPage() {
               <button type="submit" disabled={membuat || data?.dibekukan} className="btn-primary press mt-4 w-full">
                 {membuat ? "Membuat QRIS…" : "⚡ Buat QRIS Sekarang"}
               </button>
+              <div className="gwx-fitur">
+                <div><b>⚡</b>QR jadi dalam detik</div>
+                <div><b>💸</b>Tarik ke e-wallet otomatis</div>
+                <div><b>🔌</b>Bisa lewat API</div>
+              </div>
             </form>
           )}
         </div>

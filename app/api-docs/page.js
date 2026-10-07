@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import "@/components/docs.css";
 
 const FALLBACK_BASE = "https://artapedianokosmurahid.vercel.app";
 
@@ -34,17 +35,13 @@ function CodeBlock({ code, lang = "bash" }) {
     setTimeout(() => setCopied(false), 1600);
   };
   return (
-    <div className="relative group rounded-xl border border-line bg-surface2 overflow-hidden mt-3">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-line bg-surface3">
-        <span className="text-xs font-mono text-muted uppercase tracking-widest">{lang}</span>
-        <button
-          onClick={copy}
-          className="text-xs text-muted hover:text-ink transition-colors px-2 py-0.5 rounded border border-line hover:border-amber/40"
-        >
-          {copied ? "✓ Copied" : "Copy"}
-        </button>
+    <div className="dx-kode">
+      <div className="dx-kode-bar">
+        <span className="dot" style={{ background: "#ff5f56" }} /><span className="dot" style={{ background: "#ffbd2e" }} /><span className="dot" style={{ background: "#27c93f" }} />
+        <span className="judul">{lang}</span>
+        <button onClick={copy}>{copied ? "✓ Tersalin" : "Salin"}</button>
       </div>
-      <pre className="p-4 overflow-x-auto text-sm font-mono text-ink leading-relaxed whitespace-pre">{code}</pre>
+      <pre>{code}</pre>
     </div>
   );
 }
@@ -88,19 +85,19 @@ function EndpointCard({ method, path, title, description, auth = true, params, r
   const activeTabs = Object.entries(snippets).filter(([, v]) => v);
 
   return (
-    <div className="card rounded-2xl border-2 border-line overflow-hidden mt-6">
+    <div className="dx-ep" data-m={method}>
       {/* header */}
-      <div className="flex flex-wrap items-start gap-3 p-5 border-b border-line bg-surface2">
-        <Method m={method} />
-        <code className="font-mono text-sm text-ink bg-surface3 px-3 py-1 rounded-lg border border-line">{path}</code>
-        {auth && <Badge color="teal">Auth required</Badge>}
-        <div className="w-full mt-1">
-          <p className="font-semibold text-ink">{title}</p>
-          {description && <p className="text-sm text-muted mt-0.5">{description}</p>}
+      <div className="dx-ep-kepala">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="dx-metode">{method}</span>
+          <code className="dx-path">{path}</code>
+          {auth && <Badge color="teal">🔑 Perlu API key</Badge>}
         </div>
+        <p className="mt-2 font-bold text-ink">{title}</p>
+        {description && <p className="text-sm text-muted mt-0.5">{description}</p>}
       </div>
 
-      <div className="p-5 space-y-5">
+      <div className="dx-ep-isi space-y-5">
         {/* params */}
         {params && (
           <div>
@@ -179,12 +176,15 @@ export default function ApiDocsPage() {
     setTryLoading(false);
   }
 
+  const [aktif, setAktif] = useState("intro");
   const nav = [
+    { grup: "Mulai" },
     { id: "intro", label: "Intro" },
     { id: "apikey", label: "API Key" },
     { id: "auth", label: "Authentication" },
     { id: "ratelimit", label: "Rate limit" },
     { id: "errors", label: "Error codes" },
+    { grup: "Nokos" },
     { id: "ep-me", label: "GET /v1/me" },
     { id: "ep-servers", label: "GET /v1/servers" },
     { id: "ep-services", label: "GET /v1/services" },
@@ -193,54 +193,74 @@ export default function ApiDocsPage() {
     { id: "ep-order-status", label: "GET /v1/orders/status" },
     { id: "ep-order-create", label: "POST /v1/order" },
     { id: "ep-order-cancel", label: "POST /v1/orders/cancel" },
+    { grup: "Deposit" },
     { id: "deposit", label: "Deposit otomatis" },
     { id: "ep-dep-methods", label: "GET /v1/deposit/methods" },
     { id: "ep-dep-create", label: "POST /v1/deposit" },
     { id: "ep-dep-status", label: "GET /v1/deposit" },
     { id: "ep-dep-cancel", label: "POST /v1/deposit/cancel" },
+    { grup: "Coba" },
     { id: "try", label: "Try it out" }
   ];
+
+  // Menyorot bagian yang sedang dibaca di daftar isi.
+  useEffect(() => {
+    const ids = nav.filter((n) => n.id).map((n) => n.id);
+    const els = ids.map((id) => document.getElementById(id)).filter(Boolean);
+    if (!els.length || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entri) => { const t = entri.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]; if (t) setAktif(t.target.id); },
+      { rootMargin: "-90px 0px -65% 0px" }
+    );
+    els.forEach((e) => io.observe(e));
+    return () => io.disconnect();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="min-h-screen bg-bg">
       {/* hero */}
-      <div className="border-b border-line bg-surface2">
+      <div className="dx-hero">
         <div className="max-w-content mx-auto px-4 py-12 md:py-16">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-3xl">⚡</span>
-            <Badge color="amber">v1</Badge>
-            <Badge color="teal">REST · JSON</Badge>
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <span className="dx-pill">⚡ Developer API v1</span>
+            <span className="dx-pill">REST · JSON</span>
+            <span className="dx-pill">Server WarungNokos</span>
           </div>
-          <h1 className="font-display text-display-md text-ink mb-3">Developer API</h1>
-          <p className="text-muted max-w-xl text-lg">
-            Akses layanan Artapedia secara programatik — beli nomor OTP, cek saldo, lacak pesanan — langsung dari kode kamu.
+          <h1 className="font-display text-display-md mb-3">Beli nomor OTP dari kode kamu sendiri</h1>
+          <p className="max-w-xl text-lg text-white/85">
+            Cek saldo, pilih layanan, pesan nomor, dan ambil kode OTP — semuanya lewat satu API sederhana.
           </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <a href="#auth" className="btn bg-amber text-white px-5 py-2.5 rounded-xl font-semibold text-sm">
-              Mulai →
-            </a>
-            <Link href="/apikey" className="btn bg-surface border border-line text-ink px-5 py-2.5 rounded-xl font-semibold text-sm">
-              Dapatkan API Key
-            </Link>
+          <div className="dx-url mt-5">
+            <code>{B}/api/v1</code>
+            <button onClick={() => navigator.clipboard?.writeText(`${B}/api/v1`).catch(() => {})}>Salin</button>
+          </div>
+          <div className="dx-langkah mt-5">
+            <div><i>1</i><b>Ambil API key</b>Buat di halaman API Key.</div>
+            <div><i>2</i><b>Pilih layanan</b>/v1/servers → /v1/services → /v1/countries.</div>
+            <div><i>3</i><b>Pesan nomor</b>POST /v1/order, lalu pantau /v1/orders/status.</div>
+          </div>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <a href="#auth" className="rounded-xl bg-white px-5 py-2.5 text-sm font-black text-[#0b1d48]">Mulai →</a>
+            <Link href="/apikey" className="rounded-xl border border-white/50 px-5 py-2.5 text-sm font-black text-white">Dapatkan API Key</Link>
           </div>
         </div>
       </div>
 
+      {/* navigasi ringkas untuk layar kecil */}
+      <nav className="dx-chips lg:hidden" aria-label="Navigasi dokumentasi">
+        {nav.filter((n) => !n.grup).map((n) => (
+          <a key={n.id} href={`#${n.id}`} data-aktif={aktif === n.id}>{n.label}</a>
+        ))}
+      </nav>
+
       <div className="max-w-content mx-auto px-4 py-10 flex gap-8">
         {/* sidebar */}
-        <aside className="hidden lg:block w-52 flex-shrink-0">
-          <div className="sticky top-24">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted mb-3 px-3">Navigasi</p>
-            <nav className="space-y-0.5">
-              {nav.map((n) => (
-                <a
-                  key={n.id}
-                  href={`#${n.id}`}
-                  className="block px-3 py-1.5 text-sm text-muted hover:text-ink hover:bg-surface2 rounded-lg transition-colors"
-                >
-                  {n.label}
-                </a>
-              ))}
+        <aside className="hidden lg:block w-56 flex-shrink-0">
+          <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pr-1">
+            <nav className="dx-toc" aria-label="Daftar isi">
+              {nav.map((n) => n.grup
+                ? <p key={n.grup} className="grup">{n.grup}</p>
+                : <a key={n.id} href={`#${n.id}`} data-aktif={aktif === n.id}>{n.label}</a>)}
             </nav>
           </div>
         </aside>
@@ -435,18 +455,16 @@ print(r.json())`}
           <Section id="ep-servers">
             <h2 className="text-display-sm font-display text-ink mb-2">Server Nokos</h2>
             <p className="text-muted mb-4">
-              Artapedia menyambung ke beberapa provider sekaligus. Tiap provider disebut <b>server</b>, punya daftar
-              aplikasi, negara, dan harga sendiri. Semua endpoint katalog &amp; order menerima parameter{" "}
+              Layanan nokos Artapedia berjalan di atas <b>WarungNokos</b> dengan dua jalur, disebut <b>server</b>. Tiap server punya
+              daftar aplikasi, negara, dan harga sendiri. Semua endpoint katalog &amp; order menerima parameter{" "}
               <code className="font-mono text-xs bg-surface2 px-1.5 py-0.5 rounded border border-line">server</code>.
-              Kalau tidak dikirim, nilainya otomatis <code className="font-mono text-xs">rumahotp</code>.
+              Kalau tidak dikirim, nilainya otomatis <code className="font-mono text-xs">warungnokos_s1</code> (Server Plus).
             </p>
 
             <div className="rounded-xl border border-line overflow-hidden mb-4">
               {[
-                ["rumahotp", "Server Nokos Murah", "Harga paling hemat, cakupan aplikasi & negara terluas."],
                 ["warungnokos_s1", "Server Plus", "Jalur utama WarungNokos (H2H), stok melimpah & rate sukses tertinggi."],
-                ["warungnokos_s2", "Server Express", "Jalur kedua WarungNokos (API v3). Kode layanannya berupa nama huruf kecil, mis. whatsapp; stok tidak ditampilkan angkanya."],
-                ["dibanana", "OTP Fast Murah", "OTP masuk cepat & murah. Negara: ID, MY, SG, US, UK."]
+                ["warungnokos_s2", "Server Express", "Jalur kedua WarungNokos (API v3). Kode layanannya berupa nama huruf kecil, mis. whatsapp; stok tidak ditampilkan angkanya."]
               ].map(([id, name, desc]) => (
                 <div key={id} className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 px-4 py-3 border-b border-line last:border-0">
                   <code className="font-mono text-sm text-amber w-36 flex-shrink-0">{id}</code>
@@ -499,10 +517,8 @@ for s in r.json()["items"]:
             <CodeBlock lang="json" code={`// 200 OK
 {
   "items": [
-    { "server": "rumahotp",    "name": "Server Nokos Murah", "badge": "Murah",    "provider": "RumahOTP" },
-    { "server": "warungnokos_s1", "name": "Server Plus",        "badge": "Utama",    "provider": "WarungNokos" },
-    { "server": "warungnokos_s2", "name": "Server Express",     "badge": "Global",   "provider": "WarungNokos S2" },
-    { "server": "dibanana",    "name": "OTP Fast Murah",     "badge": "Fast",     "provider": "dibanana" }
+    { "server": "warungnokos_s1", "name": "Server Plus",    "badge": "Utama", "provider": "WarungNokos" },
+    { "server": "warungnokos_s2", "name": "Server Express", "badge": "Cepat", "provider": "WarungNokos S2" }
   ]
 }`} />
           </Section>
@@ -517,7 +533,7 @@ for s in r.json()["items"]:
               description="Mengembalikan aplikasi yang tersedia di satu server (WhatsApp, Telegram, Shopee, dll). Tiap server punya daftar yang berbeda."
               params={
                 <>
-                  <Param name="server" type="string">Kode server dari /v1/servers. Default: rumahotp.</Param>
+                  <Param name="server" type="string">Kode server dari /v1/servers. Default: warungnokos_s1.</Param>
                 </>
               }
               response={
@@ -528,9 +544,9 @@ for s in r.json()["items"]:
                 </>
               }
               curl={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "${B}/api/v1/services?server=dibanana"`}
+  "${B}/api/v1/services?server=warungnokos_s1"`}
               jsCode={`const res = await fetch(
-  "${B}/api/v1/services?server=dibanana",
+  "${B}/api/v1/services?server=warungnokos_s1",
   { headers: { "Authorization": "Bearer YOUR_API_KEY" } }
 );
 const { items } = await res.json();
@@ -547,10 +563,10 @@ for svc in r.json()["items"]:
             />
             <CodeBlock lang="json" code={`// 200 OK
 {
-  "server": "dibanana",
+  "server": "warungnokos_s1",
   "items": [
-    { "service_code": "wa", "service_name": "WhatsApp", "service_img": null, "server": "dibanana" },
-    { "service_code": "tg", "service_name": "Telegram", "service_img": null, "server": "dibanana" }
+    { "service_code": "wa", "service_name": "WhatsApp", "service_img": null, "server": "warungnokos_s1" },
+    { "service_code": "tg", "service_name": "Telegram", "service_img": null, "server": "warungnokos_s1" }
   ]
 }`} />
           </Section>
@@ -573,24 +589,23 @@ for svc in r.json()["items"]:
               params={
                 <>
                   <Param name="service_id" type="string" required>Kode layanan dari /v1/services</Param>
-                  <Param name="server" type="string">Kode server. Default: rumahotp.</Param>
+                  <Param name="server" type="string">Kode server. Default: warungnokos_s1.</Param>
                 </>
               }
               response={
                 <>
-                  <ResponseField name="items[].number_id" type="string">Dipakai sebagai numberId saat order (server rumahotp)</ResponseField>
+                  <ResponseField name="items[].number_id" type="string">Identitas negara di katalog (tidak dipakai saat order di server WarungNokos)</ResponseField>
                   <ResponseField name="items[].name" type="string">Nama negara</ResponseField>
                   <ResponseField name="items[].pricelist[].provider_id" type="string">Dipakai sebagai providerId saat order</ResponseField>
                   <ResponseField name="items[].pricelist[].sell_price" type="number">Harga jual final (sudah termasuk markup)</ResponseField>
                   <ResponseField name="items[].pricelist[].stock" type="number">Sisa stok, null kalau provider tidak melaporkannya</ResponseField>
-                  <ResponseField name="items[].pricelist[].country_id" type="string">Dipakai sebagai countryId untuk server WarungNokos &amp; dibanana</ResponseField>
-                  <ResponseField name="items[].pricelist[].providerIndex" type="number">Dipakai sebagai providerIndex untuk server dibanana</ResponseField>
+                  <ResponseField name="items[].pricelist[].country_id" type="string">Dipakai sebagai countryId saat order</ResponseField>
                 </>
               }
               curl={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "${B}/api/v1/countries?server=dibanana&service_id=wa"`}
+  "${B}/api/v1/countries?server=warungnokos_s1&service_id=wa"`}
               jsCode={`const res = await fetch(
-  "${B}/api/v1/countries?server=dibanana&service_id=wa",
+  "${B}/api/v1/countries?server=warungnokos_s1&service_id=wa",
   { headers: { "Authorization": "Bearer YOUR_API_KEY" } }
 );
 const { items } = await res.json();
@@ -610,24 +625,23 @@ for c in r.json()["items"]:
     for p in c["pricelist"]:
         print(c["name"], p["sell_price"], p["stock"])`}
             />
-            <CodeBlock lang="json" code={`// 200 OK — server "dibanana"
+            <CodeBlock lang="json" code={`// 200 OK — server "warungnokos_s1"
 {
-  "server": "dibanana",
+  "server": "warungnokos_s1",
   "items": [
     {
-      "number_id": "bn:id",
+      "number_id": "wn:6",
       "name": "Indonesia",
       "flag": "\u{1F1EE}\u{1F1E9}",
       "pricelist": [
         {
-          "provider_id": "bn:id:0",
-          "provider_name": "Paket Termurah",
+          "provider_id": "wn:6:1",
+          "provider_name": "Server Plus",
           "price": 900,
           "sell_price": 1100,
           "stock": 245,
-          "country_id": "id",
-          "providerIndex": 0,
-          "server": "dibanana"
+          "country_id": "6",
+          "server": "warungnokos_s1"
         }
       ]
     }
@@ -772,9 +786,7 @@ def wait_for_otp(order_id, api_key):
                 <p className="text-sm font-semibold text-ink">Parameter wajib per server</p>
               </div>
               {[
-                ["rumahotp", "serviceId, numberId, providerId", "operatorId"],
-                ["warungnokos_s1 / warungnokos_s2", "serviceId, countryId, providerId", "operatorId (default: any)"],
-                ["dibanana", "serviceId, countryId, providerIndex", "—"]
+                ["warungnokos_s1 / warungnokos_s2", "serviceId, countryId, providerId", "operatorId (default: any)"]
               ].map(([srv, req, opt]) => (
                 <div key={srv} className="flex flex-col sm:flex-row gap-1 sm:gap-4 px-4 py-3 border-b border-line last:border-0">
                   <code className="font-mono text-sm text-amber w-52 flex-shrink-0">{srv}</code>
@@ -800,12 +812,10 @@ def wait_for_otp(order_id, api_key):
               description="Memotong saldo dan memesan nomor OTP baru dari provider. Pastikan saldo mencukupi."
               params={
                 <>
-                  <Param name="server" type="string">Kode server dari /v1/servers. Default: rumahotp.</Param>
+                  <Param name="server" type="string">Kode server dari /v1/servers. Default: warungnokos_s1.</Param>
                   <Param name="serviceId" type="string" required>Kode layanan (service_code dari /v1/services)</Param>
-                  <Param name="numberId" type="string">Wajib untuk server rumahotp — number_id dari /v1/countries</Param>
-                  <Param name="providerId" type="string">Wajib untuk server rumahotp — provider_id dari /v1/countries</Param>
-                  <Param name="countryId" type="string">Wajib untuk warungnokos_s1, warungnokos_s2 &amp; dibanana — country_id dari /v1/countries</Param>
-                  <Param name="providerIndex" type="number">Wajib untuk dibanana — providerIndex dari /v1/countries (0 = termurah)</Param>
+                  <Param name="countryId" type="string" required>country_id dari /v1/countries</Param>
+                  <Param name="providerId" type="string" required>provider_id dari /v1/countries</Param>
                   <Param name="operatorId" type="string">ID operator (opsional). WarungNokos memakai &quot;any&quot; kalau kosong.</Param>
                   <Param name="operatorName" type="string">Nama operator (opsional, untuk pencatatan)</Param>
                   <Param name="serviceName" type="string">Nama layanan (opsional, untuk pencatatan)</Param>
@@ -826,18 +836,14 @@ def wait_for_otp(order_id, api_key):
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "server": "dibanana",
+    "server": "warungnokos_s1",
     "serviceId": "wa",
-    "countryId": "id",
-    "providerIndex": 0,
+    "countryId": "6",
+    "providerId": "wn:6:1",
     "serviceName": "WhatsApp",
     "countryName": "Indonesia"
   }'
-
-# Server rumahotp memakai numberId + providerId:
-# -d '{"server":"rumahotp","serviceId":"1","numberId":"62","providerId":"5"}'
-# Server WarungNokos memakai countryId:
-# -d '{"server":"warungnokos_s1","serviceId":"wa","countryId":"6"}'`}
+# server dan id-nya selalu diambil dari /v1/servers dan /v1/countries`}
               jsCode={`const res = await fetch("${B}/api/v1/order", {
   method: "POST",
   headers: {
@@ -845,10 +851,10 @@ def wait_for_otp(order_id, api_key):
     "Content-Type": "application/json"
   },
   body: JSON.stringify({
-    server: "dibanana",        // dari /v1/servers
+    server: "warungnokos_s1",  // dari /v1/servers
     serviceId: "wa",           // service_code dari /v1/services
-    countryId: "id",           // country_id dari /v1/countries
-    providerIndex: 0,          // khusus dibanana, 0 = paket termurah
+    countryId: "6",            // country_id dari /v1/countries
+    providerId: "wn:6:1",      // provider_id dari /v1/countries
     serviceName: "WhatsApp",
     countryName: "Indonesia"
   })
@@ -867,6 +873,7 @@ r = requests.post(
         "server": "warungnokos_s1",   # dari /v1/servers
         "serviceId": "wa",         # service_code dari /v1/services
         "countryId": "6",          # country_id dari /v1/countries
+        "providerId": "wn:6:1",    # provider_id dari /v1/countries
         "serviceName": "WhatsApp",
         "countryName": "Indonesia"
     }
@@ -877,7 +884,7 @@ print(f"Phone: {data['phoneNumber']}, Order: {data['orderId']}")`}
             <CodeBlock lang="json" code={`// 200 OK
 {
   "orderId": "789012",
-  "server": "dibanana",
+  "server": "warungnokos_s1",
   "phoneNumber": "+62812xxxxxxx",
   "price": 3500,
   "expiredAt": 1717235400000,

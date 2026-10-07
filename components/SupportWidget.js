@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { CHANNEL_URL } from "@/lib/links";
 import { saranHalaman } from "@/lib/navigasiAi";
 import TopiMaskot from "@/components/TopiMaskot";
+import { useCsBuka } from "@/lib/useCsBuka";
+import { CS_JAM_TEKS, csBukaLagi } from "@/lib/jamCs";
 
 const GREETING = {
   role: "assistant",
@@ -59,6 +61,7 @@ export default function SupportWidget({
   channelInfo = CHANNEL_URL,
   csUsername = "teatlas"
 }) {
+  const csBuka = useCsBuka();
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState([GREETING]);
@@ -181,15 +184,30 @@ export default function SupportWidget({
         <div className="flex flex-col items-end gap-2">
           {/* CS manusia — diletakkan paling atas karena ini yang paling dicari
               user saat ada masalah transaksi. */}
+          {csBuka === false ? (
+            <div
+              role="button"
+              aria-disabled="true"
+              tabIndex={-1}
+              data-testid="widget-cs-tutup"
+              title={`Customer Service buka ${CS_JAM_TEKS}`}
+              className="flex cursor-not-allowed select-none items-center gap-2 rounded-full border-2 border-line bg-surface2 py-2 pl-3 pr-4 text-sm font-bold text-muted shadow-lift"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink/10 text-white grayscale">💬</span>
+              <span className="leading-tight">Customer Service<small className="block text-[10px] font-semibold">Sedang di luar jam kerja · buka {csBukaLagi()}</small></span>
+            </div>
+          ) : (
           <a
             href={`https://t.me/${(csUsername || "teatlas").replace(/^@/, "")}`}
             target="_blank"
             rel="noreferrer"
+            data-testid="widget-cs-buka"
             className="hover-lift flex items-center gap-2 rounded-full border-2 border-amber bg-amber-soft py-2 pl-3 pr-4 text-sm font-bold text-amber-bright shadow-lift"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber text-white">💬</span>
             Customer Service
           </a>
+          )}
           <a
             href={channelInfo}
             target="_blank"

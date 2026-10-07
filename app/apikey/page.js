@@ -6,10 +6,8 @@ import { useUser } from "@/app/providers";
 import { PageHeader, Icon } from "@/components/ui";
 
 const SERVERS = [
-  { id: "rumahotp", name: "Server Nokos Murah", badge: "Murah", desc: "Harga paling hemat, cakupan aplikasi & negara terluas." },
   { id: "warungnokos_s1", name: "Server Plus", badge: "Utama", desc: "Jalur utama WarungNokos, stok melimpah." },
-  { id: "warungnokos_s2", name: "Server Express", badge: "Global", desc: "Jalur kedua WarungNokos, pilihan cadangan." },
-  { id: "dibanana", name: "OTP Fast Murah", badge: "Fast", desc: "OTP masuk cepat, harga hemat, 5 negara." }
+  { id: "warungnokos_s2", name: "Server Express", badge: "Cepat", desc: "Jalur kedua WarungNokos, pilihan cadangan." }
 ];
 
 function Copy({ value, label = "Salin" }) {

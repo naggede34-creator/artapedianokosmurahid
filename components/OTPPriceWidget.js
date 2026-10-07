@@ -9,7 +9,7 @@ function rupiah(n) {
 }
 
 export default function OTPPriceWidget() {
-  const [server, setServer] = useState("rumahotp");
+  const [server, setServer] = useState("warungnokos_s1");
   const [services, setServices] = useState([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);

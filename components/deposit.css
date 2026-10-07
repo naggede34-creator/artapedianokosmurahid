@@ -1,0 +1,36 @@
+/* Halaman Isi Saldo — kepala bergradien, langkah berbentuk pil, kolom nominal besar, chip nominal bercahaya. */
+.dp-hero { position: relative; overflow: hidden; border-radius: 24px; padding: 22px; color: #fff;
+  background: radial-gradient(130% 150% at 0% 0%, rgb(var(--c-orange-bright)) 0%, rgb(var(--c-orange)) 42%, #7c2d12 100%);
+  box-shadow: 0 10px 0 -3px rgb(124 45 18 / .5), 0 26px 44px -22px rgb(124 45 18 / .6); }
+.dp-hero::before { content: ""; position: absolute; inset: 0; background:
+  radial-gradient(circle at 88% 12%, rgb(255 255 255 / .22), transparent 38%),
+  repeating-linear-gradient(120deg, rgb(255 255 255 / .05) 0 2px, transparent 2px 16px); pointer-events: none; }
+.dp-hero > * { position: relative; }
+.dp-saldo { border-radius: 18px; background: rgb(0 0 0 / .22); backdrop-filter: blur(6px); padding: 12px 16px; min-width: 180px; }
+.dp-lencana { display: inline-flex; align-items: center; gap: 6px; border-radius: 99px; background: rgb(255 255 255 / .16); padding: 5px 11px; font-size: 11px; font-weight: 800; }
+
+.dp-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 22px; }
+.dp-step { position: relative; text-align: center; font-size: 11px; font-weight: 800; color: rgb(var(--c-muted)); }
+.dp-step i { display: block; height: 6px; border-radius: 99px; background: rgb(var(--c-line) / .9); margin-bottom: 7px; overflow: hidden; }
+.dp-step i::after { content: ""; display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, rgb(var(--c-orange)), rgb(var(--c-orange-bright))); transition: width .45s ease; }
+.dp-step[data-state="done"] i::after, .dp-step[data-state="now"] i::after { width: 100%; }
+.dp-step[data-state="done"] { color: rgb(var(--c-success)); }
+.dp-step[data-state="done"] i::after { background: rgb(var(--c-success)); }
+.dp-step[data-state="now"] { color: rgb(var(--c-ink)); }
+
+.dp-amount { display: flex; align-items: center; gap: 8px; border-radius: 20px; border: 2px solid rgb(var(--c-line)); background: rgb(var(--c-surface2)); padding: 6px 18px; transition: border-color .15s, box-shadow .15s; }
+.dp-amount:focus-within { border-color: rgb(var(--c-orange)); box-shadow: 0 0 0 5px rgb(var(--c-orange) / .16); }
+.dp-amount .rp { font-size: 22px; font-weight: 900; color: rgb(var(--c-orange-bright)); }
+.dp-amount input { width: 100%; background: transparent; padding: 14px 4px; font-size: 34px; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: -.02em; color: rgb(var(--c-ink)); outline: none; }
+.dp-amount input::placeholder { color: rgb(var(--c-muted) / .4); }
+
+.dp-chip { position: relative; border-radius: 16px; border: 2px solid rgb(var(--c-line)); background: rgb(var(--c-surface)); padding: 12px 6px; font-size: 14px; font-weight: 900; font-variant-numeric: tabular-nums; color: rgb(var(--c-ink)); transition: transform .12s, border-color .12s, box-shadow .12s, background .12s; }
+.dp-chip:hover { transform: translateY(-2px); border-color: rgb(var(--c-orange) / .6); }
+.dp-chip[data-on="true"] { border-color: rgb(var(--c-orange)); background: rgb(var(--c-orange-soft)); color: rgb(var(--c-orange-bright)); box-shadow: 0 6px 0 -2px rgb(var(--c-orange) / .45); transform: translateY(-2px); }
+.dp-chip .hot { position: absolute; top: -9px; right: 8px; border-radius: 99px; background: rgb(var(--c-danger)); color: #fff; padding: 1px 7px; font-size: 9px; font-weight: 900; letter-spacing: .04em; }
+
+.dp-estimasi { margin-top: 14px; display: flex; align-items: center; gap: 10px; border-radius: 16px; background: rgb(var(--c-success) / .12); padding: 10px 14px; font-size: 12px; color: rgb(var(--c-success)); font-weight: 800; }
+.dp-jaminan { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+.dp-jaminan div { border-radius: 14px; background: rgb(var(--c-surface2)); padding: 10px 6px; text-align: center; font-size: 10.5px; font-weight: 800; color: rgb(var(--c-muted)); line-height: 1.25; }
+.dp-jaminan b { display: block; font-size: 18px; margin-bottom: 2px; }
+@media (max-width: 640px) { .dp-amount input { font-size: 28px; } .dp-hero { padding: 18px; } }

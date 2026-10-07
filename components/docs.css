@@ -1,0 +1,50 @@
+/* Dokumentasi API (nokos & QRIS gateway): kepala bergradien, navigasi samping yang menyorot bagian aktif,
+   kartu endpoint dengan garis warna per metode, blok kode bergaya terminal. */
+.dx-hero { position: relative; overflow: hidden; border-bottom: 1px solid rgb(var(--c-line) / .2);
+  background: radial-gradient(120% 140% at 0% 0%, rgb(var(--c-blue-bright) / .95) 0%, rgb(var(--c-blue)) 45%, #0b1d48 100%); color: #fff; }
+.dx-hero.gw { background: radial-gradient(120% 140% at 0% 0%, #22d3ee 0%, #0891b2 42%, #0c3b4d 100%); }
+.dx-hero::before { content: ""; position: absolute; inset: 0; pointer-events: none; background:
+  radial-gradient(circle at 90% 10%, rgb(255 255 255 / .2), transparent 40%),
+  repeating-linear-gradient(120deg, rgb(255 255 255 / .045) 0 2px, transparent 2px 16px); }
+.dx-hero > * { position: relative; }
+.dx-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 99px; background: rgb(255 255 255 / .16); padding: 4px 12px; font-size: 11px; font-weight: 800; }
+.dx-url { display: flex; align-items: center; gap: 10px; max-width: 560px; border-radius: 16px; background: rgb(0 0 0 / .28); padding: 10px 14px; font-family: var(--font-mono, ui-monospace, monospace); font-size: 13px; }
+.dx-url code { flex: 1; overflow-x: auto; white-space: nowrap; }
+.dx-url button { flex-shrink: 0; border-radius: 10px; background: rgb(255 255 255 / .18); padding: 4px 10px; font-size: 11px; font-weight: 800; }
+.dx-langkah { display: grid; gap: 10px; grid-template-columns: repeat(3, 1fr); max-width: 760px; }
+.dx-langkah > div { border-radius: 16px; background: rgb(255 255 255 / .12); padding: 12px 14px; font-size: 12px; line-height: 1.35; }
+.dx-langkah b { display: block; font-size: 13px; margin-bottom: 2px; }
+.dx-langkah i { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: 99px; background: #fff; color: #0b1d48; font-style: normal; font-size: 11px; font-weight: 900; margin-bottom: 6px; }
+@media (max-width: 720px) { .dx-langkah { grid-template-columns: 1fr; } }
+
+.dx-toc a { display: flex; align-items: center; gap: 8px; border-radius: 10px; padding: 6px 10px; font-size: 13px; color: rgb(var(--c-muted)); border-left: 3px solid transparent; transition: background .12s, color .12s; }
+.dx-toc a:hover { background: rgb(var(--c-surface2)); color: rgb(var(--c-ink)); }
+.dx-toc a[data-aktif="true"] { background: rgb(var(--c-orange-soft)); color: rgb(var(--c-orange-bright)); border-left-color: rgb(var(--c-orange)); font-weight: 800; }
+.dx-toc .grup { margin: 14px 10px 4px; font-size: 10px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; color: rgb(var(--c-muted)); opacity: .8; }
+.dx-chips { position: sticky; top: 64px; z-index: 30; display: flex; gap: 6px; overflow-x: auto; padding: 8px 4px; background: rgb(var(--c-bg) / .92); backdrop-filter: blur(8px); border-bottom: 1px solid rgb(var(--c-line) / .15); }
+.dx-chips a { flex-shrink: 0; border-radius: 99px; border: 1px solid rgb(var(--c-line) / .25); padding: 5px 12px; font-size: 12px; font-weight: 700; color: rgb(var(--c-muted)); }
+.dx-chips a[data-aktif="true"] { background: rgb(var(--c-orange)); color: #fff; border-color: transparent; }
+
+.dx-ep { position: relative; overflow: hidden; border-radius: 20px; border: 2px solid rgb(var(--c-line) / .25); background: rgb(var(--c-surface)); margin-top: 24px; }
+.dx-ep::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--dx-warna, rgb(var(--c-orange))); }
+.dx-ep[data-m="GET"] { --dx-warna: rgb(var(--c-success)); }
+.dx-ep[data-m="POST"] { --dx-warna: rgb(var(--c-orange)); }
+.dx-ep[data-m="DELETE"] { --dx-warna: rgb(var(--c-danger)); }
+.dx-ep-kepala { padding: 18px 20px 16px 26px; background: rgb(var(--c-surface2)); border-bottom: 1px solid rgb(var(--c-line) / .15); }
+.dx-metode { display: inline-block; min-width: 54px; text-align: center; border-radius: 8px; background: var(--dx-warna); color: #fff; padding: 3px 10px; font: 800 12px var(--font-mono, ui-monospace, monospace); letter-spacing: .04em; }
+.dx-path { font: 700 13px var(--font-mono, ui-monospace, monospace); color: rgb(var(--c-ink)); word-break: break-all; }
+.dx-ep-isi { padding: 18px 20px 20px 26px; }
+
+.dx-kode { margin-top: 12px; overflow: hidden; border-radius: 16px; border: 1px solid #1f2937; background: #0d1117; }
+.dx-kode-bar { display: flex; align-items: center; gap: 6px; background: #161b22; padding: 8px 12px; }
+.dx-kode-bar .dot { width: 10px; height: 10px; border-radius: 99px; }
+.dx-kode-bar .judul { margin-left: 8px; flex: 1; font: 700 11px var(--font-mono, ui-monospace, monospace); letter-spacing: .08em; text-transform: uppercase; color: #8b949e; }
+.dx-kode-bar button { border-radius: 8px; border: 1px solid #30363d; padding: 2px 10px; font-size: 11px; font-weight: 800; color: #c9d1d9; }
+.dx-kode-bar button:hover { border-color: rgb(var(--c-orange)); color: #fff; }
+.dx-kode pre { overflow-x: auto; padding: 14px 16px; font: 12.5px/1.65 var(--font-mono, ui-monospace, monospace); color: #c9d1d9; white-space: pre; }
+
+.dx-catatan { display: flex; gap: 10px; border-radius: 16px; padding: 12px 14px; font-size: 12.5px; line-height: 1.5; border: 1px solid; }
+.dx-catatan.info { background: rgb(var(--c-blue) / .08); border-color: rgb(var(--c-blue) / .3); }
+.dx-catatan.awas { background: rgb(var(--c-danger) / .07); border-color: rgb(var(--c-danger) / .3); }
+.dx-catatan.baik { background: rgb(var(--c-success) / .09); border-color: rgb(var(--c-success) / .3); }
+@media (min-width: 1024px) { .dx-chips.lg\:hidden { display: none; } }

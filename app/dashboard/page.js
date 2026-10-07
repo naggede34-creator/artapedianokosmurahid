@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLembarTerbuka } from "@/lib/lembarTerbuka";
 import { useUser } from "@/app/providers";
+import { useCsBuka } from "@/lib/useCsBuka";
+import { CS_JAM_TEKS, csBukaLagi } from "@/lib/jamCs";
 import SimCard from "@/components/SimCard";
 import OTPPriceWidget from "@/components/OTPPriceWidget";
 import FlashSaleTimer from "@/components/FlashSaleTimer";
@@ -406,6 +408,7 @@ export default function DashboardPage() {
   const [ticketReply, setTicketReply] = useState("");
   const [ticketReplyLoading, setTicketReplyLoading] = useState(false);
   const [showTicketForm, setShowTicketForm] = useState(false);
+  const csBuka = useCsBuka(); // false = di luar 09.00–22.00 WIB → tombol CS mati
   const [csUser, setCsUser] = useState("teatlas");
   useEffect(() => { fetch("/api/settings/public").then((r) => r.json()).then((d) => { if (d?.csUsername) setCsUser(String(d.csUsername).replace(/^@/, "")); }).catch(() => {}); }, []);
   const [tab, setTabState] = useState("beranda");
@@ -603,7 +606,23 @@ export default function DashboardPage() {
       {/* ── Aksi utama ── */}
       <SectionTitle icon="⚡" title="Aksi utama" />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3" data-testid="aksi-utama">
-        {[...utama, { href: `https://t.me/${csUser}`, ext: true, label: "Kontak", sub: `Hubungi admin @${csUser}`, ikon: "☎️", warna: "bg-gradient-to-br from-[#0891b2] to-[#164e63]", testid: "tombol-kontak-cs" }].map((u) => (
+        {[...utama, { href: `https://t.me/${csUser}`, ext: true, label: "Kontak", sub: `Hubungi admin @${csUser}`, ikon: "☎️", warna: "bg-gradient-to-br from-[#0891b2] to-[#164e63]", testid: "tombol-kontak-cs", cs: true }].map((u) => (u.cs && csBuka === false) ? (
+          <div
+            key={u.href + u.label}
+            role="button"
+            aria-disabled="true"
+            tabIndex={-1}
+            data-testid={u.testid}
+            title={`Customer Service buka ${CS_JAM_TEKS}`}
+            className="relative flex cursor-not-allowed select-none items-center gap-3 overflow-hidden rounded-2xl border-2 border-ink/30 bg-surface2 px-4 py-4 text-muted"
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ink/10 text-2xl grayscale">{u.ikon}</span>
+            <span className="min-w-0">
+              <span className="block text-sm font-black leading-tight">Customer Service</span>
+              <span className="mt-0.5 block text-[11px] font-semibold leading-snug">Sedang di luar jam kerja · buka {csBukaLagi()}</span>
+            </span>
+          </div>
+        ) : (
           <Link
             key={u.href + u.label}
             href={u.href}
@@ -807,10 +826,17 @@ export default function DashboardPage() {
       {/* Bantuan cepat */}
       <SectionTitle icon="🎧" title="Bantuan cepat" />
       <div className="grid gap-3 sm:grid-cols-3" data-testid="bantuan-cepat">
-        <a href={`https://t.me/${csUser}`} target="_blank" rel="noopener noreferrer" className="card hover-lift flex items-center gap-3 p-4">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-soft text-2xl">✈️</span>
-          <span><b className="block text-sm text-ink">Customer Service</b><small className="text-xs text-muted">Chat Telegram @{csUser}</small></span>
-        </a>
+        {csBuka === false ? (
+          <div role="button" aria-disabled="true" tabIndex={-1} data-testid="cs-tutup" title={`Customer Service buka ${CS_JAM_TEKS}`} className="card flex cursor-not-allowed select-none items-center gap-3 p-4 opacity-70">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface2 text-2xl grayscale">✈️</span>
+            <span><b className="block text-sm text-muted">Customer Service</b><small className="text-xs text-muted">Sedang di luar jam kerja · buka {csBukaLagi()}</small></span>
+          </div>
+        ) : (
+          <a href={`https://t.me/${csUser}`} target="_blank" rel="noopener noreferrer" className="card hover-lift flex items-center gap-3 p-4" data-testid="cs-buka">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-soft text-2xl">✈️</span>
+            <span><b className="block text-sm text-ink">Customer Service</b><small className="text-xs text-muted">Chat Telegram @{csUser} · {CS_JAM_TEKS}</small></span>
+          </a>
+        )}
         <Link href="/chat" className="card hover-lift flex items-center gap-3 p-4">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-soft text-2xl">✦</span>
           <span><b className="block text-sm text-ink">Tanya WEARTA AI</b><small className="text-xs text-muted">Jawaban instan 24 jam</small></span>

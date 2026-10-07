@@ -1,3 +1,4 @@
+import { DEFAULT_SERVER } from "@/lib/otpServers";
 import { NextResponse } from "next/server";
 import { resolveApiKey, jsonV1 } from "@/lib/apiKeyAuth";
 import { getSettings } from "@/lib/settings";
@@ -5,13 +6,12 @@ import { listServices, serverEnabled } from "@/lib/otpCatalog";
 
 export const dynamic = "force-dynamic";
 
-// Daftar layanan untuk satu server. Tanpa ?server= akan memakai rumahotp
-// supaya integrasi lama tetap jalan apa adanya.
+// Daftar layanan untuk satu server. Tanpa ?server= akan memakai Server Plus (warungnokos_s1).
 export async function GET(req) {
   const { error } = await resolveApiKey(req);
   if (error) return error;
 
-  const server = new URL(req.url).searchParams.get("server") || "rumahotp";
+  const server = new URL(req.url).searchParams.get("server") || DEFAULT_SERVER;
   try {
     const settings = await getSettings();
     if (!serverEnabled(settings, server)) {

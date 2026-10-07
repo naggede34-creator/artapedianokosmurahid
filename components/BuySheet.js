@@ -16,8 +16,8 @@ function pick(obj, keys, fallback) {
 export default function BuySheet({ open, onClose, services, servicesLoading, token, balance, onOrderCreated, initialQuery = "" }) {
   // Kedua server memakai alur yang sama: pilih server -> aplikasi -> negara -> order.
   const [screen, setScreen] = useState("server"); // server | apps | countries | operators
-  const [server, setServer] = useState(null); // rumahotp | warungnokos_s1 | warungnokos_s2 | dibanana
-  const [available, setAvailable] = useState({ rumahotp: true });
+  const [server, setServer] = useState(null); // warungnokos_s1 | warungnokos_s2
+  const [available, setAvailable] = useState({ warungnokos_s1: true, warungnokos_s2: true });
   // Nama, label, dan keterangan server datang dari pengaturan admin. OTP_SERVERS
   // hanya dipakai sebagai cadangan kalau API-nya belum sempat menjawab.
   const [serverList, setServerList] = useState(() =>
@@ -77,7 +77,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
       const res = await fetch("/api/stok/watch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, server: server || "rumahotp", serviceId: selectedService.service_code, serviceName: selectedService.service_name })
+        body: JSON.stringify({ token, server: server || "warungnokos_s1", serviceId: selectedService.service_code, serviceName: selectedService.service_name })
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Gagal menyimpan.");
@@ -117,12 +117,13 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
       .catch(() => {});
   }, [open]);
 
-  // Datang dari ?q= (cari layanan tertentu) -> langsung ke daftar aplikasi Server Murah.
+  // Datang dari ?q= (cari layanan tertentu) -> langsung ke daftar aplikasi Server Plus.
   useEffect(() => {
     if (open && initialQuery) {
       setAppSearch(initialQuery);
-      setServer("rumahotp");
+      setServer("warungnokos_s1");
       setScreen("apps");
+      loadRemoteServices("warungnokos_s1");
     }
   }, [open, initialQuery]);
 
@@ -199,7 +200,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
     setCountriesLoading(true);
     setBuyError(""); setTopupNominal(0);
     try {
-      const params = new URLSearchParams({ service_id: svc.service_code, server: server || "rumahotp" });
+      const params = new URLSearchParams({ service_id: svc.service_code, server: server || "warungnokos_s1" });
       const res = await fetch(`/api/otp/countries?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal memuat negara.");
@@ -249,7 +250,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
         operatorName: operatorName || null,
         serviceName: selectedService.service_name,
         countryName: country.name,
-        server: provider.server || server || "rumahotp",
+        server: provider.server || server || "warungnokos_s1",
         jaminan: jaminanInfo.aktif && pakaiJaminan
       };
       // Server non-RumahOTP memakai kunci service + country_id (+ index tier harga

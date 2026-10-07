@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import "@/components/docs.css";
 import { useEffect, useState } from "react";
 import {
   INVOICE_MIN, INVOICE_MAX, BIAYA_QRIS, WD_MIN, BIAYA_WD
@@ -12,20 +13,23 @@ const rp = (n) => `Rp${Number(n).toLocaleString("id-ID")}`;
 function Blok({ judul, kode, bahasa = "" }) {
   const [disalin, setDisalin] = useState(false);
   return (
-    <div className="mt-3 overflow-hidden rounded-2xl border-2 border-ink">
-      <div className="flex items-center justify-between bg-surface2 px-3 py-2">
-        <span className="text-[11px] font-black uppercase tracking-wide text-muted">{judul || bahasa}</span>
-        <button
-          onClick={() => { navigator.clipboard?.writeText(kode); setDisalin(true); setTimeout(() => setDisalin(false), 1500); }}
-          className="text-[11px] font-bold text-amber-bright"
-        >
-          {disalin ? "✓ Disalin" : "Salin"}
+    <div className="dx-kode">
+      <div className="dx-kode-bar">
+        <span className="dot" style={{ background: "#ff5f56" }} /><span className="dot" style={{ background: "#ffbd2e" }} /><span className="dot" style={{ background: "#27c93f" }} />
+        <span className="judul">{judul || bahasa}</span>
+        <button onClick={() => { navigator.clipboard?.writeText(kode); setDisalin(true); setTimeout(() => setDisalin(false), 1500); }}>
+          {disalin ? "✓ Tersalin" : "Salin"}
         </button>
       </div>
-      <pre className="overflow-x-auto bg-[#0d1117] p-3 text-[11px] leading-relaxed text-[#c9d1d9]"><code>{kode}</code></pre>
+      <pre><code>{kode}</code></pre>
     </div>
   );
 }
+
+const TOC = [
+  ["dasar", "Dasar"], ["batas", "Batas & biaya"], ["buat", "Buat tagihan"], ["cek", "Cek status"],
+  ["saldo", "Saldo"], ["callback", "Callback"], ["contoh", "Contoh"], ["error", "Kode error"]
+];
 
 function Baris({ nama, tipe, wajib, ket }) {
   return (
@@ -35,7 +39,7 @@ function Baris({ nama, tipe, wajib, ket }) {
       <td className="py-2 pr-3 align-top">
         {wajib
           ? <span className="rounded-full bg-rose-soft px-1.5 py-0.5 text-[10px] font-black text-rose">WAJIB</span>
-          : <span className="text-[10px] text-muted">opsional</span>}
+          : tipe ? <span className="text-[10px] text-muted">opsional</span> : null}
       </td>
       <td className="py-2 align-top text-[11px] leading-relaxed text-muted">{ket}</td>
     </tr>
@@ -48,6 +52,14 @@ export default function GatewayDocsPage() {
   // untuk DISALIN ke server merchant, dan alamat yang ikut tempat halamannya
   // dibuka akan menghasilkan contoh yang menunjuk ke localhost.
   const [B, setB] = useState(FALLBACK_BASE);
+  const [aktif, setAktif] = useState("dasar");
+  useEffect(() => {
+    const els = TOC.map(([id]) => document.getElementById(id)).filter(Boolean);
+    if (!els.length || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver((e) => { const t = e.filter((x) => x.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]; if (t) setAktif(t.target.id); }, { rootMargin: "-110px 0px -65% 0px" });
+    els.forEach((x) => io.observe(x));
+    return () => io.disconnect();
+  }, []);
   useEffect(() => {
     fetch("/api/settings/public", { cache: "no-store" })
       .then((r) => r.json())
@@ -56,19 +68,36 @@ export default function GatewayDocsPage() {
   }, []);
 
   return (
-    <div className="gw-shell mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-8">
-      <Link href="/gateway" className="text-xs font-bold text-amber-bright">← Kembali ke dasbor</Link>
-
-      <h1 className="font-display mt-3 text-2xl font-black tracking-tight text-ink sm:text-3xl">
-        DOKUMENTASI API
-      </h1>
-      <p className="mt-2 text-sm leading-relaxed text-muted">
-        Sambungkan QRIS Gateway ke bot atau web kamu sendiri. Semua permintaan memakai HTTPS dan
-        dikenali lewat header <code className="font-bold text-ink">X-API-Key</code>.
-      </p>
-
+    <div className="gw-shell">
+      <div className="dx-hero gw">
+        <div className="mx-auto max-w-content px-4 py-10 sm:px-5 md:py-14">
+          <Link href="/gateway" className="text-xs font-bold text-white/85">← Kembali ke dasbor</Link>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="dx-pill">🏦 QRIS Gateway</span>
+            <span className="dx-pill">REST · JSON</span>
+            <span className="dx-pill">Via AustinPay</span>
+          </div>
+          <h1 className="font-display mt-3 text-3xl font-black tracking-tight sm:text-4xl">Terima pembayaran QRIS di tokomu sendiri</h1>
+          <p className="mt-2 max-w-xl text-base text-white/85">
+            Buat tagihan lewat API, pembeli bayar pakai QRIS apa pun, saldo masuk otomatis dan kamu dikabari lewat callback.
+          </p>
+          <div className="dx-url mt-5">
+            <code>{B}/api/gw/v1</code>
+            <button onClick={() => navigator.clipboard?.writeText(`${B}/api/gw/v1`).catch(() => {})}>Salin</button>
+          </div>
+          <div className="dx-langkah mt-5">
+            <div><i>1</i><b>Ambil API key</b>Di dasbor gateway → tab API.</div>
+            <div><i>2</i><b>Buat tagihan</b>POST /invoice, tampilkan QR ke pembeli.</div>
+            <div><i>3</i><b>Terima callback</b>Saldo masuk, tarik ke e-wallet otomatis.</div>
+          </div>
+        </div>
+      </div>
+      <nav className="dx-chips" aria-label="Daftar isi">
+        {TOC.map(([id, label]) => <a key={id} href={`#${id}`} data-aktif={aktif === id}>{label}</a>)}
+      </nav>
+      <div className="mx-auto max-w-content px-4 pb-8 sm:px-5">
       {/* Dasar */}
-      <div className="card mt-5 p-5">
+      <div id="dasar" className="card mt-5 scroll-mt-28 p-5">
         <h2 className="font-display text-base font-black text-ink">Dasar</h2>
         <table className="mt-3 w-full text-left">
           <tbody>
@@ -84,7 +113,7 @@ export default function GatewayDocsPage() {
       </div>
 
       {/* Batas & biaya */}
-      <div className="card mt-4 p-5">
+      <div id="batas" className="card mt-4 scroll-mt-28 p-5">
         <h2 className="font-display text-base font-black text-ink">Batas &amp; biaya</h2>
         <table className="mt-3 w-full text-left">
           <tbody>
@@ -98,10 +127,10 @@ export default function GatewayDocsPage() {
       </div>
 
       {/* Buat tagihan */}
-      <div className="card mt-4 p-5">
+      <div id="buat" className="card mt-4 scroll-mt-28 p-5">
         <div className="flex items-center gap-2">
-          <span className="rounded-lg bg-success px-2 py-0.5 text-[10px] font-black text-white">POST</span>
-          <code className="text-sm font-bold text-ink">/api/gw/v1/invoice</code>
+          <span className="dx-metode" style={{ "--dx-warna": "rgb(var(--c-orange))" }}>POST</span>
+          <code className="dx-path">/api/gw/v1/invoice</code>
         </div>
         <p className="mt-2 text-xs leading-relaxed text-muted">Buat tagihan QRIS baru.</p>
 
@@ -148,10 +177,10 @@ export default function GatewayDocsPage() {
       </div>
 
       {/* Cek status */}
-      <div className="card mt-4 p-5">
+      <div id="cek" className="card mt-4 scroll-mt-28 p-5">
         <div className="flex items-center gap-2">
-          <span className="rounded-lg bg-blue px-2 py-0.5 text-[10px] font-black text-white">GET</span>
-          <code className="text-sm font-bold text-ink">/api/gw/v1/invoice/{"{invoice_id}"}</code>
+          <span className="dx-metode" style={{ "--dx-warna": "rgb(var(--c-success))" }}>GET</span>
+          <code className="dx-path">/api/gw/v1/invoice/{"{invoice_id}"}</code>
         </div>
         <p className="mt-2 text-xs leading-relaxed text-muted">
           Cek status satu tagihan. Status yang mungkin: <code>pending</code>, <code>paid</code>,
@@ -162,16 +191,16 @@ export default function GatewayDocsPage() {
       </div>
 
       {/* Saldo */}
-      <div className="card mt-4 p-5">
+      <div id="saldo" className="card mt-4 scroll-mt-28 p-5">
         <div className="flex items-center gap-2">
-          <span className="rounded-lg bg-blue px-2 py-0.5 text-[10px] font-black text-white">GET</span>
-          <code className="text-sm font-bold text-ink">/api/gw/v1/balance</code>
+          <span className="dx-metode" style={{ "--dx-warna": "rgb(var(--c-success))" }}>GET</span>
+          <code className="dx-path">/api/gw/v1/balance</code>
         </div>
         <Blok judul="Jawaban" kode={`{ "success": true, "balance": 1250000, "total_masuk": 4300000, "frozen": false }`} />
       </div>
 
       {/* Callback */}
-      <div className="card mt-4 p-5">
+      <div id="callback" className="card mt-4 scroll-mt-28 p-5">
         <h2 className="font-display text-base font-black text-ink">📡 Callback</h2>
         <p className="mt-2 text-xs leading-relaxed text-muted">
           Saat tagihan dibayar, kami POST JSON ke callback URL kamu (bawaan dari dasbor, atau
@@ -209,7 +238,7 @@ const sah = crypto.timingSafeEqual(Buffer.from(hitung), Buffer.from(req.headers[
       </div>
 
       {/* Contoh kode */}
-      <div className="card mt-4 p-5">
+      <div id="contoh" className="card mt-4 scroll-mt-28 p-5">
         <h2 className="font-display text-base font-black text-ink">Contoh lengkap</h2>
 
         <Blok bahasa="Node.js" judul="Node.js" kode={`const KEY = process.env.ARTAPEDIA_GW_KEY;
@@ -274,7 +303,7 @@ def sudah_dibayar(invoice_id):
       </div>
 
       {/* Error */}
-      <div className="card mt-4 p-5">
+      <div id="error" className="card mt-4 scroll-mt-28 p-5">
         <h2 className="font-display text-base font-black text-ink">Kode error</h2>
         <table className="mt-3 w-full text-left">
           <tbody>
@@ -293,6 +322,7 @@ def sudah_dibayar(invoice_id):
       </div>
 
       <Link href="/gateway" className="btn-primary press mt-5 block text-center">← Kembali ke Dasbor Gateway</Link>
+      </div>
     </div>
   );
 }
