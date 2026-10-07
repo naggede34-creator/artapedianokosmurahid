@@ -11,13 +11,8 @@ export async function GET(req) {
     const token = new URL(req.url).searchParams.get("token");
     if (!token) return NextResponse.json({ error: "Kode akun kosong." }, { status: 400 });
 
-    // Dua dompet terpisah: ?dompet=game → mutasi SALDO GAME saja; bawaannya mutasi saldo nokos (tanpa entri game).
-    const dompetGame = new URL(req.url).searchParams.get("dompet") === "game";
     const logs = await balanceLogsCol();
-    const ledger = await logs.find(dompetGame ? { token, wallet: "game" } : { token, wallet: { $ne: "game" } }).sort({ createdAt: -1 }).limit(200).toArray();
-    if (dompetGame) {
-      return NextResponse.json({ items: ledger.map((l) => ({ id: l._id.toString(), type: l.type, title: l.title, amount: l.amount, balanceAfter: l.balanceAfter ?? null, ref: l.ref || null, createdAt: l.createdAt })) });
-    }
+    const ledger = await logs.find({ token, wallet: { $ne: "game" } }).sort({ createdAt: -1 }).limit(200).toArray();
     const items = ledger.map((l) => ({
       id: l._id.toString(),
       type: l.type,

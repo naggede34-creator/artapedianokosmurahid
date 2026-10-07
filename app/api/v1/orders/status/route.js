@@ -1,4 +1,3 @@
-import { DEFAULT_SERVER } from "@/lib/otpServers";
 import { NextResponse } from "next/server";
 import { resolveApiKey, jsonV1 } from "@/lib/apiKeyAuth";
 import { otpOrdersCol } from "@/lib/db";
@@ -22,7 +21,7 @@ export async function GET(req) {
     const r = await reconcileOtpOrder(order);
     return jsonV1(req, {
       orderId: order.orderId,
-      server: order.server || DEFAULT_SERVER,
+      server: order.server || "rumahotp",
       status: r.resolvedStatus,
       otpCode: r.otpCode || null,
       otpMsg: r.otpMsg || null,

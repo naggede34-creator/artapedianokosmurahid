@@ -6,10 +6,12 @@ import { useSearchParams } from "next/navigation";
 import { useUser } from "@/app/providers";
 import OtpOrderPanel from "@/components/OtpOrderPanel";
 import BuySheet from "@/components/BuySheet";
+import LuckyHourBanner from "@/components/LuckyHourBanner";
+import FlashSaleTimer from "@/components/FlashSaleTimer";
 import BannerRail from "@/components/BannerRail";
 import { Icon } from "@/components/ui";
 
-// WhatsApp selalu tampil paling atas, sisanya tetap mengikuti urutan asli dari server.
+// WhatsApp selalu tampil paling atas, sisanya tetap mengikuti urutan asli dari RumahOTP (Server Murah).
 function sortWithWaFirst(items) {
   const rank = (name = "") => {
     const n = name.toLowerCase();
@@ -107,6 +109,8 @@ function OtpPageInner() {
     setOrder(newOrder);
     setSheetOpen(false);
     refreshBalance();
+    if (newOrder?.orderId) {
+    }
     try {
       localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify({ token, order: newOrder }));
       // Track recently used service
@@ -136,6 +140,11 @@ function OtpPageInner() {
 
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
+      <div className="mb-4 space-y-2">
+        <FlashSaleTimer />
+        <LuckyHourBanner />
+      </div>
+
       {/* ───────── Hero ───────── */}
       <section className="relative overflow-hidden rounded-[28px] border border-line/10 bg-surface p-5 shadow-soft sm:p-7">
         <div

@@ -133,7 +133,7 @@ export async function GET(req) {
       ...b,
       judul: "Database Akun",
       rincian:
-        `${akun.jumlah.toLocaleString("id-ID")} akun (token, nama, saldo, koin, poin, pet)` +
+        `${akun.jumlah.toLocaleString("id-ID")} akun (token, nama, saldo)` +
         (akun.terpotong ? `\n⚠️ Terpotong dari ${akun.total.toLocaleString("id-ID")} akun` : "")
     });
   } catch (e) {

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import TopiMaskot from "./TopiMaskot";
 
 // Maskot elang di hero.
 //
@@ -35,6 +36,7 @@ export default function HeroMascot() {
       <span className="hero-mascot-floor" />
 
       <span className="hero-mascot-lean relative block" data-lean="1">
+        <TopiMaskot ukuran="2.2rem" />
         <Image
           src="/maskot.webp"
           alt=""

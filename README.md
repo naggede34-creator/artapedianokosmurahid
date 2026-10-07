@@ -1,31 +1,61 @@
-# Artapedia — toko nokos & QRIS gateway
+# Artapedia — nokos, QRIS gateway, Saldo Kaget & WEARTA CHAT
 
-Website khusus **beli nomor OTP (nokos)** dan **QRIS gateway** untuk reseller/developer.
-Dibangun dengan Next.js 15 (App Router) + MongoDB, tema komik 3D, bisa dipasang sebagai PWA.
+Website **beli nomor OTP (nokos)**, **QRIS gateway** untuk reseller/developer, **Saldo Kaget**
+(bagi saldo ke teman lewat tautan), dan **WEARTA CHAT** (chat ala WhatsApp). Dibangun dengan Next.js 15
+(App Router) + React 19 + MongoDB, tema komik 3D, bisa dipasang sebagai PWA.
 
 ## Fitur
 
 **Pengguna**
-- **Beli nokos** — server WarungNokos (Server 1 & Server 2), pilih layanan → negara → beli, OTP masuk
-  otomatis, ganti nomor, batalkan & refund otomatis kalau OTP tidak datang.
-- **Deposit** — QRIS otomatis (WarungNokos, Pakasir, RumahOTP, Atlantic, QRIS Fast/AustinPay) dan QRIS
-  manual + OCR bukti. Rute deposit dipilih acak/berbobot oleh admin, ada cashback deposit.
-- **Undang teman** (bonus deposit pertama + level), **Leaderboard**, **Giveaway**, voucher, transfer
-  saldo, tarik saldo, riwayat & mutasi.
-- **QRIS Gateway** untuk merchant: tagihan QRIS dibuat lewat **AustinPay** (QRIS FAST), saldo masuk otomatis (biaya Rp250 per tagihan dibayar),
-  dan **penarikan ke e-wallet otomatis lewat AustinPay** (minimal Rp10.000 yang diterima, biaya Rp1.000 ditambahkan di atasnya).
-  Kalau AustinPay bermasalah berulang, penarikan otomatis mati sendiri dan permintaan masuk antrean manual admin.
+- **Beli nokos** — server WarungNokos (Server 1 & 2), RumahOTP, dan dibanana (server yang kunci API-nya belum
+  diisi otomatis tersembunyi). Pilih layanan → negara → beli, OTP masuk otomatis, ganti nomor, batalkan &
+  refund otomatis kalau OTP tidak datang, garansi.
+- **Deposit** — QRIS otomatis (WarungNokos, Pakasir, RumahOTP, Atlantic, QRIS FAST/AustinPay) dan QRIS manual
+  + OCR bukti transfer. Rute deposit diacak/berbobot oleh admin.
+- **Cashback bertingkat** (`/cashback`) — persen dasar + tambahan **tingkat** (Bronze–Platinum, dari total belanja
+  nokos) + tambahan **deposit besar** + bonus event musiman, dengan batas persen & rupiah. Rumusnya satu
+  (`lib/cashbackHitung.js`) dan dipakai server, halaman Cashback, halaman Deposit, dan pratinjau admin.
+- **Saldo Kaget** (`/kaget`) — buat paket saldo untuk N orang (dibagi **acak** atau **rata**, pesan, masa
+  berlaku), bagikan satu tautan (WhatsApp/Telegram/salin), siapa cepat dia dapat. Satu klaim per akun,
+  pembuat tidak bisa mengambil paketnya sendiri, daftar penerima dengan label "paling beruntung", notifikasi
+  & push, riwayat dibuat/diterima, tutup dini, dan **sisa yang tidak terambil kembali otomatis**. Saldo hasil
+  Kaget adalah saldo biasa (tidak bisa ditarik/ditransfer). Detail teknis di bawah.
+- **QRIS Gateway** untuk merchant (`/gateway`, tombolnya di bilah atas tepat di samping Beranda): tagihan QRIS
+  lewat **AustinPay** (biaya Rp250 per tagihan), saldo masuk otomatis, callback ke merchant bertanda tangan
+  HMAC, dan **penarikan ke e-wallet otomatis lewat AustinPay** (minimal Rp10.000 yang diterima, biaya Rp1.000
+  di atasnya). Kalau AustinPay bermasalah berulang, penarikan otomatis mati sendiri dan permintaan masuk
+  antrean manual admin.
+- **Undang teman**, **Pembeli Terbanyak** (mingguan), **Giveaway**, voucher, transfer saldo, riwayat & mutasi,
+  Saldo Gratis (job), Stor Gmail (setor akun Gmail → upah, dengan penarikan otomatis), Toko Produk, Bot Reseller,
+  program kreator, flash sale, jam diskon, event musiman otomatis.
+- **WEARTA CHAT** — chat pribadi & grup, status, panggilan suara/video, lencana verifikasi, WEARTA AI.
 - **API Key + dokumentasi** untuk nokos dan QRIS gateway (`/api-docs`, `/gateway/docs`).
-- **Notifikasi** ke channel Telegram (order nokos, deposit, dll.), bot utama, dan **bot reseller**.
+- **Notifikasi** ke channel Telegram, bot utama, dan bot reseller.
 
 **Admin** (`/admin`)
-- Pengguna, saldo, koreksi, keamanan & IP/perangkat ganda, rute deposit, provider, harga & markup,
-  server nokos, voucher, broadcast, banner, tiket bantuan, laporan stok, backup, konfigurasi terenkripsi,
-  izin per peran admin.
+- Pengguna & blokir, saldo, koreksi, keamanan & IP/perangkat ganda, rute deposit, provider, harga & markup,
+  server nokos, voucher, broadcast, banner, popup & pembaruan, tiket bantuan, laporan stok, backup, konfigurasi
+  terenkripsi, izin per peran admin, **Saldo Kaget** (pantau & tutup paksa), **Cashback** (tingkat, bonus
+  nominal, batas), QRIS Gateway & AustinPay.
 
-## Yang sengaja tidak ada lagi
-Game, poin, VIP/loyalty, PPOB, produk digital, serta server nokos selain WarungNokos (RumahOTP hanya
-dipakai sebagai metode deposit). Backup versi lama ada di branch `cadangan-sebelum-rombak`.
+## Yang sengaja tidak ada
+Semua fitur **game** (duel, game solo, Arena Pendekar), **poin** & Toko Poin, **misi & tantangan**, **Pet Arta
+Pedia**, **klan**, **bonus** (check-in, welcome, winback, spin/scratch/mystery box), VIP/loyalitas berbasis poin,
+dan **penarikan saldo nokos/game** ke e-wallet. Hanya saldo hasil **Stor Gmail**, saldo **gateway merchant**, dan
+penarikan oleh admin yang bisa ditarik. Versi sebelum perubahan ini ada di branch `cadangan-sebelum-rombak`.
+
+## Saldo Kaget — cara kerja uangnya
+- Pembuat membayar total (+ biaya admin, bawaan 0%) di muka; saldo dipotong atomik dan **ditahan di paket**.
+- Bagian tiap penerima dihitung saat paket dibuat dan disimpan **tersembunyi** di server (tidak pernah dikirim
+  ke halaman). Jumlah semua bagian persis sama dengan total.
+- Klaim: indeks unik `(kid, token)` → satu klaim per akun; slot diambil dengan `findOneAndUpdate` atomik; kredit
+  dicatat dulu di buku besar dengan referensi unik, baru saldo ditambah (klik ganda/retry tidak bisa dobel).
+- Paket berakhir (masa berlaku / ditutup pembuat / ditutup admin) → sisa dikembalikan tepat satu kali oleh
+  penyapu `sapuKaget()` (dipanggil `/api/cron/tick`) atau langsung saat ditutup. Klaim/pengembalian yang
+  tertinggal karena proses mati diselesaikan penyapu.
+- Pengaturan (Admin → Konfigurasi, grup Website): `KAGET_AKTIF`, `KAGET_MIN_TOTAL`, `KAGET_MAKS_TOTAL`,
+  `KAGET_MIN_PER_ORANG`, `KAGET_MAKS_PENERIMA`, `KAGET_MASA_JAM`, `KAGET_MAKS_AKTIF`, `KAGET_BIAYA_PERSEN`,
+  `KAGET_UMUR_AKUN_JAM`.
 
 ## Menjalankan
 
@@ -35,18 +65,27 @@ cp .env.example .env.local   # isi MONGODB_URI
 npm run dev                  # http://localhost:3000
 ```
 
-Hanya `MONGODB_URI` yang wajib di environment (kunci enkripsi konfigurasi diturunkan darinya).
-Kunci lain (WarungNokos, Pakasir, Telegram, kode admin, dll.) diisi lewat **Admin → Konfigurasi**
-dan disimpan terenkripsi — jangan ditulis di kode/repo. Kunci wajib supaya nokos jalan:
-`WARUNGNOKOS_APIKEY` (format `wn-...`).
+Hanya `MONGODB_URI` yang wajib di environment (kunci enkripsi konfigurasi diturunkan darinya). Kunci lain
+(WarungNokos, Pakasir, AustinPay, Telegram, kode admin, dll.) diisi lewat **Admin → Konfigurasi** dan disimpan
+terenkripsi — jangan ditulis di kode/repo. Minimal supaya nokos jalan: `WARUNGNOKOS_APIKEY` (format `wn-...`).
+Untuk QRIS Gateway & penarikan otomatis: `AUSTINPAY_APIKEY`, `AUSTINPAY_APISECRET`, `AUSTINPAY_WEBHOOK_SECRET`
+(IP server harus di-whitelist di AustinPay).
 
 ## Deploy
 - **Render** — New → Blueprint, pilih repo ini (`render.yaml`). Penjadwal internal aktif (`INTERNAL_CRON=1`).
-- **Vercel** — import repo, isi `MONGODB_URI`; cron di `vercel.json`.
-- **Cloudflare Workers** — lihat `deploy/cloudflare/README.md` (eksperimental; ukuran bundle dekat batas paket gratis).
+- **Vercel** — import repo, isi `MONGODB_URI`; cron di `vercel.json`. Untuk menjalankan penyapu tiap menit
+  (deposit tertunda, Kaget, penarikan macet) arahkan cron eksternal ke `/api/cron/tick?secret=…`.
+- **Netlify** — `netlify.toml` sudah ada; cron lewat cron eksternal.
+- **Cloudflare Workers** — lihat `deploy/cloudflare/README.md` (eksperimental).
 - Atlas: izinkan IP `0.0.0.0/0` (hosting serverless tidak punya IP tetap).
 
 ## Struktur singkat
 - `app/` halaman & API route · `components/` UI · `lib/` logika (provider, deposit, order nokos, keamanan)
-- `lib/otpServers.js` daftar server nokos · `lib/depositRute.js` rute deposit · `lib/configRegistry.js` konfigurasi terenkripsi
-- `docs/` teks promosi & dokumentasi AustinPay
+- `lib/otpServers.js` server nokos · `lib/depositRute.js` rute deposit · `lib/configRegistry.js` konfigurasi terenkripsi
+- `lib/kaget.js` Saldo Kaget · `lib/cashback.js` + `lib/cashbackHitung.js` cashback bertingkat
+- `lib/gateway*.js`, `lib/callbackAman.js` QRIS gateway, penarikan otomatis, callback merchant (SSRF-safe)
+- `docs/` dokumentasi AustinPay & WarungNokos (resmi dan turunan kode), teks promosi
+
+## Catatan jujur
+Integrasi provider (WarungNokos, AustinPay, Pakasir, dll.) diuji dengan **server palsu** yang meniru dokumentasinya;
+belum diuji ke layanan asli dengan uang sungguhan. Uji dulu dengan nominal kecil setelah kunci diisi.

@@ -22,7 +22,8 @@ const batasUang = new Map(); // "ip|jalur" → { n, t0 }
 // Endpoint yang memindahkan uang / menebak kredensial: batas per-IP jauh lebih ketat daripada API biasa.
 // [pola, maks per menit]
 const JALUR_UANG = [
-  [/^\/api\/tarik/, 20],
+  [/^\/api\/kaget\/(buat|klaim|tutup)/, 30],
+  [/^\/api\/setor-gmail/, 40],
   [/^\/api\/deposit\/(create|confirm)/, 20],
   [/^\/api\/transfer/, 20],
   [/^\/api\/admin\/login/, 12],

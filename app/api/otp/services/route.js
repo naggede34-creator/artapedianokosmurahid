@@ -1,4 +1,3 @@
-import { DEFAULT_SERVER } from "@/lib/otpServers";
 import { NextResponse } from "next/server";
 import { getSettings, serverOfflineMessage } from "@/lib/settings";
 import { listServices, serverEnabled } from "@/lib/otpCatalog";
@@ -6,7 +5,7 @@ import { listServices, serverEnabled } from "@/lib/otpCatalog";
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
-  const server = new URL(req.url).searchParams.get("server") || DEFAULT_SERVER;
+  const server = new URL(req.url).searchParams.get("server") || "rumahotp";
   try {
     const settings = await getSettings();
     if (!serverEnabled(settings, server)) {

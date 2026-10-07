@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { otpOrdersCol, depositsCol, usersCol } from "@/lib/db";
+import { otpOrdersCol, depositsCol } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +17,9 @@ export async function GET(req) {
     const todayKey = dayKey(new Date());
     const since = new Date(Date.now() - days * 24 * 3600 * 1000);
 
-    const [allOrders, allDeposits, akun] = await Promise.all([
+    const [allOrders, allDeposits] = await Promise.all([
       (await otpOrdersCol()).find({ token }).project({ createdAt: 1, price: 1, status: 1, refunded: 1 }).toArray(),
-      (await depositsCol()).find({ token }).project({ createdAt: 1, amount: 1, status: 1 }).toArray(),
-      (await usersCol()).findOne({ token }, { projection: { totalSpent: 1, cashbackTotal: 1 } })
+      (await depositsCol()).find({ token }).project({ createdAt: 1, amount: 1, status: 1 }).toArray()
     ]);
 
     const otpBerhasil = allOrders.filter((o) => o.status === "done").length;
@@ -54,8 +53,6 @@ export async function GET(req) {
       totalTransaksi: allOrders.length,
       otpBerhasil,
       depositSukses,
-      totalBelanja: akun?.totalSpent || 0,
-      cashbackTotal: akun?.cashbackTotal || 0,
       daily
     });
   } catch (err) {

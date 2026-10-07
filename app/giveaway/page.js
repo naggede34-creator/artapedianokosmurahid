@@ -66,9 +66,7 @@ export default function GiveawayPage() {
   }
 
   const hadiah = (ev) =>
-    ev.jenisHadiah === "poin"
-      ? `${Number(ev.nilaiHadiah).toLocaleString("id-ID")} poin`
-      : `Rp${Number(ev.nilaiHadiah).toLocaleString("id-ID")}`;
+    `Rp${Number(ev.nilaiHadiah).toLocaleString("id-ID")}`;
 
   const jam = (d) =>
     new Date(d).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });

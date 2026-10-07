@@ -6,11 +6,12 @@ import PushToggle from "@/components/PushToggle";
 /* ── accent per type ───────────────────────────────────────── */
 const TYPE_META = {
   reward:    { glow: "#f59e0b", bar: "#f59e0b", icon: "⭐", label: "Hadiah"    },
+  kaget:     { glow: "#f43f5e", bar: "#f43f5e", icon: "🧧", label: "Kaget"     },
+  gateway:   { glow: "#06b6d4", bar: "#06b6d4", icon: "🏦", label: "Gateway"   },
   system:    { glow: "#64748b", bar: "#334155", icon: "📢", label: "Info"      },
   deposit:   { glow: "#22c55e", bar: "#22c55e", icon: "💰", label: "Deposit"   },
   promo:     { glow: "#f43f5e", bar: "#f43f5e", icon: "🔥", label: "Promo"     },
   otp:       { glow: "#06b6d4", bar: "#06b6d4", icon: "🔑", label: "OTP"       },
-  winback:   { glow: "#fb923c", bar: "#fb923c", icon: "🎉", label: "Bonus"     },
 };
 
 function getMeta(type) { return TYPE_META[type] || TYPE_META.system; }
@@ -108,28 +109,13 @@ function PromoDetail({ n }) {
   );
 }
 
-/* ── Winback notification: glow bonus badge ──────────────── */
-function WinbackDetail({ n }) {
-  if (!n.amount) return null;
-  return (
-    <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl"
-      style={{ background: "rgba(251,146,60,0.1)", border: "1px solid rgba(251,146,60,0.25)" }}>
-      <span className="text-xl">🎁</span>
-      <div>
-        <p className="text-[10px] font-bold" style={{ color: "#fdba74" }}>Bonus Kembali</p>
-        <p className="font-black text-sm" style={{ color: "#fb923c" }}>+{fmtRp(n.amount)}</p>
-      </div>
-    </div>
-  );
-}
-
 /* ── Single notification card ────────────────────────────── */
 function NotifCard({ n, onMark }) {
   const meta = getMeta(n.type);
   const isUnread = !n.read;
 
   return (
-    <button onClick={() => { onMark(n.id); }}
+    <button onClick={() => { onMark(n.id); if ((n.type === "kaget" || n.type === "gateway") && n.url && typeof n.url === "string" && n.url.startsWith("/")) window.location.assign(n.url); }}
       className="group w-full text-left transition-all duration-200"
       style={{
         background: isUnread ? "rgba(255,255,255,0.03)" : "transparent",
@@ -175,15 +161,15 @@ function NotifCard({ n, onMark }) {
           {n.body && n.type !== "otp" && (
             <p className="text-xs mt-0.5 leading-relaxed line-clamp-2" style={{ color: "#6b7280" }}>{n.body}</p>
           )}
+
           {/* Type-specific detail panels */}
           {n.type === "otp" && <OtpDetail n={n} />}
           {n.type === "deposit" && <DepositDetail n={n} />}
           {n.type === "promo" && <PromoDetail n={n} />}
-          {n.type === "winback" && <WinbackDetail n={n} />}
-          {n.type === "reward" && n.amount && (
+          {(n.type === "reward" || n.type === "mission" || n.type === "challenge") && n.amount && (
             <div className="mt-1.5 inline-flex items-center gap-1 text-xs font-black px-2 py-0.5 rounded-full"
               style={{ background: `${meta.glow}15`, color: meta.glow }}>
-              {n.amount > 0 ? "+" : ""}{fmtRp(n.amount)}
+              {n.amount > 0 ? "+" : ""}{n.unit === "poin" ? `${n.amount} poin` : fmtRp(n.amount)}
             </div>
           )}
         </div>
@@ -366,7 +352,7 @@ export default function NotificationBell({ token }) {
                     {filter === "all" ? "Belum ada notifikasi" : `Tidak ada "${getMeta(filter).label}"`}
                   </p>
                   <p className="text-xs mt-1" style={{ color: "#4b5563" }}>
-                    Notifikasi OTP, deposit & info penting akan muncul di sini.
+                    Notifikasi hadir, mission, promo & update penting akan muncul di sini.
                   </p>
                 </div>
               ) : (

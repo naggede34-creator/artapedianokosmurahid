@@ -10,7 +10,7 @@
 // menerima dua-duanya.
 import { NextResponse } from "next/server";
 import { cronSah } from "@/lib/cronAuth";
-import { warungNokosConfigured } from "@/lib/warungnokos";
+import { getServices } from "@/lib/rumahotp";
 import { usersCol, depositsCol } from "@/lib/db";
 import { runCleanup } from "@/lib/cleanup";
 import { sapuHoldMacet } from "@/lib/saldoHold";
@@ -25,13 +25,14 @@ async function isAuthorized(req) {
   return cronSah(req);
 }
 
-async function checkWarungNokos() {
+async function checkRumahOtp() {
   const start = Date.now();
   try {
-    if (!(await warungNokosConfigured())) return { name: "WarungNokos API", ok: false, error: "API key belum diset" };
-    return { name: "WarungNokos API", ok: true, ms: Date.now() - start };
+    if (!(await cfg("RUMAHOTP_APIKEY"))) return { name: "RumahOTP API", ok: false, error: "API key belum diset" };
+    await getServices((await cfg("RUMAHOTP_APIKEY")));
+    return { name: "RumahOTP API", ok: true, ms: Date.now() - start };
   } catch (err) {
-    return { name: "WarungNokos API", ok: false, ms: Date.now() - start, error: err?.message || "gagal" };
+    return { name: "RumahOTP API", ok: false, ms: Date.now() - start, error: err?.message || "gagal terhubung" };
   }
 }
 
@@ -81,7 +82,7 @@ export async function GET(req) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  const health = await Promise.all([checkMongo(), checkWarungNokos(), checkPakasir(), checkPendingDeposits()]);
+  const health = await Promise.all([checkMongo(), checkRumahOtp(), checkPakasir(), checkPendingDeposits()]);
   const cleanup = await runCleanup();
 
   // Saldo yang tertahan tapi pesanannya tidak pernah jadi.

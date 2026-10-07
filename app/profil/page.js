@@ -9,6 +9,7 @@ import { useUser } from "@/app/providers";
 import ThemeToggle from "@/components/ThemeToggle";
 import PushToggle from "@/components/PushToggle";
 import KunciAkunPanel from "@/components/KunciAkunPanel";
+import { Lencana } from "@/components/wa/kit";
 import { PageHeader, rupiah } from "@/components/ui";
 
 const AVATARS = ["😊", "😎", "🦅", "🦁", "🐯", "🦊", "🐺", "🦝", "🦄", "🐲", "👾", "🤖", "👑", "🔥", "⚡", "🌟", "💎", "🎯", "🏆", "🌈", "🎮", "🥷", "🧙", "🐼"];
@@ -68,7 +69,9 @@ export default function ProfilPage() {
   const [pesanNama, setPesanNama] = useState({ ok: true, teks: "" });
   const [lihatKode, setLihatKode] = useState(false);
   const [tersalin, setTersalin] = useState(false);
+  const [loyal, setLoyal] = useState(null);
   const [stat, setStat] = useState(null);
+  const [wa, setWa] = useState(null);
   const [muat, setMuat] = useState(true);
   const [dialogKeluar, setDialogKeluar] = useState(false);
   const [sudahSimpan, setSudahSimpan] = useState(false);
@@ -85,7 +88,8 @@ export default function ProfilPage() {
     setMuat(true);
     const q = encodeURIComponent(token);
     const ambil = (u) => fetch(u, { cache: "no-store" }).then((r) => r.json()).then((d) => (d?.error ? null : d)).catch(() => null);
-    setStat(await ambil(`/api/user/stats?token=${q}`));
+    const [l, s, w] = await Promise.all([ambil(`/api/cashback/info?token=${q}`), ambil(`/api/user/stats?token=${q}`), ambil(`/api/wa/profil?token=${q}`)]);
+    setLoyal(l); setStat(s); setWa(w?.profil || null);
     setMuat(false);
   }, [token]);
   useEffect(() => { if (ready && token) { muatData(); refreshBalance?.(); } // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -119,6 +123,8 @@ export default function ProfilPage() {
     try { await navigator.clipboard.writeText(token); setTersalin(true); setTimeout(() => setTersalin(false), 1800); } catch {}
   }
 
+  const persen = loyal?.next?.persen ?? 100;
+  const fotoWa = wa?.fotoV ? `/api/wa/foto/${wa.pid}?v=${wa.fotoV}` : null;
   const tampilNama = name || "Pengguna Artapedia";
 
   if (!ready) return <SkelHalaman kartu={4} />;
@@ -137,14 +143,17 @@ export default function ProfilPage() {
     ["/deposit", "💳", "Isi Saldo"],
     ["/riwayat", "🧾", "Riwayat"],
     ["/mutasi", "📒", "Mutasi Saldo"],
-    ["/tarik", "💸", "Tarik Saldo"],
+    ["/gateway", "🏦", "QRIS Gateway"],
     ["/transfer", "🔁", "Transfer"],
-    ["/referral", "🎁", "Undang Teman"]
+    ["/cashback", "🎁", "Cashback & Tingkat"],
+    ["/kaget", "🧧", "Saldo Kaget"],
+    ["/referral", "🎁", "Undang Teman"],
+    ["/chat?profil=1", "💬", "Profil WEARTA CHAT"]
   ];
 
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
-      <PageHeader icon="👤" title="Profil Akun" desc="Semua tentang akunmu: identitas, statistik, kode akun, dan pengaturan." />
+      <PageHeader icon="👤" title="Profil Akun" desc="Semua tentang akunmu: identitas, level, statistik, kode akun, dan pengaturan." />
 
       {/* ─── kartu utama ─── */}
       <div className="fade-up card-shadow relative mt-6 overflow-hidden rounded-3xl bg-ink px-5 py-6 sm:px-8 sm:py-8">
@@ -158,16 +167,30 @@ export default function ProfilPage() {
             aria-label="Ganti avatar"
             aria-expanded={pilihAvatar}
           >
-            <span aria-hidden="true">{avatar}</span>
+            {fotoWa ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={fotoWa} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span aria-hidden="true">{avatar}</span>
+            )}
             <span className="absolute inset-x-0 bottom-0 bg-black/45 py-0.5 text-[10px] font-bold text-white">GANTI</span>
           </button>
           <div className="min-w-0 flex-1">
             <p className="flex flex-wrap items-center gap-2 text-2xl font-extrabold tracking-tight text-white">
               <span className="truncate">{tampilNama}</span>
+              {wa?.lencana ? <Lencana warna={wa.lencana} size={24} /> : null}
             </p>
             <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-white/75">
               <span>📅 Bergabung {tanggalPanjang(joinedAt)}{lamaBergabung(joinedAt) ? ` · ${lamaBergabung(joinedAt)}` : ""}</span>
             </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link href="/cashback" className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-amber-bright to-amber px-3 py-1 text-xs font-extrabold text-ink">
+                {loyal?.tier?.ikon || "🥉"} Tingkat {loyal?.tier?.nama || "Bronze"}
+              </Link>
+              {wa?.lencana ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white">🎖 Terverifikasi</span>
+              ) : null}
+            </div>
           </div>
           <div className="w-full rounded-2xl bg-white/10 px-4 py-3 text-white sm:w-auto sm:min-w-[190px]">
             <p className="text-[11px] font-bold uppercase tracking-wide text-white/70">Saldo</p>
@@ -178,7 +201,7 @@ export default function ProfilPage() {
 
         {pilihAvatar && (
           <div className="relative mt-5 rounded-2xl bg-white/10 p-3">
-            <p className="mb-2 text-xs font-bold text-white/80">Pilih avatar</p>
+            <p className="mb-2 text-xs font-bold text-white/80">Pilih avatar{fotoWa ? " (foto WEARTA CHAT tetap tampil di sini kalau ada)" : ""}</p>
             <div className="grid grid-cols-6 gap-2 sm:grid-cols-12">
               {AVATARS.map((e) => (
                 <button
@@ -195,16 +218,30 @@ export default function ProfilPage() {
           </div>
         )}
 
+        {loyal?.next ? (
+          <div className="relative mt-5">
+            <div className="flex items-center justify-between text-xs font-semibold text-white/75">
+              <span>Menuju {loyal.next.nama} {loyal.next.ikon} (+{loyal.next.tambahan}% cashback)</span>
+              <span>{rupiah(loyal.next.kurang)} lagi</span>
+            </div>
+            <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-white/15">
+              <div className="h-full rounded-full bg-amber transition-all duration-500" style={{ width: `${persen}%` }} />
+            </div>
+          </div>
+        ) : loyal ? (
+          <p className="relative mt-5 text-xs font-bold text-amber-bright">🎉 Kamu sudah di tingkat cashback tertinggi!</p>
+        ) : null}
       </div>
 
       {/* ─── statistik ─── */}
       <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Angka ikon="🛍" label="Total belanja" nilai={muat ? "…" : rupiah(stat?.totalBelanja || 0)} />
-        <Angka ikon="💸" label="Cashback didapat" nilai={muat ? "…" : rupiah(stat?.cashbackTotal || 0)} warna="text-teal-bright" />
+        <Angka ikon="🛍" label="Total belanja" nilai={muat ? "…" : rupiah(loyal?.totalSpent || 0)} />
+        <Angka ikon="💸" label="Cashback didapat" nilai={muat ? "…" : rupiah(loyal?.cashbackTotal || 0)} warna="text-teal-bright" />
         <Angka ikon="📲" label="Transaksi OTP" nilai={muat ? "…" : (stat?.totalTransaksi || 0).toLocaleString("id-ID")} />
         <Angka ikon="✅" label="OTP berhasil" nilai={muat ? "…" : (stat?.otpBerhasil || 0).toLocaleString("id-ID")} warna="text-success" />
         <Angka ikon="🏦" label="Deposit sukses" nilai={muat ? "…" : (stat?.depositSukses || 0).toLocaleString("id-ID")} />
         <Angka ikon="🎯" label="Tingkat sukses" nilai={muat || !stat?.totalTransaksi ? "—" : `${Math.round((stat.otpBerhasil / stat.totalTransaksi) * 100)}%`} />
+        <Angka ikon="🎖" label="Lencana" nilai={muat ? "…" : wa?.lencana ? "Ada" : "Belum"} />
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
@@ -227,12 +264,17 @@ export default function ProfilPage() {
               </button>
             </div>
             <p className={`mt-1.5 min-h-[16px] text-[11px] font-bold ${pesanNama.ok ? "text-teal-bright" : "text-rose"}`} role="status">{pesanNama.teks}</p>
-            <p className="text-[11px] leading-relaxed text-muted">Nama ini tampil di sapaan Dashboard dan leaderboard.</p>
+            <p className="text-[11px] leading-relaxed text-muted">Nama ini tampil di sapaan Dashboard, leaderboard, dan WEARTA CHAT.</p>
           </form>
           <dl className="mt-4 divide-y divide-line rounded-xl border border-line text-sm">
             <div className="flex justify-between gap-3 px-3 py-2.5"><dt className="text-muted">Bergabung</dt><dd className="font-bold text-ink">{tanggalPanjang(joinedAt)}</dd></div>
             <div className="flex justify-between gap-3 px-3 py-2.5"><dt className="text-muted">Lama bergabung</dt><dd className="font-bold text-ink">{lamaBergabung(joinedAt) || "-"}</dd></div>
+            <div className="flex justify-between gap-3 px-3 py-2.5"><dt className="text-muted">ID publik chat</dt><dd className="font-mono text-xs font-bold text-ink">{wa?.pid || "—"}</dd></div>
+            <div className="flex justify-between gap-3 px-3 py-2.5"><dt className="text-muted">Bio WEARTA CHAT</dt><dd className="max-w-[60%] truncate text-right font-bold text-ink">{wa?.bio || "—"}</dd></div>
           </dl>
+          <Link href="/chat?profil=1" className="btn-3d mt-3 flex items-center justify-center gap-2 rounded-xl border border-line bg-surface2 py-2.5 text-xs font-black text-ink hover:border-amber">
+            💬 Ubah foto & bio di WEARTA CHAT
+          </Link>
         </Kartu>
 
         {/* ─── kode akun ─── */}

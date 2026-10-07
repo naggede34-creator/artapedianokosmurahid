@@ -18,8 +18,10 @@ import { pengingatDeposit } from "@/lib/depositPengingat";
 import { sapuBanSementara } from "@/lib/penggunaAdmin";
 import { prosesSiaran } from "@/lib/siaran";
 import { sapuWdInstan } from "@/lib/wdInstan";
+import { sapuSetorGmail } from "@/lib/setorGmail";
 import { sapuWdGateway, cekSaldoAustinGateway } from "@/lib/gatewayWd";
 import { sapuTagihanGateway } from "@/lib/gatewayBayar";
+import { sapuKaget } from "@/lib/kaget";
 import { pindaiBerkala } from "@/lib/keamanan";
 
 export const dynamic = "force-dynamic";
@@ -94,6 +96,12 @@ export async function GET(req) {
   } catch (err) {
     hasil.galat.push(`wd: ${err?.message || err}`);
   }
+  // Stor Gmail: baca hasil setoran dari penyedia, kreditkan upah yang diterima, pulihkan kiriman yang tak pasti.
+  try {
+    hasil.setorGmail = await sapuSetorGmail({ maks: 20, jeda: 0 });
+  } catch (err) {
+    hasil.galat.push(`setor-gmail: ${err?.message || err}`);
+  }
   // QRIS Gateway: tagihan yang sudah dibayar tapi webhook-nya tidak sampai, dan penarikan merchant yang macet / belum pasti.
   try {
     hasil.gateway = {
@@ -103,6 +111,12 @@ export async function GET(req) {
     await cekSaldoAustinGateway().catch(() => {});
   } catch (err) {
     hasil.galat.push(`gateway: ${err?.message || err}`);
+  }
+  // Saldo Kaget: tutup paket yang kedaluwarsa, kembalikan sisanya ke pembuat, selesaikan kredit yang tertinggal.
+  try {
+    hasil.kaget = await sapuKaget({ maks: 40 });
+  } catch (err) {
+    hasil.galat.push(`kaget: ${err?.message || err}`);
   }
   // Pemindaian keamanan otomatis (jalan sendiri tiap ±10 menit; di luar jadwal ini dilewati).
   try {

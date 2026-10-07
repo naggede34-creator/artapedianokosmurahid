@@ -11,8 +11,14 @@ import { OTP_SERVERS } from "@/lib/otpServers";
 import { DAFTAR_PUBLIK, channelAktifUntuk } from "@/lib/channelNotifTypes";
 import AdminKonfigurasi, { PeringatanKodeAdmin } from "@/components/AdminKonfigurasi";
 import AdminReferral from "@/components/AdminReferral";
+import AdminAfiliasi from "@/components/AdminAfiliasi";
+import AdminLencana from "@/components/AdminLencana";
+import AdminKaget from "@/components/AdminKaget";
+import AdminCashback from "@/components/AdminCashback";
+import AdminPembaruan from "@/components/AdminPembaruan";
 import AdminKeamanan from "@/components/AdminKeamanan";
 import AdminAustinPay from "@/components/AdminAustinPay";
+import AdminMusim from "@/components/AdminMusim";
 import { CHANNEL_ID, CHANNEL_URL } from "@/lib/links";
 
 function fmtDate(d) {
@@ -35,11 +41,18 @@ const TABS = [
   { id: "austinpay", label: "AustinPay", icon: "⚡" },
   { id: "gateway", label: "QRIS Gateway", icon: "💸" },
   { id: "referral", label: "Referral", icon: "🛡" },
+  { id: "kreator", label: "Kreator", icon: "🎬" },
+  { id: "lencana", label: "Lencana", icon: "🎖" },
+  { id: "pembaruan", label: "Pembaruan", icon: "✨" },
+  { id: "musim", label: "Event Musiman", icon: "🎉" },
+  { id: "kaget", label: "Saldo Kaget", icon: "🧧" },
   { id: "konfigurasi", label: "Konfigurasi", icon: "🔑" },
   { id: "bot", label: "Bot Telegram", icon: "🤖" },
   { id: "reseller", label: "Bot Reseller", icon: "🏪" },
   { id: "giveaway", label: "Giveaway", icon: "🎁" },
   { id: "juara", label: "Pembeli Terbanyak", icon: "🏆" },
+  { id: "produk", label: "Produk", icon: "🛍️" },
+  { id: "job", label: "Job/Saldo", icon: "💰" },
   { id: "tiket", label: "Tiket", icon: "🎫" },
   { id: "pengaturan", label: "Pengaturan Umum", icon: "⚙️" },
   { id: "tools", label: "Tools", icon: "🛠️" },
@@ -48,8 +61,9 @@ const TABS = [
 // Kelompok menu admin (semua id tab harus ada di TABS; yang tidak terdaftar di sini tetap diberi kelompok "Lainnya").
 const KELOMPOK_TAB = [
   { id: "ringkas", label: "Ringkasan", icon: "📊", tabs: ["ringkasan", "transaksi"] },
-  { id: "uang", label: "Pengguna & Uang", icon: "👥", tabs: ["pengguna", "depositmanual", "austinpay", "tarik", "referral", "giveaway", "juara"] },
-  { id: "konten", label: "Konten & Bantuan", icon: "📝", tabs: ["konten", "banner", "tiket"] },
+  { id: "uang", label: "Pengguna & Uang", icon: "👥", tabs: ["pengguna", "depositmanual", "austinpay", "tarik", "referral", "kreator", "giveaway", "juara", "job"] },
+  { id: "chat", label: "Chat & Event", icon: "💬", tabs: ["pembaruan", "lencana", "musim", "kaget"] },
+  { id: "konten", label: "Konten & Toko", icon: "🛍️", tabs: ["konten", "banner", "produk", "tiket"] },
   { id: "integrasi", label: "Integrasi", icon: "🔌", tabs: ["gateway", "bot", "reseller", "konfigurasi"] },
   { id: "sistem", label: "Sistem", icon: "⚙️", tabs: ["pengaturan", "tools"] }
 ];
@@ -59,7 +73,8 @@ const KELOMPOK_TAB = [
 const JUDUL_DASBOR = {
   ringkas: { judul: "Ringkasan & Transaksi", ikon: "📊" },
   uang: { judul: "Keuangan", ikon: "💰" },
-  konten: { judul: "Konten & Bantuan", ikon: "🛍️" },
+  chat: { judul: "Chat & Event", ikon: "💬" },
+  konten: { judul: "Konten & Toko", ikon: "🛍️" },
   integrasi: { judul: "Integrasi", ikon: "🔌" },
   sistem: { judul: "Sistem", ikon: "⚙️" }
 };
@@ -107,8 +122,6 @@ export default function AdminDashboardPage() {
   const [broadcastSubmitting, setBroadcastSubmitting] = useState(false);
   const [broadcastMsg, setBroadcastMsg] = useState("");
 
-  const [savingLoyalty, setSavingLoyalty] = useState(false);
-  const [loyaltyMsg, setLoyaltyMsg] = useState("");
   const [savingTransfer, setSavingTransfer] = useState(false);
   const [transferMsg, setTransferMsg] = useState("");
   const [stockServices, setStockServices] = useState("wa,tg,gojek,shopee,dana,grab");
@@ -135,6 +148,7 @@ export default function AdminDashboardPage() {
   const [otpServersMsg, setOtpServersMsg] = useState("");
 
   const [providerDiag, setProviderDiag] = useState(null);
+  const [dibanana, setDibanana] = useState(null);
   const [providerDiagLoading, setProviderDiagLoading] = useState(false);
 
   const [maintenanceBtnForm, setMaintenanceBtnForm] = useState({ label: "", url: "" });
@@ -172,6 +186,10 @@ export default function AdminDashboardPage() {
   const [savingChannelNotif, setSavingChannelNotif] = useState("");
   const [channelNotifMsg, setChannelNotifMsg] = useState("");
   // Room Chat: buka/tutup dari dasbor.
+  const [chatCfg, setChatCfg] = useState(null);
+  const [chatMsgDraft, setChatMsgDraft] = useState("");
+  const [chatBusy, setChatBusy] = useState(false);
+  const [chatSaveMsg, setChatSaveMsg] = useState("");
   const [manualMsg, setManualMsg] = useState("");
   // Antrean deposit manual yang menunggu dicek.
   const [manualDeposits, setManualDeposits] = useState([]);
@@ -213,7 +231,15 @@ export default function AdminDashboardPage() {
 
   const [suspendMsg, setSuspendMsg] = useState("");
 
+  const [flashSales, setFlashSales] = useState([]);
+  const [flashSaleForm, setFlashSaleForm] = useState({ title: "", discountPercent: "", durationHours: "2", serviceFilter: "" });
+  const [flashSaleMsg, setFlashSaleMsg] = useState("");
+  const [flashSaleLoading, setFlashSaleLoading] = useState(false);
 
+  const [luckyHours, setLuckyHours] = useState([]);
+  const [luckyHourForm, setLuckyHourForm] = useState({ startHour: "", endHour: "", discountPercent: "", label: "" });
+  const [luckyHourMsg, setLuckyHourMsg] = useState("");
+  const [luckyHourLoading, setLuckyHourLoading] = useState(false);
 
   const [notifTarget, setNotifTarget] = useState("all");
   const [notifToken, setNotifToken] = useState("");
@@ -239,6 +265,13 @@ export default function AdminDashboardPage() {
   const [activityPages, setActivityPages] = useState(1);
 
   // Products state
+  const [adminProducts, setAdminProducts] = useState([]);
+  const [adminProductsLoading, setAdminProductsLoading] = useState(false);
+  const [productForm, setProductForm] = useState({ name: "", description: "", price: "", category: "Umum", stock: "-1", imageUrl: "", deliveryType: "text", deliveryContent: "" });
+  const [productMsg, setProductMsg] = useState("");
+  const [productSubmitting, setProductSubmitting] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [stockAddForm, setStockAddForm] = useState({ id: "", amount: "" });
 
   // Banner state
   const [banners, setBanners] = useState([]);
@@ -262,6 +295,16 @@ export default function AdminDashboardPage() {
   const [siteSettingsSubmitting, setSiteSettingsSubmitting] = useState(false);
 
   // Jobs state
+  const [adminJobs, setAdminJobs] = useState([]);
+  const [adminJobsLoading, setAdminJobsLoading] = useState(false);
+  const [jobForm, setJobForm] = useState({ title: "", description: "", reward: "", maxCompletions: "0", proofType: "text", proofRequired: true, category: "Umum", imageUrl: "" });
+  const [jobMsg, setJobMsg] = useState("");
+  const [jobSubmitting, setJobSubmitting] = useState(false);
+  const [editingJob, setEditingJob] = useState(null);
+  const [jobSubmissions, setJobSubmissions] = useState([]);
+  const [jobSubmissionsLoading, setJobSubmissionsLoading] = useState(false);
+  const [jobSubFilter, setJobSubFilter] = useState("pending");
+  const [jobSubMsg, setJobSubMsg] = useState("");
 
   // Hero Chars editor
   const DEFAULT_HERO_CHARS = [
@@ -643,17 +686,113 @@ export default function AdminDashboardPage() {
     }
   }
 
+  const loadAdminProducts = useCallback(async () => {
+    setAdminProductsLoading(true);
+    try {
+      const res = await fetch("/api/admin/products");
+      if (res.status === 401) return sesiHabis();
+      const d = await res.json();
+      setAdminProducts(Array.isArray(d.items) ? d.items : []);
+    } finally { setAdminProductsLoading(false); }
+  }, [router]);
 
+  const loadAdminJobs = useCallback(async () => {
+    setAdminJobsLoading(true);
+    try {
+      const res = await fetch("/api/admin/jobs");
+      if (res.status === 401) return sesiHabis();
+      const d = await res.json();
+      setAdminJobs(Array.isArray(d.items) ? d.items : []);
+    } finally { setAdminJobsLoading(false); }
+  }, [router]);
 
+  const loadJobSubmissions = useCallback(async (status = jobSubFilter) => {
+    setJobSubmissionsLoading(true);
+    try {
+      const res = await fetch(`/api/admin/jobs/submissions?status=${status}`);
+      if (res.ok) { const d = await res.json(); setJobSubmissions(Array.isArray(d.items) ? d.items : []); }
+    } finally { setJobSubmissionsLoading(false); }
+  }, [jobSubFilter]);
 
+  async function submitProduct(e) {
+    e.preventDefault(); setProductMsg(""); setProductSubmitting(true);
+    try {
+      const action = editingProduct ? "edit" : "create";
+      const body = { action, ...productForm, price: Number(productForm.price), stock: Number(productForm.stock) };
+      if (editingProduct) body.id = editingProduct;
+      const res = await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Gagal.");
+      setProductMsg(editingProduct ? "Produk diperbarui!" : "Produk ditambahkan!");
+      setProductForm({ name: "", description: "", price: "", category: "Umum", stock: "-1", imageUrl: "", deliveryType: "text", deliveryContent: "" });
+      setEditingProduct(null);
+      loadAdminProducts();
+    } catch (err) { setProductMsg(err.message); }
+    finally { setProductSubmitting(false); setTimeout(() => setProductMsg(""), 3000); }
+  }
 
+  async function addProductStock(e) {
+    e.preventDefault();
+    const res = await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "add-stock", id: stockAddForm.id, amount: Number(stockAddForm.amount) }) });
+    const d = await res.json();
+    if (d.ok) { setProductMsg("Stok ditambahkan!"); setStockAddForm({ id: "", amount: "" }); loadAdminProducts(); }
+    else setProductMsg(d.error || "Gagal.");
+    setTimeout(() => setProductMsg(""), 3000);
+  }
 
+  async function toggleProduct(id) {
+    await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
+    loadAdminProducts();
+  }
 
+  async function deleteProduct(id) {
+    if (!confirm("Hapus produk ini?")) return;
+    await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
+    loadAdminProducts();
+  }
 
+  function editProductFill(p) {
+    setEditingProduct(p.id);
+    setProductForm({ name: p.name, description: p.description || "", price: String(p.price), category: p.category || "Umum", stock: String(p.stock ?? -1), imageUrl: p.imageUrl || "", deliveryType: p.deliveryType || "text", deliveryContent: p.deliveryContent || "" });
+    document.getElementById("product-form-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
+  async function submitJob(e) {
+    e.preventDefault(); setJobMsg(""); setJobSubmitting(true);
+    try {
+      const action = editingJob ? "edit" : "create";
+      const body = { action, ...jobForm, reward: Number(jobForm.reward), maxCompletions: Number(jobForm.maxCompletions) };
+      if (editingJob) body.id = editingJob;
+      const res = await fetch("/api/admin/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Gagal.");
+      setJobMsg(editingJob ? "Job diperbarui!" : "Job ditambahkan!");
+      setJobForm({ title: "", description: "", reward: "", maxCompletions: "0", proofType: "text", proofRequired: true, category: "Umum", imageUrl: "" });
+      setEditingJob(null);
+      loadAdminJobs();
+    } catch (err) { setJobMsg(err.message); }
+    finally { setJobSubmitting(false); setTimeout(() => setJobMsg(""), 3000); }
+  }
 
+  async function toggleJob(id) {
+    await fetch("/api/admin/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
+    loadAdminJobs();
+  }
 
+  async function deleteJob(id) {
+    if (!confirm("Hapus job ini?")) return;
+    await fetch("/api/admin/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
+    loadAdminJobs();
+  }
 
+  async function reviewJobSub(id, action, reason) {
+    setJobSubMsg("");
+    const res = await fetch("/api/admin/jobs/submissions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, action, rejectionReason: reason || "" }) });
+    const d = await res.json();
+    if (d.ok) { setJobSubMsg(action === "approve" ? "Disetujui & saldo dikreditkan." : "Ditolak."); loadJobSubmissions(jobSubFilter); }
+    else setJobSubMsg(d.error || "Gagal.");
+    setTimeout(() => setJobSubMsg(""), 3000);
+  }
 
   const loadWarrantyClaims = useCallback(async () => {
     setWarrantyLoading(true);
@@ -667,6 +806,14 @@ export default function AdminDashboardPage() {
     }
   }, [router]);
 
+  const loadDibanana = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/dibanana");
+      if (res.ok) setDibanana(await res.json());
+    } catch {
+      setDibanana({ configured: false, balance: null, error: "Gagal memuat." });
+    }
+  }, []);
 
   const loadWarungnokos = useCallback(async () => {
     try {
@@ -761,10 +908,61 @@ export default function AdminDashboardPage() {
     }
   }
 
+  const loadChatCfg = useCallback(async () => {
+    try {
+      const res = await fetch("/api/chat/group-settings");
+      const d = await res.json();
+      setChatCfg(d);
+      setChatMsgDraft(d.closedMsg || "");
+    } catch {
+      setChatCfg(null);
+    }
+  }, []);
 
   // Buka/tutup Room Chat. Penutupannya ditegakkan di server juga, jadi tombol
   // ini benar-benar menutup grupnya — bukan cuma mematikan kolom ketik.
+  async function setChatClosed(closed) {
+    if (closed && !confirm("Tutup WEARTA CHAT? Semua pengguna tidak akan bisa mengirim pesan sampai dibuka lagi.")) return;
+    setChatBusy(true);
+    setChatSaveMsg("");
+    try {
+      const res = await fetch("/api/chat/group-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ closed, closedMsg: chatMsgDraft })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setChatSaveMsg(closed ? "WEARTA CHAT ditutup." : "WEARTA CHAT dibuka.");
+      loadChatCfg();
+    } catch (err) {
+      setChatSaveMsg(err.message || "Gagal mengubah status.");
+    } finally {
+      setChatBusy(false);
+      setTimeout(() => setChatSaveMsg(""), 3000);
+    }
+  }
 
+  async function saveChatClosedMsg() {
+    setChatBusy(true);
+    setChatSaveMsg("");
+    try {
+      const res = await fetch("/api/chat/group-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ closedMsg: chatMsgDraft })
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error);
+      setChatSaveMsg("Pesan penutupan tersimpan.");
+      loadChatCfg();
+    } catch (err) {
+      setChatSaveMsg(err.message || "Gagal menyimpan.");
+    } finally {
+      setChatBusy(false);
+      setTimeout(() => setChatSaveMsg(""), 3000);
+    }
+  }
 
   // Gambar QRIS dikecilkan dulu di browser. Yang diunggah orang biasanya
   // tangkapan layar 3–5 MB, dan itu ikut diunduh SETIAP user yang memilih
@@ -913,7 +1111,6 @@ export default function AdminDashboardPage() {
       setTimeout(() => setLbMsg(""), 6000);
     }
   }
-
 
   async function saveLbSettings(patch) {
     setLbBusy(true);
@@ -1301,7 +1498,21 @@ export default function AdminDashboardPage() {
     }
   }, [router]);
 
+  async function loadFlashSales() {
+    setFlashSaleLoading(true);
+    try {
+      const res = await fetch("/api/admin/flashsale");
+      if (res.ok) { const d = await res.json(); setFlashSales(Array.isArray(d.items) ? d.items : []); }
+    } finally { setFlashSaleLoading(false); }
+  }
 
+  async function loadLuckyHours() {
+    setLuckyHourLoading(true);
+    try {
+      const res = await fetch("/api/admin/lucky-hours");
+      if (res.ok) { const d = await res.json(); setLuckyHours(Array.isArray(d.items) ? d.items : []); }
+    } finally { setLuckyHourLoading(false); }
+  }
 
   async function loadActivityLog(pg = activityPage) {
     setActivityLoading(true);
@@ -1321,11 +1532,59 @@ export default function AdminDashboardPage() {
     }
   }
 
+  async function createFlashSale(e) {
+    e.preventDefault();
+    setFlashSaleMsg("");
+    const { title, discountPercent, durationHours, serviceFilter } = flashSaleForm;
+    if (!title || !discountPercent) { setFlashSaleMsg("Judul dan diskon wajib diisi."); return; }
+    const startAt = new Date();
+    const endAt = new Date(startAt.getTime() + Number(durationHours) * 3600000);
+    const res = await fetch("/api/admin/flashsale", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, discountPercent: Number(discountPercent), startAt, endAt, serviceFilter }),
+    });
+    const d = await res.json();
+    if (d.ok) { setFlashSaleMsg("Flash sale dibuat!"); setFlashSaleForm({ title: "", discountPercent: "", durationHours: "2", serviceFilter: "" }); loadFlashSales(); }
+    else setFlashSaleMsg(d.error || "Gagal.");
+    setTimeout(() => setFlashSaleMsg(""), 3000);
+  }
 
+  async function toggleFlashSale(id) {
+    await fetch("/api/admin/flashsale", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
+    loadFlashSales();
+  }
 
+  async function deleteFlashSale(id) {
+    await fetch("/api/admin/flashsale", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
+    loadFlashSales();
+  }
 
+  async function createLuckyHour(e) {
+    e.preventDefault();
+    setLuckyHourMsg("");
+    const { startHour, endHour, discountPercent, label } = luckyHourForm;
+    if (startHour === "" || endHour === "" || !discountPercent) { setLuckyHourMsg("Semua field wajib diisi."); return; }
+    const res = await fetch("/api/admin/lucky-hours", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ startHour: Number(startHour), endHour: Number(endHour), discountPercent: Number(discountPercent), label }),
+    });
+    const d = await res.json();
+    if (d.ok) { setLuckyHourMsg("Lucky hour dibuat!"); setLuckyHourForm({ startHour: "", endHour: "", discountPercent: "", label: "" }); loadLuckyHours(); }
+    else setLuckyHourMsg(d.error || "Gagal.");
+    setTimeout(() => setLuckyHourMsg(""), 3000);
+  }
 
+  async function toggleLuckyHour(id) {
+    await fetch("/api/admin/lucky-hours", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
+    loadLuckyHours();
+  }
 
+  async function deleteLuckyHour(id) {
+    await fetch("/api/admin/lucky-hours", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
+    loadLuckyHours();
+  }
 
   async function sendBlastNotif(e) {
     e.preventDefault();
@@ -1347,7 +1606,6 @@ export default function AdminDashboardPage() {
       setTimeout(() => setNotifMsg(""), 3500);
     }
   }
-
 
   async function loadPlatformMarkups() {
     setPlatformMarkupLoading(true);
@@ -1386,33 +1644,24 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     loadSettings();
     loadWarungnokos();
+    loadDibanana();
     loadUsers("");
     loadStats();
     loadVouchers();
     loadBroadcasts();
     loadAnnouncements();
     loadWarrantyClaims();
+    loadFlashSales();
+    loadLuckyHours();
     loadPlatformMarkups();
     loadBanners();
     loadTickets();
     // Antrean deposit manual ikut dimuat sejak awal supaya lencana jumlahnya
     // terlihat tanpa harus membuka tabnya dulu.
     loadManualDeposits("review");
+    loadChatCfg();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Mode dasbor terpisah: tab pertama kelompok itu dibuka langsung, jadi datanya dimuat sekali di sini.
-  useEffect(() => {
-    if (!modeK) return;
-    const id = tabModeK[0];
-    if (id === "depositmanual") loadManualDeposits(manualFilter);
-    if (id === "tarik") loadWithdrawals();
-    if (id === "juara") loadLeaderboard(lbOffset);
-    if (id === "gateway") loadGateway();
-    if (id === "bot") loadBots();
-    if (id === "reseller") loadReseller();
-    if (id === "giveaway") loadGw2();
-  }, [modeK]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleWarrantyAction(id, action) {
     const adminNote = action === "reject" ? (prompt("Alasan penolakan (opsional):") ?? "") : "";
@@ -1598,26 +1847,6 @@ export default function AdminDashboardPage() {
     }
   }
 
-  async function saveLoyalty(patch) {
-    setSavingLoyalty(true);
-    setLoyaltyMsg("");
-    try {
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ loyalty: patch })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setSettings(data);
-      setLoyaltyMsg("Pengaturan loyalitas tersimpan.");
-    } catch {
-      setLoyaltyMsg("Gagal menyimpan pengaturan loyalitas.");
-    } finally {
-      setSavingLoyalty(false);
-      setTimeout(() => setLoyaltyMsg(""), 2500);
-    }
-  }
 
   async function saveTransfer(patch) {
     setSavingTransfer(true);
@@ -1748,6 +1977,18 @@ export default function AdminDashboardPage() {
     }
   }
 
+  // Mode dasbor terpisah: tab pertama kelompok itu dibuka langsung, jadi datanya dimuat sekali di sini.
+  useEffect(() => {
+    if (!modeK) return;
+    const id = tabModeK[0];
+    if (id === "depositmanual") loadManualDeposits(manualFilter);
+    if (id === "tarik") loadWithdrawals();
+    if (id === "juara") loadLeaderboard(lbOffset);
+    if (id === "gateway") loadGateway();
+    if (id === "bot") loadBots();
+    if (id === "reseller") loadReseller();
+    if (id === "giveaway") loadGw2();
+  }, [modeK]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function quickFill(token, action) {
     setBalanceAction(action);
@@ -2283,6 +2524,71 @@ export default function AdminDashboardPage() {
       {activeTab === "konten" && (
         <div className="mt-5 space-y-5">
 
+          {/* Room Chat: buka / tutup */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink">💬 WEARTA CHAT</h2>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Saat ditutup, <b>tidak ada pengguna yang bisa mengirim pesan</b> — penutupannya diperiksa di server,
+              bukan cuma mematikan kolom ketik. Pesan lama tetap bisa dibaca, dan admin tetap bisa menulis.
+            </p>
+
+            {!chatCfg ? (
+              <p className="mt-4 text-sm text-muted">Memuat status…</p>
+            ) : (
+              <>
+                <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3">
+                  <span
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl text-lg ${
+                      chatCfg.closed ? "bg-rose-soft text-rose" : "bg-teal-soft text-teal-bright"
+                    }`}
+                  >
+                    {chatCfg.closed ? "🔒" : "🔓"}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-ink">
+                      {chatCfg.closed ? "WEARTA CHAT sedang DITUTUP" : "WEARTA CHAT sedang DIBUKA"}
+                    </p>
+                    <p className="text-[11px] text-muted">
+                      {chatCfg.closed
+                        ? "Pengguna hanya bisa membaca, tidak bisa mengirim pesan."
+                        : "Semua pengguna bisa mengirim pesan seperti biasa."}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setChatClosed(!chatCfg.closed)}
+                    disabled={chatBusy}
+                    className={`btn-3d shrink-0 rounded-lg px-4 py-2 text-xs font-black text-white disabled:opacity-60 ${
+                      chatCfg.closed ? "bg-teal" : "bg-rose"
+                    }`}
+                  >
+                    {chatBusy ? "…" : chatCfg.closed ? "🔓 Buka WEARTA CHAT" : "🔒 Tutup WEARTA CHAT"}
+                  </button>
+                </div>
+
+                <div className="mt-3">
+                  <label className="text-xs font-medium text-muted">Pesan saat ditutup (dilihat pengguna)</label>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    <input
+                      value={chatMsgDraft}
+                      onChange={(e) => setChatMsgDraft(e.target.value.slice(0, 200))}
+                      placeholder="WEARTA CHAT sedang ditutup admin. Coba lagi nanti ya."
+                      className="min-w-[200px] flex-1 rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
+                    />
+                    <button
+                      onClick={saveChatClosedMsg}
+                      disabled={chatBusy}
+                      className="btn-3d shrink-0 rounded-lg bg-amber px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+                    >
+                      Simpan
+                    </button>
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted">Kosongkan untuk memakai kalimat bawaan.</p>
+                </div>
+
+                {chatSaveMsg && <p className="mt-2 text-xs font-medium text-teal-bright">{chatSaveMsg}</p>}
+              </>
+            )}
+          </div>
 
           {/* Broadcast */}
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
@@ -2799,7 +3105,12 @@ export default function AdminDashboardPage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === "konfigurasi" && <AdminKonfigurasi />}
       {activeTab === "referral" && <AdminReferral />}
+      {activeTab === "kreator" && <AdminAfiliasi />}
+      {activeTab === "lencana" && <AdminLencana />}
+      {activeTab === "kaget" && <AdminKaget />}
+      {activeTab === "pembaruan" && <AdminPembaruan />}
       {activeTab === "austinpay" && <AdminAustinPay />}
+      {activeTab === "musim" && <AdminMusim />}
 
       {activeTab === "giveaway" && (
         <div className="mt-5 space-y-5">
@@ -2899,7 +3210,7 @@ export default function AdminDashboardPage() {
 
             <p className="mt-3 rounded-xl border border-amber/30 bg-amber-soft px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-bright">
               Hadiahnya dibagikan dari saldo toko. {gwForm.jumlahPemenang && gwForm.nilaiHadiah
-                ? `Total maksimal: ${fmtRp(Number(gwForm.nilaiHadiah || 0) * Number(gwForm.jumlahPemenang || 0))}${gwForm.jenisHadiah === "poin" ? " (dalam poin)" : ""}.`
+                ? `Total maksimal: ${fmtRp(Number(gwForm.nilaiHadiah || 0) * Number(gwForm.jumlahPemenang || 0))}.`
                 : ""}
             </p>
 
@@ -2959,7 +3270,7 @@ export default function AdminDashboardPage() {
                     <dl className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
                       <dt className="text-muted">Hadiah</dt>
                       <dd className="font-black text-ink">
-                        {ev.jenisHadiah === "poin" ? `${ev.nilaiHadiah} poin` : fmtRp(ev.nilaiHadiah)} × {ev.jumlahPemenang}
+                        {fmtRp(ev.nilaiHadiah)} × {ev.jumlahPemenang}
                       </dd>
                       <dt className="text-muted">Peserta</dt>
                       <dd className="font-bold text-ink">
@@ -4250,6 +4561,340 @@ export default function AdminDashboardPage() {
             msg={warrantyMsg}
             onAction={handleWarrantyAction}
           />
+
+          {/* Flash Sale */}
+          <div className="glass rounded-2xl p-5 shadow-soft">
+            <h2 className="text-base font-bold text-ink mb-4">⚡ Manajemen Flash Sale</h2>
+            <form onSubmit={createFlashSale} className="grid gap-3 sm:grid-cols-2 mb-4">
+              <input value={flashSaleForm.title} onChange={(e) => setFlashSaleForm((f) => ({...f, title: e.target.value}))} placeholder="Judul flash sale" className="input text-sm" />
+              <input value={flashSaleForm.discountPercent} onChange={(e) => setFlashSaleForm((f) => ({...f, discountPercent: e.target.value}))} type="number" min="1" max="90" placeholder="Diskon (%)" className="input text-sm" />
+              <input value={flashSaleForm.durationHours} onChange={(e) => setFlashSaleForm((f) => ({...f, durationHours: e.target.value}))} type="number" min="1" placeholder="Durasi (jam)" className="input text-sm" />
+              <input value={flashSaleForm.serviceFilter} onChange={(e) => setFlashSaleForm((f) => ({...f, serviceFilter: e.target.value}))} placeholder="Filter layanan (opsional)" className="input text-sm" />
+              <button type="submit" className="sm:col-span-2 rounded-xl bg-rose py-2 text-sm font-bold text-white press">Buat Flash Sale</button>
+            </form>
+            {flashSaleMsg && <p className="text-xs text-teal-bright mb-3">{flashSaleMsg}</p>}
+            {flashSaleLoading ? <div className="skeleton h-16 rounded-xl" /> : flashSales.length === 0 ? (
+              <p className="text-sm text-muted">Belum ada flash sale.</p>
+            ) : (
+              <div className="space-y-2">
+                {flashSales.map((s) => (
+                  <div key={s.id} className="flex items-center gap-3 rounded-xl border border-line p-3">
+                    <span className={`h-2 w-2 rounded-full shrink-0 ${s.active ? "bg-teal-bright" : "bg-rose"}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-ink">{s.title}</p>
+                      <p className="text-xs text-muted">{s.discountPercent}% OFF · {s.serviceFilter || "Semua"} · Berakhir {new Date(s.endAt).toLocaleString("id-ID")}</p>
+                    </div>
+                    <button onClick={() => toggleFlashSale(s.id)} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">{s.active ? "Nonaktif" : "Aktif"}</button>
+                    <button onClick={() => deleteFlashSale(s.id)} className="text-xs text-rose border border-rose/40 rounded-lg px-2 py-1 press">Hapus</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Lucky Hours */}
+          <div className="glass rounded-2xl p-5 shadow-soft">
+            <h2 className="text-base font-bold text-ink mb-4">⏰ Manajemen Lucky Hours</h2>
+            <form onSubmit={createLuckyHour} className="grid gap-3 sm:grid-cols-2 mb-4">
+              <input value={luckyHourForm.startHour} onChange={(e) => setLuckyHourForm((f) => ({...f, startHour: e.target.value}))} type="number" min="0" max="23" placeholder="Jam mulai (0-23)" className="input text-sm" />
+              <input value={luckyHourForm.endHour} onChange={(e) => setLuckyHourForm((f) => ({...f, endHour: e.target.value}))} type="number" min="0" max="23" placeholder="Jam selesai (0-23)" className="input text-sm" />
+              <input value={luckyHourForm.discountPercent} onChange={(e) => setLuckyHourForm((f) => ({...f, discountPercent: e.target.value}))} type="number" min="1" max="90" placeholder="Diskon (%)" className="input text-sm" />
+              <input value={luckyHourForm.label} onChange={(e) => setLuckyHourForm((f) => ({...f, label: e.target.value}))} placeholder="Label (opsional)" className="input text-sm" />
+              <button type="submit" className="sm:col-span-2 rounded-xl bg-amber py-2 text-sm font-bold text-white press">Tambah Lucky Hour</button>
+            </form>
+            {luckyHourMsg && <p className="text-xs text-teal-bright mb-3">{luckyHourMsg}</p>}
+            {luckyHourLoading ? <div className="skeleton h-16 rounded-xl" /> : luckyHours.length === 0 ? (
+              <p className="text-sm text-muted">Belum ada lucky hour.</p>
+            ) : (
+              <div className="space-y-2">
+                {luckyHours.map((h) => (
+                  <div key={h.id} className="flex items-center gap-3 rounded-xl border border-line p-3">
+                    <span className={`h-2 w-2 rounded-full shrink-0 ${h.active ? "bg-amber" : "bg-muted/40"}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-ink">{h.label}</p>
+                      <p className="text-xs text-muted">{h.startHour}:00 – {h.endHour}:00 · {h.discountPercent}% OFF</p>
+                    </div>
+                    <button onClick={() => toggleLuckyHour(h.id)} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">{h.active ? "Nonaktif" : "Aktif"}</button>
+                    <button onClick={() => deleteLuckyHour(h.id)} className="text-xs text-rose border border-rose/40 rounded-lg px-2 py-1 press">Hapus</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* TAB: PRODUK                                                  */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === "produk" && (
+        <div className="mt-5 space-y-5">
+
+          {/* Form Tambah/Edit Produk */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink mb-4">
+              {editingProduct ? "✏️ Edit Produk" : "➕ Tambah Produk Baru"}
+            </h2>
+            {productMsg && <p className="mb-3 text-xs font-medium text-teal-bright">{productMsg}</p>}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-medium text-muted">Nama Produk *</label>
+                <input value={productForm.name} onChange={(e) => setProductForm((f) => ({...f, name: e.target.value}))} placeholder="Nama produk" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Harga (Rp) *</label>
+                <input type="number" value={productForm.price} onChange={(e) => setProductForm((f) => ({...f, price: e.target.value}))} placeholder="10000" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Kategori</label>
+                <input value={productForm.category} onChange={(e) => setProductForm((f) => ({...f, category: e.target.value}))} placeholder="digital, game, voucher..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Stok (-1 = unlimited)</label>
+                <input type="number" value={productForm.stock} onChange={(e) => setProductForm((f) => ({...f, stock: e.target.value}))} placeholder="-1" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-muted">Deskripsi</label>
+                <textarea value={productForm.description} onChange={(e) => setProductForm((f) => ({...f, description: e.target.value}))} placeholder="Deskripsi produk... (Enter untuk baris baru)" rows={4} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+                <p className="text-[10px] text-muted mt-0.5">Tekan Enter untuk baris baru. Formatnya akan ditampilkan ke user.</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">URL Gambar</label>
+                <input value={productForm.imageUrl} onChange={(e) => setProductForm((f) => ({...f, imageUrl: e.target.value}))} placeholder="https://..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Tipe Pengiriman</label>
+                <select value={productForm.deliveryType} onChange={(e) => setProductForm((f) => ({...f, deliveryType: e.target.value}))} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber">
+                  <option value="text">Teks</option>
+                  <option value="image">Gambar (URL)</option>
+                  <option value="file">File (URL)</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-muted">Konten Pengiriman *</label>
+                <textarea value={productForm.deliveryContent} onChange={(e) => setProductForm((f) => ({...f, deliveryContent: e.target.value}))} placeholder="Konten yang dikirim ke pembeli setelah berhasil beli..." rows={3} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber resize-none" />
+              </div>
+            </div>
+            <div className="mt-4 flex gap-2.5">
+              {editingProduct && (
+                <button onClick={() => { setEditingProduct(null); setProductForm({ name:"", description:"", price:"", category:"", stock:"-1", imageUrl:"", deliveryType:"text", deliveryContent:"" }); setProductMsg(""); }} className="flex-1 rounded-xl border-2 border-line py-2.5 text-sm font-bold text-ink press">Batal</button>
+              )}
+              <button onClick={submitProduct} disabled={productSubmitting} className="flex-1 rounded-xl bg-amber py-2.5 text-sm font-black text-white press hover:bg-amber-bright disabled:opacity-50" style={{ boxShadow: "0 4px 0 0 rgba(180,100,0,0.4)" }}>
+                {productSubmitting ? "Menyimpan..." : editingProduct ? "Simpan Perubahan" : "Tambah Produk"}
+              </button>
+            </div>
+          </div>
+
+          {/* Tambah Stok */}
+          <div className="glass rounded-2xl p-5 shadow-soft">
+            <h2 className="text-base font-bold text-ink mb-3">📦 Tambah Stok Produk</h2>
+            <div className="flex gap-2.5">
+              <select value={stockAddForm.id} onChange={(e) => setStockAddForm((f) => ({...f, id: e.target.value}))} className="flex-1 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber">
+                <option value="">— Pilih Produk —</option>
+                {adminProducts.map((p) => <option key={p.id} value={p.id}>{p.name} (stok: {p.stock === -1 ? "∞" : p.stock})</option>)}
+              </select>
+              <input type="number" value={stockAddForm.amount} onChange={(e) => setStockAddForm((f) => ({...f, amount: e.target.value}))} placeholder="Jumlah" className="w-24 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              <button onClick={addProductStock} className="rounded-xl bg-teal px-4 py-2.5 text-sm font-bold text-white press">Tambah</button>
+            </div>
+          </div>
+
+          {/* Daftar Produk */}
+          <div className="glass rounded-2xl p-5 shadow-soft">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-ink">🛍️ Daftar Produk</h2>
+              <button onClick={loadAdminProducts} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-3 py-1 press">Refresh</button>
+            </div>
+            {adminProductsLoading ? (
+              <div className="space-y-2">{[1,2,3].map((i) => <div key={i} className="skeleton h-14 rounded-xl" />)}</div>
+            ) : adminProducts.length === 0 ? (
+              <p className="text-sm text-muted text-center py-6">Belum ada produk.</p>
+            ) : (
+              <div className="space-y-3">
+                {adminProducts.map((p) => (
+                  <div key={p.id} className={`rounded-2xl border-2 p-4 transition-all ${p.active ? "border-line bg-surface" : "border-line bg-surface2 opacity-70"}`} style={{ boxShadow: "3px 3px 0 0 rgba(0,0,0,0.06)" }}>
+                    <div className="flex items-start gap-3">
+                      {p.imageUrl && <img src={p.imageUrl} alt={p.name} className="h-14 w-14 shrink-0 rounded-xl object-cover border border-line" />}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                          <div>
+                            <p className="text-sm font-black text-ink">{p.name}</p>
+                            <p className="text-xs text-muted mt-0.5">{p.category || "—"} · Stok: {p.stock === -1 ? "∞" : p.stock} · Terjual: {p.soldCount || 0}</p>
+                          </div>
+                          <p className="text-sm font-black text-amber-bright shrink-0">Rp{Number(p.price).toLocaleString("id-ID")}</p>
+                        </div>
+                        {p.description && <p className="text-xs text-muted mt-1 line-clamp-1">{p.description}</p>}
+                        <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+                          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${p.active ? "border-teal/40 text-teal-bright" : "border-line text-muted"}`}>{p.active ? "Aktif" : "Nonaktif"}</span>
+                          <span className="rounded-full border border-line px-2 py-0.5 text-[10px] text-muted">{p.deliveryType}</span>
+                          <div className="flex gap-1.5 ml-auto">
+                            <button onClick={() => editProductFill(p)} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">Edit</button>
+                            <button onClick={() => toggleProduct(p.id)} className="text-xs text-teal-bright border border-teal/40 rounded-lg px-2 py-1 press">{p.active ? "Nonaktif" : "Aktif"}</button>
+                            <button onClick={() => deleteProduct(p.id)} className="text-xs text-rose border border-rose/30 rounded-lg px-2 py-1 press">Hapus</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* TAB: JOB/SALDO GRATIS                                        */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === "job" && (
+        <div className="mt-5 space-y-5">
+
+          {/* Form Tambah/Edit Job */}
+          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
+            <h2 className="font-display text-base font-semibold text-ink mb-4">
+              {editingJob ? "✏️ Edit Job" : "➕ Tambah Job Baru"}
+            </h2>
+            {jobMsg && <p className="mb-3 text-xs font-medium text-teal-bright">{jobMsg}</p>}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-medium text-muted">Judul Job *</label>
+                <input value={jobForm.title} onChange={(e) => setJobForm((f) => ({...f, title: e.target.value}))} placeholder="Judul job..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Reward (Rp) *</label>
+                <input type="number" value={jobForm.reward} onChange={(e) => setJobForm((f) => ({...f, reward: e.target.value}))} placeholder="5000" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Maks Penyelesaian (0 = unlimited)</label>
+                <input type="number" value={jobForm.maxCompletions} onChange={(e) => setJobForm((f) => ({...f, maxCompletions: e.target.value}))} placeholder="0" className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Tipe Bukti</label>
+                <select value={jobForm.proofType} onChange={(e) => setJobForm((f) => ({...f, proofType: e.target.value}))} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber">
+                  <option value="text">Teks</option>
+                  <option value="image">Gambar (URL)</option>
+                  <option value="url">URL</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">Kategori</label>
+                <input value={jobForm.category} onChange={(e) => setJobForm((f) => ({...f, category: e.target.value}))} placeholder="sosmed, review, tugas..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted">URL Gambar</label>
+                <input value={jobForm.imageUrl} onChange={(e) => setJobForm((f) => ({...f, imageUrl: e.target.value}))} placeholder="https://..." className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-muted">Deskripsi / Instruksi</label>
+                <textarea value={jobForm.description} onChange={(e) => setJobForm((f) => ({...f, description: e.target.value}))} placeholder={"Instruksi yang harus dilakukan user...\nContoh:\n1. Follow akun @artapedia\n2. Like postingan terbaru\n3. Screenshot buktinya"} rows={5} className="mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber font-mono" />
+                <p className="text-[10px] text-muted mt-0.5">Tekan Enter untuk baris baru. Format akan ditampilkan rapi ke user.</p>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={jobForm.proofRequired} onChange={(e) => setJobForm((f) => ({...f, proofRequired: e.target.checked}))} className="h-4 w-4 rounded border-line accent-amber" />
+                  <span className="text-sm font-medium text-ink">Bukti wajib diisi</span>
+                </label>
+              </div>
+            </div>
+            <div className="mt-4 flex gap-2.5">
+              {editingJob && (
+                <button onClick={() => { setEditingJob(null); setJobForm({ title:"", description:"", reward:"", maxCompletions:"0", proofRequired:true, proofType:"text", category:"", imageUrl:"" }); setJobMsg(""); }} className="flex-1 rounded-xl border-2 border-line py-2.5 text-sm font-bold text-ink press">Batal</button>
+              )}
+              <button onClick={submitJob} disabled={jobSubmitting} className="flex-1 rounded-xl bg-teal py-2.5 text-sm font-black text-white press hover:bg-teal-bright disabled:opacity-50" style={{ boxShadow: "0 4px 0 0 rgba(0,100,80,0.4)" }}>
+                {jobSubmitting ? "Menyimpan..." : editingJob ? "Simpan Perubahan" : "Tambah Job"}
+              </button>
+            </div>
+          </div>
+
+          {/* Daftar Job */}
+          <div className="glass rounded-2xl p-5 shadow-soft">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-ink">💼 Daftar Job</h2>
+              <button onClick={loadAdminJobs} className="text-xs text-teal-bright border border-teal/40 rounded-lg px-3 py-1 press">Refresh</button>
+            </div>
+            {adminJobsLoading ? (
+              <div className="space-y-2">{[1,2].map((i) => <div key={i} className="skeleton h-16 rounded-xl" />)}</div>
+            ) : adminJobs.length === 0 ? (
+              <p className="text-sm text-muted text-center py-6">Belum ada job.</p>
+            ) : (
+              <div className="space-y-3">
+                {adminJobs.map((j) => (
+                  <div key={j.id} className={`rounded-2xl border-2 p-4 ${j.active ? "border-line bg-surface" : "border-line bg-surface2 opacity-70"}`} style={{ boxShadow: "3px 3px 0 0 rgba(0,0,0,0.06)" }}>
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black text-ink">{j.title}</p>
+                        <p className="text-xs text-muted mt-0.5">
+                          Reward: <span className="text-teal-bright font-bold">Rp{Number(j.reward).toLocaleString("id-ID")}</span>
+                          {j.maxCompletions > 0 && ` · Kuota: ${j.completedCount || 0}/${j.maxCompletions}`}
+                          {j.category && ` · ${j.category}`}
+                        </p>
+                        {j.description && <p className="text-xs text-muted mt-1 line-clamp-1">{j.description}</p>}
+                      </div>
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold shrink-0 ${j.active ? "border-teal/40 text-teal-bright" : "border-line text-muted"}`}>{j.active ? "Aktif" : "Nonaktif"}</span>
+                    </div>
+                    <div className="flex gap-1.5 mt-2.5">
+                      <button onClick={() => { setEditingJob(j); setJobForm({ title: j.title, description: j.description || "", reward: String(j.reward), maxCompletions: String(j.maxCompletions || 0), proofRequired: j.proofRequired !== false, proofType: j.proofType || "text", category: j.category || "", imageUrl: j.imageUrl || "" }); }} className="text-xs text-amber-bright border border-amber/40 rounded-lg px-2 py-1 press">Edit</button>
+                      <button onClick={() => toggleJob(j.id)} className="text-xs text-teal-bright border border-teal/40 rounded-lg px-2 py-1 press">{j.active ? "Nonaktif" : "Aktif"}</button>
+                      <button onClick={() => deleteJob(j.id)} className="text-xs text-rose border border-rose/30 rounded-lg px-2 py-1 press">Hapus</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Review Pengajuan Job */}
+          <div className="glass rounded-2xl p-5 shadow-soft">
+            <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+              <h2 className="text-base font-bold text-ink">📋 Review Pengajuan</h2>
+              <div className="flex gap-2">
+                {[["pending", "⏳ Menunggu"], ["all", "📜 Semua"]].map(([v, l]) => (
+                  <button key={v} onClick={() => { setJobSubFilter(v); loadJobSubmissions(v); }} className={`rounded-xl border px-3 py-1.5 text-xs font-bold press ${jobSubFilter === v ? "bg-ink text-white border-ink" : "border-line text-ink hover:border-amber"}`}>{l}</button>
+                ))}
+              </div>
+            </div>
+            {jobSubMsg && <p className="mb-3 text-xs font-medium text-teal-bright">{jobSubMsg}</p>}
+            {jobSubmissionsLoading ? (
+              <div className="space-y-2">{[1,2,3].map((i) => <div key={i} className="skeleton h-20 rounded-xl" />)}</div>
+            ) : jobSubmissions.length === 0 ? (
+              <p className="text-sm text-muted text-center py-8">Tidak ada pengajuan.</p>
+            ) : (
+              <div className="space-y-3">
+                {jobSubmissions.map((s) => (
+                  <div key={s.id} className="rounded-2xl border-2 border-line bg-surface p-4" style={{ boxShadow: "3px 3px 0 0 rgba(0,0,0,0.06)" }}>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black text-ink">{s.jobTitle}</p>
+                        <p className="text-xs text-muted font-mono mt-0.5 truncate">Token: {s.token}</p>
+                        <p className="text-xs text-muted mt-0.5">
+                          Reward: <span className="text-teal-bright font-bold">Rp{Number(s.reward).toLocaleString("id-ID")}</span>
+                          {" · "}{new Date(s.submittedAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold shrink-0 ${s.status === "approved" ? "border-teal/40 text-teal-bright" : s.status === "rejected" ? "border-rose/30 text-rose" : "border-amber/40 text-amber-bright"}`}>
+                        {s.status === "approved" ? "Disetujui" : s.status === "rejected" ? "Ditolak" : "Menunggu"}
+                      </span>
+                    </div>
+                    {s.proof && (
+                      <div className="mb-2 rounded-xl bg-surface2 p-2.5">
+                        <p className="text-[10px] font-bold text-muted mb-1">Bukti:</p>
+                        <p className="text-xs text-ink font-mono break-all line-clamp-3">{s.proof}</p>
+                      </div>
+                    )}
+                    {s.status === "pending" && (
+                      <div className="flex gap-2">
+                        <button onClick={() => reviewJobSub(s.id, "approve")} className="flex-1 rounded-xl bg-teal py-2 text-xs font-black text-white press">✓ Setujui</button>
+                        <div className="flex flex-1 gap-1.5">
+                          <input placeholder="Alasan penolakan..." className="flex-1 min-w-0 rounded-xl border border-line bg-surface px-2.5 py-1.5 text-xs text-ink outline-none focus:border-rose" id={`reject-reason-${s.id}`} />
+                          <button onClick={() => { const el = document.getElementById(`reject-reason-${s.id}`); reviewJobSub(s.id, "reject", el?.value || ""); }} className="rounded-xl bg-rose px-3 py-2 text-xs font-black text-white press">✗ Tolak</button>
+                        </div>
+                      </div>
+                    )}
+                    {s.status === "rejected" && s.rejectionReason && <p className="text-xs text-rose mt-1">Alasan: {s.rejectionReason}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -4735,31 +5380,7 @@ export default function AdminDashboardPage() {
             {settingsMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{settingsMsg}</p>}
           </div>
 
-          {/* Loyalitas */}
-          <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
-            <h2 className="font-display text-base font-semibold text-ink">Cashback Deposit</h2>
-            <p className="mt-1 text-xs text-muted">Persen cashback yang masuk ke saldo setiap deposit berhasil (QRIS manual boleh punya angka sendiri di pengaturannya).</p>
-            <div className="mt-4 grid gap-5 sm:grid-cols-2">
-              {[
-                { key: "cashbackDepositPercent", label: "Cashback deposit (%)", step: "0.1" },
-              ].map((field) => (
-                <div key={field.key}>
-                  <label className="text-xs font-medium text-muted">{field.label}</label>
-                  <input
-                    key={`${field.key}-${settings?.loyalty?.[field.key]}`}
-                    type="number"
-                    step={field.step}
-                    min={field.min || "0"}
-                    defaultValue={settings?.loyalty?.[field.key] ?? 0}
-                    onBlur={(e) => saveLoyalty({ [field.key]: e.target.value })}
-                    disabled={!settings || savingLoyalty}
-                    className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-amber"
-                  />
-                </div>
-              ))}
-            </div>
-            {loyaltyMsg && <p className="mt-3 text-xs font-medium text-teal-bright">{loyaltyMsg}</p>}
-          </div>
+          <AdminCashback />
 
           {/* Info stok & harga ke channel */}
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">
@@ -5275,6 +5896,23 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
 
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
+                <div>
+                  <span className="text-sm font-medium text-ink">Koneksi dibanana</span>
+                  <span className="ml-2 text-[11px] text-muted">
+                    {dibanana == null
+                      ? "memuat..."
+                      : dibanana.configured === false
+                      ? "API key belum diisi"
+                      : dibanana.balance != null
+                      ? `saldo Rp${Number(dibanana.balance).toLocaleString("id-ID")}`
+                      : dibanana.error || "gagal cek"}
+                  </span>
+                </div>
+                <button onClick={() => runProviderDiagnose("dibanana")} disabled={providerDiagLoading} className="btn-ghost text-xs">
+                  {providerDiagLoading ? "Mengecek..." : "Diagnosa koneksi"}
+                </button>
+              </div>
               {providerDiag && (
                 <div className="mt-3">
                   <p className="text-xs font-semibold text-ink">{providerDiag.verdict || providerDiag.error}</p>
@@ -5443,7 +6081,7 @@ export default function AdminDashboardPage() {
               dan kode OTP, saldo, nama asli, serta nomor rekening tidak pernah ikut.
             </p>
             <p className="mt-2 rounded-xl border border-amber/30 bg-amber/10 px-3 py-2 text-[11px] leading-relaxed text-ink">
-              🔒 Tarik saldo admin, penyesuaian saldo/poin, bukti transfer deposit manual, dan hasil pindai keamanan
+              🔒 Tarik saldo admin, penyesuaian saldo, bukti transfer deposit manual, dan hasil pindai keamanan
               <b> tidak ada di daftar ini</b> dan tidak bisa dinyalakan — semuanya tetap di chat admin saja.
             </p>
 
@@ -5554,7 +6192,6 @@ export default function AdminDashboardPage() {
               <select value={notifType} onChange={(e) => setNotifType(e.target.value)} className="input text-sm w-full">
                 <option value="promo">Promo</option>
                 <option value="reward">Reward</option>
-                <option value="mission">Misi</option>
                 <option value="deposit">Deposit</option>
               </select>
               <input value={notifTitle} onChange={(e) => setNotifTitle(e.target.value)} placeholder="Judul notifikasi" className="input text-sm w-full" />
@@ -5565,6 +6202,7 @@ export default function AdminDashboardPage() {
             </form>
             {notifMsg && <p className="text-xs mt-2 text-teal-bright font-semibold">{notifMsg}</p>}
           </div>
+
         </div>
       )}
     </div>
@@ -6112,13 +6750,9 @@ function ExportSection() {
       <div className="glass rounded-2xl p-5 shadow-soft border border-blue/20">
         <h2 className="text-base font-bold text-ink mb-1">📇 Database Akun (JSON)</h2>
         <p className="text-xs text-muted mb-3 leading-relaxed">
-          Isinya <b>token, nama, saldo, koin, poin, dan pet</b> saja. Riwayat pembelian
+          Isinya <b>token, nama, dan saldo</b> saja. Riwayat pembelian
           sengaja <b>tidak ikut</b> — di riwayat itu ada nomor telepon dan kode OTP orang,
           dan yang tidak ada di dalam berkas tidak bisa bocor dari berkas itu.
-        </p>
-        <p className="text-[11px] text-muted mb-3 leading-relaxed">
-          Catatan: situs ini belum punya mata uang <b>koin</b> yang terpisah dari poin, jadi
-          kolom koin bernilai 0 untuk semua akun sampai fiturnya ada.
         </p>
         <p className="text-[11px] text-rose mb-3 leading-relaxed">
           ⚠️ <b>Token adalah kredensial.</b> Siapa pun yang memegang berkas ini bisa membuka
@@ -6151,8 +6785,8 @@ function ExportSection() {
       <div className="glass rounded-2xl p-5 shadow-soft border border-indigo/20">
         <h2 className="text-base font-bold text-ink mb-1">🗄️ Backup Penuh (JSON)</h2>
         <p className="text-xs text-muted mb-3">
-          Seluruh isi database: user (saldo, poin, total belanja, cashback), deposit, pesanan
-          OTP, mutasi saldo, voucher, misi, dan sisanya. Tiap koleksi dibatasi 50.000 baris, dan
+          Seluruh isi database: user (saldo, total belanja, cashback), deposit, pesanan
+          OTP, mutasi saldo, voucher, paket Saldo Kaget, dan sisanya. Tiap koleksi dibatasi 50.000 baris, dan
           kalau ada yang kena batas itu, namanya ditulis di dalam berkasnya.
         </p>
         {/* Dikatakan apa adanya: tombol Restore di bawah hanya memulihkan user.

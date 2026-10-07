@@ -1,6 +1,6 @@
 # AustinPay — QRIS FAST & penarikan otomatis
 
-Fitur: metode deposit **QRIS FAST**, **tarik saldo nokos** (`/tarik`), serta panel admin **AustinPay** (saldo, tarik saldo, riwayat).
+Fitur: metode deposit **QRIS FAST**, penarikan otomatis saldo **Stor Gmail** ke e-wallet, serta panel admin **AustinPay** (saldo, tarik saldo, riwayat).
 
 ## Pasang (sekali)
 1. Dasbor Admin → **AustinPay** → isi **API key**, **API secret**, **Webhook secret** (tersimpan terenkripsi; tidak pernah ditampilkan lagi).
@@ -14,13 +14,13 @@ Fitur: metode deposit **QRIS FAST**, **tarik saldo nokos** (`/tarik`), serta pan
 ## Aturan bawaan (bisa diubah di panel AustinPay)
 | Pengaturan | Bawaan |
 |---|---|
-| Tarik saldo nokos: minimal diterima | Rp10.000 |
-| Biaya admin tarik saldo nokos | Rp2.000 |
+| Tarik saldo Stor Gmail: minimal diterima | Rp10.000 |
+| Biaya admin tarik saldo Stor Gmail | Rp1.000 |
 | Maks tarik / akun / hari | 5× (dan Rp3.000.000) |
 | Akun baru boleh menarik setelah | 1 jam |
 | Maks akun berbeda per nomor tujuan | 2 |
 
-Hanya saldo hasil **deposit** yang bisa ditarik (bonus/hadiah tidak).
+Hanya saldo hasil **deposit** yang bisa ditarik (bonus/hadiah tidak). Poin game tetap punya syarat perputaran.
 
 ## Keselamatan uang
 - Saldo dipotong **atomik** sebelum dikirim; gagal tegas → dikembalikan sekali (idempoten).

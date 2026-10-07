@@ -53,7 +53,7 @@ export async function POST(req) {
     });
 
     sendTelegramNotif(
-      adminBalanceAdjustNotif({ token, amount: nominal, action, newBalance: updated[medan], note: medan === "saldoGame" ? `[SALDO GAME] ${cleanNote}` : cleanNote })
+      adminBalanceAdjustNotif({ token, amount: nominal, action, newBalance: updated[medan], note: cleanNote })
     );
 
     return NextResponse.json({ ok: true, balance: updated[medan] });

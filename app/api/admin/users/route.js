@@ -27,7 +27,6 @@ export async function GET(req) {
         token: u.token,
         name: u.name || null,
         balance: u.balance || 0,
-        saldoGame: u.saldoGame || 0,
         depositTotal: u.depositTotal || 0,
         referralCount: u.referralCount || 0,
         referralEarnings: u.referralEarnings || 0,

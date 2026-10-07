@@ -63,6 +63,7 @@ export function UserProvider({ children }) {
   const [depositBalance, setDepositBalance] = useState(null);
   const [name, setName] = useState(null);
   const [joinedAt, setJoinedAt] = useState(null);
+  const [tourDone, setTourDone] = useState(false);
   const [ready, setReady] = useState(false);
   // true = admin mewajibkan daftar/masuk dan pengunjung belum punya akun aktif.
   const [perluMasuk, setPerluMasuk] = useState(false);
@@ -99,6 +100,7 @@ export function UserProvider({ children }) {
       setDepositBalance(data.depositBalance ?? null);
       setName(data.name || null);
       setJoinedAt(data.createdAt || null);
+      setTourDone(data.tourDone === true);
       return data;
     }
     const err = new Error(data.error || "Gagal memuat akun.");
@@ -212,8 +214,9 @@ export function UserProvider({ children }) {
     } catch {}
   }, [token]);
 
-  // Saldo yang tampil harus selalu sama dengan server. Disegarkan saat pindah halaman, saat tab kembali
-  // aktif, berkala (60 dtk, hanya ketika tab terlihat), dan ketika halaman lain memberi tahu lewat event.
+  // Saldo yang tampil harus selalu sama dengan server: game memotong/menambah poin
+  // di server, sedangkan konteks ini hidup terus selama pengguna berpindah halaman. Karena itu disegarkan
+  // saat pindah halaman, saat tab kembali aktif, berkala, dan ketika game memberi tahu lewat event.
   const pathname = usePathname();
   const terakhirSegar = useRef(0);
   useEffect(() => {
@@ -268,9 +271,21 @@ export function UserProvider({ children }) {
     [token]
   );
 
+  const completeTour = useCallback(async () => {
+    setTourDone(true);
+    try { localStorage.setItem("artapedia_tour_done", "1"); } catch {}
+    if (token) {
+      fetch("/api/user/tour-done", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      }).catch(() => {});
+    }
+  }, [token]);
+
   return (
     <UserContext.Provider
-      value={{ token, balance, depositBalance, name, joinedAt, ready, perluMasuk, loginWajib, banned, daftar, masuk, keluar, setBalance, refreshBalance, restoreToken, updateName }}
+      value={{ token, balance, depositBalance, name, joinedAt, tourDone, ready, perluMasuk, loginWajib, banned, daftar, masuk, keluar, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
     >
       {children}
     </UserContext.Provider>

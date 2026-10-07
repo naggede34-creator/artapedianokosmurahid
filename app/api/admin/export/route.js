@@ -44,7 +44,7 @@ export async function GET(req) {
     let filename = "";
 
     if (type === "akun") {
-      // Ekspor ringkas: token, nama, saldo. TITIK.
+      // Ekspor ringkas: token, nama, saldo, koin, poin, pet. TITIK.
       //
       // Riwayat pembelian sengaja TIDAK ikut. Bukan demi ukuran berkas: di
       // riwayat itu ada nomor telepon dan kode OTP orang. Berkas seperti ini
@@ -89,7 +89,6 @@ export async function GET(req) {
                   `  "isi": ${JSON.stringify(KETERANGAN_AKUN.isi)},\n` +
                   `  "tidakDisertakan": ${JSON.stringify(KETERANGAN_AKUN.tidakDisertakan)},\n` +
                   `  "peringatan": ${JSON.stringify(KETERANGAN_AKUN.peringatan)},\n` +
-                  `  "catatanKoin": ${JSON.stringify(KETERANGAN_AKUN.catatanKoin)},\n` +
                   '  "users": ['
               )
             );
@@ -142,10 +141,10 @@ export async function GET(req) {
       const users = await usersCol();
       const filter = from || to ? { createdAt: dateFilter } : {};
       const rows = await users.find(filter).sort({ createdAt: -1 }).limit(BATAS_CSV).toArray();
-      const headers = ["Token", "Nama", "Saldo", "Total Deposit", "Referral", "Ditangguhkan", "Daftar (WIB)"];
+      const headers = ["Token", "Nama", "Saldo", "Total Deposit", "Total Belanja", "Cashback Didapat", "Referral", "Ditangguhkan", "Daftar (WIB)"];
       csv = headers.join(",") + "\n" + rows.map((u) => [
         u.token, u.name || "", u.balance || 0, u.depositTotal || 0,
-        u.referralCount || 0,
+        u.totalSpent || 0, u.cashbackTotal || 0, u.referralCount || 0,
         u.suspended ? "Ya" : "Tidak", toWIB(u.createdAt)
       ].map(escCsv).join(",")).join("\n");
       filename = `artapedia-users-${Date.now()}.csv`;

@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { OTP_SERVERS, DEFAULT_SERVER } from "@/lib/otpServers";
+import { OTP_SERVERS } from "@/lib/otpServers";
 
 function rupiah(n) {
   return `Rp${Number(n || 0).toLocaleString("id-ID")}`;
 }
 
 export default function OTPPriceWidget() {
-  const [server, setServer] = useState(DEFAULT_SERVER);
+  const [server, setServer] = useState("rumahotp");
   const [services, setServices] = useState([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);

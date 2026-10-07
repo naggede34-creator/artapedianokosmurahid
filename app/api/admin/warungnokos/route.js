@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminSah } from "@/lib/adminAuth";
 import { diagnoseWarungNokos, warungNokosConfigured } from "@/lib/warungnokos";
+import { diagnoseDibanana } from "@/lib/dibanana";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ export async function GET(req) {
 
   const provider = new URL(req.url).searchParams.get("provider") || "warungnokos";
   try {
+    if (provider === "dibanana") return NextResponse.json(await diagnoseDibanana());
     if (!(await warungNokosConfigured())) {
       return NextResponse.json({
         configured: false,

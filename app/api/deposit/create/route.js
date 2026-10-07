@@ -14,8 +14,8 @@ export async function POST(req) {
       return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi dalam 1 menit." }, { status: 429 });
     }
 
-    const { token, amount, provider, wallet } = await req.json().catch(() => ({}));
-    const result = await createDepositForToken({ token, amount, provider, wallet: wallet === "game" ? "game" : undefined });
+    const { token, amount, provider } = await req.json().catch(() => ({}));
+    const result = await createDepositForToken({ token, amount, provider });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
     return NextResponse.json(result.deposit);

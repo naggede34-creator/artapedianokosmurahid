@@ -1,4 +1,3 @@
-import { DEFAULT_SERVER } from "@/lib/otpServers";
 import { NextResponse } from "next/server";
 import { resolveApiKey, jsonV1 } from "@/lib/apiKeyAuth";
 import { getSettings } from "@/lib/settings";
@@ -12,7 +11,7 @@ export async function GET(req) {
   const { error } = await resolveApiKey(req);
   if (error) return error;
 
-  const server = new URL(req.url).searchParams.get("server") || DEFAULT_SERVER;
+  const server = new URL(req.url).searchParams.get("server") || "rumahotp";
   try {
     const settings = await getSettings();
     if (!serverEnabled(settings, server)) {

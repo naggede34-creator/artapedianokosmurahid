@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { TEMA, bacaTema, simpanTema, pasangTema, hexKeRgb } from "@/lib/tema";
-import { GAYA, bacaPilihan, simpanGaya, pasangGaya } from "@/lib/gaya";
+import { GAYA, SKIN, bacaPilihan, simpanGaya, simpanSkin, pasangGaya, pasangSkin } from "@/lib/gaya";
 
 export const dynamic = "force-dynamic";
 
 export default function TampilanPage() {
   const [gaya, setGaya] = useState("komik");
+  const [skinPil, setSkinPil] = useState("klasik");
   const [aktif, setAktif] = useState("default");
   const [warna, setWarna] = useState("");
   const [siap, setSiap] = useState(false);
@@ -16,6 +17,7 @@ export default function TampilanPage() {
   useEffect(() => {
     const p = bacaPilihan();
     setGaya(p.gaya || document.documentElement.getAttribute("data-gaya") || "komik");
+    setSkinPil(p.skin || document.documentElement.getAttribute("data-skin") || "klasik");
     const t = bacaTema();
     setAktif(t.id);
     setWarna(t.warna);
@@ -24,9 +26,14 @@ export default function TampilanPage() {
 
   function pilihGaya(id) {
     setGaya(id);
+    // "komik" = bawaan: pilihan manual disimpan sebagai "komik" supaya event musiman tidak menimpanya.
     simpanGaya(id);
     pasangGaya(id);
   }
+  function pakaiSkin(id) {
+    setSkinPil(id); simpanSkin(id); pasangSkin(id);
+  }
+
   function pilih(id) {
     setAktif(id);
     // Warna pilihan sendiri dilepas saat memilih tema jadi: kalau tidak, ia
@@ -71,6 +78,27 @@ export default function TampilanPage() {
         })}
       </div>
       {gaya === "neon" && <p className="mt-2 text-[11px] text-muted">Neon selalu bermode gelap, apa pun pilihan terang/gelapmu.</p>}
+
+      <h2 className="mt-7 font-display text-lg font-black text-ink">Skin maskot</h2>
+      <p className="mt-1 text-xs text-muted">Kostum elang ARTA PEDIA — semuanya gratis, tinggal pilih. Skin musiman otomatis terpasang untuk semua orang selama event berlangsung.</p>
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" data-testid="daftar-skin">
+        {SKIN.map((k) => {
+          const dipakai = skinPil === k.id || (k.id === "klasik" && !skinPil);
+          return (
+            <div key={k.id} className={`rounded-2xl border-2 p-3 text-center ${dipakai ? "border-amber bg-amber-soft" : "border-ink/10 bg-surface"}`} data-testid={`skin-${k.id}`}>
+              <div className="relative mx-auto h-20 w-16">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/maskot-sm.webp" alt="" className="h-full w-full object-contain object-bottom" style={{ filter: k.filter || "none" }} />
+                {k.aksesori && <span className="absolute -top-1 left-1/2 -translate-x-1/2 -rotate-6 text-2xl drop-shadow">{k.aksesori}</span>}
+              </div>
+              <p className="mt-1 text-xs font-black text-ink">{k.ikon} {k.nama}</p>
+              <p className="min-h-[1.6em] text-[10px] leading-tight text-muted">{k.ket}{k.musim ? " · musiman" : ""}</p>
+              {dipakai ? <span className="mt-1.5 inline-block rounded-full bg-success px-3 py-1 text-[10px] font-black text-white">Dipakai ✓</span>
+                : <button type="button" onClick={() => pakaiSkin(k.id)} data-testid={`pakai-${k.id}`} className="btn-3d mt-1.5 rounded-lg bg-amber px-3 py-1 text-[11px] font-black text-white">Pakai</button>}
+            </div>
+          );
+        })}
+      </div>
 
       <h2 className="mt-7 font-display text-lg font-black text-ink">Tema jadi</h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -24,13 +24,16 @@ const nextConfig = {
     // Rute yang sengaja di-cache publik (gambar versi-di-URL, status ringan): Cache-Control-nya diatur rutenya sendiri.
     // Di Next 15 header dari config MENIMPA header rute, jadi rute-rute ini dikecualikan dari aturan no-store di bawah
     // (header keamanan tetap dipasang lewat aturan kedua).
-    const CACHE_SENDIRI = "api/ban-tampilan/gambar|api/status";
+    const CACHE_SENDIRI = "api/wa/foto|api/wa/media|api/ban-tampilan/gambar|api/musim|api/pita|api/status";
     const keamanan = [
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-XSS-Protection", value: "1; mode=block" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          // Kamera & mikrofon dibuka untuk situs sendiri: catatan suara dan panggilan
+          // suara/video di Room Chat memakainya. Dengan camera=() / microphone=()
+          // peramban menolak getUserMedia tanpa pernah bertanya ke pengguna.
+          { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=(self)" },
           {
             key: "Content-Security-Policy",
             value: [

@@ -9,15 +9,20 @@ import Sidebar from "@/components/Sidebar";
 import InfoBell from "@/components/InfoBell";
 import NotificationBell from "@/components/NotificationBell";
 
+// QRIS Gateway sengaja tepat di samping Beranda: itu fitur andalan untuk merchant.
+// `sorot` = tombol diberi bingkai; `dari` = layar terkecil yang menampilkannya di bilah atas (sisanya tetap ada di menu samping).
 const links = [
   { href: "/dashboard", label: "Beranda" },
-  { href: "/otp", label: "Beli Nokos" },
+  { href: "/gateway", label: "QRIS Gateway", ikon: "🏦", sorot: true },
+  { href: "/otp", label: "Nokos" },
   { href: "/deposit", label: "Deposit" },
-  { href: "/riwayat", label: "Riwayat" },
-  { href: "/gateway", label: "QRIS Gateway" },
-  { href: "/apikey", label: "API" },
-  { href: "/harga", label: "Harga" }
+  { href: "/kaget", label: "Kaget", ikon: "🧧" },
+  { href: "/produk", label: "Produk" },
+  { href: "/riwayat", label: "Riwayat", dari: "xl" },
+  { href: "/chat", label: "WEARTA CHAT" },
+  { href: "/harga", label: "Harga", dari: "2xl" }
 ];
+const DARI = { xl: "hidden xl:inline-flex", "2xl": "hidden 2xl:inline-flex" };
 
 export function Logo({ size = 34 }) {
   return (
@@ -91,10 +96,16 @@ export default function Navbar() {
               <Link
                 key={l.href}
                 href={l.href}
-                className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-                  active ? "bg-amber-soft text-amber-bright" : "text-muted hover:text-ink"
+                className={`${l.dari ? DARI[l.dari] : "inline-flex"} items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-semibold transition-colors xl:px-3 ${
+                  active
+                    ? "bg-amber-soft text-amber-bright"
+                    : l.sorot
+                      ? "border border-amber/40 bg-amber-soft/60 text-amber-bright hover:bg-amber-soft"
+                      : "text-muted hover:text-ink"
                 }`}
+                data-testid={l.href === "/gateway" ? "nav-gateway" : undefined}
               >
+                {l.ikon && <span aria-hidden="true" className="text-[13px] leading-none">{l.ikon}</span>}
                 {l.label}
               </Link>
             );

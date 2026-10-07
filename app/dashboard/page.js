@@ -1,17 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLembarTerbuka } from "@/lib/lembarTerbuka";
 import { useUser } from "@/app/providers";
-import KartuSaldo from "@/components/KartuSaldo";
-import GaransiModal from "@/components/GaransiModal";
-import TiketBantuan from "@/components/TiketBantuan";
-import NamePromptModal from "@/components/NamePromptModal";
-import BannerRail from "@/components/BannerRail";
+import SimCard from "@/components/SimCard";
 import OTPPriceWidget from "@/components/OTPPriceWidget";
-import { rupiah, EmptyState } from "@/components/ui";
+import FlashSaleTimer from "@/components/FlashSaleTimer";
+import LuckyHourBanner from "@/components/LuckyHourBanner";
+import OnboardingTour, { useShouldShowTour } from "@/components/OnboardingTour";
+import NamePromptModal from "@/components/NamePromptModal";
+import MusimBanner from "@/components/MusimBanner";
+import BannerRail from "@/components/BannerRail";
+import AnimeHero from "@/components/AnimeHero";
+import MangaWaifu from "@/components/MangaWaifu";
+import { Icon, rupiah, EmptyState } from "@/components/ui";
 
-function sapaan() {
+function greeting() {
   const h = Number(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta", hour: "numeric", hour12: false }));
   if (h < 11) return "Selamat pagi";
   if (h < 15) return "Selamat siang";
@@ -22,7 +27,7 @@ function sapaan() {
 function Bars({ data, keyName, className }) {
   const max = Math.max(1, ...data.map((d) => d[keyName]));
   return (
-    <div className="flex h-24 items-end gap-[3px]" role="img" aria-label={`Grafik ${keyName} 30 hari`}>
+    <div className="flex h-28 items-end gap-[3px]" role="img" aria-label={`Grafik ${keyName} 30 hari`}>
       {data.map((d) => (
         <span
           key={d.date}
@@ -35,126 +40,677 @@ function Bars({ data, keyName, className }) {
   );
 }
 
-// Jalan pintas: nokos & uang di baris atas, sisanya di bawah.
-const AKSI = [
-  { href: "/otp", label: "Beli Nokos", sub: "Nomor OTP termurah", ikon: "📱", warna: "from-[#1d4ed8] to-[#0a1e50]" },
-  { href: "/deposit", label: "Isi Saldo", sub: "QRIS semua e-wallet", ikon: "💳", warna: "from-[#ea580c] to-[#9a3412]" },
-  { href: "/riwayat", label: "Riwayat", sub: "Pesanan & deposit", ikon: "🧾", warna: "from-[#0891b2] to-[#164e63]" },
-  { href: "/gateway", label: "QRIS Gateway", sub: "Terima bayaran QRIS", ikon: "💸", warna: "from-[#059669] to-[#064e3b]" },
-  { href: "/apikey", label: "API Key", sub: "Beli nokos otomatis", ikon: "🔑", warna: "from-[#9333ea] to-[#3b0764]" },
-  { href: "/referral", label: "Undang Teman", sub: "Dapat bonus saldo", ikon: "🎁", warna: "from-[#dc2626] to-[#7f1d1d]" }
+// Aksi utama: empat tombol besar di bawah dompet.
+const utama = [
+  { href: "/otp", label: "Beli Nokos", sub: "Nomor OTP termurah", ikon: "📱", warna: "bg-gradient-to-br from-[#1d4ed8] to-[#0a1e50]" },
+  { href: "/deposit", label: "Isi Saldo Nokos", sub: "QRIS, semua metode", ikon: "💳", warna: "bg-gradient-to-br from-[#ea580c] to-[#9a3412]" },
+  { href: "/kaget", label: "Saldo Kaget", sub: "Bagi saldo, rebutan seru", ikon: "🧧", warna: "bg-gradient-to-br from-[#e11d48] to-[#7f1d1d]", badge: "BARU", testid: "tombol-kaget-dashboard" },
+  { href: "/gateway", label: "QRIS Gateway", sub: "Terima bayar & tarik otomatis", ikon: "🏦", warna: "bg-gradient-to-br from-[#0891b2] to-[#164e63]" },
+  { href: "/chat", label: "WEARTA CHAT", sub: "Chat, grup, panggilan & WEARTA AI", ikon: "💬", warna: "bg-gradient-to-br from-[#059669] to-[#064e3b]", badge: "LIVE", testid: "tombol-kontak-dashboard" },
+  { href: "/setor-gmail", label: "Stor Gmail", sub: "Setor akun Gmail, dapat upah", ikon: "📧", warna: "bg-gradient-to-br from-[#dc2626] to-[#7f1d1d]", badge: "BARU", testid: "tombol-stor-gmail" }
 ];
 
-export default function DashboardPage() {
-  const { token, name, ready, balance } = useUser();
-  const [stats, setStats] = useState(null);
-  const [pesanan, setPesanan] = useState(null);
-  const [garansiAktif, setGaransiAktif] = useState(true);
-  const [garansiBuka, setGaransiBuka] = useState(false);
-  const [csUser, setCsUser] = useState("teatlas");
-  const [tanyaNama, setTanyaNama] = useState(false);
+// Menu lainnya, dikelompokkan supaya cepat ditemukan.
+const kelompokMenu = [
+  { judul: "Keuangan", ikon: "💰", item: [
+    { href: "/transfer", label: "Transfer", icon: Icon.transfer },
+    { href: "/mutasi", label: "Mutasi", icon: Icon.ledger },
+    { href: "/saldo-gratis", label: "Saldo Gratis", icon: Icon.coin },
+    { href: "/gateway", label: "QRIS Gateway", icon: "💸" }
+  ] },
+  { judul: "Komunitas & hadiah", ikon: "🎁", item: [
+    { href: "/kaget", label: "Saldo Kaget", icon: "🧧", badge: "Baru" },
+    { href: "/referral", label: "Undang teman", icon: Icon.gift },
+    { href: "/giveaway", label: "Giveaway", icon: "🎁" }
+  ] },
+  { judul: "Bisnis & developer", ikon: "🧰", item: [
+    { href: "/produk", label: "Toko Produk", icon: Icon.shop },
+    { href: "/reseller", label: "Bot Reseller", icon: "🤖" },
+    { href: "/apikey", label: "API Key", icon: Icon.key, badge: "Dev" },
+    { href: "/api-docs", label: "Dokumentasi API", icon: "📘" }
+  ] }
+];
 
+const TAB_DASH = [
+  { id: "beranda", label: "Beranda", ikon: "🏠" },
+  { id: "aktivitas", label: "Aktivitas", ikon: "📊" },
+  { id: "bantuan", label: "Bantuan", ikon: "🎧" }
+];
+
+function SectionTitle({ icon, title, hint }) {
+  return (
+    <div className="mb-3 mt-7 flex items-baseline gap-2">
+      <span className="text-lg leading-none" aria-hidden="true">{icon}</span>
+      <h2 className="text-sm font-black uppercase tracking-wider text-ink">{title}</h2>
+      {hint && <span className="text-[11px] text-muted">{hint}</span>}
+      <span className="ml-1 h-px flex-1 bg-line" aria-hidden="true" />
+    </div>
+  );
+}
+
+function WarrantyModal({ open, onClose, token }) {
+  useLembarTerbuka(open);
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [description, setDescription] = useState("");
+  const [screenshotData, setScreenshotData] = useState(null);
+  const [screenshotPreview, setScreenshotPreview] = useState(null);
+  const [purchasePrice, setPurchasePrice] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [msg, setMsg] = useState({ text: "", ok: false });
+  const [claims, setClaims] = useState([]);
+  const [tab, setTab] = useState("form"); // "form" | "history"
+  const screenshotInputRef = useRef(null);
+
+  function handleScreenshot(file) {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setMsg({ text: "Ukuran foto terlalu besar (maks 5 MB).", ok: false }); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const MAX = 800;
+        const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+        const canvas = document.createElement("canvas");
+        canvas.width  = Math.round(img.width  * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+        setScreenshotData(dataUrl);
+        setScreenshotPreview(dataUrl);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !token) return;
+    setOrdersLoading(true);
+    setSelectedOrder(null);
+    setDescription("");
+    setScreenshotData(null);
+    setScreenshotPreview(null);
+    setPurchasePrice("");
+    setMsg({ text: "", ok: false });
+    setTab("form");
+
+    const t = encodeURIComponent(token);
+    Promise.all([
+      fetch(`/api/otp/history?token=${t}`).then((r) => r.json()),
+      fetch(`/api/warranty/claim?token=${t}`).then((r) => r.json())
+    ])
+      .then(([hist, claimsData]) => {
+        setOrders(Array.isArray(hist.items) ? hist.items : []);
+        setClaims(Array.isArray(claimsData.items) ? claimsData.items : []);
+      })
+      .catch(() => setOrders([]))
+      .finally(() => setOrdersLoading(false));
+  }, [open, token]);
+
+  if (!open) return null;
+
+  const claimedIds = new Set(claims.map((c) => c.orderId));
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!selectedOrder) { setMsg({ text: "Pilih nokos terlebih dahulu.", ok: false }); return; }
+    if (!description.trim()) { setMsg({ text: "Isi deskripsi masalah.", ok: false }); return; }
+    if (!purchasePrice || Number(purchasePrice) <= 0) { setMsg({ text: "Isi harga beli yang valid.", ok: false }); return; }
+
+    setSubmitting(true);
+    setMsg({ text: "", ok: false });
+    try {
+      const res = await fetch("/api/warranty/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          orderId: selectedOrder.orderId,
+          description: description.trim(),
+          screenshotData: screenshotData || null,
+          purchasePrice: Number(purchasePrice)
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) { setMsg({ text: data.error || "Gagal mengirim klaim.", ok: false }); return; }
+      setMsg({ text: "Klaim garansi berhasil dikirim! Admin akan memproses dalam 1×24 jam.", ok: true });
+      setClaims((prev) => [
+        { orderId: selectedOrder.orderId, status: "pending", createdAt: new Date() },
+        ...prev
+      ]);
+      setSelectedOrder(null);
+      setDescription("");
+      setScreenshotData(null);
+      setScreenshotPreview(null);
+      setPurchasePrice("");
+      setTimeout(() => setTab("history"), 1200);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const STATUS_CONFIG = {
+    approved: { label: "Disetujui", dot: "bg-teal-bright", cls: "bg-teal-soft text-teal-bright border-teal/30" },
+    rejected: { label: "Ditolak", dot: "bg-rose", cls: "bg-rose-soft text-rose border-rose/30" },
+    pending: { label: "Menunggu", dot: "bg-amber animate-pulse", cls: "bg-amber-soft text-amber-bright border-amber/30" }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center px-0 sm:px-5">
+      <button aria-label="Tutup" onClick={onClose} className="animate-fade-in absolute inset-0" style={{ background: "rgb(var(--c-ink) / 0.5)" }} />
+      <div className="animate-scale-in relative w-full max-w-lg overflow-hidden rounded-t-3xl sm:rounded-3xl border border-line bg-bg shadow-lift flex flex-col max-h-[92dvh]">
+
+        {/* Header gradient */}
+        <div className="shrink-0 bg-gradient-to-br from-rose to-rose/80 px-5 py-5 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 text-xl">🛡️</span>
+              <div>
+                <p className="text-base font-extrabold tracking-tight">Klaim Garansi</p>
+                <p className="text-xs opacity-75 mt-0.5">Nomor bermasalah? Ajukan refund saldo</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 hover:bg-white/25 transition-colors" aria-label="Tutup">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
+            </button>
+          </div>
+          {/* Tab pills */}
+          <div className="mt-4 flex gap-2">
+            {[["form", "📝 Ajukan"], ["history", `📋 Riwayat${claims.length ? ` (${claims.length})` : ""}`]].map(([v, l]) => (
+              <button key={v} onClick={() => setTab(v)} className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${tab === v ? "bg-white text-rose" : "bg-white/15 text-white/80 hover:bg-white/25"}`}>{l}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="overflow-y-auto flex-1 p-5">
+          {tab === "history" ? (
+            <div className="space-y-3">
+              {claims.length === 0 ? (
+                <div className="py-10 text-center">
+                  <p className="text-4xl mb-2">📭</p>
+                  <p className="text-sm font-semibold text-ink">Belum ada klaim</p>
+                  <p className="text-xs text-muted mt-1">Klaim yang kamu ajukan akan muncul di sini.</p>
+                </div>
+              ) : claims.map((c) => {
+                const cfg = STATUS_CONFIG[c.status] || STATUS_CONFIG.pending;
+                return (
+                  <div key={c.orderId} className={`rounded-2xl border p-4 ${cfg.cls}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`h-2 w-2 rounded-full shrink-0 ${cfg.dot}`} />
+                        <span className="text-xs font-black">{cfg.label}</span>
+                      </div>
+                      <span className="font-mono text-[10px] opacity-70">#{c.orderId?.slice(-10)}</span>
+                    </div>
+                    {c.adminNote && <p className="mt-2 text-xs opacity-80 bg-white/30 rounded-xl px-3 py-2">💬 {c.adminNote}</p>}
+                    <p className="text-[10px] opacity-60 mt-2">{c.createdAt ? new Date(c.createdAt).toLocaleDateString("id-ID", { day:"2-digit", month:"short", year:"numeric" }) : ""}</p>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <form onSubmit={submit} className="space-y-5">
+              {/* Info */}
+              <div className="flex gap-3 rounded-2xl bg-amber-soft border border-amber/30 p-3.5">
+                <span className="text-lg shrink-0">⚠️</span>
+                <p className="text-xs text-amber-bright leading-relaxed">Garansi <strong>1x per nokos</strong>. Diproses admin dalam <strong>1×24 jam</strong>. Jika disetujui, saldo dikembalikan otomatis.</p>
+              </div>
+
+              {/* Step 1 - Pilih nokos */}
+              <div>
+                <div className="flex items-center gap-2 mb-2.5">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose text-white text-[10px] font-black">1</span>
+                  <p className="text-xs font-black text-ink">Pilih nokos yang bermasalah</p>
+                </div>
+                {ordersLoading ? (
+                  <div className="skeleton h-20 rounded-2xl" />
+                ) : orders.length === 0 ? (
+                  <p className="text-sm text-muted py-3 text-center">Belum ada riwayat nokos.</p>
+                ) : (
+                  <div className="max-h-44 overflow-y-auto space-y-1.5 rounded-2xl border border-line bg-surface p-2">
+                    {orders.map((o) => {
+                      const alreadyClaimed = claimedIds.has(o.orderId);
+                      const isSelected = selectedOrder?.orderId === o.orderId;
+                      return (
+                        <button key={o.orderId} type="button" disabled={alreadyClaimed}
+                          onClick={() => { setSelectedOrder(o); setPurchasePrice(String(o.price || "")); }}
+                          className={`w-full text-left rounded-xl px-3 py-2.5 text-xs transition-all ${
+                            alreadyClaimed ? "opacity-40 cursor-not-allowed bg-surface2" :
+                            isSelected ? "bg-rose-soft border-2 border-rose/50 text-rose" :
+                            "border border-transparent hover:border-rose/20 hover:bg-rose-soft/30 text-ink"
+                          }`}>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold truncate">{o.serviceName} — {o.countryName}</span>
+                            <span className="shrink-0 font-mono text-[10px] text-muted">#{o.orderId?.slice(-8)}</span>
+                          </div>
+                          <div className="mt-0.5 flex items-center gap-2 text-muted">
+                            <span>{o.phoneNumber || "—"}</span>·<span className="font-semibold">{rupiah(o.price)}</span>
+                            {alreadyClaimed && <span className="text-rose ml-auto font-bold">✓ Diklaim</span>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Step 2 - Harga beli */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose text-white text-[10px] font-black">2</span>
+                  <label className="text-xs font-black text-ink">Harga beli nokos (Rp)</label>
+                </div>
+                <div className="flex items-center rounded-2xl border border-line bg-surface focus-within:border-rose overflow-hidden">
+                  <span className="pl-4 text-sm font-bold text-muted">Rp</span>
+                  <input type="number" min="1" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)}
+                    placeholder="Contoh: 3000" required
+                    className="flex-1 bg-transparent px-3 py-3 text-sm text-ink outline-none tabular-nums" />
+                </div>
+              </div>
+
+              {/* Step 3 - Deskripsi */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose text-white text-[10px] font-black">3</span>
+                  <label className="text-xs font-black text-ink">Detail masalah</label>
+                </div>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Jelaskan masalahnya secara detail. Contoh: Nomor tidak menerima SMS OTP sama sekali setelah ditunggu 15 menit. Layanan: WhatsApp."
+                  rows={4} maxLength={1000} required
+                  className="w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-rose resize-none leading-relaxed" />
+                <p className="text-[10px] text-muted mt-1 text-right">{description.length}/1000</p>
+              </div>
+
+              {/* Step 4 - Upload foto bukti */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-surface2 text-muted text-[10px] font-black border border-line">4</span>
+                  <label className="text-xs font-black text-ink">Foto bukti <span className="text-muted font-normal">(opsional, maks 5 MB)</span></label>
+                </div>
+                <input ref={screenshotInputRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => handleScreenshot(e.target.files?.[0])} />
+                {screenshotPreview ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-rose/30">
+                    <img src={screenshotPreview} alt="Preview" className="w-full max-h-40 object-cover" />
+                    <button type="button" onClick={() => { setScreenshotData(null); setScreenshotPreview(null); if (screenshotInputRef.current) screenshotInputRef.current.value = ""; }}
+                      className="absolute top-2 right-2 rounded-full bg-black/60 text-white w-7 h-7 flex items-center justify-center text-xs font-bold hover:bg-black/80">✕</button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => screenshotInputRef.current?.click()}
+                    className="w-full rounded-2xl border-2 border-dashed border-rose/30 py-4 text-xs text-muted hover:border-rose/60 hover:text-rose transition-colors flex flex-col items-center gap-1">
+                    <span className="text-2xl">📸</span>
+                    <span>Tap untuk upload foto bukti</span>
+                    <span className="text-[10px] opacity-60">Screenshot pesan gagal / inbox kosong</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Selected summary */}
+              {selectedOrder && (
+                <div className="rounded-2xl bg-rose-soft border border-rose/20 p-4">
+                  <p className="text-xs font-black text-rose mb-2">📋 Ringkasan Klaim</p>
+                  <div className="space-y-1.5 text-xs text-rose/80">
+                    <div className="flex justify-between"><span>Layanan</span><span className="font-bold">{selectedOrder.serviceName}</span></div>
+                    <div className="flex justify-between"><span>Nomor</span><span className="font-mono font-bold">{selectedOrder.phoneNumber || "—"}</span></div>
+                    <div className="flex justify-between"><span>Refund jika disetujui</span><span className="font-extrabold text-rose">{rupiah(Number(purchasePrice) || selectedOrder.price)}</span></div>
+                  </div>
+                </div>
+              )}
+
+              {msg.text && (
+                <div className={`rounded-2xl border p-3.5 text-xs font-semibold flex items-start gap-2 ${msg.ok ? "bg-teal-soft border-teal/30 text-teal-bright" : "bg-rose-soft border-rose/30 text-rose"}`}>
+                  <span>{msg.ok ? "✅" : "❌"}</span>
+                  <span>{msg.text}</span>
+                </div>
+              )}
+
+              <button type="submit" disabled={submitting || !selectedOrder}
+                className="w-full rounded-2xl bg-rose py-3.5 text-sm font-extrabold text-white transition-all active:scale-95 disabled:opacity-50"
+                style={{ boxShadow: "0 6px 0 0 rgba(180,0,0,0.3)" }}>
+                {submitting ? "⏳ Mengirim klaim..." : "🛡️ Kirim Klaim Garansi"}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  const { token, name, balance, joinedAt, ready } = useUser();
+  const [showTour, hideTour] = useShouldShowTour();
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [stats, setStats] = useState(null);
+  const [board, setBoard] = useState(null);
+  const [warrantyModal, setWarrantyModal] = useState(false);
+  // Garansi bisa dimatikan admin. Bawaannya true supaya tombolnya tidak
+  // berkedip hilang-muncul sebelum pengaturannya sempat terbaca.
+  const [garansiAktif, setGaransiAktif] = useState(true);
+  const [recentOrders, setRecentOrders] = useState(null);
+  const [tickets, setTickets] = useState([]);
+  const [ticketsLoaded, setTicketsLoaded] = useState(false);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [ticketForm, setTicketForm] = useState({ subject: "", message: "" });
+  const [ticketSubmitting, setTicketSubmitting] = useState(false);
+  const [ticketMsg, setTicketMsg] = useState("");
+  const [expandedTicket, setExpandedTicket] = useState(null);
+  const [ticketReply, setTicketReply] = useState("");
+  const [ticketReplyLoading, setTicketReplyLoading] = useState(false);
+  const [showTicketForm, setShowTicketForm] = useState(false);
+  const [csUser, setCsUser] = useState("teatlas");
+  useEffect(() => { fetch("/api/settings/public").then((r) => r.json()).then((d) => { if (d?.csUsername) setCsUser(String(d.csUsername).replace(/^@/, "")); }).catch(() => {}); }, []);
+  const [tab, setTabState] = useState("beranda");
+  useEffect(() => { try { const t = sessionStorage.getItem("dash_tab"); if (TAB_DASH.some((x) => x.id === t)) setTabState(t); } catch {} }, []);
+  function setTab(id) { setTabState(id); try { sessionStorage.setItem("dash_tab", id); } catch {} }
+
+  // Fitur garansi bisa ditutup admin sewaktu-waktu. Kalau pengaturannya gagal
+  // dibaca, tombolnya dibiarkan tetap ada: lebih baik pengguna menekan tombol
+  // lalu diberi tahu sedang ditutup, daripada tombolnya hilang diam-diam dan
+  // mereka mengira nomor bermasalah memang tidak bisa diadukan.
   useEffect(() => {
     fetch("/api/settings/public")
       .then((r) => r.json())
-      .then((d) => {
-        if (d?.csUsername) setCsUser(String(d.csUsername).replace(/^@/, ""));
-        setGaransiAktif(d?.warranty?.enabled !== false);
-      })
+      .then((d) => setGaransiAktif(d?.warranty?.enabled !== false))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
     if (!token) return;
     const t = encodeURIComponent(token);
-    fetch(`/api/user/stats?token=${t}`).then((r) => r.json()).then((d) => setStats(d.error ? { daily: [] } : d)).catch(() => setStats({ daily: [] }));
-    fetch(`/api/otp/history?token=${t}&limit=5`).then((r) => r.json()).then((d) => setPesanan(Array.isArray(d.items) ? d.items.slice(0, 5) : [])).catch(() => setPesanan([]));
+    fetch(`/api/user/stats?token=${t}`)
+      .then((r) => r.json())
+      .then((d) => setStats(d.error ? { daily: [] } : d))
+      .catch(() => setStats({ daily: [] }));
+    fetch(`/api/otp/history?token=${t}&limit=5`)
+      .then((r) => r.json())
+      .then((d) => setRecentOrders(Array.isArray(d.items) ? d.items.slice(0, 5) : []))
+      .catch(() => setRecentOrders([]));
   }, [token]);
 
-  // Minta nama sekali saja (tidak memaksa): ditunda 3 hari kalau ditutup.
+  // Prompt pengisian nama jika belum ada & tour sudah selesai/tidak tampil
   useEffect(() => {
-    if (!ready || name) return;
+    if (!ready || showTour) return;
+    if (name) return;
     try {
-      const tutup = localStorage.getItem("artapedia_name_dismissed");
-      if (tutup && Date.now() - Number(tutup) < 3 * 24 * 3600_000) return;
+      const dismissed = localStorage.getItem("artapedia_name_dismissed");
+      if (dismissed && Date.now() - Number(dismissed) < 3 * 24 * 60 * 60 * 1000) return;
     } catch {}
-    const t = setTimeout(() => setTanyaNama(true), 1500);
+    const t = setTimeout(() => setShowNamePrompt(true), 1500);
     return () => clearTimeout(t);
-  }, [ready, name]);
+  }, [ready, name, showTour]);
 
-  const adaPesanan = useMemo(() => stats?.daily?.some((d) => d.total > 0), [stats]);
-  const arus = useMemo(
+  async function loadTickets() {
+    if (!token || ticketsLoading) return;
+    setTicketsLoading(true);
+    try {
+      const r = await fetch(`/api/support/tickets?token=${encodeURIComponent(token)}`);
+      const d = await r.json();
+      setTickets(Array.isArray(d.items) ? d.items : []);
+      setTicketsLoaded(true);
+    } catch {
+    } finally {
+      setTicketsLoading(false);
+    }
+  }
+
+  async function submitTicket(e) {
+    e.preventDefault();
+    if (!token || ticketSubmitting) return;
+    setTicketSubmitting(true);
+    setTicketMsg("");
+    try {
+      const r = await fetch("/api/support/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, subject: ticketForm.subject, message: ticketForm.message }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        setTicketMsg("Tiket berhasil dibuat! Admin akan merespons segera.");
+        setTicketForm({ subject: "", message: "" });
+        setShowTicketForm(false);
+        loadTickets();
+      } else {
+        setTicketMsg(d.error || "Gagal membuat tiket.");
+      }
+    } catch {
+      setTicketMsg("Terjadi kesalahan. Coba lagi.");
+    } finally {
+      setTicketSubmitting(false);
+    }
+  }
+
+  async function replyTicket(ticketId) {
+    if (!token || !ticketReply.trim() || ticketReplyLoading) return;
+    setTicketReplyLoading(true);
+    try {
+      const r = await fetch("/api/support/tickets/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, ticketId, message: ticketReply }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        setTicketReply("");
+        loadTickets();
+      }
+    } catch {
+    } finally {
+      setTicketReplyLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetch("/api/leaderboard/orders")
+      .then((r) => r.json())
+      .then((d) => setBoard(d.items || []))
+      .catch(() => setBoard([]));
+  }, []);
+
+  const hasOrders = useMemo(() => stats?.daily?.some((d) => d.total > 0), [stats]);
+  const spend = useMemo(
     () => (stats?.daily || []).reduce((a, d) => ({ masuk: a.masuk + d.masuk, keluar: a.keluar + d.keluar }), { masuk: 0, keluar: 0 }),
     [stats]
   );
 
   return (
+    // user-dash: satu kelas di akar, dan seluruh kartu di dashboard ikut
+    // mendapat bingkai panel komik serta kedalamannya. Sama seperti panel
+    // admin — menyuntikkan kelas utilitas ke tiap blok satu per satu akan
+    // menghasilkan tampilan yang mirip tapi tidak pernah seragam.
     <div className="user-dash mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
-      {tanyaNama && <NamePromptModal onClose={() => setTanyaNama(false)} />}
+      {showTour && <OnboardingTour onDone={hideTour} />}
+      {showNamePrompt && !showTour && (
+        <NamePromptModal onClose={() => setShowNamePrompt(false)} />
+      )}
 
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      {/* user-dash-ruang: wadah perspektif 3D kartu. Perspektif TIDAK boleh di akar .user-dash — properti itu menjadikan
+          akar sebagai "induk" bagi semua elemen fixed di dalamnya, sehingga modal (isi nama, garansi, tur) terpusat di
+          tengah halaman yang panjang (bukan di layar) dan halaman ikut melompat saat inputnya mendapat fokus. */}
+      <div className="user-dash-ruang">
+      {/* Anime Hero Banner */}
+      <AnimeHero />
+
+      {/* Sapaan + jalan pintas akun */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm text-muted">{ready ? sapaan() : "Halo"},</p>
-          <h1 className="truncate font-display text-3xl tracking-wide text-ink sm:text-4xl">{ready ? name || "Pelanggan Artapedia" : "…"}</h1>
+          <p className="text-sm text-muted">{ready ? greeting() : "Halo"},</p>
+          <h1 className="truncate text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
+            {ready ? name || "Pelanggan Artapedia" : "…"}
+          </h1>
         </div>
-        <Link href="/profil" className="btn-3d flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3.5 py-2 text-xs font-bold text-ink">
-          👤 Profil akun
-        </Link>
-      </header>
+        <div className="flex flex-wrap gap-2">
+          {garansiAktif && (
+            <button
+              onClick={() => setWarrantyModal(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-rose/40 bg-rose-soft px-3.5 py-2 text-xs font-bold text-rose transition-colors hover:bg-rose/10"
+            >
+              🛡️ Claim Garansi
+            </button>
+          )}
+          <Link href="/profil" className="flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3.5 py-2 text-xs font-bold text-ink transition-colors hover:border-amber/60">
+            👤 Profil akun
+          </Link>
+        </div>
+      </div>
 
+      {/* Tab dasbor */}
+      <div className="dash-tab sticky top-[64px] z-30 -mx-1 mt-5 px-1 py-2" role="tablist" aria-label="Bagian dasbor" data-testid="dash-tab">
+        {TAB_DASH.map((x) => (
+          <button key={x.id} role="tab" aria-selected={tab === x.id} data-testid={`dash-tab-${x.id}`} onClick={() => setTab(x.id)} className={tab === x.id ? "aktif" : ""}>
+            <span aria-hidden="true">{x.ikon}</span> {x.label}
+          </button>
+        ))}
+      </div>
+
+      <div key={tab} className="dash-isi">
+      {tab === "beranda" && (
+        <>
+      {/* Event musiman (tanggal kembar, gajian, Ramadan, …) */}
+      <MusimBanner className="mt-4" />
+
+      {/* Low Balance Alert (saldo nokos) */}
       {ready && balance !== undefined && balance < 2000 && (
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-amber/40 bg-amber-soft px-4 py-3">
-          <p className="text-sm font-bold text-amber-bright">⚠️ Saldo hampir habis — isi dulu supaya bisa terus beli nomor.</p>
-          <Link href="/deposit" className="shrink-0 rounded-xl bg-amber px-4 py-2 text-xs font-bold text-white">Isi Saldo</Link>
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-amber/30 bg-amber-soft px-4 py-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber text-white text-base">⚠️</span>
+            <div>
+              <p className="text-sm font-bold text-amber-bright">Saldo nokos hampir habis!</p>
+              <p className="text-xs text-muted">Kurang dari Rp2.000 — isi sekarang agar bisa terus membeli nomor.</p>
+            </div>
+          </div>
+          <Link href="/deposit" className="shrink-0 rounded-xl bg-amber px-4 py-2 text-xs font-bold text-white">
+            Isi Saldo
+          </Link>
         </div>
       )}
 
-      <KartuSaldo className="mt-5 md:max-w-2xl" />
+      {/* ── Dompet ── */}
+      <SectionTitle icon="👛" title="Dompet" />
+      <div className="grid gap-3 md:mx-auto md:max-w-xl" data-testid="dompet">
+        <SimCard />
+      </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3" data-testid="aksi-utama">
-        {AKSI.map((a) => (
+      {/* ── Aksi utama ── */}
+      <SectionTitle icon="⚡" title="Aksi utama" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3" data-testid="aksi-utama">
+        {[...utama, { href: `https://t.me/${csUser}`, ext: true, label: "Kontak", sub: `Hubungi admin @${csUser}`, ikon: "☎️", warna: "bg-gradient-to-br from-[#0891b2] to-[#164e63]", testid: "tombol-kontak-cs" }].map((u) => (
           <Link
-            key={a.href}
-            href={a.href}
-            className={`hover-lift group flex items-center gap-3 rounded-2xl border-2 border-ink/80 bg-gradient-to-br px-4 py-4 text-white shadow-lift transition-transform active:scale-[0.98] ${a.warna}`}
+            key={u.href + u.label}
+            href={u.href}
+            {...(u.ext ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            data-testid={u.testid}
+            className={`hover-lift group relative flex items-center gap-3 overflow-hidden rounded-2xl border-2 border-ink/80 px-4 py-4 text-white shadow-lift transition-transform active:scale-[0.98] ${u.warna}`}
           >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-2xl transition-transform group-hover:scale-110">{a.ikon}</span>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-2xl transition-transform group-hover:scale-110">{u.ikon}</span>
             <span className="min-w-0">
-              <span className="block text-sm font-black leading-tight">{a.label}</span>
-              <span className="mt-0.5 block text-[11px] font-medium leading-snug text-white/80">{a.sub}</span>
+              <span className="block text-sm font-black leading-tight">{u.label}</span>
+              <span className="mt-0.5 block text-[11px] font-medium leading-snug text-white/80">{u.sub}</span>
             </span>
+            {u.badge && <span className="absolute right-2 top-2 rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black leading-none text-white">{u.badge}</span>}
           </Link>
         ))}
       </div>
 
-      <BannerRail placement="dashboard" className="mt-5" />
-
-      <section className="card mt-6 p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-bold text-ink">🧾 Pesanan terakhir</h2>
-          <Link href="/riwayat" className="text-xs font-semibold text-amber-bright hover:underline">Lihat semua →</Link>
+      {/* ── Manga Waifu AI chat ── */}
+      {ready && (
+        <div className="mt-5">
+          <MangaWaifu
+            balance={balance}
+            hasRecentOrder={Array.isArray(recentOrders) && recentOrders.some(
+              (o) => Date.now() - new Date(o.createdAt).getTime() < 24 * 60 * 60 * 1000
+            )}
+          />
         </div>
-        {pesanan === null ? (
-          <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="skeleton h-12 rounded-xl" />)}</div>
-        ) : pesanan.length === 0 ? (
-          <EmptyState icon="📱" title="Belum ada pesanan" desc="Beli nomor pertamamu — prosesnya cuma beberapa detik." action={<Link href="/otp" className="btn-3d rounded-xl bg-amber px-4 py-2 text-sm font-black text-white">Beli Nokos</Link>} />
-        ) : (
-          <div className="space-y-2">
-            {pesanan.map((o) => (
-              <div key={o.orderId} className="flex items-center gap-3 rounded-xl border border-line bg-surface2 px-3.5 py-2.5">
-                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold ${o.status === "done" || o.status === "success" ? "bg-teal-soft text-teal-bright" : o.status === "canceled" || o.status === "cancelled" || o.status === "expired" ? "bg-rose-soft text-rose" : "bg-amber-soft text-amber-bright"}`}>
-                  {o.status === "done" || o.status === "success" ? "✓" : o.status === "canceled" || o.status === "cancelled" || o.status === "expired" ? "✗" : "⏳"}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-ink">{o.serviceName} — {o.countryName}</p>
-                  <p className="text-xs text-muted">{o.phoneNumber || "—"} · #{o.orderId?.slice(-8)}</p>
-                </div>
-                <span className="shrink-0 text-sm font-bold tabular-nums text-ink">{rupiah(o.price)}</span>
-              </div>
-            ))}
+      )}
+
+      {/* ── Menu lainnya (berkelompok) ── */}
+      <SectionTitle icon="🧩" title="Menu lainnya" />
+      <div className="grid gap-4 md:grid-cols-3" data-testid="menu-kelompok">
+        {kelompokMenu.map((k) => (
+          <div key={k.judul} className="card p-3.5">
+            <p className="mb-2.5 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-muted"><span aria-hidden="true">{k.ikon}</span>{k.judul}</p>
+            <div className={`grid gap-2 md:grid-cols-2 ${k.item.length === 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+              {k.item.map((m) => {
+                const I = m.icon;
+                const isEmoji = typeof I === "string";
+                return (
+                  <Link key={m.href} href={m.href} className="menu-ubin hover-lift relative flex flex-col items-center justify-center gap-1.5 rounded-2xl px-1.5 py-3 text-center">
+                    {m.badge && <span className="absolute -right-1 -top-1.5 rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black leading-none text-white shadow-sm">{m.badge}</span>}
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-soft text-amber-bright">
+                      {isEmoji ? <span className="text-2xl leading-none">{I}</span> : <I />}
+                    </span>
+                    <span className="text-[11px] font-bold leading-tight text-ink">{m.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        )}
-      </section>
+        ))}
+      </div>
+        </>
+      )}
+
+      {tab === "aktivitas" && (
+        <>
+      <SectionTitle icon="📊" title="Ringkasan & aktivitas" />
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          ["Total transaksi", stats?.totalTransaksi],
+          ["OTP berhasil", stats?.otpBerhasil],
+          ["Deposit sukses", stats?.depositSukses]
+        ].map(([label, v]) => (
+          <div key={label} className="card p-4">
+            <p className="text-2xl font-extrabold tabular-nums text-ink">{stats ? v ?? 0 : "…"}</p>
+            <p className="mt-0.5 text-xs text-muted">{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Achievement Badges */}
+      {/* Recent Transactions */}
+      {recentOrders !== null && (
+        <div className="mt-5 card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-ink">🧾 Transaksi Terakhir</h2>
+            <Link href="/riwayat" className="text-xs font-semibold text-amber-bright hover:underline">Lihat semua →</Link>
+          </div>
+          {recentOrders.length === 0 ? (
+            <p className="text-sm text-muted py-3 text-center">Belum ada transaksi OTP.</p>
+          ) : (
+            <div className="space-y-2">
+              {recentOrders.map((o) => (
+                <div key={o.orderId} className="flex items-center gap-3 rounded-xl border border-line bg-surface2 px-3.5 py-2.5">
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                    o.status === "success" ? "bg-teal-soft text-teal-bright" : o.status === "cancelled" ? "bg-rose-soft text-rose" : "bg-amber-soft text-amber-bright"
+                  }`}>
+                    {o.status === "success" ? "✓" : o.status === "cancelled" ? "✗" : "⏳"}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-ink truncate">{o.serviceName} — {o.countryName}</p>
+                    <p className="text-xs text-muted">{o.phoneNumber || "—"} · #{o.orderId?.slice(-8)}</p>
+                  </div>
+                  <span className="shrink-0 text-sm font-bold tabular-nums text-teal-bright">{rupiah(o.price)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mt-5 space-y-3">
+        <FlashSaleTimer />
+        <LuckyHourBanner />
+      </div>
 
       <div className="mt-5">
         <OTPPriceWidget />
@@ -164,48 +720,234 @@ export default function DashboardPage() {
         <div className="card p-5">
           <div className="flex items-baseline justify-between">
             <h2 className="text-base font-bold text-ink">Pesanan 30 hari</h2>
-            <span className="text-xs text-muted">{stats?.totalTransaksi ?? 0} transaksi · {stats?.otpBerhasil ?? 0} berhasil</span>
+            <span className="text-xs text-muted">total nokos</span>
           </div>
-          {!stats ? <div className="skeleton mt-4 h-24 rounded-xl" /> : adaPesanan ? <div className="mt-4"><Bars data={stats.daily} keyName="total" className="bg-amber" /></div> : <EmptyState icon="📈" title="Belum ada pesanan bulan ini" />}
+          {!stats ? (
+            <div className="skeleton mt-4 h-28 rounded-xl" />
+          ) : hasOrders ? (
+            <div className="mt-4">
+              <Bars data={stats.daily} keyName="total" className="bg-amber" />
+            </div>
+          ) : (
+            <EmptyState icon="📈" title="Belum ada pesanan bulan ini" />
+          )}
         </div>
+
         <div className="card p-5">
           <div className="flex items-baseline justify-between">
             <h2 className="text-base font-bold text-ink">Arus saldo 30 hari</h2>
             <span className="text-xs">
-              <span className="font-semibold text-success">+{rupiah(arus.masuk)}</span>
+              <span className="font-semibold text-success">+{rupiah(spend.masuk)}</span>
               <span className="text-muted"> / </span>
-              <span className="font-semibold text-rose">−{rupiah(arus.keluar)}</span>
+              <span className="font-semibold text-rose">−{rupiah(spend.keluar)}</span>
             </span>
           </div>
-          {!stats ? <div className="skeleton mt-4 h-24 rounded-xl" /> : arus.masuk + arus.keluar > 0 ? (
+          {!stats ? (
+            <div className="skeleton mt-4 h-28 rounded-xl" />
+          ) : spend.masuk + spend.keluar > 0 ? (
             <div className="mt-4 grid grid-cols-2 gap-4">
-              <div><Bars data={stats.daily} keyName="masuk" className="bg-success" /><p className="mt-1.5 text-center text-[11px] text-muted">Masuk</p></div>
-              <div><Bars data={stats.daily} keyName="keluar" className="bg-rose" /><p className="mt-1.5 text-center text-[11px] text-muted">Keluar</p></div>
+              <div>
+                <Bars data={stats.daily} keyName="masuk" className="bg-success" />
+                <p className="mt-1.5 text-center text-[11px] text-muted">Masuk</p>
+              </div>
+              <div>
+                <Bars data={stats.daily} keyName="keluar" className="bg-rose" />
+                <p className="mt-1.5 text-center text-[11px] text-muted">Keluar</p>
+              </div>
             </div>
-          ) : <EmptyState icon="💼" title="Belum ada pergerakan saldo" />}
+          ) : (
+            <EmptyState icon="💼" title="Belum ada pergerakan saldo" />
+          )}
         </div>
       </div>
 
-      <h2 className="mb-3 mt-8 text-sm font-black uppercase tracking-wider text-ink">Bantuan</h2>
+      <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_1.2fr]">
+        <Link href="/kaget" className="card hover-lift block p-5" data-testid="kartu-kaget-dashboard">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-ink">Saldo Kaget</h2>
+            <span className="text-2xl" aria-hidden="true">🧧</span>
+          </div>
+          <p className="mt-1 text-sm text-muted">
+            Bagikan sebagian saldo ke teman lewat satu tautan — siapa cepat dia dapat, nominalnya acak!
+          </p>
+          <span className="mt-4 inline-flex rounded-xl bg-amber px-4 py-2 text-xs font-bold text-white">Buat / klaim kaget</span>
+        </Link>
+
+        <div className="card p-5">
+          <h2 className="text-base font-bold text-ink">10 pembeli teraktif</h2>
+          <ol className="mt-3 divide-y divide-line">
+            {board === null ? (
+              Array.from({ length: 3 }).map((_, i) => <li key={i} className="skeleton my-2 h-9 rounded-lg" />)
+            ) : board.length === 0 ? (
+              <li className="py-4 text-sm text-muted">Belum ada data.</li>
+            ) : (
+              board.map((u) => (
+                <li key={u.rank} className="flex items-center gap-3 py-2">
+                  <span
+                    className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-extrabold ${
+                      u.rank === 1 ? "bg-amber text-white" : u.rank <= 3 ? "bg-teal-bright text-white" : "bg-surface2 text-muted"
+                    }`}
+                  >
+                    {u.rank}
+                  </span>
+                  <span className="flex-1 font-mono text-sm text-ink">{u.token}</span>
+                  <span className="text-xs font-semibold tabular-nums text-muted">{u.successCount} sukses</span>
+                </li>
+              ))
+            )}
+          </ol>
+        </div>
+      </div>
+
+        </>
+      )}
+
+      {tab === "bantuan" && (
+        <>
+      {/* Bantuan cepat */}
+      <SectionTitle icon="🎧" title="Bantuan cepat" />
       <div className="grid gap-3 sm:grid-cols-3" data-testid="bantuan-cepat">
         <a href={`https://t.me/${csUser}`} target="_blank" rel="noopener noreferrer" className="card hover-lift flex items-center gap-3 p-4">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-soft text-2xl">✈️</span>
-          <span><b className="block text-sm text-ink">Customer Service</b><small className="text-xs text-muted">Telegram @{csUser}</small></span>
+          <span><b className="block text-sm text-ink">Customer Service</b><small className="text-xs text-muted">Chat Telegram @{csUser}</small></span>
         </a>
-        {garansiAktif && (
-          <button onClick={() => setGaransiBuka(true)} className="card hover-lift flex items-center gap-3 p-4 text-left">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-soft text-2xl">🛡️</span>
-            <span><b className="block text-sm text-ink">Klaim Garansi</b><small className="text-xs text-muted">Nomor bermasalah? Saldo kembali</small></span>
-          </button>
-        )}
-        <Link href="/cara-pakai" className="card hover-lift flex items-center gap-3 p-4">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-soft text-2xl">📖</span>
-          <span><b className="block text-sm text-ink">Cara Pakai</b><small className="text-xs text-muted">Panduan beli nokos</small></span>
+        <Link href="/chat" className="card hover-lift flex items-center gap-3 p-4">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-soft text-2xl">✦</span>
+          <span><b className="block text-sm text-ink">Tanya WEARTA AI</b><small className="text-xs text-muted">Jawaban instan 24 jam</small></span>
         </Link>
+        {garansiAktif ? (
+          <button onClick={() => setWarrantyModal(true)} className="card hover-lift flex items-center gap-3 p-4 text-left">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-soft text-2xl">🛡️</span>
+            <span><b className="block text-sm text-ink">Klaim Garansi</b><small className="text-xs text-muted">Nomor bermasalah? Refund saldo</small></span>
+          </button>
+        ) : (
+          <Link href="/api-docs" className="card hover-lift flex items-center gap-3 p-4">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-soft text-2xl">📘</span>
+            <span><b className="block text-sm text-ink">Dokumentasi API</b><small className="text-xs text-muted">Untuk developer</small></span>
+          </Link>
+        )}
       </div>
-      <div className="mt-4"><TiketBantuan /></div>
 
-      <GaransiModal open={garansiBuka} onClose={() => setGaransiBuka(false)} token={token} />
+      {/* Banner dashboard. Dulu dirender di sini dengan key={b._id}, padahal
+          endpoint publiknya mengirim `id` — jadi setiap banner punya key
+          undefined dan React memakai ulang elemen yang salah saat daftarnya
+          berubah. Sekarang satu komponen yang sama dipakai di semua halaman. */}
+      <BannerRail placement="dashboard" className="mt-5" />
+
+
+      {/* Support Tickets */}
+      <div className="mt-5 card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-base font-bold text-ink">🎫 Tiket Support</h2>
+            <p className="text-xs text-muted mt-0.5">Butuh bantuan? Hubungi tim kami</p>
+          </div>
+          <button onClick={() => { setShowTicketForm((v) => !v); if (!ticketsLoaded) loadTickets(); }}
+            className="text-xs font-bold text-white bg-rose rounded-lg px-3 py-1.5 active:scale-95 transition-all">
+            + Buat Tiket
+          </button>
+        </div>
+
+        {showTicketForm && (
+          <form onSubmit={submitTicket} className="mb-4 space-y-3 rounded-2xl bg-surface2 border border-line p-4">
+            <h3 className="text-sm font-black text-ink">Buat Tiket Baru</h3>
+            <input value={ticketForm.subject} onChange={(e) => setTicketForm((f) => ({ ...f, subject: e.target.value }))}
+              placeholder="Subjek / judul masalah" required maxLength={200}
+              className="w-full rounded-xl border border-line bg-surface px-4 py-2.5 text-sm text-ink outline-none focus:border-rose" />
+            <textarea value={ticketForm.message} onChange={(e) => setTicketForm((f) => ({ ...f, message: e.target.value }))}
+              placeholder="Jelaskan masalah kamu secara detail..." rows={4} required maxLength={2000}
+              className="w-full rounded-xl border border-line bg-surface px-4 py-2.5 text-sm text-ink outline-none focus:border-rose resize-none" />
+            {ticketMsg && (
+              <p className={`text-xs font-semibold ${ticketMsg.includes("berhasil") ? "text-teal-bright" : "text-rose"}`}>{ticketMsg}</p>
+            )}
+            <div className="flex gap-2">
+              <button type="submit" disabled={ticketSubmitting}
+                className="flex-1 rounded-xl bg-rose py-2.5 text-sm font-bold text-white disabled:opacity-50 active:scale-95 transition-all">
+                {ticketSubmitting ? "⏳ Mengirim..." : "Kirim Tiket"}
+              </button>
+              <button type="button" onClick={() => setShowTicketForm(false)}
+                className="rounded-xl border border-line px-4 py-2.5 text-sm font-bold text-ink hover:bg-surface2 transition-all">
+                Batal
+              </button>
+            </div>
+          </form>
+        )}
+
+        {!ticketsLoaded ? (
+          <button onClick={loadTickets} disabled={ticketsLoading}
+            className="w-full rounded-xl border border-line py-3 text-sm text-muted hover:text-ink hover:border-rose/40 transition-all">
+            {ticketsLoading ? "⏳ Memuat tiket..." : "📋 Lihat riwayat tiket saya"}
+          </button>
+        ) : tickets.length === 0 ? (
+          <p className="text-sm text-muted text-center py-4">Belum ada tiket. Buat tiket jika ada pertanyaan atau masalah.</p>
+        ) : (
+          <div className="space-y-3">
+            {tickets.map((t) => {
+              const statusColor = t.status === "open" ? "text-amber-bright bg-amber-soft border-amber/30"
+                : t.status === "answered" ? "text-teal-bright bg-teal-soft border-teal/30"
+                : "text-muted bg-surface2 border-line";
+              const isExpanded = expandedTicket === t.ticketId;
+              return (
+                <div key={t.ticketId} className="rounded-2xl border border-line overflow-hidden">
+                  <button onClick={() => setExpandedTicket(isExpanded ? null : t.ticketId)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface2 transition-all">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusColor} shrink-0 uppercase`}>
+                          {t.status === "open" ? "Terbuka" : t.status === "answered" ? "Dijawab" : "Ditutup"}
+                        </span>
+                        <span className="font-semibold text-sm text-ink truncate">{t.subject}</span>
+                      </div>
+                      <p className="text-[11px] text-muted mt-0.5">{t.messageCount} pesan · {new Date(t.updatedAt).toLocaleDateString("id-ID")}</p>
+                    </div>
+                    <span className="text-muted text-lg shrink-0">{isExpanded ? "▲" : "▼"}</span>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="border-t border-line bg-surface2 p-4 space-y-3">
+                      <div className="max-h-64 overflow-y-auto space-y-2">
+                        {(t.messages || []).map((m, i) => (
+                          <div key={i} className={`flex ${m.from === "user" ? "justify-end" : "justify-start"}`}>
+                            <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs ${
+                              m.from === "user"
+                                ? "bg-rose text-white rounded-br-sm"
+                                : "bg-surface border border-line text-ink rounded-bl-sm"
+                            }`}>
+                              <p className="leading-relaxed">{m.text}</p>
+                              <p className={`text-[10px] mt-1 ${m.from === "user" ? "text-white/60" : "text-muted"}`}>
+                                {m.from === "user" ? "Kamu" : "Admin"} · {new Date(m.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {t.status !== "closed" && (
+                        <div className="flex gap-2">
+                          <input value={ticketReply} onChange={(e) => setTicketReply(e.target.value)}
+                            placeholder="Tulis balasan..." maxLength={2000}
+                            className="flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-xs text-ink outline-none focus:border-rose"
+                            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); replyTicket(t.ticketId); } }} />
+                          <button onClick={() => replyTicket(t.ticketId)} disabled={ticketReplyLoading || !ticketReply.trim()}
+                            className="rounded-xl bg-rose px-4 py-2 text-xs font-bold text-white disabled:opacity-50 active:scale-95 transition-all">
+                            Kirim
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+        </>
+      )}
+      </div>
+      </div>
+
+      <WarrantyModal open={warrantyModal} onClose={() => setWarrantyModal(false)} token={token} />
     </div>
   );
 }

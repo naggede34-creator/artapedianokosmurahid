@@ -187,6 +187,17 @@ export default function DepositPage() {
   }, [step, status]);
 
   const amt = Math.floor(Number(amount) || 0);
+  // Cashback sungguhan untuk nominal ini (dihitung server: dasar + tingkat + bonus nominal + event).
+  const [cb, setCb] = useState(null);
+  useEffect(() => {
+    if (!token) return;
+    let hidup = true;
+    const t = setTimeout(() => {
+      fetch(`/api/cashback/info?token=${encodeURIComponent(token)}&amount=${Math.min(amt, 100000000)}&provider=${provider === "manual" ? "manual" : "qris"}`, { cache: "no-store" })
+        .then((r) => r.json()).then((d) => { if (hidup && !d?.error) setCb(d); }).catch(() => {});
+    }, 250);
+    return () => { hidup = false; clearTimeout(t); };
+  }, [token, amt, provider]);
   // Nama metode yang dipakai di ringkasan & layar sukses — ikut nama dari admin.
   const methodName = (key) => methods.find((m) => m.key === key)?.name || providerName(key);
   const enabled = DEPOSIT_PROVIDERS.filter((p) => cfg.providers?.[p.key]);
@@ -716,6 +727,9 @@ export default function DepositPage() {
                   <h2 className="mt-4 text-xl font-extrabold text-ink">Saldo masuk {rupiah(order.amount)}</h2>
                   {cashback > 0 && <p className="mt-1 text-sm font-semibold text-success">+ cashback {rupiah(cashback)}</p>}
                   <p className="mt-2 text-sm text-muted">Pembayaran via {order.rute ? "QRIS" : methodName(order.provider)} sudah terkonfirmasi.</p>
+                  <button onClick={() => setScratchOpen(true)} className="mt-4 flex items-center gap-2 mx-auto rounded-2xl border-2 border-amber/60 bg-amber/10 px-5 py-2.5 text-sm font-extrabold text-amber-bright press animate-pulse hover:animate-none hover:bg-amber/20">
+                    🎫 Buka Kartu Gores Kamu!
+                  </button>
                   <div className="mt-6 flex flex-wrap justify-center gap-2">
                     <Link href="/otp" className="btn-primary">
                       Beli nokos
@@ -996,36 +1010,38 @@ export default function DepositPage() {
             )}
           </div>
 
-          <div className="panel-3d p-5">
-            <h2 className="title-3d text-base font-extrabold text-ink">🎁 Bonus Deposit</h2>
-            <p className="mt-1 text-xs text-muted">Semakin besar deposit, semakin besar bonusnya!</p>
-            <div className="mt-3 space-y-2">
-              {[
-                { min: 10000, max: 49999, bonus: "2%", color: "bg-surface2 text-muted" },
-                { min: 50000, max: 99999, bonus: "3%", color: "bg-teal-soft text-teal-bright" },
-                { min: 100000, max: 199999, bonus: "5%", color: "bg-amber-soft text-amber-bright" },
-                { min: 200000, max: null, bonus: "7%", color: "bg-rose-soft text-rose" }
-              ].map((tier) => {
-                const active = amt >= tier.min && (tier.max === null || amt <= tier.max);
-                return (
-                  <div
-                    key={tier.min}
-                    className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-bold transition-all ${
-                      active
-                        ? `${tier.color} scale-[1.03] shadow-[0_3px_0_rgb(var(--c-orange)/0.35)] ring-2 ring-amber/50 ring-offset-1`
-                        : "bg-surface2 text-muted opacity-70"
-                    }`}
-                  >
-                    <span>
-                      {rupiah(tier.min)}{tier.max ? ` – ${rupiah(tier.max)}` : "+"}
-                    </span>
-                    <span className={`font-extrabold ${active ? "" : "text-muted"}`}>+{tier.bonus} bonus</span>
-                    {active && <span className="text-[10px] bg-amber text-white px-1.5 py-0.5 rounded-full">✓ Aktif</span>}
-                  </div>
-                );
-              })}
+          <div className="panel-3d p-5" data-testid="deposit-cashback">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="title-3d text-base font-extrabold text-ink">🎁 Cashback Deposit</h2>
+              <Link href="/cashback" className="text-[11px] font-bold text-amber-bright underline">Detail</Link>
             </div>
-            <p className="mt-2 text-[11px] text-muted">*Bonus berupa cashback yang langsung masuk ke saldomu.</p>
+            <p className="mt-1 text-xs text-muted">
+              {cb?.tier ? <>Tingkatmu <b className="text-ink">{cb.tier.ikon} {cb.tier.nama}</b>{cb.tier.tambahan > 0 ? ` (+${cb.tier.tambahan}%)` : ""}. Makin besar deposit, makin besar cashback.</> : "Makin besar deposit, makin besar cashback."}
+            </p>
+            {cb?.simulasi && amt > 0 ? (
+              <div className="mt-3 rounded-xl bg-teal-soft px-3 py-3" data-testid="deposit-cashback-hasil">
+                <p className="text-[11px] font-bold text-muted">Untuk deposit {rupiah(amt)}</p>
+                <p className="text-xl font-black text-teal-bright">+{rupiah(cb.simulasi.cashback)} <span className="text-xs font-bold">({cb.simulasi.persen}%)</span></p>
+                <ul className="mt-1.5 space-y-0.5 text-[11px] text-muted">
+                  {cb.simulasi.rincian.map((r) => <li key={r.kunci} className="flex justify-between"><span>{r.label}</span><b className="text-ink">+{r.persen}%</b></li>)}
+                </ul>
+              </div>
+            ) : (
+              <p className="mt-3 rounded-xl bg-surface2 px-3 py-3 text-xs text-muted">Isi nominal deposit untuk melihat cashback-mu.</p>
+            )}
+            {cb?.nominal?.length > 0 && (
+              <div className="mt-3 space-y-1.5">
+                {cb.nominal.map((n) => {
+                  const aktif = amt >= n.min && !cb.nominal.some((x) => x.min > n.min && amt >= x.min);
+                  return (
+                    <div key={n.min} className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-bold transition-all ${aktif ? "bg-amber-soft text-amber-bright ring-2 ring-amber/50" : "bg-surface2 text-muted opacity-75"}`}>
+                      <span>Deposit ≥ {rupiah(n.min)}</span>
+                      <span>+{n.tambahan}% ekstra{aktif ? " ✓" : ""}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="card-flat p-5">

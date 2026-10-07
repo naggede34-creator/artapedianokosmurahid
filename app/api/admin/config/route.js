@@ -18,6 +18,7 @@ import {
 import { daftarUntukAdmin, simpanCfg, catatRiwayat, bacaRiwayat, konfigTerbaca } from "@/lib/config";
 import { rateLimit } from "@/lib/rateLimit";
 import { PETA } from "@/lib/configRegistry";
+import { lupakanCacheMusim } from "@/lib/musim";
 import {
   bacaOverrideDb,
   simpanOverrideDb,
@@ -102,6 +103,7 @@ export async function POST(req) {
       if (!def) return NextResponse.json({ error: "Isian tidak dikenal." }, { status: 400 });
       if (def.khusus) return NextResponse.json({ error: "Kode admin diganti lewat aksi khusus." }, { status: 400 });
       const r = await simpanCfg(nama, body?.nilai);
+      if (/^MUSIM_/.test(nama)) lupakanCacheMusim(); // saklar/batas event berlaku seketika, bukan setelah cache 45 dtk
       if (!r.ok) return NextResponse.json({ error: r.alasan }, { status: 400 });
       const res = NextResponse.json({ ok: true, pesan: `${def.label} disimpan dan langsung berlaku.`, ...(await ringkasan()) });
       // Rahasia tanda tangan sesi ikut diturunkan dari CRON_SECRET: sesi ini diterbitkan ulang
@@ -115,6 +117,7 @@ export async function POST(req) {
       const def = PETA[nama];
       if (!def || def.khusus) return NextResponse.json({ error: "Isian tidak dikenal." }, { status: 400 });
       const r = await simpanCfg(nama, "");
+      if (/^MUSIM_/.test(nama)) lupakanCacheMusim();
       if (!r.ok) return NextResponse.json({ error: r.alasan }, { status: 400 });
       const res = NextResponse.json({
         ok: true,

@@ -47,7 +47,7 @@ export default function KunciAkunPanel({ token }) {
   return (
     <div data-testid="kunci-panel">
       <p className="text-xs leading-relaxed text-muted">
-        Merasa akunmu terancam? <b>Kunci akun</b>: pembelian, penarikan, dan transfer langsung berhenti. Deposit tetap bisa, saldo tetap aman.
+        Merasa akunmu terancam? <b>Kunci akun</b>: pembelian, penarikan, transfer langsung berhenti. Deposit tetap bisa, saldo tetap aman.
       </p>
       {st.terkunci ? (
         <div className="mt-3 rounded-xl border-2 border-rose/40 bg-rose-soft px-3.5 py-3" data-testid="kunci-status">

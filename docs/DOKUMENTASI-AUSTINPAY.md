@@ -17,7 +17,7 @@
 |---|---|---|---|
 | 1 | **Deposit QRIS FAST** | masuk | deposit saldo nokos pengguna (metode `qrisfast`) |
 | 2 | **Tagihan QRIS Gateway** | masuk | tagihan merchant di `/gateway` dan `POST /api/gw/v1/invoice` |
-| 3 | **Withdraw Instant (bebas nominal)** | keluar | penarikan saldo nokos (`/tarik`) dan penarikan saldo QRIS Gateway |
+| 3 | **Withdraw Instant (bebas nominal)** | keluar | penarikan saldo Stor Gmail (`/setor-gmail`) dan penarikan saldo QRIS Gateway |
 | 4 | **Saldo & penarikan admin** | keluar | panel Admin → AustinPay (saldo, tarik saldo, riwayat) |
 
 Semua panggilan keluar dari server Artapedia ke AustinPay lewat satu klien: `lib/austinpay.js`.
@@ -37,7 +37,7 @@ Isi di **Admin → Konfigurasi** (atau Environment Variables hosting; yang dari 
 | `AUSTINPAY_PROXY` | tidak | `http://user:pass@host:port` — proxy ber-IP tetap untuk whitelist. |
 | `AUSTINPAY_SALDO_MIN` | tidak | Kabari admin bila saldo AustinPay di bawah angka ini (bawaan 200000; 0 = mati). |
 | `GW_WD_OTOMATIS` | tidak | Saklar penarikan otomatis QRIS Gateway (1/0). Mati sendiri bila AustinPay bermasalah berulang. |
-| `WD_NOKOS_AKTIF` | tidak | Saklar penarikan saldo nokos (1/0). |
+| `WD_SETOR_AKTIF` | tidak | Saklar penarikan saldo Stor Gmail (1/0). |
 
 ### IP whitelist (wajib di sisi AustinPay)
 AustinPay mewajibkan IP server terdaftar untuk Public API. Hosting serverless (Vercel/Cloudflare) **tidak punya IP keluar tetap**.
@@ -344,22 +344,22 @@ Urutan yang menjaga uang — **jangan diubah tanpa memahami tiap langkah**:
    cocok → ikuti statusnya; tidak ada jejak setelah **10 menit** → dianggap tidak pernah terkirim → saldo dikembalikan penuh (nominal + biaya).
    `proses` lebih dari 30 menit → admin dikabari.
 6. **Pemutus arus:** ≥ `WD_PEMUTUS_MAKS` (bawaan 4) masalah penyedia dalam 10 menit → penarikan otomatis **mati sendiri**, admin dikabari lengkap
-   dengan penyebab. Saldo nokos: tombol tarik nonaktif. QRIS Gateway: permintaan baru masuk **antrean manual** admin.
+   dengan penyebab. Saldo Stor Gmail: tombol tarik nonaktif. QRIS Gateway: permintaan baru masuk **antrean manual** admin.
 7. Pengaman tambahan: batas per hari, maksimum aktif bersamaan, satu nomor e-wallet tidak boleh dipakai banyak akun, cek gerbang uang
    (mode baca-saja / kunci akun), akun ditangguhkan tidak bisa menarik.
 
 **Aturan angka**
 
-| | Saldo nokos (`/tarik`) | QRIS Gateway |
+| | Saldo Stor Gmail (`/setor-gmail`) | QRIS Gateway |
 |---|---|---|
 | Minimal diterima | Rp10.000 | **Rp10.000** |
-| Biaya | Rp2.000 | **Rp1.000** |
+| Biaya | Rp1.000 | **Rp1.000** |
 | Saldo terpotong | nominal + biaya | nominal + biaya (tarik 10.000 → potong 11.000) |
 | Maksimal / transaksi | Rp1.000.000 | Rp5.000.000 |
 | Batas harian | 5× dan Rp3.000.000 | 10× |
-| Sumber saldo | hanya hasil **deposit** | saldo gateway |
+| Sumber saldo | hanya hasil upah **Stor Gmail** | saldo gateway |
 
-Semua angka (kecuali batas gateway) bisa diubah di Admin → Konfigurasi (`WD_NOKOS_*`, `GW_WD_MAKS_HARI`).
+Semua angka (kecuali batas gateway) bisa diubah di Admin → Konfigurasi (`WD_SETOR_*`, `GW_WD_MAKS_HARI`).
 
 ### 8.4 Notifikasi admin otomatis
 Penarikan berhasil/gagal, hasil belum pasti, AustinPay menolak (IP/key/saldo), penarikan otomatis dimatikan sendiri, saldo AustinPay menipis
@@ -370,7 +370,7 @@ Penarikan berhasil/gagal, hasil belum pasti, AustinPay menolak (IP/key/saldo), p
 ## 9. Pekerjaan latar (cron tick)
 `GET /api/cron/tick` (header `Authorization: Bearer CRON_SECRET`) menjalankan, antara lain:
 - sapuan deposit tertunda (pembayaran yang webhook-nya tidak sampai),
-- `sapuWdInstan` (penarikan saldo nokos) dan `sapuWdGateway` (penarikan gateway),
+- `sapuWdInstan` (penarikan saldo Stor Gmail) dan `sapuWdGateway` (penarikan gateway),
 - `sapuTagihanGateway` (tagihan gateway yang belum terdeteksi + ulang callback),
 - peringatan saldo AustinPay menipis.
 

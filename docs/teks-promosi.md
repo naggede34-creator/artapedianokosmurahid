@@ -1,12 +1,12 @@
 # Teks Promosi Arta Pedia — siap salin-tempel
 
-Beberapa teks, satu per fitur, masing-masing berdiri sendiri. Sebar satu per
+Dua puluh teks, satu per fitur, masing-masing berdiri sendiri. Sebar satu per
 hari atau sesuai kebutuhan; jangan dikirim sekaligus — channel yang membanjiri
 membernya dalam satu jam akan di-mute, dan yang di-mute tidak membaca apa pun
 sesudahnya.
 
 Angka di bawah mengikuti pengaturan bawaan. Kalau kamu mengubahnya di panel
-admin (cashback, hadiah leaderboard, biaya transfer), ubah juga
+admin (cashback, hadiah leaderboard, biaya transfer, nilai poin), ubah juga
 angkanya di sini sebelum dikirim — janji yang tidak ditepati lebih merusak
 daripada tidak berjanji sama sekali.
 
@@ -140,6 +140,118 @@ dengan nomor itu kami bisa melacak transaksinya persis, bukan menebak-nebak.
 
 ---
 
+## 7 — Room Chat Grup
+
+💬 ROOM CHAT — TANYA SESAMA PENGGUNA
+
+Bukan cuma chat admin. Di sini kamu bisa tanya ke sesama pembeli.
+
+Yang biasanya dibahas:
+• Server mana yang lagi bagus untuk aplikasi tertentu
+• Negara mana yang stoknya sedang banyak
+• Info gangguan, sebelum admin sempat mengumumkan
+
+Kadang jawaban paling cepat datang dari orang yang baru saja beli lima menit
+sebelum kamu.
+
+Sopan ya. Yang jualan di luar Arta Pedia, spam, atau kasar akan dihapus.
+
+---
+
+## 8 — Pet Arta Pedia
+
+🦅 PET ARTA PEDIA — RAWAT ELANGMU, CASHBACK NAIK
+
+Fitur yang paling beda dari toko nokos mana pun.
+
+Kamu dapat satu telur. Beri makan dan ajak main tiap hari, telurnya menetas,
+lalu tumbuh:
+
+🥚 Telur → 🐣 Bayi → 🦅 Remaja → 🦅 Dewasa → 👑 Juara
+
+Dan ini bagian pentingnya: tiap level menambah cashback depositmu, permanen.
++0,1% per level, sampai +2%.
+
+Aturannya:
+• Beri makan sekali sehari
+• Ajak main sekali sehari
+• Hari dihitung menurut WIB, jadi jam 00.30 sudah hari baru
+
+Tahapnya ditentukan LEVEL, bukan umur akun. Yang tidak pernah merawat petnya
+tidak akan pernah punya elang dewasa — dan itu memang disengaja.
+
+---
+
+## 9 — Poin & Level
+
+⭐ TIAP BELANJA DAPAT POIN, POIN JADI SALDO
+
+Poin terkumpul sendiri tiap transaksi sukses. Tidak perlu diklaim, tidak perlu
+diingat.
+
+🎯 1 poin per Rp1.000 belanja
+💰 1 poin = Rp10
+🔄 Minimal tukar 100 poin (= Rp1.000)
+
+Kelihatan kecil? Yang beli 20 nomor sebulan sudah balik puluhan ribu tanpa
+melakukan apa pun selain belanja seperti biasa.
+
+Poin tidak ada masa kedaluwarsanya. Kumpulkan sesukamu, tukar kapan saja.
+
+---
+
+## 10 — Toko Poin
+
+🛒 TOKO POIN — POIN BUKAN CUMA BUAT SALDO
+
+Poinmu bisa ditukar barang, bukan cuma dicairkan.
+
+Isinya berganti-ganti, jadi cek berkala. Yang stoknya terbatas biasanya habis
+di hari pertama.
+
+Tips: kalau ada barang yang kamu incar, jangan tukar poinmu jadi saldo dulu.
+Poin yang sudah jadi saldo tidak bisa dibalikkan jadi poin lagi.
+
+---
+
+## 11 — Misi & Tantangan
+
+🎯 MISI HARIAN — SALDO TAMBAHAN DARI YANG SUDAH KAMU LAKUKAN
+
+Sebagian besar misinya adalah hal yang kamu lakukan juga tanpa disuruh: beli
+nokos, isi saldo, buka web hari itu.
+
+Bedanya, sekarang ada hadiahnya.
+
+📅 Misi harian — reset tiap hari
+📆 Tantangan mingguan — lebih besar hadiahnya
+✅ Progresnya otomatis, tidak perlu lapor
+
+Buka menu Misi sebelum belanja. Kadang misi hari itu persis yang mau kamu
+lakukan, dan kamu dapat dua-duanya sekaligus.
+
+---
+
+## 12 — Level VIP
+
+👑 NAIK LEVEL VIP, BENEFITNYA IKUT NAIK
+
+Dihitung dari total belanja. Tidak ada biaya, tidak ada langganan — belanja
+saja seperti biasa.
+
+🥉 Bronze — mulai Rp0
+🥈 Silver — mulai Rp50.000
+🥇 Gold — mulai Rp200.000
+💎 Diamond — mulai Rp500.000
+
+Makin tinggi levelnya, makin besar pengali poinmu dan makin banyak akses yang
+terbuka. Diamond dapat prioritas support — kalau ada masalah, kamu di antrean
+depan.
+
+Level tidak turun. Yang sudah Gold tetap Gold.
+
+---
+
 ## 13 — Undang Teman
 
 🤝 AJAK TEMAN, KALIAN DUA-DUANYA UNTUNG
@@ -175,6 +287,54 @@ Papan peringkatnya bisa kamu lihat kapan saja di menu Leaderboard. Posisimu
 ada di situ, jadi kamu tahu seberapa jauh dari juara.
 
 Dihitung dari transaksi SUKSES minggu berjalan. Yang direfund tidak dihitung.
+
+---
+
+## 15 — Saldo Gratis
+
+💼 BELUM PUNYA SALDO? KERJAKAN TUGAS, DAPAT SALDO
+
+Modalnya nol.
+
+Tugasnya ringan — biasanya share, follow, atau hal kecil lain yang selesai
+dalam beberapa menit. Kirim buktinya, admin cek, saldonya masuk.
+
+Cocok buat:
+• Yang mau coba dulu sebelum isi saldo
+• Yang saldonya kurang sedikit buat satu nomor lagi
+
+Satu hal: kirim bukti yang benar. Yang mengirim bukti asal-asalan ditolak, dan
+pengajuan berikutnya dicek lebih ketat.
+
+---
+
+## 16 — Produk Digital
+
+🛍️ BUKAN CUMA NOKOS
+
+Ada menu Produk berisi barang digital lain. Dikirim otomatis begitu dibayar —
+tidak menunggu admin, tidak menunggu jam kerja.
+
+Stok dan jenisnya berganti, jadi sesekali cek.
+
+Semua dibayar dengan saldo yang sama dengan nokos. Tidak ada dompet terpisah.
+
+---
+
+## 17 — Bonus & Permainan
+
+🎁 HADIAH YANG DATANG SENDIRI
+
+Selain yang harus dikerjakan, ada yang tinggal diambil:
+
+🎰 Kartu gosok — gosok, lihat dapat berapa
+🎡 Roda putar — sekali putar per kesempatan
+📦 Kotak misteri — isinya ketahuan setelah dibuka
+⚡ Lucky Hour — jam tertentu, hadiahnya lebih besar
+
+Semuanya gratis. Buka menu Bonus, ambil yang tersedia hari itu.
+
+Lucky Hour tidak diumumkan jauh-jauh hari. Yang rajin buka web yang kebagian.
 
 ---
 
