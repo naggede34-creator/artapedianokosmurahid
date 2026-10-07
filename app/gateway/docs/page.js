@@ -90,7 +90,7 @@ export default function GatewayDocsPage() {
           <tbody>
             <Baris nama="Nominal tagihan" tipe="" ket={`${rp(INVOICE_MIN)} sampai ${rp(INVOICE_MAX)}`} />
             <Baris nama="Biaya per tagihan" tipe="" ket={`${rp(BIAYA_QRIS)}, dipotong hanya kalau tagihannya DIBAYAR. Tagihan yang tidak dibayar tidak dikenai apa pun.`} />
-            <Baris nama="Penarikan" tipe="" ket={`Otomatis lewat AustinPay. Minimal ${rp(WD_MIN)} yang diterima di e-wallet, biaya ${rp(BIAYA_WD)} per penarikan (ditambahkan di atas nominal).`} />
+            <Baris nama="Penarikan" tipe="" ket={`Otomatis lewat AustinPay. Minimal ${rp(WD_MIN)} yang ditarik; biaya ${rp(BIAYA_WD)} dipotong dari nominal itu (tarik ${rp(WD_MIN)} → saldo terpotong ${rp(WD_MIN)}, e-wallet menerima ${rp(WD_MIN - BIAYA_WD)}).`} />
             <Baris nama="Konversi ke saldo Arta Pedia" tipe="" ket="Tanpa biaya." />
             <Baris nama="Batas permintaan" tipe="" ket="60 tagihan per menit per akun." />
           </tbody>

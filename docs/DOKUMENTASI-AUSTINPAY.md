@@ -225,7 +225,7 @@ Balasan sukses:
 { "success": false, "message": "Nominal harus antara Rp10.000 - Rp10.000.000" }
 { "success": false, "message": "Saldo tidak mencukupi" }
 ```
-Nominal di bawah Rp10.000 **ditolak** — itu sebabnya biaya penarikan Artapedia ditambahkan *di atas* nominal, bukan dikurangkan.
+Nominal di bawah Rp10.000 **ditolak**. QRIS Gateway memotong biaya Rp1.000 DARI nominal yang ditarik (tarik 10.000 → e-wallet menerima 9.000), jadi batas minimal yang berlaku otomatis dinaikkan ke batas AustinPay + biaya (Rp11.000) agar kiriman tidak ditolak.
 
 ### 5.9 Withdraw Instant — riwayat
 `GET /api/instant-withdraw/history?page=1&limit=20&status=...`
@@ -352,9 +352,9 @@ Urutan yang menjaga uang — **jangan diubah tanpa memahami tiap langkah**:
 
 | | Saldo Stor Gmail (`/setor-gmail`) | QRIS Gateway |
 |---|---|---|
-| Minimal diterima | Rp10.000 | **Rp10.000** |
+| Minimal | Rp10.000 diterima | **Rp10.000 ditarik** (efektif Rp11.000 selama AustinPay mensyaratkan kiriman ≥ Rp10.000) |
 | Biaya | Rp1.000 | **Rp1.000** |
-| Saldo terpotong | nominal + biaya | nominal + biaya (tarik 10.000 → potong 11.000) |
+| Saldo terpotong | nominal + biaya | nominal yang ditarik (biaya dipotong dari nominal: tarik 11.000 → potong 11.000, diterima 10.000) |
 | Maksimal / transaksi | Rp1.000.000 | Rp5.000.000 |
 | Batas harian | 5× dan Rp3.000.000 | 10× |
 | Sumber saldo | hanya hasil upah **Stor Gmail** | saldo gateway |

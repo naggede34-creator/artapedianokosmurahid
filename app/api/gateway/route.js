@@ -23,7 +23,7 @@ export async function GET(req) {
       saldoArta: u?.balance ?? 0,
       batas: {
         invoiceMin: INVOICE_MIN, invoiceMax: INVOICE_MAX, biayaQris: BIAYA_QRIS,
-        wdMin: WD_MIN, wdMax: WD_MAX, biayaWd: BIAYA_WD, konversiMin: KONVERSI_MIN,
+        wdMin: wd.min, wdMax: wd.maks, biayaWd: BIAYA_WD, konversiMin: KONVERSI_MIN,
         wdOtomatis: wd.otomatis,
         ewallet: wd.dompet.map((nama) => ({ kode: nama, nama, contoh: "08123456789" }))
       }

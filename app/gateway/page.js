@@ -380,18 +380,18 @@ export default function GatewayPage() {
           <form onSubmit={tarik} className="card p-5">
             <h2 className="font-display text-base font-black text-ink">🏦 Tarik ke e-wallet</h2>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              Min {rupiah(b?.wdMin ?? 10000)} · biaya {rupiah(b?.biayaWd ?? 1000)} per penarikan.{" "}
+              Min {rupiah(b?.wdMin ?? 10000)} · biaya {rupiah(b?.biayaWd ?? 1000)} per penarikan, dipotong dari nominal yang kamu tarik.{" "}
               {b?.wdOtomatis
                 ? "Dikirim otomatis lewat AustinPay, biasanya selesai dalam hitungan menit."
                 : "Sedang diproses manual oleh admin, biasanya 1×24 jam."}
             </p>
 
-            <label className="mt-3 block text-xs font-black uppercase tracking-wide text-muted">Nominal yang diterima</label>
+            <label className="mt-3 block text-xs font-black uppercase tracking-wide text-muted">Nominal yang ditarik dari saldo</label>
             <input type="number" inputMode="numeric" value={wdNominal} onChange={(e) => setWdNominal(e.target.value)}
               min={b?.wdMin} max={b?.wdMax} required placeholder={String(b?.wdMin ?? 10000)} className="mt-1.5 input w-full text-sm" />
             {Number(wdNominal) >= (b?.wdMin ?? 10000) && (
               <p className="mt-1 text-[11px] font-bold text-success">
-                Sampai ke e-wallet: {rupiah(Number(wdNominal))} · saldo gateway terpotong {rupiah(Number(wdNominal) + (b?.biayaWd ?? 1000))}
+                Saldo gateway terpotong {rupiah(Number(wdNominal))} · sampai ke e-wallet {rupiah(Math.max(0, Number(wdNominal) - (b?.biayaWd ?? 1000)))} (biaya {rupiah(b?.biayaWd ?? 1000)})
               </p>
             )}
 

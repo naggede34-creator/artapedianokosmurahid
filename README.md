@@ -22,8 +22,8 @@ Website **beli nomor OTP (nokos)**, **QRIS gateway** untuk reseller/developer, *
   Kaget adalah saldo biasa (tidak bisa ditarik/ditransfer). Detail teknis di bawah.
 - **QRIS Gateway** untuk merchant (`/gateway`, tombolnya di bilah atas tepat di samping Beranda): tagihan QRIS
   lewat **AustinPay** (biaya Rp250 per tagihan), saldo masuk otomatis, callback ke merchant bertanda tangan
-  HMAC, dan **penarikan ke e-wallet otomatis lewat AustinPay** (minimal Rp10.000 yang diterima, biaya Rp1.000
-  di atasnya). Kalau AustinPay bermasalah berulang, penarikan otomatis mati sendiri dan permintaan masuk
+  HMAC, dan **penarikan ke e-wallet otomatis lewat AustinPay** (minimal Rp10.000 yang ditarik, biaya Rp1.000
+  dipotong dari nominal itu: tarik Rp10.000 → e-wallet menerima Rp9.000). Kalau AustinPay bermasalah berulang, penarikan otomatis mati sendiri dan permintaan masuk
   antrean manual admin.
 - **Undang teman**, **Pembeli Terbanyak** (mingguan), **Giveaway**, voucher, transfer saldo, riwayat & mutasi,
   Saldo Gratis (job), Stor Gmail (setor akun Gmail → upah, dengan penarikan otomatis), Toko Produk, Bot Reseller,
