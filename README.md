@@ -75,6 +75,15 @@ Web itu memuat aplikasi yang sama dengan web utama tetapi bermerek & berharga se
 - **Statistik**: kunjungan, pesanan, omzet, komisi, grafik 14 hari, pesanan terbaru. Admin: kartu Web Reseller di Pengaturan Umum
   (pantau & bekukan); saklar/markup maks di Konfigurasi (`RW_*`).
 
+## Ekspor & Impor Data Lengkap (Admin → Tools)
+Kartu **Ekspor & Impor Data Lengkap** di dasbor admin (`components/AdminDataLengkap.js`, API `/api/admin/data-lengkap`, logika `lib/dataLengkap.js`):
+- **Ekspor**: satu berkas JSON berisi pengguna (web utama, web reseller, bot reseller), saldo nokos, saldo QRIS gateway, web & bot reseller,
+  transaksi, mutasi, pengaturan toko, dan fitur lain. Dipilih per kelompok; WEARTA Chat (besar) bawaannya mati. Dialirkan, tidak memuat DB ke memori.
+- **Impor/pulihkan**: unggah berkas, pilih koleksi & mode (**Gabung**, **Aman** = hanya yang belum ada, **Ganti total** = kosongkan lalu isi ulang).
+  Dikirim per 500 dokumen supaya aman untuk berkas besar. Bawaannya mengunduh cadangan kondisi sekarang dulu.
+- Keamanan: hanya koleksi daftar putih; `app_config` (kunci API) tidak pernah ikut. Token bot & kunci API gateway hanya ikut bila dicentang.
+  Hanya owner yang bisa mengakses.
+
 ## Yang sengaja tidak ada
 Semua fitur **game** (duel, game solo, Arena Pendekar), **poin** & Toko Poin, **misi & tantangan**, **Pet Arta
 Pedia**, **klan**, **bonus** (check-in, welcome, winback, spin/scratch/mystery box), VIP/loyalitas berbasis poin,
