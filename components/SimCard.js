@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useUser } from "@/app/providers";
+import { useUser, useBrand } from "@/app/providers";
 import { onoSaldoMasuk } from "@/lib/ono";
 
 function formatToken(token) {
@@ -13,6 +13,7 @@ function formatToken(token) {
 // Kartu saldo berbentuk kartu SIM — elemen visual khas Artapedia.
 export default function SimCard({ compact = false }) {
   const { token, balance, depositBalance, name, ready } = useUser();
+  const brand = useBrand();
   const [hidden, setHidden] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -119,12 +120,12 @@ export default function SimCard({ compact = false }) {
             <Link href="/deposit" className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#0b1d48] transition-transform active:scale-95">
               Isi saldo
             </Link>
-            <Link href="/transfer" className="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/15">
+            {!brand.reseller && <Link href="/transfer" className="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/15">
               Transfer
-            </Link>
-            <Link href="/kaget" className="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/15" data-testid="simcard-kaget">
+            </Link>}
+            {!brand.reseller && <Link href="/kaget" className="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/15" data-testid="simcard-kaget">
               Kaget 🧧
-            </Link>
+            </Link>}
           </div>
         )}
       </div>

@@ -57,6 +57,9 @@ Web itu memuat aplikasi yang sama dengan web utama tetapi bermerek & berharga se
 - **Uang**: pembeli membayar harga situs + markup; markup = komisi. Komisi tertunda saat pesanan dibuat, cair ke dompet
   gateway pemilik saat OTP masuk (idempoten), ditarik kembali bila direfund (`lib/webReseller.js`).
 - **Tarik komisi**: otomatis ke e-wallet lewat AustinPay (jalur `lib/gatewayWd.js`), minimal Rp11.000, biaya Rp1.000 dipotong dari nominal.
+- **Fitur di web reseller**: hanya beli nokos, deposit, riwayat transaksi, dan mutasi saldo (+ beranda ringkas, profil/kode akun,
+  syarat). Menu, dasbor, banner, popup, dan halaman lain disaring (`lib/rwHalaman.js`); membuka halaman fitur lain dialihkan ke
+  `/dashboard` web reseller itu sendiri, tidak pernah ke web utama.
 - **Statistik**: kunjungan, pesanan, omzet, komisi, grafik 14 hari, pesanan terbaru. Admin: kartu Web Reseller di Pengaturan Umum
   (pantau & bekukan); saklar/markup maks di Konfigurasi (`RW_*`).
 

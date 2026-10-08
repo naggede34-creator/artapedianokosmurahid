@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser, useBrand } from "@/app/providers";
 import { urlLogo } from "@/lib/brand";
+import { saringRw } from "@/lib/rwHalaman";
 import ThemeToggle from "@/components/ThemeToggle";
 import Sidebar from "@/components/Sidebar";
 import InfoBell from "@/components/InfoBell";
@@ -98,7 +99,7 @@ export default function Navbar() {
         </div>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Navigasi utama">
-          {links.map((l) => {
+          {saringRw(links, !!brand.reseller).map((l) => {
             const active = pathname === l.href || (l.href !== "/" && pathname?.startsWith(l.href));
             return (
               <Link

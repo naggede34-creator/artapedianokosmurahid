@@ -4,6 +4,7 @@ import { useBrand } from "@/app/providers";
 import Link from "next/link";
 import { CHANNEL_URL } from "@/lib/links";
 import { Logo } from "@/components/Navbar";
+import { saringRw } from "@/lib/rwHalaman";
 
 const cols = [
   {
@@ -48,13 +49,13 @@ export default function Footer() {
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted">
             Nomor OTP dan isi saldo QRIS — semuanya diproses otomatis 24 jam.
           </p>
-          <div className="mt-4 flex gap-2">
+          {!brand.reseller && <div className="mt-4 flex gap-2">
             <a href={CHANNEL_URL} target="_blank" rel="noreferrer" className="btn-ghost px-3 py-2 text-xs">
               Channel Telegram
             </a>
-          </div>
+          </div>}
         </div>
-        {cols.map((c) => (
+        {cols.map((c) => ({ ...c, links: saringRw(c.links, !!brand.reseller) })).filter((c) => c.links.length).map((c) => (
           <div key={c.title}>
             <p className="text-sm font-bold text-ink">{c.title}</p>
             <ul className="mt-3 space-y-2.5 text-sm">
@@ -72,9 +73,13 @@ export default function Footer() {
       <div className="border-t border-line px-5 py-4 text-center text-xs text-muted md:border-t">
         {/* Pintu masuk admin: sengaja terlihat seperti teks biasa. */}©{" "}
         {new Date().getFullYear()}{" "}
-        <Link href="/admin/login" className="text-inherit no-underline hover:text-inherit">
-          {brand.NAMA_LENGKAP}
-        </Link>
+        {brand.reseller ? (
+          <span>{brand.NAMA_LENGKAP}</span>
+        ) : (
+          <Link href="/admin/login" className="text-inherit no-underline hover:text-inherit">
+            {brand.NAMA_LENGKAP}
+          </Link>
+        )}
         . Semua transaksi diproses otomatis oleh sistem.
       </div>
     </footer>

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useUser, useBrand } from "@/app/providers";
+import { saringRw } from "@/lib/rwHalaman";
 import { Icon } from "@/components/ui";
 
 const I = {
@@ -147,7 +148,7 @@ export default function Sidebar({ open, onClose }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 pb-4">
-          {sections.map((section, i) => (
+          {sections.map((s) => ({ ...s, items: saringRw(s.items, !!brand.reseller) })).filter((s) => s.items.length).map((section, i) => (
             <div key={i} className={i > 0 ? "mt-5" : "mt-2"}>
               {section.title && <p className="px-3 pb-1.5 text-xs font-semibold text-muted">{section.title}</p>}
               <div className="flex flex-col gap-0.5">

@@ -6,6 +6,7 @@ import { SkelHalaman, SkelBaris, Skel } from "@/components/Skeleton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useUser, useBrand } from "@/app/providers";
+import { bolehRw } from "@/lib/rwHalaman";
 import ThemeToggle from "@/components/ThemeToggle";
 import PushToggle from "@/components/PushToggle";
 import KunciAkunPanel from "@/components/KunciAkunPanel";
@@ -151,6 +152,7 @@ export default function ProfilPage() {
     ["/referral", "🎁", "Undang Teman"],
     ["/chat?profil=1", "💬", "Profil WEARTA CHAT"]
   ];
+  const tautanRw = brand.reseller ? tautan.filter(([h]) => bolehRw(h)) : tautan;
 
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
@@ -270,12 +272,14 @@ export default function ProfilPage() {
           <dl className="mt-4 divide-y divide-line rounded-xl border border-line text-sm">
             <div className="flex justify-between gap-3 px-3 py-2.5"><dt className="text-muted">Bergabung</dt><dd className="font-bold text-ink">{tanggalPanjang(joinedAt)}</dd></div>
             <div className="flex justify-between gap-3 px-3 py-2.5"><dt className="text-muted">Lama bergabung</dt><dd className="font-bold text-ink">{lamaBergabung(joinedAt) || "-"}</dd></div>
-            <div className="flex justify-between gap-3 px-3 py-2.5"><dt className="text-muted">ID publik chat</dt><dd className="font-mono text-xs font-bold text-ink">{wa?.pid || "—"}</dd></div>
-            <div className="flex justify-between gap-3 px-3 py-2.5"><dt className="text-muted">Bio WEARTA CHAT</dt><dd className="max-w-[60%] truncate text-right font-bold text-ink">{wa?.bio || "—"}</dd></div>
+            {!brand.reseller && <div className="flex justify-between gap-3 px-3 py-2.5"><dt className="text-muted">ID publik chat</dt><dd className="font-mono text-xs font-bold text-ink">{wa?.pid || "—"}</dd></div>}
+            {!brand.reseller && <div className="flex justify-between gap-3 px-3 py-2.5"><dt className="text-muted">Bio WEARTA CHAT</dt><dd className="max-w-[60%] truncate text-right font-bold text-ink">{wa?.bio || "—"}</dd></div>}
           </dl>
+          {!brand.reseller && (
           <Link href="/chat?profil=1" className="btn-3d mt-3 flex items-center justify-center gap-2 rounded-xl border border-line bg-surface2 py-2.5 text-xs font-black text-ink hover:border-amber">
             💬 Ubah foto & bio di WEARTA CHAT
           </Link>
+          )}
         </Kartu>
 
         {/* ─── kode akun ─── */}
@@ -306,16 +310,16 @@ export default function ProfilPage() {
       </div>
 
       {/* ─── tautan cepat ─── */}
-      <Kartu judul="Pintasan" ikon="🧭" className="mt-5">
+      {tautanRw.length > 0 && <Kartu judul="Pintasan" ikon="🧭" className="mt-5">
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          {tautan.map(([href, ikon, label]) => (
+          {tautanRw.map(([href, ikon, label]) => (
             <Link key={href} href={href} className="hover-lift press flex items-center gap-2.5 rounded-xl border border-line bg-surface2/50 px-3 py-3 text-sm font-bold text-ink hover:border-amber/60">
               <span className="text-xl" aria-hidden="true">{ikon}</span>
               <span className="leading-tight">{label}</span>
             </Link>
           ))}
         </div>
-      </Kartu>
+      </Kartu>}
 
       {/* ─── preferensi ─── */}
       <Kartu judul="Preferensi" ikon="🎛" className="mt-5">
@@ -323,10 +327,12 @@ export default function ProfilPage() {
           <span className="text-sm font-bold text-ink">Mode gelap</span>
           <ThemeToggle />
         </div>
+        {!brand.reseller && (
         <div className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-line px-3 py-2.5">
           <span className="text-sm font-bold text-ink">Tema warna & tampilan</span>
           <Link href="/tampilan" className="press rounded-lg border border-line px-3 py-1.5 text-xs font-black text-ink">Atur</Link>
         </div>
+        )}
         <div className="mt-2 overflow-hidden rounded-xl border border-line">
           <PushToggle token={token} />
         </div>

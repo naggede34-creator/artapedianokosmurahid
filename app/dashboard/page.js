@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLembarTerbuka } from "@/lib/lembarTerbuka";
 import { useUser, useBrand } from "@/app/providers";
+import { saringRw } from "@/lib/rwHalaman";
 import { useCsBuka } from "@/lib/useCsBuka";
 import { CS_JAM_TEKS, csBukaLagi } from "@/lib/jamCs";
 import SimCard from "@/components/SimCard";
@@ -609,7 +610,7 @@ export default function DashboardPage() {
       {/* ── Aksi utama ── */}
       <SectionTitle icon="⚡" title="Aksi utama" />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3" data-testid="aksi-utama">
-        {[...utama, { href: `https://t.me/${csUser}`, ext: true, label: "Kontak", sub: `Hubungi admin @${csUser}`, ikon: "☎️", warna: "bg-gradient-to-br from-[#0891b2] to-[#164e63]", testid: "tombol-kontak-cs", cs: true }].map((u) => (u.cs && csBuka === false) ? (
+        {saringRw([...utama, { href: `https://t.me/${csUser}`, ext: true, label: "Kontak", sub: `Hubungi admin @${csUser}`, ikon: "☎️", warna: "bg-gradient-to-br from-[#0891b2] to-[#164e63]", testid: "tombol-kontak-cs", cs: true }], !!brand.reseller, "href", true).map((u) => (u.cs && csBuka === false) ? (
           <div
             key={u.href + u.label}
             role="button"
@@ -658,7 +659,7 @@ export default function DashboardPage() {
       {/* ── Menu lainnya (berkelompok) ── */}
       <SectionTitle icon="🧩" title="Menu lainnya" />
       <div className="grid gap-4 md:grid-cols-3" data-testid="menu-kelompok">
-        {kelompokMenu.map((k) => (
+        {kelompokMenu.map((k) => ({ ...k, item: saringRw(k.item, !!brand.reseller) })).filter((k) => k.item.length).map((k) => (
           <div key={k.judul} className="card p-3.5">
             <p className="mb-2.5 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-muted"><span aria-hidden="true">{k.ikon}</span>{k.judul}</p>
             <div className={`grid gap-2 md:grid-cols-2 ${k.item.length === 4 ? "grid-cols-2" : "grid-cols-3"}`}>
@@ -783,6 +784,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {!brand.reseller && (
       <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_1.2fr]">
         <Link href="/kaget" className="card hover-lift block p-5" data-testid="kartu-kaget-dashboard">
           <div className="flex items-center justify-between">
@@ -820,6 +822,7 @@ export default function DashboardPage() {
           </ol>
         </div>
       </div>
+      )}
 
         </>
       )}
@@ -840,16 +843,16 @@ export default function DashboardPage() {
             <span><b className="block text-sm text-ink">Customer Service</b><small className="text-xs text-muted">Chat Telegram @{csUser} · {CS_JAM_TEKS}</small></span>
           </a>
         )}
-        <Link href="/chat" className="card hover-lift flex items-center gap-3 p-4">
+        {!brand.reseller && <Link href="/chat" className="card hover-lift flex items-center gap-3 p-4">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-soft text-2xl">✦</span>
           <span><b className="block text-sm text-ink">Tanya WEARTA AI</b><small className="text-xs text-muted">Jawaban instan 24 jam</small></span>
-        </Link>
+        </Link>}
         {garansiAktif ? (
           <button onClick={() => setWarrantyModal(true)} className="card hover-lift flex items-center gap-3 p-4 text-left">
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-soft text-2xl">🛡️</span>
             <span><b className="block text-sm text-ink">Klaim Garansi</b><small className="text-xs text-muted">Nomor bermasalah? Refund saldo</small></span>
           </button>
-        ) : (
+        ) : brand.reseller ? null : (
           <Link href="/api-docs" className="card hover-lift flex items-center gap-3 p-4">
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-soft text-2xl">📘</span>
             <span><b className="block text-sm text-ink">Dokumentasi API</b><small className="text-xs text-muted">Untuk developer</small></span>

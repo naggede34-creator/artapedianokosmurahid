@@ -3,17 +3,29 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/ui";
+import { useBrand } from "@/app/providers";
+import { saringRw } from "@/lib/rwHalaman";
 
-const tabs = [
+const tabsUtama = [
   { href: "/dashboard", label: "Beranda", icon: Icon.home, match: ["/dashboard", "/"] },
   { href: "/otp", label: "Nokos", icon: Icon.phone },
   { href: "/deposit", label: "Deposit", icon: Icon.qris, primary: true },
   { href: "/gateway", label: "Gateway", icon: Icon.transfer },
   { href: "/kaget", label: "Kaget", icon: Icon.gift }
 ];
+// Web reseller: Beranda, Nokos, Deposit, Riwayat, Mutasi.
+const tabsRw = [
+  { href: "/dashboard", label: "Beranda", icon: Icon.home, match: ["/dashboard", "/"] },
+  { href: "/otp", label: "Nokos", icon: Icon.phone },
+  { href: "/deposit", label: "Deposit", icon: Icon.qris, primary: true },
+  { href: "/riwayat", label: "Riwayat", icon: Icon.ledger },
+  { href: "/mutasi", label: "Mutasi", icon: Icon.coin }
+];
 
 export default function BottomNav() {
   const pathname = usePathname() || "/";
+  const brand = useBrand();
+  const tabs = brand.reseller ? tabsRw : tabsUtama;
 
   return (
     <nav className="bilah-bawah glass fixed inset-x-0 bottom-0 z-50 border-x-0 border-b-0 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden" aria-label="Navigasi bawah">

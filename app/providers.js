@@ -71,6 +71,8 @@ export function UserProvider({ children }) {
   const [loginWajib, setLoginWajib] = useState(false);
   // Nama merek (bawaan "Arta Pedia"; admin bisa mengubahnya). Dimuat bersama status situs.
   const [brand, setBrand] = useState(() => rakitBrand({}));
+  // true setelah merek dari SERVER diterima (cache localStorage belum cukup untuk memutuskan apakah ini web reseller).
+  const [brandSegar, setBrandSegar] = useState(false);
   // true = akun ini di-ban admin (atau IP-nya diblokir): seluruh situs diganti satu layar peringatan.
   const [banned, setBanned] = useState(false);
 
@@ -132,7 +134,7 @@ export function UserProvider({ children }) {
           // Web reseller: catat satu kunjungan per sesi peramban.
           try { if (!sessionStorage.getItem("rw_kunjung")) { sessionStorage.setItem("rw_kunjung", "1"); fetch("/api/web-reseller/kunjung", { method: "POST" }).catch(() => {}); } } catch {}
         }
-        if (pub.brand) { setBrand(rakitBrand(pub.brand)); try { localStorage.setItem("artapedia_brand", JSON.stringify(pub.brand)); } catch {} }
+        if (pub.brand) { setBrandSegar(true); setBrand(rakitBrand(pub.brand)); try { localStorage.setItem("artapedia_brand", JSON.stringify(pub.brand)); } catch {} }
       } catch {}
       setLoginWajib(wajib);
 
@@ -296,7 +298,7 @@ export function UserProvider({ children }) {
 
   return (
     <UserContext.Provider
-      value={{ brand, token, balance, depositBalance, name, joinedAt, tourDone, ready, perluMasuk, loginWajib, banned, daftar, masuk, keluar, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
+      value={{ brand, brandSegar, token, balance, depositBalance, name, joinedAt, tourDone, ready, perluMasuk, loginWajib, banned, daftar, masuk, keluar, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
     >
       {children}
     </UserContext.Provider>

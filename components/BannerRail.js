@@ -1,5 +1,8 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+import { bolehRw } from "@/lib/rwHalaman";
+
 import { useEffect, useState } from "react";
 
 // Banner iklan yang diatur admin. Satu komponen dipakai di semua tempat
@@ -13,6 +16,7 @@ import { useEffect, useState } from "react";
 //      dengan rasio aneh kalau tidak dikunci akan mendorong seluruh isi halaman
 //      ke bawah saat gambarnya selesai diunduh.
 export default function BannerRail({ placement = "homepage", title = "", className = "", kompak = false }) {
+  const brand = useBrand();
   const [items, setItems] = useState([]);
 
   useEffect(() => {
@@ -82,7 +86,9 @@ export default function BannerRail({ placement = "homepage", title = "", classNa
             "banner-3d group relative block aspect-[16/6] shrink-0 snap-start overflow-hidden " +
             (satu ? "w-full" : "w-[86%] md:w-full");
 
-          return b.linkUrl ? (
+          // Web reseller: banner yang menaut ke fitur lain (Kaget, Gateway, dst.) tampil sebagai gambar biasa.
+          const tautanBoleh = b.linkUrl && (!brand.reseller || /^https?:\/\//.test(b.linkUrl) || bolehRw(b.linkUrl));
+          return tautanBoleh ? (
             <a
               key={b.id}
               href={b.linkUrl}

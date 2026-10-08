@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { bolehRw } from "@/lib/rwHalaman";
 import { CHANNEL_URL } from "@/lib/links";
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
@@ -22,14 +23,36 @@ import LayarBan from "@/components/LayarBan";
 import PembaruanModal from "@/components/PembaruanModal";
 import MusimPenerap from "@/components/MusimPenerap";
 import PopupAdmin from "@/components/PopupAdmin";
-import { useUser } from "@/app/providers";
+import { useUser, useBrand } from "@/app/providers";
 
 // Halaman yang tetap terbuka tanpa akun saat login diwajibkan: informasi umum.
 const TANPA_LOGIN = ["/syarat", "/informasi", "/faq", "/cara-pakai", "/api-docs", "/gateway"];
 
 export default function SiteChrome({ children }) {
   const pathname = usePathname();
-  const { perluMasuk, banned } = useUser();
+  const { perluMasuk, banned, brandSegar } = useUser();
+  const brand = useBrand();
+  const router = useRouter();
+  // Web reseller hanya punya beli nokos, deposit, riwayat, dan mutasi. Halaman lain dialihkan ke BERANDA web reseller itu
+  // sendiri (bukan ke web utama). Diputuskan hanya setelah merek dari server tiba, supaya cache lama tidak salah menilai.
+  const rwTerkunci = !!(brand.reseller && brandSegar && pathname && !pathname.startsWith("/admin") && !bolehRw(pathname));
+  useEffect(() => { if (rwTerkunci) router.replace("/dashboard"); }, [rwTerkunci, router]);
+  // Jaring pengaman web reseller: tautan internal ke fitur yang tidak ada (mis. dari kartu atau banner yang tak
+  // tersaring) disembunyikan di mana pun muncul, dan yang baru muncul belakangan ikut disaring.
+  const rwAktifUi = !!(brand.reseller && brandSegar);
+  useEffect(() => {
+    if (!rwAktifUi || typeof document === "undefined") return undefined;
+    let tunggu = 0;
+    const sapu = () => {
+      tunggu = 0;
+      document.querySelectorAll('a[href^="/"]').forEach((a) => { if (!bolehRw(a.getAttribute("href"))) a.style.display = "none"; });
+    };
+    const jadwalkan = () => { if (!tunggu) tunggu = requestAnimationFrame(sapu); };
+    sapu();
+    const mo = new MutationObserver(jadwalkan);
+    mo.observe(document.body, { childList: true, subtree: true });
+    return () => { mo.disconnect(); if (tunggu) cancelAnimationFrame(tunggu); };
+  }, [rwAktifUi, pathname]);
   const isAdmin = pathname?.startsWith("/admin");
   // Login wajib menyala dan belum punya akun: gerbang menutup halaman.
   const tampilGerbang = perluMasuk && !TANPA_LOGIN.some((p) => pathname === p || pathname?.startsWith(`${p}/`));
@@ -70,6 +93,7 @@ export default function SiteChrome({ children }) {
 
   // Halaman admin punya tampilannya sendiri, tanpa navbar/footer publik & tanpa gerbang maintenance.
   if (isAdmin) return <>{children}</>;
+  if (rwTerkunci) return null;
 
   // Akun di-ban: hanya satu layar peringatan. Tidak ada dasbor, navigasi, tombol, atau halaman lain yang dirender.
   if (banned) return <LayarBan />;
@@ -109,7 +133,7 @@ export default function SiteChrome({ children }) {
           <ComicIntro />
           <MascotNudge />
           <MascotGreeting />
-          <InfoModal />
+          {!brand.reseller && <InfoModal />}
           <PembaruanModal />
           <PopupAdmin />
         </>
