@@ -22,6 +22,17 @@ const SLOT = [
     bawaan: "/logo-mark.png",
     lebar: 512,
     persegi: true
+  },
+  {
+    jenis: "sambutan",
+    judul: "🤖 Gambar sambutan bot",
+    dipakai: "Gambar di pesan sambutan bot Telegram toko (menggantikan bot-welcome.jpg).",
+    saran: "Mendatar ±16:9 atau persegi panjang, mis. 1280×720 px. SVG tidak didukung Telegram.",
+    bawaan: "/bot-welcome.jpg",
+    lebar: 1280,
+    persegi: false,
+    jpg: true,
+    tanpaSvg: true
   }
 ];
 
@@ -29,6 +40,7 @@ const SLOT = [
 function siapkan(file, s, onDone, onErr) {
   if (!file) return;
   if (file.size > 12 * 1024 * 1024) return onErr("Berkas terlalu besar (maks 12 MB).");
+  if (file.type === "image/svg+xml" && s.tanpaSvg) return onErr("Gambar bot harus PNG, JPG, atau WebP.");
   if (file.type === "image/svg+xml") {
     if (file.size > 300_000) return onErr("SVG maksimal 300 KB.");
     const r = new FileReader();
@@ -54,7 +66,8 @@ function siapkan(file, s, onDone, onErr) {
         c.height = Math.round(img.height * rasio);
         c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       }
-      const out = c.toDataURL("image/png");
+      let out = s.jpg ? c.toDataURL("image/jpeg", 0.88) : c.toDataURL("image/png");
+      if (s.jpg && out.length > 1_150_000) out = c.toDataURL("image/jpeg", 0.7);
       if (out.length > 1_150_000) return onErr("Logo masih terlalu besar. Pakai gambar yang lebih sederhana/kecil.");
       onDone(out);
     };
@@ -103,9 +116,9 @@ export default function AdminLogo() {
       <h2 className="font-display text-base font-semibold text-ink">🎨 Logo</h2>
       <p className="mt-1 text-xs leading-relaxed text-muted">
         Unggah logo sendiri; tanpa unggahan, situs memakai logo bawaan Arta Pedia. Format PNG, JPG, WebP, atau SVG.
-        Gambar otomatis dikecilkan.
+        Gambar otomatis dikecilkan. Ada juga gambar sambutan bot Telegram.
       </p>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {SLOT.map((s) => {
           const custom = logo?.[s.jenis];
           const src = custom ? `/api/logo/${s.jenis}?v=${custom.v}` : s.bawaan;
@@ -122,7 +135,7 @@ export default function AdminLogo() {
               <p className="mt-2 text-[11px] leading-relaxed text-muted">{s.dipakai}</p>
               <p className="text-[11px] leading-relaxed text-muted">Saran: {s.saran}</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <input ref={(el) => (input.current[s.jenis] = el)} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={(e) => pilih(s, e)} data-testid={`logo-berkas-${s.jenis}`} />
+                <input ref={(el) => (input.current[s.jenis] = el)} type="file" accept={s.tanpaSvg ? "image/png,image/jpeg,image/webp" : "image/png,image/jpeg,image/webp,image/svg+xml"} className="hidden" onChange={(e) => pilih(s, e)} data-testid={`logo-berkas-${s.jenis}`} />
                 <button type="button" disabled={!!sibuk} onClick={() => input.current[s.jenis]?.click()} className="rounded-lg bg-ink px-3 py-1.5 text-xs font-bold text-bg press disabled:opacity-60">
                   {sibuk === s.jenis ? "Menyimpan…" : "Unggah logo"}
                 </button>

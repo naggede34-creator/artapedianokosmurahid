@@ -3,13 +3,13 @@
 //
 // Dibuat lewat app/manifest.js, bukan berkas statis: namanya ikut SITE_NAME
 // kalau suatu saat diganti, dan Next.js yang mengurus header tipe isinya.
-import { ambilBrand } from "@/lib/brandServer";
+import { ambilBrandReq } from "@/lib/brandServer";
 import { urlLogo } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
 export default async function manifest() {
-  const brand = await ambilBrand();
+  const brand = await ambilBrandReq();
   const nama = brand.namaLengkap;
   return {
     name: `${nama} — Nokos & OTP Murah`,
@@ -26,7 +26,9 @@ export default async function manifest() {
     theme_color: "#0b162c",
     lang: "id",
     categories: ["shopping", "utilities"],
-    icons: brand.logo.ikon
+    icons: brand.reseller
+      ? [{ src: "/api/rw-ikon", sizes: "any", type: "image/svg+xml", purpose: "any" }]
+      : brand.logo.ikon
       ? brand.logo.ikon.tipe === "image/svg+xml"
         ? [{ src: urlLogo(brand, "ikon", "", "ikon"), sizes: "any", type: "image/svg+xml", purpose: "any" }]
         : [

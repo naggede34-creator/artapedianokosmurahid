@@ -22,7 +22,8 @@ import { tahan } from "@/lib/tahan";
 import { pindaiDiLatar } from "@/lib/keamanan";
 import { sapuWdInstan } from "@/lib/wdInstan";
 import { sapuSetorGmail } from "@/lib/setorGmail";
-import { brandDariSettings } from "@/lib/brand";
+import { brandDariSettings, brandUntukWeb } from "@/lib/brand";
+import { rwDariReq } from "@/lib/rwKonteks";
 import { ringkasLogo } from "@/lib/logo";
 import { pengingatDeposit } from "@/lib/depositPengingat";
 
@@ -32,7 +33,7 @@ const CHANNELS = () => ({
   channelInfo: CHANNEL_URL
 });
 
-export async function GET() {
+export async function GET(req) {
   // Lalu lintas web biasa ikut menyapu deposit QRIS yang menggantung (maks 1× per 30 detik per instance, di latar):
   // cadangan bila webhook provider tidak sampai dan cron eksternal belum dipasang.
   tahan(sapuDepositTertunda({ maks: 6, jeda: 30000, anggaranMs: 8000 }).catch(() => {}));
@@ -89,7 +90,11 @@ export async function GET() {
       // Saklar admin: true = pengunjung wajib daftar/masuk.
       loginWajib: await loginWajib().catch(() => false),
       csUsername: csUsername || "teatlas",
-      brand: brandDariSettings(settings, await ringkasLogo()),
+      brand: await (async () => {
+        const utama = brandDariSettings(settings, await ringkasLogo());
+        const web = await rwDariReq(req);
+        return web ? brandUntukWeb(utama, web) : utama;
+      })(),
       maintenanceMsg,
       maintenanceTitle: maintenanceTitle || "Sedang Maintenance",
       maintenanceButtonLabel: maintenanceButtonLabel || "",

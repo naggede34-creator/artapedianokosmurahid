@@ -86,9 +86,13 @@ export default function AuthGate() {
       <div className="panel-3d w-full max-w-sm rounded-3xl border-2 border-ink/10 bg-surface p-6 shadow-lift">
         <div className="flex flex-col items-center text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={urlLogo(brand, "ikon", "/logo-mark.png")} alt="" width={56} height={56} className="h-14 w-14 rounded-2xl" />
+          {brand.reseller ? (
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-bright text-2xl font-extrabold text-white">{(brand.nama[0] || "?").toUpperCase()}</span>
+          ) : (
+            <img src={urlLogo(brand, "ikon", "/logo-mark.png")} alt="" width={56} height={56} className="h-14 w-14 rounded-2xl" />
+          )}
           <h1 className="judul-timbul mt-3 font-display text-xl font-black text-ink">{brand.NAMA_LENGKAP}</h1>
-          <p className="mt-0.5 text-xs text-muted">Nokos termurah dan fast</p>
+          <p className="mt-0.5 text-xs text-muted">{brand.slogan}</p>
         </div>
 
         {baru ? (

@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 const VARIAN = {
   utama: ["utama", "/logo.svg"],
   "utama-png": ["utama", "/logo.png"],
+  sambutan: ["sambutan", "/bot-welcome.jpg"],
   ikon: ["ikon", "/logo-mark.png"],
   "ikon-svg": ["ikon", "/logo-mark.svg"],
   "ikon-192": ["ikon", "/icon-192.png"],

@@ -48,6 +48,7 @@ const utama = [
   { href: "/deposit", label: "Isi Saldo Nokos", sub: "QRIS, semua metode", ikon: "💳", warna: "bg-gradient-to-br from-[#ea580c] to-[#9a3412]" },
   { href: "/kaget", label: "Saldo Kaget", sub: "Bagi saldo, rebutan seru", ikon: "🧧", warna: "bg-gradient-to-br from-[#e11d48] to-[#7f1d1d]", badge: "BARU", testid: "tombol-kaget-dashboard" },
   { href: "/gateway", label: "QRIS Gateway", sub: "Terima bayar & tarik otomatis", ikon: "🏦", warna: "bg-gradient-to-br from-[#0891b2] to-[#164e63]" },
+  { href: "/web-reseller", label: "Web Reseller", sub: "Buat web jualanmu sendiri", ikon: "🌐", warna: "bg-gradient-to-br from-[#7c3aed] to-[#3b0764]", badge: "BARU", testid: "tombol-web-reseller" },
   { href: "/chat", label: "WEARTA CHAT", sub: "Chat, grup, panggilan & WEARTA AI", ikon: "💬", warna: "bg-gradient-to-br from-[#059669] to-[#064e3b]", badge: "LIVE", testid: "tombol-kontak-dashboard" },
   { href: "/setor-gmail", label: "Stor Gmail", sub: "Setor akun Gmail, dapat upah", ikon: "📧", warna: "bg-gradient-to-br from-[#dc2626] to-[#7f1d1d]", badge: "BARU", testid: "tombol-stor-gmail" }
 ];
@@ -67,6 +68,7 @@ const kelompokMenu = [
   ] },
   { judul: "Bisnis & developer", ikon: "🧰", item: [
     { href: "/produk", label: "Toko Produk", icon: Icon.shop },
+    { href: "/web-reseller", label: "Web Reseller", icon: "🌐", badge: "Baru" },
     { href: "/reseller", label: "Bot Reseller", icon: "🤖" },
     { href: "/apikey", label: "API Key", icon: Icon.key, badge: "Dev" },
     { href: "/api-docs", label: "Dokumentasi API", icon: "📘" }

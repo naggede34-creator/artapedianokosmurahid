@@ -38,7 +38,7 @@ export function Logo({ size = 34 }) {
       style={{ width: size, height: size, clipPath: "polygon(0 0, 72% 0, 100% 28%, 100% 100%, 0 100%)" }}
       aria-hidden="true"
     >
-      <span className="text-[15px] font-extrabold tracking-tight">A</span>
+      <span className="text-[15px] font-extrabold tracking-tight">{(brand.nama[0] || "A").toUpperCase()}</span>
       <span className="absolute bottom-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-amber" />
     </span>
   );

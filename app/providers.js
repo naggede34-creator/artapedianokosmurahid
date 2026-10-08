@@ -128,6 +128,10 @@ export function UserProvider({ children }) {
         const r = await fetch("/api/settings/public", { cache: "no-store" });
         const pub = await r.json();
         wajib = !!pub.loginWajib;
+        if (pub.brand?.reseller) {
+          // Web reseller: catat satu kunjungan per sesi peramban.
+          try { if (!sessionStorage.getItem("rw_kunjung")) { sessionStorage.setItem("rw_kunjung", "1"); fetch("/api/web-reseller/kunjung", { method: "POST" }).catch(() => {}); } } catch {}
+        }
         if (pub.brand) { setBrand(rakitBrand(pub.brand)); try { localStorage.setItem("artapedia_brand", JSON.stringify(pub.brand)); } catch {} }
       } catch {}
       setLoginWajib(wajib);

@@ -75,6 +75,7 @@ const sections = [
     items: [
       { href: "/deposit", label: "Isi Saldo (QRIS)", icon: <Icon.qris width={19} height={19} /> },
       { href: "/gateway", label: "QRIS Gateway", icon: <span className="text-[17px] leading-none">💸</span>, badge: "Baru" },
+      { href: "/web-reseller", label: "Web Reseller", icon: <span className="text-[17px] leading-none">🌐</span>, badge: "Baru" },
       { href: "/kaget", label: "Saldo Kaget", icon: <span className="text-[17px] leading-none">🧧</span>, badge: "Baru" },
       { href: "/cashback", label: "Cashback & Tingkat", icon: <span className="text-[17px] leading-none">🎁</span>, badge: "Baru" },
       { href: "/reseller", label: "Bot Reseller", icon: <span className="text-[17px] leading-none">🤖</span>, badge: "Baru" },

@@ -9,6 +9,7 @@ import AdminSwitcher from "@/components/AdminSwitcher";
 import PanduanTab from "@/components/AdminPanduan";
 import AdminAlamatApi from "@/components/AdminAlamatApi";
 import AdminLogo from "@/components/AdminLogo";
+import AdminWebReseller from "@/components/AdminWebReseller";
 import { sesiHabis } from "@/components/AdminSesi";
 import { OTP_SERVERS } from "@/lib/otpServers";
 import { DAFTAR_PUBLIK, channelAktifUntuk } from "@/lib/channelNotifTypes";
@@ -5938,6 +5939,9 @@ export default function AdminDashboardPage() {
 
           {/* Logo */}
           <AdminLogo />
+
+          {/* Web reseller */}
+          <AdminWebReseller />
 
           {/* Pengaturan Situs */}
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">

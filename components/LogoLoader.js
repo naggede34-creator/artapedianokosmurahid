@@ -113,7 +113,12 @@ export default function LogoLoader() {
           <span className="apl-spark apl-spark-3" aria-hidden="true" />
 
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={urlLogo(brand, "utama", "/logo.svg")} alt={brand.NAMA_LENGKAP} className="apl-logo" width="620" height="390" />
+          {brand.reseller ? (
+            // Web reseller: nama mereknya sendiri, bukan gambar logo web utama.
+            <p className="apl-logo text-center font-display text-5xl font-black text-ink" style={{ lineHeight: 1.1 }}>{brand.nama}</p>
+          ) : (
+            <img src={urlLogo(brand, "utama", "/logo.svg")} alt={brand.NAMA_LENGKAP} className="apl-logo" width="620" height="390" />
+          )}
         </div>
       </div>
 
