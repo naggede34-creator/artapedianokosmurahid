@@ -160,7 +160,9 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
     const maxRate = (c) =>
       Math.max(c.rate_sendiri ? c.rate_sendiri.persen : -1, ...(c.pricelist || []).map((p) => Number(pick(p, ["success_rate", "rate", "completion_rate", "percent"], -1))));
     const fav = (c) => (favNegara.includes(String(c.name || "").toLowerCase()) ? 0 : 1);
+    const indo = (c) => (String(c.name || "").trim().toLowerCase() === "indonesia" ? 0 : 1);
     return [...base].sort((a, b) => {
+      if (indo(a) !== indo(b)) return indo(a) - indo(b);
       if (fav(a) !== fav(b)) return fav(a) - fav(b);
       if (sortMode === "harga") return minPrice(a) - minPrice(b);
       const r = maxRate(b) - maxRate(a);
