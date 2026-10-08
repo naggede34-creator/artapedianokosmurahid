@@ -68,6 +68,10 @@ Web itu memuat aplikasi yang sama dengan web utama tetapi bermerek & berharga se
 - **Akun terpisah**: web reseller dan web utama memakai akun yang berbeda. Pengunjung web reseller wajib daftar/masuk (akun
   baru bertanda `rwSlug`); kode akun web utama ditolak di web reseller (404) dan sebaliknya. Kode disimpan di kunci peramban
   tersendiri per web (`lib/rwKlien.js`).
+- **Admin utama**: kartu Web Reseller (daftar, jumlah pengguna, statistik per web lengkap dengan grafik 14 hari, pengguna & pesanan
+  terbaru, bekukan) dan kartu Bot Reseller (daftar bot, pengguna bot, omzet, komisi). **Backup** pengguna semua web reseller atau satu web, dan
+  semua bot reseller atau satu bot, dalam JSON/CSV: `/api/admin/backup-reseller?jenis=web|bot[&id=…][&format=csv]` (`lib/backupReseller.js`).
+  Berisi token akun (kredensial); token BOT Telegram tidak pernah ikut.
 - **Statistik**: kunjungan, pesanan, omzet, komisi, grafik 14 hari, pesanan terbaru. Admin: kartu Web Reseller di Pengaturan Umum
   (pantau & bekukan); saklar/markup maks di Konfigurasi (`RW_*`).
 
