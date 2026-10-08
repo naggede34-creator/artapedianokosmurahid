@@ -115,7 +115,8 @@ export function UserProvider({ children }) {
 
   useEffect(() => {
     // Merek terakhir dari perangkat ini dipakai dulu supaya nama tidak berkedip sebelum data server tiba.
-    try { const b = JSON.parse(localStorage.getItem("artapedia_brand") || "null"); if (b) setBrand(rakitBrand(b)); } catch {}
+    // Merek web reseller TIDAK disimpan di localStorage (dibagi semua tab) — hanya merek web utama.
+    try { const b = JSON.parse(localStorage.getItem("artapedia_brand") || "null"); if (b && !b.reseller && !sessionStorage.getItem("artapedia_rw")) setBrand(rakitBrand(b)); } catch {}
     const saved = typeof window !== "undefined" ? localStorage.getItem("artapedia_token") : null;
     const ref = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("ref") : null;
     // Kode undangan diingat sampai benar-benar daftar: pengunjung yang dibawa
@@ -134,7 +135,19 @@ export function UserProvider({ children }) {
           // Web reseller: catat satu kunjungan per sesi peramban.
           try { if (!sessionStorage.getItem("rw_kunjung")) { sessionStorage.setItem("rw_kunjung", "1"); fetch("/api/web-reseller/kunjung", { method: "POST" }).catch(() => {}); } } catch {}
         }
-        if (pub.brand) { setBrandSegar(true); setBrand(rakitBrand(pub.brand)); try { localStorage.setItem("artapedia_brand", JSON.stringify(pub.brand)); } catch {} }
+        if (pub.brand) {
+          setBrandSegar(true); setBrand(rakitBrand(pub.brand));
+          if (!pub.brand.reseller) {
+            try { localStorage.setItem("artapedia_brand", JSON.stringify(pub.brand)); } catch {}
+            // Web reseller yang diingat tab ini sudah tidak berlaku (dibekukan/dihapus/dimatikan): kembali ke web utama.
+            try {
+              if (sessionStorage.getItem("artapedia_rw")) {
+                sessionStorage.removeItem("artapedia_rw");
+                window.location.reload(); // pasang ulang tema/gaya pilihan pengguna
+              }
+            } catch {}
+          }
+        }
       } catch {}
       setLoginWajib(wajib);
 

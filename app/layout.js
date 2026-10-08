@@ -1,7 +1,7 @@
 import { Plus_Jakarta_Sans, JetBrains_Mono, Bangers } from "next/font/google";
 import "./globals.css";
 import "./gaya.css";
-import { SKRIP_GAYA_AWAL } from "@/lib/gaya";
+import { SKRIP_GAYA_AWAL, SKRIP_RW_AWAL } from "@/lib/gaya";
 import { UserProvider, ThemeProvider } from "./providers";
 import SiteChrome from "@/components/SiteChrome";
 import InkFilters from "@/components/InkFilters";
@@ -89,6 +89,7 @@ export default async function RootLayout({ children }) {
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: SKRIP_RW_AWAL }} />
         <script dangerouslySetInnerHTML={{ __html: SKRIP_GAYA_AWAL }} />
       </head>
       <body className="min-h-screen bg-bg font-body text-ink antialiased selection:bg-amber/20">

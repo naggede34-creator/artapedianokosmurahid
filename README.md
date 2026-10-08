@@ -52,7 +52,7 @@ memakai berkas bawaan di `public/`. Disajikan lewat `/api/logo/<jenis>` (`lib/lo
 Menu **Web Reseller** (`/web-reseller`): satu akun = satu web. Pengguna memilih nama web (alamat), nama brand, dan markup %.
 Web itu memuat aplikasi yang sama dengan web utama tetapi bermerek & berharga sendiri; pengunjung tidak dialihkan.
 - **Alamat**: `nama.domainmu.com` bila admin mengisi `RW_DOMAIN_ROOT` dan memasang domain wildcard `*.domainmu.com`
-  (Vercel + DNS); tanpa itu dipakai `/r/nama` (cookie) di domain utama. Pengenal web ditentukan **server** dari host/cookie
+  (Vercel + DNS); tanpa itu dipakai `/r/nama` di domain utama, yang mengingat pilihan di **sessionStorage tab itu saja** (bukan cookie), sehingga tab lain tetap web utama. Pengenal web ditentukan **server** dari host / header `x-rw`
   (`lib/rwKonteks.js`), tidak pernah dari isi permintaan.
 - **Uang**: pembeli membayar harga situs + markup; markup = komisi. Komisi tertunda saat pesanan dibuat, cair ke dompet
   gateway pemilik saat OTP masuk (idempoten), ditarik kembali bila direfund (`lib/webReseller.js`).

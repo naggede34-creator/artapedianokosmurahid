@@ -1,10 +1,14 @@
 import { rwDariReq } from "@/lib/rwKonteks";
+import { webBerlaku } from "@/lib/webReseller";
+import { SLUG_RE } from "@/lib/webResellerUi";
 
 export const dynamic = "force-dynamic";
 
 // Ikon web reseller: huruf awal nama merek di atas warna yang diturunkan dari namanya (tanpa logo Arta Pedia).
 export async function GET(req) {
-  const web = await rwDariReq(req);
+  // Gambar <img> tidak bisa membawa header: webnya boleh dipilih lewat ?s=nama.
+  const s = String(new URL(req.url).searchParams.get("s") || "").toLowerCase();
+  const web = (await rwDariReq(req)) || (SLUG_RE.test(s) ? await webBerlaku(s).catch(() => null) : null);
   const nama = (web?.nama || "?").trim();
   const huruf = (nama[0] || "?").toUpperCase().replace(/[<>&"']/g, "");
   let h = 0;
