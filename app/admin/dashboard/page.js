@@ -24,6 +24,7 @@ import AdminPembaruan from "@/components/AdminPembaruan";
 import AdminKeamanan from "@/components/AdminKeamanan";
 import AdminAustinPay from "@/components/AdminAustinPay";
 import AdminMusim from "@/components/AdminMusim";
+import AdminDataLengkap from "@/components/AdminDataLengkap";
 import { CHANNEL_ID, CHANNEL_URL } from "@/lib/links";
 
 function fmtDate(d) {
@@ -6665,6 +6666,9 @@ function ExportSection() {
 
   return (
     <div className="space-y-4">
+      {/* Ekspor & Impor Data Lengkap (pengguna, saldo nokos/QRIS, web & bot reseller, dll.) */}
+      <AdminDataLengkap />
+
       {/* CSV Export */}
       <div className="glass rounded-2xl p-5 shadow-soft">
         <h2 className="text-base font-bold text-ink mb-1">📥 Export Data (CSV)</h2>
@@ -6839,8 +6843,8 @@ function ExportSection() {
             masih harus manual. Menyebut ini "restore penuh" akan membuat orang
             merasa aman padahal belum tentu. */}
         <p className="text-[11px] text-muted mb-4 leading-relaxed">
-          ⚠️ Tombol Restore memulihkan <b>data user saja</b>. Koleksi lain tetap tersimpan di
-          berkas ini, tapi memasukkannya kembali masih manual.
+          ⚠️ Tombol Restore di bawah hanya memulihkan <b>data user</b>. Untuk memulihkan semuanya
+          (saldo gateway, web &amp; bot reseller, transaksi, pengaturan) pakai kartu <b>Ekspor &amp; Impor Data Lengkap</b> di atas.
         </p>
         <button onClick={doBackup} disabled={backupLoading} className="w-full rounded-xl bg-indigo-500 text-white py-2.5 text-sm font-bold press disabled:opacity-50 border border-indigo-400">
           {backupLoading ? "Menyiapkan backup…" : "📦 Download Backup JSON"}
