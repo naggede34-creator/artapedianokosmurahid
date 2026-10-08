@@ -1,5 +1,7 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 import { useEffect, useState } from "react";
 import { PESAN_BAN, gayaBan } from "@/lib/ipHash";
 
@@ -28,6 +30,7 @@ const hrefAman = (v) => (/^(\/(?!\/)[A-Za-z0-9\-._~/?=&%#:+@!$()*,;]*|https:\/\/
  * HTML kustom dirender di iframe ber-sandbox TANPA skrip: aman dari XSS, dan tidak bisa membuka dasbor/menavigasi halaman induk.
  */
 export function LayarBanView({ cfg, tertanam = false, sampai = 0 }) {
+  const brand = useBrand();
   const sisa = useSisa(sampai);
   const aktif = !!(cfg && cfg.aktif);
   const c = aktif ? cfg : {};
@@ -67,6 +70,7 @@ export function LayarBanView({ cfg, tertanam = false, sampai = 0 }) {
 
 // Layar penuh untuk akun yang di-ban. Tanpa dasbor/navigasi; tampilan (judul, foto, HTML, tombol, latar) diatur admin.
 export default function LayarBan() {
+  const brand = useBrand();
   const [cfg, setCfg] = useState(null);
   const sampai = cfg?.sampai || 0;
   // Hitung mundur habis → minta server membuka ban, lalu muat ulang bila sudah terbuka.
@@ -84,7 +88,7 @@ export default function LayarBan() {
   }, [sampai]);
   useEffect(() => {
     const lama = document.title;
-    document.title = "Arta Pedia ID";
+    document.title = brand.namaLengkap;
     document.body.style.overflow = "hidden";
     let batal = false;
     let k = "";

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useUser } from "@/app/providers";
+import { useUser, useBrand } from "@/app/providers";
 import ThemeToggle from "@/components/ThemeToggle";
 import Sidebar from "@/components/Sidebar";
 import InfoBell from "@/components/InfoBell";
@@ -38,6 +38,7 @@ export function Logo({ size = 34 }) {
 }
 
 export default function Navbar() {
+  const brand = useBrand();
   const { balance, ready, token } = useUser();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -85,7 +86,7 @@ export default function Navbar() {
           </button>
           <Link href="/dashboard" className="flex items-center gap-2.5 pl-1">
             <Logo />
-            <span className="text-[17px] font-extrabold tracking-tight text-ink">Artapedia</span>
+            <span className="text-[17px] font-extrabold tracking-tight text-ink">{brand.nama}</span>
           </Link>
         </div>
 
@@ -106,7 +107,7 @@ export default function Navbar() {
                 data-testid={l.href === "/gateway" ? "nav-gateway" : undefined}
               >
                 {l.ikon && <span aria-hidden="true" className="text-[13px] leading-none">{l.ikon}</span>}
-                {l.label}
+                {l.href === "/chat" ? brand.chat : l.label}
               </Link>
             );
           })}

@@ -3,7 +3,7 @@
 import { SkelHalaman, SkelBaris, Skel } from "@/components/Skeleton";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useUser } from "@/app/providers";
+import { useUser, useBrand } from "@/app/providers";
 import PanelKreator from "@/components/PanelKreator";
 
 const REFERRAL_TIERS = [
@@ -14,6 +14,7 @@ const REFERRAL_TIERS = [
 ];
 
 export default function ReferralPage() {
+  const brand = useBrand();
   const { token, ready } = useUser();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,20 +46,20 @@ export default function ReferralPage() {
 
   const shareWhatsApp = () => {
     if (!link) return;
-    const text = encodeURIComponent(`Daftar di Artapedia dan beli nomor OTP murah! Pakai link saya: ${link}`);
+    const text = encodeURIComponent(`Daftar di ${brand.nama} dan beli nomor OTP murah! Pakai link saya: ${link}`);
     window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
   };
 
   const shareTelegram = () => {
     if (!link) return;
-    const text = encodeURIComponent(`Beli nomor OTP murah di Artapedia! Daftar via link saya:`);
+    const text = encodeURIComponent(`Beli nomor OTP murah di ${brand.nama}! Daftar via link saya:`);
     const url = encodeURIComponent(link);
     window.open(`https://t.me/share/url?url=${url}&text=${text}`, "_blank", "noopener,noreferrer");
   };
 
   const shareTwitter = () => {
     if (!link) return;
-    const text = encodeURIComponent(`Beli nomor OTP murah & cepat di Artapedia! Daftar via link undanganku dan kita sama-sama dapat bonus 🎁`);
+    const text = encodeURIComponent(`Beli nomor OTP murah & cepat di ${brand.nama}! Daftar via link undanganku dan kita sama-sama dapat bonus 🎁`);
     const url = encodeURIComponent(link);
     window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank", "noopener,noreferrer");
   };

@@ -5,6 +5,7 @@ import { SKRIP_GAYA_AWAL } from "@/lib/gaya";
 import { UserProvider, ThemeProvider } from "./providers";
 import SiteChrome from "@/components/SiteChrome";
 import InkFilters from "@/components/InkFilters";
+import { ambilBrand } from "@/lib/brandServer";
 
 // Dijalankan sebelum React hydrate supaya tidak ada kedipan warna saat mode gelap.
 const themeInitScript = `
@@ -25,32 +26,38 @@ const sans = Plus_Jakarta_Sans({
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", weight: ["500", "600"], display: "swap" });
 const bangers = Bangers({ subsets: ["latin"], variable: "--font-display", weight: ["400"], display: "swap" });
 
-export const metadata = {
-  title: "Arta Pedia ID — Nokos Termurah dan Fast",
-  description:
-    "Beli nomor OTP (nokos) untuk WhatsApp, Telegram, Google dan ratusan layanan lain, dan isi saldo otomatis via QRIS. Diproses 24 jam.",
-  // manifest wajib ditunjuk di sini, kalau tidak peramban tidak pernah
-  // menawarkan "Pasang aplikasi" walau berkasnya ada.
-  manifest: "/manifest.webmanifest",
-  applicationName: "Arta Pedia ID",
-  // iOS tidak membaca manifest untuk hal-hal ini; ia punya metanya sendiri.
-  // Tanpa appleWebApp, situs yang ditambahkan ke layar utama di iPhone tetap
-  // membuka bilah alamat Safari dan tidak terasa seperti aplikasi.
-  appleWebApp: {
-    capable: true,
-    title: "Arta Pedia",
-    statusBarStyle: "black-translucent"
-  },
-  icons: {
-    icon: [{ url: "/logo-mark.svg", type: "image/svg+xml" }, { url: "/logo-mark.png", sizes: "512x512" }],
-    apple: [{ url: "/icon-192.png", sizes: "192x192" }, { url: "/icon-512.png", sizes: "512x512" }]
-  },
-  openGraph: {
-    title: "Arta Pedia ID — Nokos Termurah dan Fast",
-    description: "Nomor OTP murah & cepat, deposit QRIS otomatis 24 jam.",
-    images: [{ url: "/logo.png", width: 1240, height: 780, alt: "Arta Pedia ID" }]
-  }
-};
+// Nama merek bisa diubah admin: halaman statis disegarkan tiap 60 detik agar judul tab ikut berubah.
+export const revalidate = 60;
+
+export async function generateMetadata() {
+  const brand = await ambilBrand();
+  return {
+    title: `${brand.namaLengkap} — ${brand.slogan}`,
+    description:
+      "Beli nomor OTP (nokos) untuk WhatsApp, Telegram, Google dan ratusan layanan lain, dan isi saldo otomatis via QRIS. Diproses 24 jam.",
+    // manifest wajib ditunjuk di sini, kalau tidak peramban tidak pernah
+    // menawarkan "Pasang aplikasi" walau berkasnya ada.
+    manifest: "/manifest.webmanifest",
+    applicationName: brand.namaLengkap,
+    // iOS tidak membaca manifest untuk hal-hal ini; ia punya metanya sendiri.
+    // Tanpa appleWebApp, situs yang ditambahkan ke layar utama di iPhone tetap
+    // membuka bilah alamat Safari dan tidak terasa seperti aplikasi.
+    appleWebApp: {
+      capable: true,
+      title: brand.nama,
+      statusBarStyle: "black-translucent"
+    },
+    icons: {
+      icon: [{ url: "/logo-mark.svg", type: "image/svg+xml" }, { url: "/logo-mark.png", sizes: "512x512" }],
+      apple: [{ url: "/icon-192.png", sizes: "192x192" }, { url: "/icon-512.png", sizes: "512x512" }]
+    },
+    openGraph: {
+      title: `${brand.namaLengkap} — ${brand.slogan}`,
+      description: "Nomor OTP murah & cepat, deposit QRIS otomatis 24 jam.",
+      images: [{ url: "/logo.png", width: 1240, height: 780, alt: brand.namaLengkap }]
+    }
+  };
+}
 
 export const viewport = {
   // TANPA ini, env(safe-area-inset-*) bernilai NOL di iOS — selalu, di semua

@@ -1,21 +1,27 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 import { useEffect, useState, useCallback } from "react";
 
 // Semua pose memakai satu gambar maskot; suasananya dibedakan lewat efek CSS
 // supaya tidak perlu empat file gambar terpisah.
 const MASCOT_SRC = "/maskot.webp";
 const POSES = {
-  idle:      { label: "🦅", alt: "ARTA PEDIA SUPPORT",          fx: "mw-idle" },
-  angel:     { label: "🎉", alt: "ARTA PEDIA SUPPORT senang",   fx: "mw-happy" },
-  suit:      { label: "⚡", alt: "ARTA PEDIA SUPPORT serius",   fx: "mw-serious" },
-  surprised: { label: "❗", alt: "ARTA PEDIA SUPPORT kaget",    fx: "mw-alert" }
+  idle:      { label: "🦅", alt: "{{MASKOT}}",          fx: "mw-idle" },
+  angel:     { label: "🎉", alt: "{{MASKOT}} senang",   fx: "mw-happy" },
+  suit:      { label: "⚡", alt: "{{MASKOT}} serius",   fx: "mw-serious" },
+  surprised: { label: "❗", alt: "{{MASKOT}} kaget",    fx: "mw-alert" }
 };
+
+function isiMerek(t, b) {
+  return String(t).replaceAll("{{maskot}}", b.maskot).replaceAll("{{MASKOT}}", b.MASKOT).replaceAll("{{nama}}", b.nama);
+}
 
 // Dialogues per state
 const DIALOGUES = {
   idle: [
-    { text: "Haii~ Aku elang Arta Pedia Support! Mau beli nokos hari ini? 🦅", pose: "idle" },
+    { text: "Haii~ Aku elang {{maskot}}! Mau beli nokos hari ini? 🦅", pose: "idle" },
     { text: "Nomor OTP murah meriah ada di sini! Yuk cobain sekarang~ 🛒", pose: "idle" },
     { text: "Aku selalu siap bantuin kamu cari nokos terbaik! 💖", pose: "idle" },
   ],
@@ -33,7 +39,7 @@ const DIALOGUES = {
   success: [
     { text: "Yeay! Transaksinya berhasil! Aku bangga sama kamu~ 🎉", pose: "angel" },
     { text: "OTP udah masuk kan? Kalau ada masalah, aku di sini lho! 💕", pose: "angel" },
-    { text: "Makasih udah belanja di Artapedia! Kamu pelanggan terbaik~ 😇", pose: "angel" },
+    { text: "Makasih udah belanja di {{nama}}! Kamu pelanggan terbaik~ 😇", pose: "angel" },
   ],
   welcome: [
     { text: "Selamat datang kembali! Aku udah nunggu kamu~ 🌸", pose: "angel" },
@@ -42,7 +48,7 @@ const DIALOGUES = {
 };
 
 // Flatten all dialogues into a sequence
-function buildSequence(balance, hasRecentOrder) {
+function buildSequence(balance, hasRecentOrder, brand) {
   const lines = [];
   if (balance !== undefined && balance < 2000) {
     lines.push(...DIALOGUES.low_balance);
@@ -51,10 +57,11 @@ function buildSequence(balance, hasRecentOrder) {
     lines.push(...DIALOGUES.success);
   }
   lines.push(...DIALOGUES.promo, ...DIALOGUES.idle);
-  return lines;
+  return lines.map((l) => ({ ...l, text: isiMerek(l.text, brand) }));
 }
 
 export default function MangaWaifu({ balance, hasRecentOrder }) {
+  const brand = useBrand();
   const [sequence, setSequence] = useState([]);
   const [idx, setIdx] = useState(0);
   const [visible, setVisible] = useState(false);
@@ -64,13 +71,13 @@ export default function MangaWaifu({ balance, hasRecentOrder }) {
 
   // Build dialogue sequence
   useEffect(() => {
-    const seq = buildSequence(balance, hasRecentOrder);
+    const seq = buildSequence(balance, hasRecentOrder, brand);
     setSequence(seq);
     setIdx(0);
     setVisible(true);
-  }, [balance, hasRecentOrder]);
+  }, [balance, hasRecentOrder, brand]);
 
-  const currentLine = sequence[idx] || { text: "Haii~ Aku Arta Pedia Support! Yuk beli nokos~ 🦅", pose: "idle" };
+  const currentLine = sequence[idx] || { text: isiMerek("Haii~ Aku {{maskot}}! Yuk beli nokos~ 🦅", brand), pose: "idle" };
   const pose = POSES[currentLine.pose] || POSES.idle;
 
   // Typewriter effect
@@ -142,7 +149,7 @@ export default function MangaWaifu({ balance, hasRecentOrder }) {
           {/* Character name badge */}
           <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5">
             <span className="text-xs">{pose.label}</span>
-            <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">ARTA PEDIA SUPPORT</span>
+            <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">{brand.MASKOT}</span>
             {typing && <span className="ml-1 h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />}
           </div>
 
@@ -199,7 +206,7 @@ export default function MangaWaifu({ balance, hasRecentOrder }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={MASCOT_SRC}
-          alt={pose.alt}
+          alt={isiMerek(pose.alt, brand)}
           className={`mw-img ${pose.fx}`}
           draggable={false}
         />

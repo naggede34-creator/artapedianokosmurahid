@@ -1,5 +1,7 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { TEMA, bacaTema, simpanTema, pasangTema, hexKeRgb } from "@/lib/tema";
@@ -8,6 +10,7 @@ import { GAYA, SKIN, bacaPilihan, simpanGaya, simpanSkin, pasangGaya, pasangSkin
 export const dynamic = "force-dynamic";
 
 export default function TampilanPage() {
+  const brand = useBrand();
   const [gaya, setGaya] = useState("komik");
   const [skinPil, setSkinPil] = useState("klasik");
   const [aktif, setAktif] = useState("default");
@@ -80,7 +83,7 @@ export default function TampilanPage() {
       {gaya === "neon" && <p className="mt-2 text-[11px] text-muted">Neon selalu bermode gelap, apa pun pilihan terang/gelapmu.</p>}
 
       <h2 className="mt-7 font-display text-lg font-black text-ink">Skin maskot</h2>
-      <p className="mt-1 text-xs text-muted">Kostum elang ARTA PEDIA — semuanya gratis, tinggal pilih. Skin musiman otomatis terpasang untuk semua orang selama event berlangsung.</p>
+      <p className="mt-1 text-xs text-muted">Kostum elang {brand.NAMA} — semuanya gratis, tinggal pilih. Skin musiman otomatis terpasang untuk semua orang selama event berlangsung.</p>
       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" data-testid="daftar-skin">
         {SKIN.map((k) => {
           const dipakai = skinPil === k.id || (k.id === "klasik" && !skinPil);

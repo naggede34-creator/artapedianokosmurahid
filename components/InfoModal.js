@@ -1,5 +1,7 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 import Link from "next/link";
 import { CHANNEL_LIST_URL, BOT_URL } from "@/lib/links";
 import { useEffect, useState } from "react";
@@ -39,8 +41,8 @@ const TUTORIAL = [
     body: "Masukkan nomor yang didapat ke aplikasi yang dituju. Kode OTP akan muncul sendiri di halaman pesanan."
   },
   {
-    title: "Pantau WEARTA CHAT",
-    body: "Info stok, gangguan server, dan promo selalu diumumkan lebih dulu di WEARTA CHAT. Biasakan mengeceknya sebelum membeli."
+    title: "Pantau {{chat}}",
+    body: "Info stok, gangguan server, dan promo selalu diumumkan lebih dulu di {{chat}}. Biasakan mengeceknya sebelum membeli."
   }
 ];
 
@@ -64,6 +66,7 @@ const REFUND_MANUAL = [
 ];
 
 export default function InfoModal() {
+  const brand = useBrand();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState("tutorial");
   const [agreed, setAgreed] = useState(false);
@@ -140,8 +143,8 @@ export default function InfoModal() {
                     {i + 1}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-sm font-bold text-ink">{step.title}</span>
-                    <span className="mt-0.5 block text-xs leading-relaxed text-muted">{step.body}</span>
+                    <span className="block text-sm font-bold text-ink">{step.title.replaceAll("{{chat}}", brand.chat)}</span>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-muted">{step.body.replaceAll("{{chat}}", brand.chat)}</span>
                   </span>
                 </li>
               ))}
@@ -240,7 +243,7 @@ export default function InfoModal() {
           >
             <span className="text-lg">💬</span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-bold text-ink">Buka WEARTA CHAT</span>
+              <span className="block text-sm font-bold text-ink">Buka {brand.chat}</span>
               <span className="block text-[11px] leading-relaxed text-muted">
                 Info stok, gangguan, dan promo diumumkan di sini lebih dulu. Cek sebelum beli.
               </span>

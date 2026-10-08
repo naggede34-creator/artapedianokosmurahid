@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { useUser } from "@/app/providers";
+import { useUser, useBrand } from "@/app/providers";
 import { rupiah } from "@/components/ui";
 import GatewayTerms from "@/components/GatewayTerms";
 import "@/components/gateway.css";
@@ -41,6 +41,7 @@ function Lencana({ status }) {
 }
 
 export default function GatewayPage() {
+  const brand = useBrand();
   const { token } = useUser();
   const [tab, setTab] = useState("buat");
   const [data, setData] = useState(null);
@@ -157,7 +158,7 @@ export default function GatewayPage() {
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Gagal mengonversi.");
-      kabar(`${rupiah(d.amount)} masuk ke saldo Arta Pedia.`);
+      kabar(`${rupiah(d.amount)} masuk ke saldo ${brand.nama}.`);
       setKonvNominal("");
       muat();
     } catch (err) { kabar(err.message, false); }
@@ -186,7 +187,7 @@ export default function GatewayPage() {
         <div className="card p-8 text-center">
           <p className="text-4xl">🔒</p>
           <h1 className="font-display mt-3 text-xl font-black text-ink">Buka akunmu dulu</h1>
-          <p className="mt-2 text-sm text-muted">QRIS Gateway memakai kode akun Arta Pedia yang sama.</p>
+          <p className="mt-2 text-sm text-muted">QRIS Gateway memakai kode akun {brand.nama} yang sama.</p>
           <Link href="/" className="btn-primary press mt-5 inline-flex">← Ke Beranda</Link>
         </div>
       </div>
@@ -413,18 +414,18 @@ export default function GatewayPage() {
           </form>
 
           <form onSubmit={konversi} className="card p-5">
-            <h2 className="font-display text-base font-black text-ink">🔄 Jadikan saldo Arta Pedia</h2>
+            <h2 className="font-display text-base font-black text-ink">🔄 Jadikan saldo {brand.nama}</h2>
             <p className="mt-1 text-xs leading-relaxed text-muted">
               Tanpa biaya — uangnya cuma pindah dompet, tidak keluar ke mana-mana. Langsung bisa dipakai beli nokos.
             </p>
             <p className="mt-2 text-xs text-muted">
-              Saldo Arta Pedia sekarang: <b className="text-ink">{rupiah(data?.saldoArta ?? 0)}</b>
+              Saldo {brand.nama} sekarang: <b className="text-ink">{rupiah(data?.saldoArta ?? 0)}</b>
             </p>
             <input type="number" inputMode="numeric" value={konvNominal} onChange={(e) => setKonvNominal(e.target.value)}
               min={b?.konversiMin} required placeholder={String(b?.konversiMin ?? 1000)}
               className="mt-3 input w-full text-sm" />
             <button type="submit" disabled={konvSibuk} className="btn-ghost press mt-3 w-full">
-              {konvSibuk ? "Memproses…" : "Konversi ke Saldo Arta Pedia"}
+              {konvSibuk ? "Memproses…" : `Konversi ke Saldo ${brand.nama}`}
             </button>
           </form>
 

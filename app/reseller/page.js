@@ -3,7 +3,7 @@
 import { SkelHalaman, SkelBaris, Skel } from "@/components/Skeleton";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useUser } from "@/app/providers";
+import { useUser, useBrand } from "@/app/providers";
 import { BOT_URL } from "@/lib/links";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 const KOSONG = { botToken: "", ownerTelegramId: "", botUsername: "", ownerUsername: "", markupPersen: "10" };
 
 export default function ResellerPage() {
+  const brand = useBrand();
   const { token } = useUser();
   const [items, setItems] = useState([]);
   const [maks, setMaks] = useState(3);
@@ -99,7 +100,7 @@ export default function ResellerPage() {
 
         <div className="mt-5 grid gap-2.5 sm:grid-cols-3">
           {[
-            { ikon: "⚡", judul: "Jalan otomatis", isi: "Stok, harga, dan refund ikut sistem Arta Pedia. Kamu tidak perlu jaga apa pun." },
+            { ikon: "⚡", judul: "Jalan otomatis", isi: `Stok, harga, dan refund ikut sistem ${brand.nama}. Kamu tidak perlu jaga apa pun.` },
             { ikon: "💰", judul: "Komisi dari markup", isi: `Atur sendiri 0–${markupMaks}%. Selisihnya jadi komisimu.` },
             { ikon: "🏦", judul: "Tarik ke e-wallet", isi: `Minimal ${rp(tarikMin)}, ke DANA/OVO/GoPay/ShopeePay/LinkAja.` }
           ].map((k) => (
@@ -245,7 +246,7 @@ export default function ResellerPage() {
           />
           <Isian
             label={`Markup (0–${markupMaks}%)`}
-            hint="Ditambahkan di atas harga Arta Pedia. Selisihnya jadi komisimu."
+            hint={`Ditambahkan di atas harga ${brand.nama}. Selisihnya jadi komisimu.`}
             type="number"
             value={form.markupPersen}
             onChange={(v) => setForm((f) => ({ ...f, markupPersen: v }))}
@@ -296,11 +297,11 @@ export default function ResellerPage() {
         <p className="text-xs font-black text-ink">Isi bot kamu nanti</p>
         <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
           {[
-            ["🛒", "Beli Nokos", "Semua server dan negara yang aktif di Arta Pedia"],
+            ["🛒", "Beli Nokos", `Semua server dan negara yang aktif di ${brand.nama}`],
             ["💳", "Isi Saldo", "QRIS otomatis, saldo masuk sendiri"],
             ["👤", "Info Saldo", "Saldo dan kode akun pembeli"],
             ["📊", "Status Server", "Server mana yang sedang jalan"],
-            ["🌐", "Buy di Web", "Tautan ke web Arta Pedia"],
+            ["🌐", "Buy di Web", `Tautan ke web ${brand.nama}`],
             ["🛠", "Menu Admin Reseller", "Khusus kamu: atur markup, lihat komisi, tarik saldo"]
           ].map(([i, j, k]) => (
             <p key={j} className="text-[11px] leading-relaxed text-muted">

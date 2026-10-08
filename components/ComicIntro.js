@@ -1,5 +1,7 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { markComicDone, onIntroDone } from "@/lib/introGate";
 
@@ -31,6 +33,7 @@ const KEY = "artapedia_comic_seen";
 const JEDA = [3000, 3200, 3600, 0]; // 0 = menunggu ditekan
 
 export default function ComicIntro() {
+  const brand = useBrand();
   const [tampil, setTampil] = useState(false);
   const [panel, setPanel] = useState(0);
   const [keluar, setKeluar] = useState(false);
@@ -150,7 +153,7 @@ export default function ComicIntro() {
   const terakhir = panel === JEDA.length - 1;
 
   return (
-    <div className={`comic-intro ${keluar ? "is-out" : ""}`} role="dialog" aria-label="Komik pembuka Arta Pedia">
+    <div className={`comic-intro ${keluar ? "is-out" : ""}`} role="dialog" aria-label={`Komik pembuka ${brand.nama}`}>
       {/* Seluruh panel bisa ditekan untuk lanjut — di layar sentuh itu yang
           pertama dicoba orang, jauh sebelum mencari tombolnya. */}
       <div className="comic-intro-sheet" onClick={lanjut}>
@@ -199,7 +202,7 @@ export default function ComicIntro() {
               pembicaranya. */}
           <div className="ci-bubble ci-bubble-left ci-bubble-say">
             <p>
-              Di <b>ARTA PEDIA!</b> Murah, buka 24 jam, OTP masuk otomatis.
+              Di <b>{brand.NAMA}!</b> Murah, buka 24 jam, OTP masuk otomatis.
             </p>
             <span className="ci-tail ci-tail-right" />
           </div>

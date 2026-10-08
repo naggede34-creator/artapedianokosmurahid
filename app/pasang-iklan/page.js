@@ -1,5 +1,7 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 import { useState } from "react";
 import Link from "next/link";
 
@@ -100,6 +102,7 @@ function TncItem({ title, body }) {
 }
 
 export default function PasangIklanPage() {
+  const brand = useBrand();
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({ name: "", contact: "", imageUrl: "", linkUrl: "", notes: "" });
   const [submitting, setSubmitting] = useState(false);
@@ -152,7 +155,7 @@ export default function PasangIklanPage() {
           📢 Iklan & Promosi
         </span>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-ink mb-3">
-          Pasang Iklan di <span className="text-rose">Artapedia</span>
+          Pasang Iklan di <span className="text-rose">{brand.nama}</span>
         </h1>
         <p className="text-muted text-base max-w-xl mx-auto leading-relaxed">
           Jangkau ribuan pengguna aktif yang membeli nomor OTP dan layanan digital setiap hari. Promosi produk kamu tepat sasaran.
@@ -262,7 +265,7 @@ export default function PasangIklanPage() {
                   className="text-rose font-semibold hover:underline">
                   Syarat & Ketentuan
                 </button>{" "}
-                pemasangan iklan di Artapedia.
+                pemasangan iklan di {brand.nama}.
               </span>
             </label>
 

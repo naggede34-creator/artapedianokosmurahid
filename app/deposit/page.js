@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useUser } from "@/app/providers";
+import { useUser, useBrand } from "@/app/providers";
 import { DEPOSIT_PROVIDERS, providerName } from "@/lib/paymentProviders";
 import { PageHeader, Icon, Alert, Row, CopyButton, Spinner, Badge, rupiah, fmtWIB } from "@/components/ui";
 import BannerRail from "@/components/BannerRail";
@@ -48,6 +48,7 @@ function TimerQris({ sisaMs, totalMs }) {
 }
 
 export default function DepositPage() {
+  const brand = useBrand();
   const { token, balance, refreshBalance } = useUser();
 
   // Nama, label, keterangan, dan estimasi waktu metode deposit datang dari
@@ -1065,7 +1066,7 @@ export default function DepositPage() {
             <h2 className="text-base font-bold text-ink">Perlu diketahui</h2>
             <ul className="mt-3 list-disc space-y-2 pl-4 text-sm leading-relaxed text-muted">
               <li>Saldo masuk otomatis setelah QRIS dibayar, biasanya dalam hitungan detik.</li>
-              <li>Saldo hanya bisa dipakai di Artapedia dan tidak bisa ditarik tunai.</li>
+              <li>Saldo hanya bisa dipakai di {brand.nama} dan tidak bisa ditarik tunai.</li>
               <li>QRIS kedaluwarsa? Buat yang baru — belum ada saldo yang terpotong.</li>
               <li>
                 Status semua deposit ada di{" "}

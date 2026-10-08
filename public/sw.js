@@ -38,7 +38,7 @@ self.addEventListener("push", (e) => {
     d = { isi: e.data ? e.data.text() : "" };
   }
   e.waitUntil(
-    self.registration.showNotification(d.judul || "ARTA PEDIA", {
+    self.registration.showNotification(d.judul || "Notifikasi", {
       body: d.isi || "",
       icon: "/icon-192.png",
       badge: "/icon-192.png",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUser } from "@/app/providers";
+import { useUser, useBrand } from "@/app/providers";
 import { onOpenersFree } from "@/lib/introGate";
 
 const TOUR_KEY = "artapedia_tour_done";
@@ -30,12 +30,13 @@ const STEPS = [
   {
     emoji: "🎉",
     title: "Siap Bertransaksi!",
-    desc: "Selamat! Kamu sudah siap pakai Artapedia OTP. Ada pertanyaan? Cek FAQ atau hubungi admin via Telegram.",
+    desc: "Selamat! Kamu sudah siap pakai {{nama}} OTP. Ada pertanyaan? Cek FAQ atau hubungi admin via Telegram.",
     action: "done",
   },
 ];
 
 export default function OnboardingTour({ onDone }) {
+  const brand = useBrand();
   const { name, updateName, completeTour } = useUser();
   const [step, setStep] = useState(0);
   const [inputName, setInputName] = useState("");
@@ -94,7 +95,7 @@ export default function OnboardingTour({ onDone }) {
         <div className="px-6 py-5 text-center">
           <div className="text-5xl mb-3">{current.emoji}</div>
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">{current.title}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{current.desc}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{String(current.desc).replaceAll("{{nama}}", brand.nama)}</p>
 
           {/* Name input step */}
           {current.action === "set-name" && (

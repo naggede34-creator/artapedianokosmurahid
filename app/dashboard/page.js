@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLembarTerbuka } from "@/lib/lembarTerbuka";
-import { useUser } from "@/app/providers";
+import { useUser, useBrand } from "@/app/providers";
 import { useCsBuka } from "@/lib/useCsBuka";
 import { CS_JAM_TEKS, csBukaLagi } from "@/lib/jamCs";
 import SimCard from "@/components/SimCard";
@@ -388,6 +388,7 @@ function WarrantyModal({ open, onClose, token }) {
 }
 
 export default function DashboardPage() {
+  const brand = useBrand();
   const { token, name, balance, joinedAt, ready } = useUser();
   const [showTour, hideTour] = useShouldShowTour();
   const [showNamePrompt, setShowNamePrompt] = useState(false);
@@ -548,7 +549,7 @@ export default function DashboardPage() {
         <div className="min-w-0">
           <p className="text-sm text-muted">{ready ? greeting() : "Halo"},</p>
           <h1 className="truncate text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
-            {ready ? name || "Pelanggan Artapedia" : "…"}
+            {ready ? name || `Pelanggan ${brand.nama}` : "…"}
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -632,7 +633,7 @@ export default function DashboardPage() {
           >
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-2xl transition-transform group-hover:scale-110">{u.ikon}</span>
             <span className="min-w-0">
-              <span className="block text-sm font-black leading-tight">{u.label}</span>
+              <span className="block text-sm font-black leading-tight">{u.href === "/chat" ? brand.chat : u.label}</span>
               <span className="mt-0.5 block text-[11px] font-medium leading-snug text-white/80">{u.sub}</span>
             </span>
             {u.badge && <span className="absolute right-2 top-2 rounded-full bg-rose px-1.5 py-0.5 text-[9px] font-black leading-none text-white">{u.badge}</span>}

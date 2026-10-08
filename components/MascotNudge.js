@@ -1,5 +1,7 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { onIntroDone } from "@/lib/introGate";
@@ -30,6 +32,7 @@ const AJAKAN = [
 ];
 
 export default function MascotNudge() {
+  const brand = useBrand();
   const pathname = usePathname();
   const [ajakan, setAjakan] = useState(null);
   const [posisi, setPosisi] = useState(null);
@@ -143,7 +146,7 @@ export default function MascotNudge() {
       className={`nudge ${keluar ? "is-out" : ""}`}
       style={{ left: `${posisi.x}px`, bottom: `${posisi.bawah}px` }}
       role="dialog"
-      aria-label="Ajakan dari maskot Arta Pedia"
+      aria-label={`Ajakan dari maskot ${brand.nama}`}
     >
       <button type="button" className="nudge-tutup" onClick={tutup} aria-label="Tutup ajakan">
         ✕

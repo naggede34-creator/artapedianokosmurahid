@@ -3,13 +3,16 @@
 //
 // Dibuat lewat app/manifest.js, bukan berkas statis: namanya ikut SITE_NAME
 // kalau suatu saat diganti, dan Next.js yang mengurus header tipe isinya.
-export const dynamic = "force-static";
+import { ambilBrand } from "@/lib/brandServer";
 
-export default function manifest() {
-  const nama = process.env.NEXT_PUBLIC_SITE_NAME || "Arta Pedia ID";
+export const dynamic = "force-dynamic";
+
+export default async function manifest() {
+  const brand = await ambilBrand();
+  const nama = brand.namaLengkap;
   return {
     name: `${nama} — Nokos & OTP Murah`,
-    short_name: nama,
+    short_name: brand.nama,
     description:
       "Beli nomor virtual untuk OTP: WhatsApp, Telegram, dan ratusan aplikasi lain. Deposit QRIS otomatis, refund otomatis kalau kode tidak masuk.",
     start_url: "/dashboard",

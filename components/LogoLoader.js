@@ -1,5 +1,7 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 import { useEffect, useRef, useState } from "react";
 import { markIntroDone } from "@/lib/introGate";
 
@@ -21,6 +23,7 @@ const SEEN_KEY = "artapedia_intro_seen";
 const SKIP_AFTER_MS = 2000;
 
 export default function LogoLoader() {
+  const brand = useBrand();
   const [percent, setPercent] = useState(1);
   const [showSkip, setShowSkip] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -94,7 +97,7 @@ export default function LogoLoader() {
       className={`apl-root ${leaving ? "apl-out" : ""}`}
       role="status"
       aria-live="polite"
-      aria-label={`Memuat Arta Pedia ID, ${percent} persen`}
+      aria-label={`Memuat ${brand.namaLengkap}, ${percent} persen`}
     >
       <span className="apl-rays" aria-hidden="true" />
       <span className="apl-glow" aria-hidden="true" />
@@ -109,7 +112,7 @@ export default function LogoLoader() {
           <span className="apl-spark apl-spark-3" aria-hidden="true" />
 
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.svg" alt="ARTA PEDIA ID" className="apl-logo" width="620" height="390" />
+          <img src="/logo.svg" alt={brand.NAMA_LENGKAP} className="apl-logo" width="620" height="390" />
         </div>
       </div>
 

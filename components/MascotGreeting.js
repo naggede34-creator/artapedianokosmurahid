@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useUser } from "@/app/providers";
+import { useUser, useBrand } from "@/app/providers";
 import { markOpenersFree, onComicDone } from "@/lib/introGate";
 import TopiMaskot from "./TopiMaskot";
 
@@ -21,6 +21,7 @@ function greetingByHour(h) {
 }
 
 export default function MascotGreeting() {
+  const brand = useBrand();
   const { balance, ready, token } = useUser();
   const [show, setShow] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -55,7 +56,7 @@ export default function MascotGreeting() {
   const hour = new Date().getHours();
   const lowBalance = ready && Number(balance || 0) < 2000;
   const line = !token
-    ? "Halo! Aku ARTA PEDIA SUPPORT, elang penjaga web ini. Nokos murah dan cepat semua ada di sini — yuk mulai!"
+    ? `Halo! Aku ${brand.MASKOT}, elang penjaga web ini. Nokos murah dan cepat semua ada di sini — yuk mulai!`
     : lowBalance
     ? `Saldo kamu tinggal ${rupiah(balance)} nih. Isi dulu yuk biar nggak kehabisan pas butuh OTP!`
     : `Saldo kamu ${rupiah(balance)}, siap dipakai. Mau nokos apa hari ini?`;
@@ -112,7 +113,7 @@ export default function MascotGreeting() {
       className={`mg-root ${leaving ? "mg-out" : ""}`}
       role="dialog"
       aria-modal="true"
-      aria-label="Sapaan ARTA PEDIA SUPPORT"
+      aria-label={`Sapaan ${brand.MASKOT}`}
     >
       <button className="mg-backdrop" onClick={close} aria-label="Tutup sapaan" />
 
@@ -125,16 +126,16 @@ export default function MascotGreeting() {
             <span className="mg-shadow" aria-hidden="true" />
             <TopiMaskot ukuran="2.4rem" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/maskot.webp" alt="ARTA PEDIA SUPPORT" className="mg-img" width="484" height="700" />
+            <img src="/maskot.webp" alt={brand.MASKOT} className="mg-img" width="484" height="700" />
           </div>
 
           <div className="mg-text">
             <p className="mg-hi">
               {greetingByHour(hour)}
-              {ready && token ? "!" : " di Arta Pedia!"}
+              {ready && token ? "!" : ` di ${brand.nama}!`}
             </p>
             <p className="mg-name">
-              ARTA PEDIA SUPPORT
+              {brand.MASKOT}
               <span className="mg-badge">online</span>
               <span className="comic-burst">maskot</span>
             </p>

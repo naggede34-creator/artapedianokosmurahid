@@ -5,7 +5,7 @@ import { CHANNEL_URL } from "@/lib/links";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useUser } from "@/app/providers";
+import { useUser, useBrand } from "@/app/providers";
 import { Icon } from "@/components/ui";
 
 const I = {
@@ -105,6 +105,7 @@ const sections = [
 ];
 
 export default function Sidebar({ open, onClose }) {
+  const brand = useBrand();
   const pathname = usePathname();
   const { balance, ready, name, token, loginWajib, keluar } = useUser();
   const [kodeTersalin, setKodeTersalin] = useState(false);
@@ -133,7 +134,7 @@ export default function Sidebar({ open, onClose }) {
       <aside className="animate-slide-in-left absolute inset-y-0 left-0 flex w-[86%] max-w-[320px] flex-col border-r border-line bg-surface">
         <div className="flex items-center justify-between px-5 pb-3 pt-5">
           <div>
-            <p className="text-[17px] font-extrabold tracking-tight text-ink">Artapedia</p>
+            <p className="text-[17px] font-extrabold tracking-tight text-ink">{brand.nama}</p>
             <p className="text-xs text-muted">
               {name ? `${name} · ` : ""}
               <span className="font-semibold tabular-nums text-ink">{ready ? `Rp${Number(balance || 0).toLocaleString("id-ID")}` : "…"}</span>
@@ -154,7 +155,7 @@ export default function Sidebar({ open, onClose }) {
                   const isi = (
                     <>
                       <span className={active ? "text-amber-bright" : "text-muted"}>{item.icon}</span>
-                      <span className="flex-1">{item.label}</span>
+                      <span className="flex-1">{item.href === "/chat" ? brand.chat : item.label}</span>
                       {item.badge && <span className="chip bg-amber text-white">{item.badge}</span>}
                       {item.external && <span className="text-[11px] text-muted">↗</span>}
                     </>
@@ -210,7 +211,7 @@ export default function Sidebar({ open, onClose }) {
           onClick={() => { onClose?.(); setTimeout(() => window.dispatchEvent(new Event("buka-pembaruan")), 250); }}
           className="press flex items-center gap-2 border-t border-line px-5 py-3 text-left text-sm font-bold text-amber-bright"
         >
-          ✨ Yang baru di Artapedia
+          ✨ Yang baru di {brand.nama}
         </button>
 
         <div className="flex items-center justify-between border-t border-line px-5 py-4">

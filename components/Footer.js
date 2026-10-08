@@ -1,3 +1,6 @@
+"use client";
+
+import { useBrand } from "@/app/providers";
 import Link from "next/link";
 import { CHANNEL_URL } from "@/lib/links";
 import { Logo } from "@/components/Navbar";
@@ -33,13 +36,14 @@ const cols = [
 ];
 
 export default function Footer() {
+  const brand = useBrand();
   return (
     <footer className="mt-10 border-t border-line bg-surface">
       <div className="mx-auto hidden max-w-content gap-10 px-5 py-12 md:grid md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <div className="flex items-center gap-2.5">
             <Logo size={30} />
-            <span className="text-base font-extrabold tracking-tight text-ink">Artapedia</span>
+            <span className="text-base font-extrabold tracking-tight text-ink">{brand.nama}</span>
           </div>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted">
             Nomor OTP dan isi saldo QRIS — semuanya diproses otomatis 24 jam.
@@ -69,7 +73,7 @@ export default function Footer() {
         {/* Pintu masuk admin: sengaja terlihat seperti teks biasa. */}©{" "}
         {new Date().getFullYear()}{" "}
         <Link href="/admin/login" className="text-inherit no-underline hover:text-inherit">
-          ARTA PEDIA iD
+          {brand.NAMA_LENGKAP}
         </Link>
         . Semua transaksi diproses otomatis oleh sistem.
       </div>

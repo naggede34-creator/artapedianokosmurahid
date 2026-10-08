@@ -9,11 +9,11 @@
 // dari perangkat lain — makanya tombol Lanjut baru menyala setelah pengguna
 // menyatakan sudah menyimpannya.
 import { useState } from "react";
-import { useUser } from "@/app/providers";
+import { useUser, useBrand } from "@/app/providers";
 
-function unduhKode(nama, kode) {
+function unduhKode(nama, kode, brand) {
   try {
-    const isi = `ARTA PEDIA — KODE AKUN\n\nNama : ${nama || "-"}\nKode : ${kode}\n\nSimpan baik-baik. Kode ini dipakai untuk masuk lagi di website maupun bot Telegram.\nJangan dibagikan ke siapa pun.\n`;
+    const isi = `${brand.NAMA} — KODE AKUN\n\nNama : ${nama || "-"}\nKode : ${kode}\n\nSimpan baik-baik. Kode ini dipakai untuk masuk lagi di website maupun bot Telegram.\nJangan dibagikan ke siapa pun.\n`;
     const url = URL.createObjectURL(new Blob([isi], { type: "text/plain" }));
     const a = document.createElement("a");
     a.href = url;
@@ -24,6 +24,7 @@ function unduhKode(nama, kode) {
 }
 
 export default function AuthGate() {
+  const brand = useBrand();
   const { daftar, masuk } = useUser();
   const [tab, setTab] = useState("daftar"); // daftar | masuk
   const [nama, setNama] = useState("");
@@ -85,7 +86,7 @@ export default function AuthGate() {
         <div className="flex flex-col items-center text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-mark.png" alt="" width={56} height={56} className="h-14 w-14 rounded-2xl" />
-          <h1 className="judul-timbul mt-3 font-display text-xl font-black text-ink">ARTA PEDIA ID</h1>
+          <h1 className="judul-timbul mt-3 font-display text-xl font-black text-ink">{brand.NAMA_LENGKAP}</h1>
           <p className="mt-0.5 text-xs text-muted">Nokos termurah dan fast</p>
         </div>
 
@@ -105,7 +106,7 @@ export default function AuthGate() {
               <button type="button" onClick={salin} className="btn-3d rounded-xl border-2 border-blue bg-blue-soft px-3 py-2.5 text-xs font-black text-blue-bright">
                 {tersalin ? "✅ Tersalin" : "📋 Salin kode"}
               </button>
-              <button type="button" onClick={() => unduhKode(baru.name, baru.token)} className="btn-3d rounded-xl border-2 border-line bg-surface px-3 py-2.5 text-xs font-black text-ink">
+              <button type="button" onClick={() => unduhKode(baru.name, baru.token, brand)} className="btn-3d rounded-xl border-2 border-line bg-surface px-3 py-2.5 text-xs font-black text-ink">
                 💾 Unduh .txt
               </button>
             </div>
@@ -131,7 +132,7 @@ export default function AuthGate() {
               disabled={!sudahSimpan || sibuk}
               className="btn-3d mt-4 w-full rounded-xl border-2 border-blue bg-blue-bright py-3 text-sm font-black text-white disabled:opacity-40"
             >
-              {sibuk ? "Masuk…" : "🚀 Lanjut ke Artapedia"}
+              {sibuk ? "Masuk…" : "🚀 Lanjut ke {brand.nama}"}
             </button>
           </div>
         ) : (

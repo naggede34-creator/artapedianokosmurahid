@@ -4,7 +4,7 @@
 // Dua panel di layar lebar, satu panel bertumpuk di ponsel.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@/app/providers";
+import { useUser, useBrand } from "@/app/providers";
 import { Ik, Avatar, NamaLencana, Lembar, Konfirmasi, WaCtx, useWa, bikinApi, useInterval, waktuDaftar, jam, durasiTeks, tautanKontak, bagikanTautan } from "@/components/wa/kit";
 import Percakapan from "@/components/wa/Percakapan";
 import TabStatus from "@/components/wa/Status";
@@ -23,6 +23,7 @@ function previewTeks(r) {
 }
 
 export default function WaApp() {
+  const brand = useBrand();
   const router = useRouter();
   const { token, ready, updateName } = useUser();
   const api = useMemo(() => (token ? bikinApi(token) : null), [token]);
@@ -216,10 +217,10 @@ export default function WaApp() {
   const totalBelum = rooms.filter((r) => !r.muted && !r.archived).reduce((a, r) => a + (r.belumBaca || 0), 0);
 
   useEffect(() => {
-    const dasar = "WEARTA CHAT";
+    const dasar = brand.chat;
     document.title = totalBelum ? `(${totalBelum}) ${dasar}` : dasar;
-    return () => { document.title = "ARTA PEDIA ID"; };
-  }, [totalBelum]);
+    return () => { document.title = brand.NAMA_LENGKAP; };
+  }, [totalBelum, brand]);
 
   async function pref(r, kunci) {
     const nilai = !r[kunci];

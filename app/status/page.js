@@ -1,5 +1,7 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 // Halaman status layanan publik: lampu per layanan, diperbarui otomatis tiap 30 detik.
 import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/ui";
@@ -20,6 +22,7 @@ const UMUM = {
 };
 
 export default function StatusPage() {
+  const brand = useBrand();
   const [d, setD] = useState(null);
   const [galat, setGalat] = useState("");
   const muat = useCallback(async () => {
@@ -30,7 +33,7 @@ export default function StatusPage() {
   const u = d ? UMUM[d.umum] || UMUM.normal : null;
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
-      <PageHeader title="Status Layanan" desc="Kondisi layanan Arta Pedia saat ini, dihitung dari transaksi nyata 60 menit terakhir." />
+      <PageHeader title="Status Layanan" desc={`Kondisi layanan ${brand.nama} saat ini, dihitung dari transaksi nyata 60 menit terakhir.`} />
       {galat && !d && <p className="mt-4 rounded-xl border border-rose/30 bg-rose-soft px-3 py-2 text-sm font-bold text-rose" data-testid="status-galat">{galat}</p>}
       {!d && !galat && (
         <div className="mt-5 space-y-3" role="status" aria-label="Memuat status" data-testid="status-skeleton">

@@ -1,5 +1,7 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 import Link from "next/link";
 
 // Ajakan mencoba QRIS Gateway, di beranda.
@@ -8,6 +10,7 @@ import Link from "next/link";
 // "beli sesuatu", melainkan "terima uang" — dan dua hal itu jangan sampai
 // tertukar di mata orang yang baru pertama melihatnya.
 export default function GatewayTeaser({ className = "" }) {
+  const brand = useBrand();
   return (
     <section className={`panggung-3d ${className}`}>
       <Link
@@ -36,7 +39,7 @@ export default function GatewayTeaser({ className = "" }) {
           </h2>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">
             Punya jualan sendiri? Buat QRIS pembayaran otomatis dari sini — tinggal masukkan nominal,
-            QR-nya langsung jadi. Saldonya bisa ditarik ke e-wallet, atau dijadikan saldo Arta Pedia
+            QR-nya langsung jadi. Saldonya bisa ditarik ke e-wallet, atau dijadikan saldo {brand.nama}
             untuk beli nokos.
           </p>
 

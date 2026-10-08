@@ -1,9 +1,12 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function AdminLoginPage() {
+  const brand = useBrand();
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -41,7 +44,7 @@ export default function AdminLoginPage() {
           <span className="btn-3d mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber text-xl shadow-3d">
             🔒
           </span>
-          <h1 className="mt-4 text-center font-display text-lg font-semibold text-white">Admin Artapedia</h1>
+          <h1 className="mt-4 text-center font-display text-lg font-semibold text-white">Admin {brand.nama}</h1>
           <p className="mt-1 text-center text-xs text-white/60">Masukkan kode akses admin untuk lanjut.</p>
 
           <input

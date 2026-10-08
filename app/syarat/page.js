@@ -1,16 +1,19 @@
+"use client";
+
+import { useBrand } from "@/app/providers";
 const sections = [
   {
     title: "1. Tentang layanan",
     body: [
-      "Artapedia menyediakan dua layanan utama: pengisian saldo (deposit) otomatis lewat QRIS, dan pembelian nomor virtual untuk menerima kode verifikasi (OTP) dari berbagai layanan pihak ketiga.",
-      "Nomor OTP yang dijual berasal dari mitra penyedia layanan pihak ketiga. Artapedia bertindak sebagai perantara yang menampilkan katalog dan memproses transaksinya secara otomatis."
+      "{{nama}} menyediakan dua layanan utama: pengisian saldo (deposit) otomatis lewat QRIS, dan pembelian nomor virtual untuk menerima kode verifikasi (OTP) dari berbagai layanan pihak ketiga.",
+      "Nomor OTP yang dijual berasal dari mitra penyedia layanan pihak ketiga. {{nama}} bertindak sebagai perantara yang menampilkan katalog dan memproses transaksinya secara otomatis."
     ]
   },
   {
     title: "2. Kode akun",
     body: [
       "Web ini tidak menggunakan sistem login dan kata sandi. Setiap pengunjung mendapat satu kode akun unik yang menjadi satu-satunya identitas untuk saldo dan riwayat transaksi.",
-      "Kamu bertanggung jawab penuh menyimpan kode akun ini. Artapedia tidak dapat memulihkan saldo dari kode akun yang hilang, terhapus, atau dibagikan ke pihak lain tanpa sepengetahuan pemiliknya."
+      "Kamu bertanggung jawab penuh menyimpan kode akun ini. {{nama}} tidak dapat memulihkan saldo dari kode akun yang hilang, terhapus, atau dibagikan ke pihak lain tanpa sepengetahuan pemiliknya."
     ]
   },
   {
@@ -18,7 +21,7 @@ const sections = [
     body: [
       "Nominal deposit dibatasi minimal Rp2.000 dan maksimal Rp1.000.000 per transaksi.",
       "Saldo ditambahkan secara otomatis oleh sistem setelah pembayaran QRIS terverifikasi. Jika pembayaran sudah dilakukan namun saldo belum masuk dalam waktu wajar, hubungi kontak bantuan dengan menyertakan kode order dan bukti pembayaran.",
-      "Saldo yang sudah masuk tidak dapat ditarik kembali dalam bentuk uang tunai maupun dipindahkan ke rekening/e-wallet. Saldo hanya dapat digunakan untuk transaksi di dalam Artapedia."
+      "Saldo yang sudah masuk tidak dapat ditarik kembali dalam bentuk uang tunai maupun dipindahkan ke rekening/e-wallet. Saldo hanya dapat digunakan untuk transaksi di dalam {{nama}}."
     ]
   },
   {
@@ -33,8 +36,8 @@ const sections = [
   {
     title: "5. Penggunaan yang dilarang",
     body: [
-      "Kamu dilarang menggunakan saldo, nomor, atau kode OTP dari Artapedia untuk aktivitas ilegal, penipuan, spam, pengambilalihan akun orang lain tanpa izin, atau pelanggaran hukum lainnya.",
-      "Artapedia berhak menolak, membatalkan, atau memblokir akses kode akun yang terindikasi digunakan untuk pelanggaran di atas, tanpa kewajiban mengembalikan saldo yang tersisa.",
+      "Kamu dilarang menggunakan saldo, nomor, atau kode OTP dari {{nama}} untuk aktivitas ilegal, penipuan, spam, pengambilalihan akun orang lain tanpa izin, atau pelanggaran hukum lainnya.",
+      "{{nama}} berhak menolak, membatalkan, atau memblokir akses kode akun yang terindikasi digunakan untuk pelanggaran di atas, tanpa kewajiban mengembalikan saldo yang tersisa.",
       "Segala risiko hukum akibat penyalahgunaan nomor atau kode OTP sepenuhnya menjadi tanggung jawab pengguna yang bersangkutan."
     ]
   },
@@ -42,13 +45,13 @@ const sections = [
     title: "6. Harga dan perubahan layanan",
     body: [
       "Harga nomor OTP dapat berubah sewaktu-waktu mengikuti harga dari mitra penyedia, dan harga yang berlaku adalah harga yang tampil pada saat transaksi dilakukan.",
-      "Artapedia dapat menambah, mengurangi, atau menghentikan sementara layanan tertentu tanpa pemberitahuan sebelumnya apabila mitra penyedia mengalami gangguan."
+      "{{nama}} dapat menambah, mengurangi, atau menghentikan sementara layanan tertentu tanpa pemberitahuan sebelumnya apabila mitra penyedia mengalami gangguan."
     ]
   },
   {
     title: "7. Batasan tanggung jawab",
     body: [
-      "Artapedia tidak bertanggung jawab atas kerugian yang timbul dari penyalahgunaan kode akun oleh pihak yang tidak berwenang, gangguan pada aplikasi/layanan pihak ketiga tempat nomor OTP digunakan, atau keadaan di luar kendali wajar seperti gangguan jaringan atau pemadaman sistem pembayaran."
+      "{{nama}} tidak bertanggung jawab atas kerugian yang timbul dari penyalahgunaan kode akun oleh pihak yang tidak berwenang, gangguan pada aplikasi/layanan pihak ketiga tempat nomor OTP digunakan, atau keadaan di luar kendali wajar seperti gangguan jaringan atau pemadaman sistem pembayaran."
     ]
   },
   {
@@ -60,12 +63,13 @@ const sections = [
 ];
 
 export default function SyaratPage() {
+  const brand = useBrand();
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
       <p className="fade-up text-sm font-semibold text-amber-bright">Legal</p>
       <h1 className="fade-up delay-1 mt-2 text-[26px] font-extrabold tracking-tight text-ink sm:text-[32px]">Syarat & Ketentuan</h1>
       <p className="fade-up delay-2 mt-3 max-w-xl text-sm leading-relaxed text-muted">
-        Dengan menggunakan Artapedia untuk deposit saldo atau membeli nomor OTP, kamu dianggap sudah membaca dan
+        Dengan menggunakan {brand.nama} untuk deposit saldo atau membeli nomor OTP, kamu dianggap sudah membaca dan
         menyetujui seluruh ketentuan berikut.
       </p>
 
@@ -76,7 +80,7 @@ export default function SyaratPage() {
             <div className="mt-3 space-y-2">
               {s.body.map((p, idx) => (
                 <p key={idx} className="text-sm leading-relaxed text-muted">
-                  {p}
+                  {p.replaceAll("{{nama}}", brand.nama)}
                 </p>
               ))}
             </div>

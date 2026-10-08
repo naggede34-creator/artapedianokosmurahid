@@ -1,5 +1,7 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import "@/components/docs.css";
@@ -146,6 +148,7 @@ function EndpointCard({ method, path, title, description, auth = true, params, r
 
 /* ───────── main page ───────── */
 export default function ApiDocsPage() {
+  const brand = useBrand();
   // Base URL diatur admin (Pengaturan Umum → Alamat API). Dibaca dari server,
   // bukan window.location: dokumentasi ini dibaca untuk DISALIN ke server
   // developer, dan alamat yang ikut tempat halaman dibuka akan menghasilkan
@@ -295,7 +298,7 @@ export default function ApiDocsPage() {
 
           {/* API KEY */}
           <Section id="apikey">
-            <h2 className="text-display-sm font-display text-ink mb-4">API Key Artapedia</h2>
+            <h2 className="text-display-sm font-display text-ink mb-4">API Key {brand.nama}</h2>
             <p className="text-muted mb-4">
               API key adalah kunci pribadimu untuk memakai API — satu akun satu key (32 karakter heksadesimal). Semua yang dilakukan lewat key
               (saldo terpotong, pesanan, deposit) tercatat atas akunmu, jadi perlakukan seperti kata sandi.
@@ -304,7 +307,7 @@ export default function ApiDocsPage() {
               <div className="card rounded-xl p-4 border border-line">
                 <p className="font-semibold text-ink text-sm mb-2">🔑 Cara mendapatkan key</p>
                 <ol className="text-xs text-muted list-decimal list-inside space-y-1">
-                  <li>Masuk ke akunmu di web Artapedia.</li>
+                  <li>Masuk ke akunmu di web {brand.nama}.</li>
                   <li>Buka halaman <Link href="/apikey" className="text-amber underline">API Key</Link> (menu Dashboard → API Key).</li>
                   <li>Tekan <b>Buat / Buat ulang API key</b>, lalu salin — key utuh hanya tampil saat dibuat.</li>
                 </ol>
@@ -455,7 +458,7 @@ print(r.json())`}
           <Section id="ep-servers">
             <h2 className="text-display-sm font-display text-ink mb-2">Server Nokos</h2>
             <p className="text-muted mb-4">
-              Layanan nokos Artapedia berjalan di atas <b>WarungNokos</b> dengan dua jalur, disebut <b>server</b>. Tiap server punya
+              Layanan nokos {brand.nama} berjalan di atas <b>WarungNokos</b> dengan dua jalur, disebut <b>server</b>. Tiap server punya
               daftar aplikasi, negara, dan harga sendiri. Semua endpoint katalog &amp; order menerima parameter{" "}
               <code className="font-mono text-xs bg-surface2 px-1.5 py-0.5 rounded border border-line">server</code>.
               Kalau tidak dikirim, nilainya otomatis <code className="font-mono text-xs">warungnokos_s1</code> (Server Plus).

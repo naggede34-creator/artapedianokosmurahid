@@ -1,5 +1,7 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import SimCard from "@/components/SimCard";
@@ -45,7 +47,7 @@ const TRUST_BADGES = [
 const FAQS = [
   { q: "Apa itu nokos?",                    a: "Nokos (nomor sekali pakai) adalah nomor telepon virtual untuk menerima kode OTP dari WhatsApp, Telegram, Google, dll. Tanpa kartu SIM fisik." },
   { q: "Berapa lama OTP masuk?",            a: "Biasanya 5–60 detik. Sistem kami memantau nomor secara real-time dan kode langsung tampil di halaman pesanan." },
-  { q: "Apakah aman menggunakan Artapedia?",a: "Ya, sangat aman. Tidak ada data pribadi yang diminta. Kamu hanya perlu kode akun unik — tanpa email, tanpa password, tanpa nomor HP." },
+  { q: "Apakah aman menggunakan {{nama}}?",a: "Ya, sangat aman. Tidak ada data pribadi yang diminta. Kamu hanya perlu kode akun unik — tanpa email, tanpa password, tanpa nomor HP." },
   { q: "Bagaimana cara isi saldo?",         a: "Buka halaman Deposit, masukkan nominal, pilih metode QRIS, scan QR dengan e-wallet atau m-banking. Saldo masuk otomatis begitu terdeteksi." },
   { q: "Berapa minimal deposit?",           a: "Minimal deposit hanya Rp2.000 — sangat terjangkau untuk yang ingin coba terlebih dahulu." },
   { q: "Bisa refund kalau nomor bermasalah?",a: "Bisa! Gunakan fitur Klaim Garansi di Dashboard. Admin proses dalam 1×24 jam dan saldo dikembalikan jika disetujui." },
@@ -209,6 +211,7 @@ function SectionHeader({ badge, title, sub }) {
 
 /* ========== PAGE ========== */
 export default function HomePage() {
+  const brand = useBrand();
   const [services, setServices] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [siteStats, setSiteStats] = useState(null);
@@ -473,7 +476,7 @@ export default function HomePage() {
 
       {/* ===== TESTIMONIALS ===== */}
       <section className="mt-14">
-        <SectionHeader badge="⭐ Ulasan Nyata" title="Dipercaya ribuan pengguna" sub="Lihat apa kata mereka setelah pakai Artapedia" />
+        <SectionHeader badge="⭐ Ulasan Nyata" title="Dipercaya ribuan pengguna" sub={`Lihat apa kata mereka setelah pakai ${brand.nama}`} />
         <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {TESTIMONIALS.map((t, i) => (
             <div key={t.name}
@@ -506,7 +509,7 @@ export default function HomePage() {
                 </div>
                 <div>
                   <p className="text-sm font-black text-ink">{t.name}</p>
-                  <p className="text-[11px] text-muted">Pengguna Artapedia</p>
+                  <p className="text-[11px] text-muted">Pengguna {brand.nama}</p>
                 </div>
               </div>
             </div>
@@ -544,7 +547,7 @@ export default function HomePage() {
         <SectionHeader badge="❓ FAQ" title="Pertanyaan yang sering ditanya" sub="Ada yang kurang jelas? Cek dulu di sini" />
         <div className="manga-panel mt-6 rounded-2xl bg-surface px-5 py-2 overflow-hidden">
           {FAQS.map((faq, i) => (
-            <FaqItem key={faq.q} {...faq} index={i} />
+            <FaqItem key={faq.q} q={faq.q.replaceAll("{{nama}}", brand.nama)} a={String(faq.a).replaceAll("{{nama}}", brand.nama)} index={i} />
           ))}
         </div>
         <p className="mt-4 text-center text-sm text-muted">

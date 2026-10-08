@@ -21,7 +21,7 @@ import { cfg } from "@/lib/config";
 // https://domainkamu.vercel.app/api/telegram/webhook
 // Lihat README.md bagian "Bot Telegram untuk Owner" untuk cara daftarnya.
 export async function GET() {
-  return NextResponse.json({ ok: true, info: "Endpoint webhook bot Telegram Artapedia." });
+  return NextResponse.json({ ok: true, info: "Endpoint webhook bot Telegram." });
 }
 
 export async function POST(req) {
@@ -243,7 +243,7 @@ async function handleStatistik(chatId, users) {
 
   await sendMessage(
     chatId,
-    `<b>📊 Statistik Artapedia</b>\n\n` +
+    `<b>📊 Statistik</b>\n\n` +
       `Total user: ${agg?.totalUser || 0}\n` +
       `Total saldo beredar: ${rupiah(agg?.totalSaldo || 0)}\n` +
       `Total teman berhasil diundang: ${agg?.totalReferralCount || 0}\n` +

@@ -5,7 +5,7 @@
 import { SkelHalaman, SkelBaris, Skel } from "@/components/Skeleton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useUser } from "@/app/providers";
+import { useUser, useBrand } from "@/app/providers";
 import ThemeToggle from "@/components/ThemeToggle";
 import PushToggle from "@/components/PushToggle";
 import KunciAkunPanel from "@/components/KunciAkunPanel";
@@ -28,9 +28,9 @@ function lamaBergabung(v) {
   if (hari < 365) return `${Math.floor(hari / 30)} bulan`;
   return `${Math.floor(hari / 365)} tahun ${Math.floor((hari % 365) / 30)} bulan`;
 }
-function unduhKode(nama, kode) {
+function unduhKode(nama, kode, brand) {
   try {
-    const isi = `ARTA PEDIA — KODE AKUN\n\nNama : ${nama || "-"}\nKode : ${kode}\n\nSimpan baik-baik. Kode ini dipakai untuk masuk lagi di website maupun bot Telegram.\nJangan dibagikan ke siapa pun.\n`;
+    const isi = `${brand.NAMA} — KODE AKUN\n\nNama : ${nama || "-"}\nKode : ${kode}\n\nSimpan baik-baik. Kode ini dipakai untuk masuk lagi di website maupun bot Telegram.\nJangan dibagikan ke siapa pun.\n`;
     const url = URL.createObjectURL(new Blob([isi], { type: "text/plain" }));
     const a = document.createElement("a");
     a.href = url;
@@ -61,6 +61,7 @@ function Angka({ label, nilai, warna = "text-ink", ikon }) {
 }
 
 export default function ProfilPage() {
+  const brand = useBrand();
   const { token, ready, name, balance, joinedAt, updateName, keluar, refreshBalance } = useUser();
   const [avatar, setAvatar] = useState("😊");
   const [pilihAvatar, setPilihAvatar] = useState(false);
@@ -125,7 +126,7 @@ export default function ProfilPage() {
 
   const persen = loyal?.next?.persen ?? 100;
   const fotoWa = wa?.fotoV ? `/api/wa/foto/${wa.pid}?v=${wa.fotoV}` : null;
-  const tampilNama = name || "Pengguna Artapedia";
+  const tampilNama = name || `Pengguna ${brand.nama}`;
 
   if (!ready) return <SkelHalaman kartu={4} />;
   if (!token) {
@@ -294,7 +295,7 @@ export default function ProfilPage() {
             <button type="button" onClick={salin} className="btn-3d rounded-xl border-2 border-blue bg-blue-soft py-2.5 text-xs font-black text-blue-bright">
               {tersalin ? "✅ Tersalin" : "📋 Salin kode"}
             </button>
-            <button type="button" onClick={() => unduhKode(name, token)} className="btn-3d rounded-xl border-2 border-line bg-surface py-2.5 text-xs font-black text-ink">
+            <button type="button" onClick={() => unduhKode(name, token, brand)} className="btn-3d rounded-xl border-2 border-line bg-surface py-2.5 text-xs font-black text-ink">
               💾 Unduh .txt
             </button>
           </div>
@@ -361,7 +362,7 @@ export default function ProfilPage() {
             </div>
             <div className="mt-2 grid grid-cols-2 gap-2">
               <button type="button" onClick={salin} className="btn-3d rounded-xl border-2 border-blue bg-blue-soft py-2 text-xs font-black text-blue-bright">{tersalin ? "✅ Tersalin" : "📋 Salin"}</button>
-              <button type="button" onClick={() => unduhKode(name, token)} className="btn-3d rounded-xl border-2 border-line bg-surface py-2 text-xs font-black text-ink">💾 Unduh</button>
+              <button type="button" onClick={() => unduhKode(name, token, brand)} className="btn-3d rounded-xl border-2 border-line bg-surface py-2 text-xs font-black text-ink">💾 Unduh</button>
             </div>
             <label className="mt-4 flex cursor-pointer items-start gap-2.5 text-xs font-bold text-ink">
               <input type="checkbox" checked={sudahSimpan} onChange={(e) => setSudahSimpan(e.target.checked)} className="mt-0.5 h-4 w-4 accent-amber" />

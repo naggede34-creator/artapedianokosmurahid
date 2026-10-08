@@ -1,5 +1,7 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 import { useEffect, useState } from "react";
 import { INVOICE_MIN, INVOICE_MAX, BIAYA_QRIS, WD_MIN, BIAYA_WD } from "@/lib/gatewayConfig";
 
@@ -18,7 +20,7 @@ const PASAL = [
     ikon: "🧾",
     judul: "Uang yang masuk itu tanggung jawab kamu",
     isi: [
-      "Tagihan yang kamu buat adalah perjanjian antara kamu dan pembelimu. Arta Pedia hanya menyediakan salurannya.",
+      "Tagihan yang kamu buat adalah perjanjian antara kamu dan pembelimu. {{nama}} hanya menyediakan salurannya.",
       "Kalau pembelimu komplain, minta refund, atau melapor, yang menyelesaikannya kamu — bukan kami."
     ]
   },
@@ -48,7 +50,7 @@ const PASAL = [
     isi: [
       `Tagihan ${rp(INVOICE_MIN)} sampai ${rp(INVOICE_MAX)}.`,
       `Biaya ${rp(BIAYA_QRIS)} per tagihan, dipotong HANYA kalau tagihannya dibayar. Yang tidak dibayar tidak dikenai apa pun.`,
-      "Konversi ke saldo Arta Pedia tanpa biaya.",
+      "Konversi ke saldo {{nama}} tanpa biaya.",
       "Biaya dan batas bisa berubah; perubahannya diumumkan di channel lebih dulu."
     ]
   },
@@ -64,6 +66,7 @@ const PASAL = [
 ];
 
 export default function GatewayTerms({ token, onSetuju }) {
+  const brand = useBrand();
   const [tampil, setTampil] = useState(false);
   const [centang, setCentang] = useState(false);
 
@@ -121,7 +124,7 @@ export default function GatewayTerms({ token, onSetuju }) {
                   {p.isi.map((baris) => (
                     <li key={baris} className="flex gap-2 text-[12px] leading-relaxed text-muted">
                       <span className="shrink-0 text-amber-bright">•</span>
-                      <span>{baris}</span>
+                      <span>{baris.replaceAll("{{nama}}", brand.nama)}</span>
                     </li>
                   ))}
                 </ul>

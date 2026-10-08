@@ -1,3 +1,6 @@
+"use client";
+
+import { useBrand } from "@/app/providers";
 const steps = [
   {
     title: "Simpan kode akun kamu",
@@ -37,10 +40,11 @@ const steps = [
 ];
 
 export default function CaraPakaiPage() {
+  const brand = useBrand();
   return (
     <div className="mx-auto max-w-content px-4 py-6 sm:px-5 sm:py-10">
       <p className="fade-up text-sm font-semibold text-teal-bright">Panduan</p>
-      <h1 className="fade-up delay-1 mt-2 text-[26px] font-extrabold tracking-tight text-ink sm:text-[32px]">Cara menggunakan Artapedia</h1>
+      <h1 className="fade-up delay-1 mt-2 text-[26px] font-extrabold tracking-tight text-ink sm:text-[32px]">Cara menggunakan {brand.nama}</h1>
       <p className="fade-up delay-2 mt-3 max-w-xl text-sm leading-relaxed text-muted">
         Langkah-langkah ini mencakup seluruh alur, dari menyimpan kode akun sampai menerima kode OTP.
       </p>

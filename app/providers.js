@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { pasangPenyadapPerangkat } from "@/lib/perangkatKlien";
+import { rakitBrand } from "@/lib/brand";
 
 const THEME_KEY = "artapedia_theme";
 const ThemeContext = createContext(null);
@@ -68,6 +69,8 @@ export function UserProvider({ children }) {
   // true = admin mewajibkan daftar/masuk dan pengunjung belum punya akun aktif.
   const [perluMasuk, setPerluMasuk] = useState(false);
   const [loginWajib, setLoginWajib] = useState(false);
+  // Nama merek (bawaan "Arta Pedia"; admin bisa mengubahnya). Dimuat bersama status situs.
+  const [brand, setBrand] = useState(() => rakitBrand({}));
   // true = akun ini di-ban admin (atau IP-nya diblokir): seluruh situs diganti satu layar peringatan.
   const [banned, setBanned] = useState(false);
 
@@ -109,6 +112,8 @@ export function UserProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    // Merek terakhir dari perangkat ini dipakai dulu supaya nama tidak berkedip sebelum data server tiba.
+    try { const b = JSON.parse(localStorage.getItem("artapedia_brand") || "null"); if (b) setBrand(rakitBrand(b)); } catch {}
     const saved = typeof window !== "undefined" ? localStorage.getItem("artapedia_token") : null;
     const ref = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("ref") : null;
     // Kode undangan diingat sampai benar-benar daftar: pengunjung yang dibawa
@@ -121,7 +126,9 @@ export function UserProvider({ children }) {
       let wajib = false;
       try {
         const r = await fetch("/api/settings/public", { cache: "no-store" });
-        wajib = !!(await r.json()).loginWajib;
+        const pub = await r.json();
+        wajib = !!pub.loginWajib;
+        if (pub.brand) { setBrand(rakitBrand(pub.brand)); try { localStorage.setItem("artapedia_brand", JSON.stringify(pub.brand)); } catch {} }
       } catch {}
       setLoginWajib(wajib);
 
@@ -285,7 +292,7 @@ export function UserProvider({ children }) {
 
   return (
     <UserContext.Provider
-      value={{ token, balance, depositBalance, name, joinedAt, tourDone, ready, perluMasuk, loginWajib, banned, daftar, masuk, keluar, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
+      value={{ brand, token, balance, depositBalance, name, joinedAt, tourDone, ready, perluMasuk, loginWajib, banned, daftar, masuk, keluar, setBalance, refreshBalance, restoreToken, updateName, completeTour }}
     >
       {children}
     </UserContext.Provider>
@@ -296,4 +303,10 @@ export function useUser() {
   const ctx = useContext(UserContext);
   if (!ctx) throw new Error("useUser harus dipakai di dalam UserProvider");
   return ctx;
+}
+
+/** Nama merek aktif: { nama, namaLengkap, slogan, maskot, chat, NAMA, ... } — lihat lib/brand.js. */
+export function useBrand() {
+  const ctx = useContext(UserContext);
+  return ctx?.brand || rakitBrand({});
 }

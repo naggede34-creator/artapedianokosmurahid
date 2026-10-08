@@ -1,5 +1,7 @@
 "use client";
 
+import { useBrand } from "@/app/providers";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -80,6 +82,7 @@ const JUDUL_DASBOR = {
 };
 
 export default function AdminDashboardPage() {
+  const brand = useBrand();
   const router = useRouter();
   const kParam = useSearchParams()?.get("k") || "";
   const modeK = JUDUL_DASBOR[kParam] ? kParam : "";
@@ -290,7 +293,7 @@ export default function AdminDashboardPage() {
   const [ticketReplyLoading, setTicketReplyLoading] = useState(false);
 
   // Settings extended fields
-  const [siteSettingsForm, setSiteSettingsForm] = useState({ siteName: "", siteUrl: "", telegramBotToken: "", telegramChatId: "", telegramChannelId: "", depositMin: "", depositMax: "" });
+  const [siteSettingsForm, setSiteSettingsForm] = useState({ siteName: "", brSufiks: "ID", brSlogan: "", brMaskot: "", brChat: "", siteUrl: "", telegramBotToken: "", telegramChatId: "", telegramChannelId: "", depositMin: "", depositMax: "" });
   const [siteSettingsMsg, setSiteSettingsMsg] = useState("");
   const [siteSettingsSubmitting, setSiteSettingsSubmitting] = useState(false);
 
@@ -416,6 +419,7 @@ export default function AdminDashboardPage() {
       // bisa menghapus isian (nilai kosong otomatis kembali ke env).
       const patch = {
         siteName: siteSettingsForm.siteName,
+        brand: { sufiks: siteSettingsForm.brSufiks, slogan: siteSettingsForm.brSlogan, maskot: siteSettingsForm.brMaskot, chat: siteSettingsForm.brChat },
         siteUrl: siteSettingsForm.siteUrl
       };
       // Angka hanya dikirim kalau diisi; kosong berarti "biarkan seperti sekarang".
@@ -425,7 +429,7 @@ export default function AdminDashboardPage() {
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Gagal.");
       setSettings(d);
-      setSiteSettingsForm({ siteName: d.siteName || "", siteUrl: d.siteUrl || "", telegramBotToken: d.telegramBotToken || "", telegramChatId: d.telegramChatId || "", telegramChannelId: d.telegramChannelId || "", depositMin: String(d.depositMin || ""), depositMax: String(d.depositMax || "") });
+      setSiteSettingsForm({ siteName: d.siteName || "", brSufiks: d.brand?.sufiks ?? "ID", brSlogan: d.brand?.slogan || "", brMaskot: d.brand?.maskot || "", brChat: d.brand?.chat || "", siteUrl: d.siteUrl || "", telegramBotToken: d.telegramBotToken || "", telegramChatId: d.telegramChatId || "", telegramChannelId: d.telegramChannelId || "", depositMin: String(d.depositMin || ""), depositMax: String(d.depositMax || "") });
       setSiteSettingsMsg("Pengaturan tersimpan.");
     } catch (err) { setSiteSettingsMsg(err.message); }
     finally { setSiteSettingsSubmitting(false); setTimeout(() => setSiteSettingsMsg(""), 4000); }
@@ -1362,6 +1366,10 @@ export default function AdminDashboardPage() {
     setMarkupInput(String(data.markupPercent ?? 0));
     setSiteSettingsForm({
       siteName: data.siteName || "",
+      brSufiks: data.brand?.sufiks ?? "ID",
+      brSlogan: data.brand?.slogan || "",
+      brMaskot: data.brand?.maskot || "",
+      brChat: data.brand?.chat || "",
       siteUrl: data.siteUrl || "",
       telegramBotToken: data.telegramBotToken || "",
       telegramChatId: data.telegramChatId || "",
@@ -2047,7 +2055,7 @@ export default function AdminDashboardPage() {
               <p className="text-xs font-black uppercase tracking-widest text-amber opacity-80">Admin Panel</p>
             </div>
             <h1 className="font-display text-xl font-black text-white sm:text-2xl tracking-tight">
-              {modeK ? <>{JUDUL_DASBOR[modeK].ikon} Dasbor <span style={{ color: "rgb(var(--c-blue))" }}>{JUDUL_DASBOR[modeK].judul}</span></> : <>Dashboard <span style={{ color: "rgb(var(--c-blue))" }}>Artapedia</span></>}
+              {modeK ? <>{JUDUL_DASBOR[modeK].ikon} Dasbor <span style={{ color: "rgb(var(--c-blue))" }}>{JUDUL_DASBOR[modeK].judul}</span></> : <>Dashboard <span style={{ color: "rgb(var(--c-blue))" }}>{brand.nama}</span></>}
             </h1>
             <p className="text-[10px] text-white/40 mt-0.5 font-mono">Control Center · {new Date().toLocaleDateString("id-ID", { weekday:"long", day:"2-digit", month:"long", year:"numeric" })}</p>
           </div>
@@ -5935,7 +5943,32 @@ export default function AdminDashboardPage() {
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="text-xs font-medium text-muted">Nama Situs</label>
-                  <input value={siteSettingsForm.siteName} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, siteName: e.target.value }))} placeholder="Nokos Murah (dari env)" className="mt-1.5 input w-full text-sm" />
+                  <input value={siteSettingsForm.siteName} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, siteName: e.target.value }))} placeholder="Arta Pedia" className="mt-1.5 input w-full text-sm" />
+                </div>
+                <div className="sm:col-span-2 rounded-xl border border-line bg-surface2 p-3">
+                  <p className="text-xs font-bold text-ink">🏷️ Nama &amp; merek</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                    Dipakai di judul tab, logo teks, sapaan maskot, bot Telegram, dan halaman-halaman web. Kosong = nama bawaan
+                    (<b>Arta Pedia</b>). Gambar logo &amp; ikon tetap berkas gambar — ganti berkas di <code>public/</code> bila perlu.
+                  </p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="text-[11px] font-medium text-muted">Akhiran nama (mis. ID)</label>
+                      <input value={siteSettingsForm.brSufiks} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, brSufiks: e.target.value }))} placeholder="ID" maxLength={12} className="mt-1 input w-full text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-muted">Slogan</label>
+                      <input value={siteSettingsForm.brSlogan} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, brSlogan: e.target.value }))} placeholder="Nokos Termurah dan Fast" maxLength={80} className="mt-1 input w-full text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-muted">Nama maskot / asisten</label>
+                      <input value={siteSettingsForm.brMaskot} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, brMaskot: e.target.value }))} placeholder="Arta Pedia Support" maxLength={40} className="mt-1 input w-full text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-muted">Nama fitur chat</label>
+                      <input value={siteSettingsForm.brChat} onChange={(e) => setSiteSettingsForm((f) => ({ ...f, brChat: e.target.value }))} placeholder="WEARTA CHAT" maxLength={30} className="mt-1 input w-full text-sm" />
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted">URL Situs</label>
