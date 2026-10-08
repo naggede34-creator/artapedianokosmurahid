@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { useBrand } from "@/app/providers";
 
 import { useEffect, useState } from "react";
@@ -90,15 +91,28 @@ export default function GatewayTerms({ token, onSetuju }) {
     onSetuju?.();
   }
 
-  if (!tampil) return null;
+  if (!tampil || typeof document === "undefined") return null;
 
-  return (
+  // Lewat portal ke <body>: nenek-moyang halaman ini memakai transform/perspective (animasi masuk, panel 3D), dan itu
+  // menjadikan position:fixed relatif terhadapnya — lembar terkunci di dasar halaman panjang, di luar layar, dan
+  // tombol Setuju/Tutup tak terjangkau.
+  return createPortal(
     <div className="fixed inset-0 z-[120] flex items-end justify-center sm:items-center">
       <div className="absolute inset-0" style={{ background: "rgb(var(--c-navy-bright) / 0.72)" }} />
 
-      <div className="lembar-bawah relative flex w-full max-w-lg flex-col rounded-t-3xl border-2 border-ink bg-surface sm:rounded-3xl">
-        <div className="shrink-0 border-b-2 border-line px-5 pt-5 pb-3">
-          <div className="flex items-center gap-2">
+      {/* Tinggi dibatasi di sini (bukan lewat .lembar-bawah, yang membuat lembarnya sendiri menggulir dan mendorong tombol
+          Setuju / Nanti saja keluar dari layar). Header & tombol tetap terlihat; hanya daftar pasalnya yang bergulir. */}
+      <div role="dialog" aria-modal="true" aria-label="Syarat dan Ketentuan QRIS Gateway" className="relative flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border-2 border-ink bg-surface pb-[env(safe-area-inset-bottom)] sm:max-h-[88dvh] sm:rounded-3xl">
+        <div className="relative shrink-0 border-b-2 border-line px-5 pt-5 pb-3">
+          <a
+            href="/dashboard"
+            aria-label="Tutup"
+            data-testid="gw-syarat-tutup"
+            className="press absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border-2 border-line bg-surface text-base font-black text-ink"
+          >
+            ✕
+          </a>
+          <div className="flex items-center gap-2 pr-10">
             <span className="rounded-full border-2 border-ink bg-success px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
               Wajib dibaca
             </span>
@@ -133,7 +147,7 @@ export default function GatewayTerms({ token, onSetuju }) {
           </ol>
         </div>
 
-        <div className="shrink-0 border-t-2 border-line px-5 pb-5 pt-4">
+        <div className="shrink-0 border-t-2 border-line bg-surface px-5 pb-5 pt-4">
           <label className="flex cursor-pointer items-start gap-2.5">
             <input
               type="checkbox"
@@ -161,6 +175,7 @@ export default function GatewayTerms({ token, onSetuju }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
