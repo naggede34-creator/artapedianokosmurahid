@@ -4,6 +4,7 @@
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
 import { periksaNama, buatAkunBaru } from "@/lib/webAuth";
+import { rwDariReq } from "@/lib/rwKonteks";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,8 @@ export async function POST(req) {
     const n = periksaNama(body.name);
     if (!n.ok) return NextResponse.json({ error: n.alasan }, { status: 400 });
 
-    const { token, createdAt } = await buatAkunBaru({ req, nama: n.nama, ref: body.ref, sumber: "Website (daftar)" });
+    const web = await rwDariReq(req);
+    const { token, createdAt } = await buatAkunBaru({ req, nama: n.nama, ref: body.ref, sumber: web ? `Web reseller ${web.slug}` : "Website (daftar)", rwSlug: web?.slug || null });
     return NextResponse.json({ token, name: n.nama, createdAt });
   } catch (err) {
     console.error("[user/register]", err?.message || err);

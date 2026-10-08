@@ -3,6 +3,7 @@ import { usersCol } from "@/lib/db";
 import { sendMonitorLog, userLoginLog } from "@/lib/monitor";
 import { rateLimit } from "@/lib/rateLimit";
 import { loginWajib, buatAkunBaru } from "@/lib/webAuth";
+import { rwDariReq } from "@/lib/rwKonteks";
 import { catatIpAkun, blokirIpAkun, ipDariReq } from "@/lib/blokirIp";
 
 export async function POST(req) {
@@ -10,6 +11,9 @@ export async function POST(req) {
     const body = await req.json().catch(() => ({}));
     const users = await usersCol();
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    // Web reseller: akun terpisah dari web utama. Akun hanya bisa masuk di web tempat ia didaftarkan.
+    const web = await rwDariReq(req);
+    const slugIni = web?.slug || null;
 
     if (body.token) {
       // Endpoint ini adalah pintu masuk akun: menyebutkan kode akun yang benar
@@ -20,6 +24,12 @@ export async function POST(req) {
         return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi sebentar lagi." }, { status: 429 });
       }
       const existing = await users.findOne({ token: String(body.token).trim().toUpperCase() });
+      if (existing && (existing.rwSlug || null) !== slugIni) {
+        return NextResponse.json(
+          { error: slugIni ? "Kode akun ini tidak terdaftar di web ini. Daftar dulu di web ini — akun web utama dan web reseller terpisah." : "Kode akun tidak ditemukan." },
+          { status: 404 }
+        );
+      }
       if (existing && existing.suspended) {
         // Akun di-ban: tidak ada data akun yang dikirim — klien hanya menampilkan layar "AKUN ANDA TELAH DI BANNED…".
         // Dibuka dari IP baru = ikut diblokir (menghindari ban lewat ganti jaringan).
@@ -43,7 +53,7 @@ export async function POST(req) {
 
     // Login diwajibkan: akun tidak boleh dibuat diam-diam. Pengunjung tanpa
     // kode diarahkan ke pendaftaran (nama saja) atau masuk dengan kode akun.
-    if (await loginWajib()) {
+    if (web || (await loginWajib())) {
       return NextResponse.json({ error: "Daftar atau masuk dulu untuk memakai website.", loginWajib: true }, { status: 403 });
     }
 
@@ -58,7 +68,7 @@ export async function POST(req) {
       );
     }
 
-    const { token, createdAt } = await buatAkunBaru({ req, ref: body.ref, sumber: "Website" });
+    const { token, createdAt } = await buatAkunBaru({ req, ref: body.ref, sumber: "Website", rwSlug: slugIni });
     catatIpAkun(token, ipDariReq(req)).catch(() => {});
     return NextResponse.json({ token, balance: 0, createdAt, tourDone: false });
   } catch (err) {

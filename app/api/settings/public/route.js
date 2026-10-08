@@ -88,7 +88,8 @@ export async function GET(req) {
     return NextResponse.json({
       maintenance: !!maintenance,
       // Saklar admin: true = pengunjung wajib daftar/masuk.
-      loginWajib: await loginWajib().catch(() => false),
+      // Web reseller selalu minta daftar/masuk: akunnya terpisah dari web utama.
+      loginWajib: (await loginWajib().catch(() => false)) || !!(await rwDariReq(req)),
       csUsername: csUsername || "teatlas",
       brand: await (async () => {
         const utama = brandDariSettings(settings, await ringkasLogo());

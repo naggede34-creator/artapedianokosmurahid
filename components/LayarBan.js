@@ -1,6 +1,7 @@
 "use client";
 
 import { useBrand } from "@/app/providers";
+import { kunciTokenRw, kunciKeluarRw } from "@/lib/rwKlien";
 
 import { useEffect, useState } from "react";
 import { PESAN_BAN, gayaBan } from "@/lib/ipHash";
@@ -79,7 +80,7 @@ export default function LayarBan() {
     const tunggu = Math.max(1000, sampai - Date.now() + 1500);
     const t = setTimeout(async () => {
       try {
-        const k = localStorage.getItem("artapedia_token") || "";
+        const k = localStorage.getItem(kunciTokenRw()) || "";
         const r = await fetch(`/api/ban-tampilan?t=${encodeURIComponent(k)}&c=1`, { cache: "no-store" }).then((x) => x.json());
         if (r.dibuka) window.location.reload();
       } catch {}
@@ -92,7 +93,7 @@ export default function LayarBan() {
     document.body.style.overflow = "hidden";
     let batal = false;
     let k = "";
-    try { k = localStorage.getItem("artapedia_token") || ""; } catch {}
+    try { k = localStorage.getItem(kunciTokenRw()) || ""; } catch {}
     fetch(`/api/ban-tampilan${k ? `?t=${encodeURIComponent(k)}` : ""}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((j) => { if (batal) return; if (j?.dibuka) { window.location.reload(); return; } setCfg(j || { aktif: false }); });
     return () => { batal = true; document.title = lama; document.body.style.overflow = ""; };
   }, []);

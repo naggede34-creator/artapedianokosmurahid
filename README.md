@@ -65,6 +65,9 @@ Web itu memuat aplikasi yang sama dengan web utama tetapi bermerek & berharga se
   utama, dan asisten AI; hanya tombol bantuan ke Customer Service. Pilihan tema pengguna tidak menimpanya.
 - **Syarat & Ketentuan Web Reseller** (`SYARAT_RW` di `lib/webResellerUi.js`) tampil di menu Web Reseller dan wajib disetujui sebelum
   membuat web (disimpan `syaratSetujuAt`).
+- **Akun terpisah**: web reseller dan web utama memakai akun yang berbeda. Pengunjung web reseller wajib daftar/masuk (akun
+  baru bertanda `rwSlug`); kode akun web utama ditolak di web reseller (404) dan sebaliknya. Kode disimpan di kunci peramban
+  tersendiri per web (`lib/rwKlien.js`).
 - **Statistik**: kunjungan, pesanan, omzet, komisi, grafik 14 hari, pesanan terbaru. Admin: kartu Web Reseller di Pengaturan Umum
   (pantau & bekukan); saklar/markup maks di Konfigurasi (`RW_*`).
 

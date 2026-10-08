@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef } f
 import { usePathname } from "next/navigation";
 import { pasangPenyadapPerangkat } from "@/lib/perangkatKlien";
 import { rakitBrand } from "@/lib/brand";
+import { kunciTokenRw, kunciKeluarRw } from "@/lib/rwKlien";
 
 const THEME_KEY = "artapedia_theme";
 const ThemeContext = createContext(null);
@@ -93,13 +94,13 @@ export function UserProvider({ children }) {
     const data = await res.json();
     if (res.ok && data.suspended) {
       // Kode akun tetap diingat di perangkat: membuka situs lagi tetap menampilkan layar ban.
-      try { localStorage.setItem("artapedia_token", data.token); } catch {}
+      try { localStorage.setItem(kunciTokenRw(), data.token); } catch {}
       setBanned(true);
       return data;
     }
     if (res.ok) {
-      localStorage.setItem("artapedia_token", data.token);
-      try { localStorage.removeItem("artapedia_keluar"); } catch {}
+      localStorage.setItem(kunciTokenRw(), data.token);
+      try { localStorage.removeItem(kunciKeluarRw()); } catch {}
       setToken(data.token);
       setBalance(data.balance);
       setDepositBalance(data.depositBalance ?? null);
@@ -117,7 +118,7 @@ export function UserProvider({ children }) {
     // Merek terakhir dari perangkat ini dipakai dulu supaya nama tidak berkedip sebelum data server tiba.
     // Merek web reseller TIDAK disimpan di localStorage (dibagi semua tab) — hanya merek web utama.
     try { const b = JSON.parse(localStorage.getItem("artapedia_brand") || "null"); if (b && !b.reseller && !sessionStorage.getItem("artapedia_rw")) setBrand(rakitBrand(b)); } catch {}
-    const saved = typeof window !== "undefined" ? localStorage.getItem("artapedia_token") : null;
+    const saved = typeof window !== "undefined" ? localStorage.getItem(kunciTokenRw()) : null;
     const ref = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("ref") : null;
     // Kode undangan diingat sampai benar-benar daftar: pengunjung yang dibawa
     // link ?ref= biasanya membaca dulu sebelum mengisi nama.
@@ -162,7 +163,7 @@ export function UserProvider({ children }) {
           // Tidak wajib: perilaku lama, buat akun baru.
           if (wajib) {
             if (e?.status === 404) {
-              try { localStorage.removeItem("artapedia_token"); } catch {}
+              try { localStorage.removeItem(kunciTokenRw()); } catch {}
             }
             setPerluMasuk(true);
             return;
@@ -172,7 +173,7 @@ export function UserProvider({ children }) {
       // Baru saja keluar dari akun: tampilkan gerbang masuk/daftar, jangan
       // diam-diam membuatkan akun kosong yang baru.
       let baruKeluar = false;
-      try { baruKeluar = localStorage.getItem("artapedia_keluar") === "1"; } catch {}
+      try { baruKeluar = localStorage.getItem(kunciKeluarRw()) === "1"; } catch {}
       if (wajib || baruKeluar) {
         setPerluMasuk(true);
         return;
@@ -218,8 +219,8 @@ export function UserProvider({ children }) {
   // halaman berikutnya menampilkan gerbang masuk, bukan akun baru otomatis.
   const keluar = useCallback(() => {
     try {
-      localStorage.removeItem("artapedia_token");
-      localStorage.setItem("artapedia_keluar", "1");
+      localStorage.removeItem(kunciTokenRw());
+      localStorage.setItem(kunciKeluarRw(), "1");
       sessionStorage.removeItem("artapedia_ref");
     } catch {}
     window.location.href = "/";

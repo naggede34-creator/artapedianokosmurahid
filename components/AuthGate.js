@@ -93,6 +93,7 @@ export default function AuthGate() {
           )}
           <h1 className="judul-timbul mt-3 font-display text-xl font-black text-ink">{brand.NAMA_LENGKAP}</h1>
           <p className="mt-0.5 text-xs text-muted">{brand.slogan}</p>
+          {brand.reseller && <p className="mt-2 rounded-lg bg-amber-soft px-3 py-1.5 text-[11px] font-semibold text-amber-bright">Akun web ini terpisah dari web lain. Daftar dulu, atau masuk dengan kode akun yang dibuat di web ini.</p>}
         </div>
 
         {baru ? (
@@ -137,7 +138,7 @@ export default function AuthGate() {
               disabled={!sudahSimpan || sibuk}
               className="btn-3d mt-4 w-full rounded-xl border-2 border-blue bg-blue-bright py-3 text-sm font-black text-white disabled:opacity-40"
             >
-              {sibuk ? "Masuk…" : "🚀 Lanjut ke {brand.nama}"}
+              {sibuk ? "Masuk…" : `🚀 Lanjut ke ${brand.nama}`}
             </button>
           </div>
         ) : (
