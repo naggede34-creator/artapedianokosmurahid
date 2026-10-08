@@ -44,6 +44,9 @@ function Bars({ data, keyName, className }) {
 }
 
 // Aksi utama: empat tombol besar di bawah dompet.
+// Web reseller: ubin aksi berwarna biru/silver (bukan oranye-merah web utama).
+const WARNA_RW = ["bg-gradient-to-br from-[#2563eb] to-[#1e3a8a]", "bg-gradient-to-br from-[#38bdf8] to-[#0369a1]", "bg-gradient-to-br from-[#64748b] to-[#334155]"];
+
 const utama = [
   { href: "/otp", label: "Beli Nokos", sub: "Nomor OTP termurah", ikon: "📱", warna: "bg-gradient-to-br from-[#1d4ed8] to-[#0a1e50]" },
   { href: "/deposit", label: "Isi Saldo Nokos", sub: "QRIS, semua metode", ikon: "💳", warna: "bg-gradient-to-br from-[#ea580c] to-[#9a3412]" },
@@ -545,7 +548,7 @@ export default function DashboardPage() {
           tengah halaman yang panjang (bukan di layar) dan halaman ikut melompat saat inputnya mendapat fokus. */}
       <div className="user-dash-ruang">
       {/* Anime Hero Banner */}
-      <AnimeHero />
+      {!brand.reseller && <AnimeHero />}
 
       {/* Sapaan + jalan pintas akun */}
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -610,7 +613,7 @@ export default function DashboardPage() {
       {/* ── Aksi utama ── */}
       <SectionTitle icon="⚡" title="Aksi utama" />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3" data-testid="aksi-utama">
-        {saringRw([...utama, { href: `https://t.me/${csUser}`, ext: true, label: "Kontak", sub: `Hubungi admin @${csUser}`, ikon: "☎️", warna: "bg-gradient-to-br from-[#0891b2] to-[#164e63]", testid: "tombol-kontak-cs", cs: true }], !!brand.reseller, "href", true).map((u) => (u.cs && csBuka === false) ? (
+        {saringRw([...utama, { href: `https://t.me/${csUser}`, ext: true, label: "Kontak", sub: `Hubungi admin @${csUser}`, ikon: "☎️", warna: "bg-gradient-to-br from-[#0891b2] to-[#164e63]", testid: "tombol-kontak-cs", cs: true }], !!brand.reseller, "href", true).map((u, ui) => (u.cs && csBuka === false) ? (
           <div
             key={u.href + u.label}
             role="button"
@@ -632,7 +635,7 @@ export default function DashboardPage() {
             href={u.href}
             {...(u.ext ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             data-testid={u.testid}
-            className={`hover-lift group relative flex items-center gap-3 overflow-hidden rounded-2xl border-2 border-ink/80 px-4 py-4 text-white shadow-lift transition-transform active:scale-[0.98] ${u.warna}`}
+            className={`hover-lift group relative flex items-center gap-3 overflow-hidden rounded-2xl border-2 border-ink/80 px-4 py-4 text-white shadow-lift transition-transform active:scale-[0.98] ${brand.reseller ? WARNA_RW[ui % WARNA_RW.length] : u.warna}`}
           >
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-2xl transition-transform group-hover:scale-110">{u.ikon}</span>
             <span className="min-w-0">
@@ -645,7 +648,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Manga Waifu AI chat ── */}
-      {ready && (
+      {ready && !brand.reseller && (
         <div className="mt-5">
           <MangaWaifu
             balance={balance}

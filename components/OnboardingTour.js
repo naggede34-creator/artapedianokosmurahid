@@ -86,7 +86,7 @@ export default function OnboardingTour({ onDone }) {
           {STEPS.map((_, i) => (
             <span
               key={i}
-              className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? "w-6 bg-amber-500" : i < step ? "w-3 bg-amber-300" : "w-3 bg-slate-200 dark:bg-slate-700"}`}
+              className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? "w-6 bg-amber" : i < step ? "w-3 bg-amber-soft" : "w-3 bg-slate-200 dark:bg-slate-700"}`}
             />
           ))}
         </div>
@@ -107,7 +107,7 @@ export default function OnboardingTour({ onDone }) {
                 onChange={(e) => { setInputName(e.target.value); setErr(""); }}
                 onKeyDown={(e) => e.key === "Enter" && handleSetName()}
                 maxLength={24}
-                className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-400"
+                className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber"
               />
               {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
               {name && !inputName && (
@@ -124,7 +124,7 @@ export default function OnboardingTour({ onDone }) {
               <button
                 onClick={handleSetName}
                 disabled={saving}
-                className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition disabled:opacity-60"
+                className="w-full py-2.5 rounded-xl bg-amber hover:bg-amber-bright text-white font-bold text-sm transition disabled:opacity-60"
               >
                 {saving ? "Menyimpan…" : "Simpan Nama"}
               </button>
@@ -138,7 +138,7 @@ export default function OnboardingTour({ onDone }) {
           ) : current.action === "done" ? (
             <button
               onClick={finish}
-              className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition"
+              className="w-full py-2.5 rounded-xl bg-amber hover:bg-amber-bright text-white font-bold text-sm transition"
             >
               Mulai Bertransaksi 🚀
             </button>
@@ -152,7 +152,7 @@ export default function OnboardingTour({ onDone }) {
               </button>
               <a
                 href={current.link}
-                className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm text-center transition"
+                className="flex-1 py-2.5 rounded-xl bg-amber hover:bg-amber-bright text-white font-bold text-sm text-center transition"
               >
                 Ke Halaman →
               </a>

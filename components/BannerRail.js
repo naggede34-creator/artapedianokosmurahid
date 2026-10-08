@@ -32,7 +32,8 @@ export default function BannerRail({ placement = "homepage", title = "", classNa
     };
   }, [placement]);
 
-  if (items.length === 0) return null;
+  // Web reseller: tanpa banner promosi web utama (sering bermaskot/bermerek Arta Pedia) — tampilan lebih simpel.
+  if (items.length === 0 || brand.reseller) return null;
 
   // kompak = dipasang di kolom samping yang sempit: tersusun satu kolom, tanpa
   // keterangan di atas gambar (gambarnya sudah memuat tulisannya sendiri).

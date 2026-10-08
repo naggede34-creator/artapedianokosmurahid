@@ -48,7 +48,7 @@ export default function NamePromptModal({ onClose }) {
           onKeyDown={(e) => e.key === "Enter" && handleSave()}
           maxLength={24}
           autoFocus
-          className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-400 mb-2"
+          className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber mb-2"
         />
         {err && <p className="text-xs text-red-500 mb-2">{err}</p>}
         <div className="flex gap-2 mt-1">
@@ -61,7 +61,7 @@ export default function NamePromptModal({ onClose }) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition disabled:opacity-60"
+            className="flex-1 py-2 rounded-xl bg-amber hover:bg-amber-bright text-white font-bold text-sm transition disabled:opacity-60"
           >
             {saving ? "Menyimpan…" : "Simpan"}
           </button>

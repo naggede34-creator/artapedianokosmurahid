@@ -51,7 +51,7 @@ export async function POST(req) {
   const aksi = String(body.aksi || "");
   try {
     let r;
-    if (aksi === "buat") r = await buatWeb({ token: user.token, slug: body.slug, nama: body.nama, markupPersen: body.markupPersen });
+    if (aksi === "buat") r = await buatWeb({ token: user.token, slug: body.slug, nama: body.nama, markupPersen: body.markupPersen, setuju: body.setuju === true });
     else if (aksi === "ubah") r = await ubahWeb(user.token, { nama: body.nama, markupPersen: body.markupPersen, aktif: body.aktif });
     else if (aksi === "tarik") {
       const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || null;

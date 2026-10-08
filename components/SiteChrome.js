@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BottomNav from "@/components/BottomNav";
 import SupportWidget from "@/components/SupportWidget";
+import RwBantuan from "@/components/RwBantuan";
 import BroadcastBar from "@/components/BroadcastBar";
 import MascotGreeting from "@/components/MascotGreeting";
 import ComicIntro from "@/components/ComicIntro";
@@ -130,21 +131,21 @@ export default function SiteChrome({ children }) {
           bertumpuk di depan layar yang harus diisi dulu. */}
       {!tampilGerbang && (
         <>
-          <ComicIntro />
-          <MascotNudge />
-          <MascotGreeting />
+          {!brand.reseller && <ComicIntro />}
+          {!brand.reseller && <MascotNudge />}
+          {!brand.reseller && <MascotGreeting />}
           {!brand.reseller && <InfoModal />}
           <PembaruanModal />
           <PopupAdmin />
         </>
       )}
-      <MusimPenerap />
+      {!brand.reseller && <MusimPenerap />}
       <BroadcastBar />
       <Navbar />
       <main className="pb-24 md:pb-0">{children}</main>
       <Footer />
       <BottomNav />
-      <SupportWidget channelInfo={channelInfo} csUsername={csUsername} />
+      {brand.reseller ? <RwBantuan csUsername={csUsername} /> : <SupportWidget channelInfo={channelInfo} csUsername={csUsername} />}
       <PasangAplikasi />
     </>
   );

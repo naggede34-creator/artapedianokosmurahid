@@ -150,7 +150,7 @@ export default function MangaWaifu({ balance, hasRecentOrder }) {
           <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5">
             <span className="text-xs">{pose.label}</span>
             <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">{brand.MASKOT}</span>
-            {typing && <span className="ml-1 h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />}
+            {typing && <span className="ml-1 h-1.5 w-1.5 rounded-full bg-amber animate-pulse" />}
           </div>
 
           {/* Dialogue text — typewriter */}
@@ -172,7 +172,7 @@ export default function MangaWaifu({ balance, hasRecentOrder }) {
             {sequence.slice(0, Math.min(sequence.length, 8)).map((_, i) => (
               <span
                 key={i}
-                className={`h-1 rounded-full transition-all ${i === idx % Math.min(sequence.length, 8) ? "w-4 bg-amber-400" : "w-1.5 bg-slate-200 dark:bg-slate-700"}`}
+                className={`h-1 rounded-full transition-all ${i === idx % Math.min(sequence.length, 8) ? "w-4 bg-amber" : "w-1.5 bg-slate-200 dark:bg-slate-700"}`}
               />
             ))}
           </div>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useUser, useBrand } from "@/app/providers";
 import { CopyButton, rupiah, Spinner, timeAgo } from "@/components/ui";
-import { SLUG_RE, RESERVED } from "@/lib/webResellerUi";
+import { SLUG_RE, RESERVED, SYARAT_RW } from "@/lib/webResellerUi";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +40,26 @@ function Grafik({ hari }) {
   );
 }
 
+function Syarat() {
+  return (
+    <details open className={`${kartu} group p-5`} data-testid="rw-syarat">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-black text-ink">
+        <span>📜 Syarat &amp; Ketentuan Web Reseller</span>
+        <span className="text-xs font-bold text-muted group-open:hidden">Buka</span>
+        <span className="hidden text-xs font-bold text-muted group-open:inline">Tutup</span>
+      </summary>
+      <ol className="mt-3 space-y-3">
+        {SYARAT_RW.map((s, i) => (
+          <li key={s.judul}>
+            <p className="text-xs font-black text-ink">{i + 1}. {s.judul}</p>
+            {s.isi.map((t) => <p key={t} className="mt-1 text-xs leading-relaxed text-muted">{t}</p>)}
+          </li>
+        ))}
+      </ol>
+    </details>
+  );
+}
+
 export default function WebResellerPage() {
   const brand = useBrand();
   const { token, ready, refreshBalance } = useUser();
@@ -53,6 +73,7 @@ export default function WebResellerPage() {
   const [markup, setMarkup] = useState("10");
   const [eNama, setENama] = useState("");
   const [eMarkup, setEMarkup] = useState("");
+  const [setuju, setSetuju] = useState(false);
   const [wd, setWd] = useState({ amount: "", ewallet: "", nomor: "", atasNama: "" });
 
   const muat = useCallback(async () => {
@@ -98,7 +119,7 @@ export default function WebResellerPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-4 py-6 sm:py-10">
-      <div className="fade-up rounded-3xl bg-gradient-to-br from-amber to-rose p-6 text-white shadow-lift">
+      <div className="fade-up rounded-3xl bg-gradient-to-br from-amber to-blue p-6 text-white shadow-lift">
         <p className="text-xs font-bold uppercase tracking-widest text-white/80">Web Reseller</p>
         <h1 className="mt-1 font-display text-2xl font-black">Punya web {brand.nama} sendiri</h1>
         <p className="mt-1 max-w-xl text-sm text-white/90">
@@ -110,13 +131,15 @@ export default function WebResellerPage() {
       {galat && <p className="rounded-xl bg-rose-soft px-4 py-2.5 text-xs font-bold text-rose" role="alert" data-testid="rw-galat">{galat}</p>}
       {info && <p className="rounded-xl bg-success-soft px-4 py-2.5 text-xs font-bold text-success" role="status" data-testid="rw-info">{info}</p>}
 
+      <Syarat />
+
       {!w && (
         <div className={`${kartu} p-5`} data-testid="rw-buat">
           {!d.aktif ? (
             <p className="text-sm text-muted">Fitur web reseller sedang dimatikan admin. Coba lagi nanti.</p>
           ) : (
             <form
-              onSubmit={(e) => { e.preventDefault(); kirim("buat", { slug: slugBersih, nama, markupPersen: Number(markup) }, "Web resellermu sudah jadi! 🎉"); }}
+              onSubmit={(e) => { e.preventDefault(); kirim("buat", { slug: slugBersih, nama, markupPersen: Number(markup), setuju }, "Web resellermu sudah jadi! 🎉"); }}
               className="space-y-4"
             >
               <h2 className="text-base font-black text-ink">Buat web resellermu</h2>
@@ -138,7 +161,11 @@ export default function WebResellerPage() {
                 <input type="number" min="0" max={d.markupMaks} step="0.5" value={markup} onChange={(e) => setMarkup(e.target.value)} className={input} data-testid="rw-markup" />
                 <p className="mt-1 text-[11px] text-muted">Contoh: harga nokos {rupiah(10000)} dengan markup {Number(markup) || 0}% dijual {rupiah(Math.ceil(10000 * (1 + (Number(markup) || 0) / 100)))} — komisimu {rupiah(Math.ceil(10000 * (1 + (Number(markup) || 0) / 100)) - 10000)} per pesanan.</p>
               </div>
-              <button type="submit" disabled={!slugOk || nama.trim().length < 2 || sibuk === "buat"} data-testid="rw-buat-btn" className="btn-3d w-full rounded-2xl bg-amber py-3.5 text-sm font-black text-white disabled:opacity-50">
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-line bg-surface2 px-3 py-3 text-xs text-ink">
+                <input type="checkbox" checked={setuju} onChange={(e) => setSetuju(e.target.checked)} data-testid="rw-setuju" className="mt-0.5 h-4 w-4 accent-[rgb(var(--c-orange))]" />
+                <span>Saya sudah membaca dan menyetujui <b>Syarat &amp; Ketentuan Web Reseller</b> di atas.</span>
+              </label>
+              <button type="submit" disabled={!slugOk || nama.trim().length < 2 || !setuju || sibuk === "buat"} data-testid="rw-buat-btn" className="btn-3d w-full rounded-2xl bg-amber py-3.5 text-sm font-black text-white disabled:opacity-50">
                 {sibuk === "buat" ? <span className="inline-flex items-center gap-2"><Spinner className="h-4 w-4" /> Membuat…</span> : "🚀 Buat web reseller"}
               </button>
             </form>

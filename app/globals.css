@@ -4511,3 +4511,49 @@ html:not(.dark)[data-tema="arang"] { --c-bg: 246 248 251; --c-surface2: 234 239 
 /* Sentuhan global: gulir halus & seleksi teks bernuansa komik. */
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 ::selection { background: rgb(var(--c-orange) / .35); color: rgb(var(--c-ink)); }
+
+/* ═══════════ Web reseller: biru, putih, silver, biru muda — rata & simpel ═══════════
+   Dipasang server-side lewat <html data-tema="rw" data-gaya="bersih"> (lihat app/layout.js). */
+:root[data-tema="rw"] {
+  --c-orange: 37 99 235;
+  --c-orange-soft: 219 234 254;
+  --c-orange-bright: 29 78 216;
+  --c-blue: 56 189 248;
+  --c-blue-soft: 224 242 254;
+  --c-blue-bright: 3 105 161;
+  --c-silver: 148 163 184;
+  --c-silver-soft: 241 245 249;
+  --c-navy: 15 40 90;
+  --c-navy-soft: 219 234 254;
+  --c-navy-bright: 10 30 70;
+}
+html:not(.dark)[data-tema="rw"] {
+  --c-bg: 243 248 255;
+  --c-surface2: 234 242 252;
+  --c-surface3: 203 220 240;
+  --c-ink: 15 30 60;
+  --c-line: 148 163 184;
+  --c-muted: 100 116 139;
+}
+html.dark[data-tema="rw"] {
+  --c-bg: 6 14 30;
+  --c-surface: 12 24 48;
+  --c-surface2: 18 34 64;
+  --c-surface3: 30 50 90;
+  --c-line: 51 78 128;
+  --c-orange: 59 130 246;
+  --c-orange-soft: 23 37 84;
+  --c-orange-bright: 147 197 253;
+  --c-blue: 125 211 252;
+  --c-blue-soft: 12 40 70;
+  --c-blue-bright: 186 230 253;
+}
+/* Latar halaman: gradasi biru muda → putih yang halus (bukan titik-titik komik). */
+html:not(.dark)[data-tema="rw"] body { background-image: linear-gradient(180deg, rgb(224 238 255) 0%, rgb(243 248 255) 260px); background-attachment: fixed; }
+html[data-tema="rw"] .btn-3d { box-shadow: 0 1px 2px rgb(15 40 90 / 0.18), 0 6px 14px -6px rgb(37 99 235 / 0.45) !important; border-width: 1px !important; }
+html[data-tema="rw"] .btn-3d:active { transform: translateY(1px); }
+html[data-tema="rw"] .card, html[data-tema="rw"] .card-shadow { border-color: rgb(148 163 184 / 0.35) !important; box-shadow: 0 1px 2px rgb(15 40 90 / 0.06), 0 8px 24px -14px rgb(37 99 235 / 0.25) !important; }
+html[data-tema="rw"] .hover-lift:hover { transform: translateY(-2px); }
+html[data-tema="rw"] .dash-tab button { box-shadow: none !important; border-width: 1px !important; border-color: rgb(148 163 184 / 0.5) !important; }
+html[data-tema="rw"] .dash-tab button[aria-selected="true"] { border-color: rgb(37 99 235) !important; }
+html[data-tema="rw"] .judul-timbul, html[data-tema="rw"] .comic-head { text-shadow: none !important; }

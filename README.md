@@ -60,6 +60,11 @@ Web itu memuat aplikasi yang sama dengan web utama tetapi bermerek & berharga se
 - **Fitur di web reseller**: hanya beli nokos, deposit, riwayat transaksi, dan mutasi saldo (+ beranda ringkas, profil/kode akun,
   syarat). Menu, dasbor, banner, popup, dan halaman lain disaring (`lib/rwHalaman.js`); membuka halaman fitur lain dialihkan ke
   `/dashboard` web reseller itu sendiri, tidak pernah ke web utama.
+- **Tampilan web reseller**: tema biru–putih–silver–biru muda dengan gaya "bersih" (rata & simpel), dipasang server-side
+  (`<html data-tema="rw" data-gaya="bersih">`, CSS di akhir `app/globals.css`); tanpa maskot elang, komik pembuka, banner promosi web
+  utama, dan asisten AI; hanya tombol bantuan ke Customer Service. Pilihan tema pengguna tidak menimpanya.
+- **Syarat & Ketentuan Web Reseller** (`SYARAT_RW` di `lib/webResellerUi.js`) tampil di menu Web Reseller dan wajib disetujui sebelum
+  membuat web (disimpan `syaratSetujuAt`).
 - **Statistik**: kunjungan, pesanan, omzet, komisi, grafik 14 hari, pesanan terbaru. Admin: kartu Web Reseller di Pengaturan Umum
   (pantau & bekukan); saklar/markup maks di Konfigurasi (`RW_*`).
 

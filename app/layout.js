@@ -6,6 +6,7 @@ import { UserProvider, ThemeProvider } from "./providers";
 import SiteChrome from "@/components/SiteChrome";
 import InkFilters from "@/components/InkFilters";
 import { ambilBrandReq } from "@/lib/brandServer";
+import { rwDariNext } from "@/lib/rwKonteks";
 import { urlLogo } from "@/lib/brand";
 
 // Dijalankan sebelum React hydrate supaya tidak ada kedipan warna saat mode gelap.
@@ -78,9 +79,11 @@ export const viewport = {
   ]
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  // Web reseller: tema biru & gaya bersih dipasang dari server supaya tidak berkedip dari tampilan web utama.
+  const rw = !!(await rwDariNext());
   return (
-    <html lang="id" className={`${sans.variable} ${mono.variable} ${bangers.variable}`} suppressHydrationWarning>
+    <html lang="id" className={`${sans.variable} ${mono.variable} ${bangers.variable}`} suppressHydrationWarning {...(rw ? { "data-rw": "1", "data-tema": "rw", "data-gaya": "bersih" } : {})}>
       <head>
         <meta httpEquiv="Cache-Control" content="no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
