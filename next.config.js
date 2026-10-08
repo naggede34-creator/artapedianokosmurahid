@@ -24,7 +24,7 @@ const nextConfig = {
     // Rute yang sengaja di-cache publik (gambar versi-di-URL, status ringan): Cache-Control-nya diatur rutenya sendiri.
     // Di Next 15 header dari config MENIMPA header rute, jadi rute-rute ini dikecualikan dari aturan no-store di bawah
     // (header keamanan tetap dipasang lewat aturan kedua).
-    const CACHE_SENDIRI = "api/wa/foto|api/wa/media|api/ban-tampilan/gambar|api/musim|api/pita|api/status";
+    const CACHE_SENDIRI = "api/wa/foto|api/wa/media|api/ban-tampilan/gambar|api/musim|api/pita|api/status|api/logo";
     const keamanan = [
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },

@@ -6,6 +6,7 @@ import { UserProvider, ThemeProvider } from "./providers";
 import SiteChrome from "@/components/SiteChrome";
 import InkFilters from "@/components/InkFilters";
 import { ambilBrand } from "@/lib/brandServer";
+import { urlLogo } from "@/lib/brand";
 
 // Dijalankan sebelum React hydrate supaya tidak ada kedipan warna saat mode gelap.
 const themeInitScript = `
@@ -48,13 +49,13 @@ export async function generateMetadata() {
       statusBarStyle: "black-translucent"
     },
     icons: {
-      icon: [{ url: "/logo-mark.svg", type: "image/svg+xml" }, { url: "/logo-mark.png", sizes: "512x512" }],
-      apple: [{ url: "/icon-192.png", sizes: "192x192" }, { url: "/icon-512.png", sizes: "512x512" }]
+      icon: brand.logo.ikon ? [{ url: urlLogo(brand, "ikon", "", "ikon") }] : [{ url: "/logo-mark.svg", type: "image/svg+xml" }, { url: "/logo-mark.png", sizes: "512x512" }],
+      apple: [{ url: urlLogo(brand, "ikon", "/icon-192.png", "ikon-192"), sizes: "192x192" }, { url: urlLogo(brand, "ikon", "/icon-512.png", "ikon-512"), sizes: "512x512" }]
     },
     openGraph: {
       title: `${brand.namaLengkap} — ${brand.slogan}`,
       description: "Nomor OTP murah & cepat, deposit QRIS otomatis 24 jam.",
-      images: [{ url: "/logo.png", width: 1240, height: 780, alt: brand.namaLengkap }]
+      images: [brand.logo.utama ? { url: urlLogo(brand, "utama", "", "utama-png"), alt: brand.namaLengkap } : { url: "/logo.png", width: 1240, height: 780, alt: brand.namaLengkap }]
     }
   };
 }

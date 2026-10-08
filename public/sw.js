@@ -40,8 +40,8 @@ self.addEventListener("push", (e) => {
   e.waitUntil(
     self.registration.showNotification(d.judul || "Notifikasi", {
       body: d.isi || "",
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
+      icon: "/api/logo/ikon-192",
+      badge: "/api/logo/ikon-192",
       tag: d.tag || undefined,
       renotify: Boolean(d.tag),
       data: { url: d.url || "/" }

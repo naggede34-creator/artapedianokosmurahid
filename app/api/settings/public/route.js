@@ -23,6 +23,7 @@ import { pindaiDiLatar } from "@/lib/keamanan";
 import { sapuWdInstan } from "@/lib/wdInstan";
 import { sapuSetorGmail } from "@/lib/setorGmail";
 import { brandDariSettings } from "@/lib/brand";
+import { ringkasLogo } from "@/lib/logo";
 import { pengingatDeposit } from "@/lib/depositPengingat";
 
 export const dynamic = "force-dynamic";
@@ -88,7 +89,7 @@ export async function GET() {
       // Saklar admin: true = pengunjung wajib daftar/masuk.
       loginWajib: await loginWajib().catch(() => false),
       csUsername: csUsername || "teatlas",
-      brand: brandDariSettings(settings),
+      brand: brandDariSettings(settings, await ringkasLogo()),
       maintenanceMsg,
       maintenanceTitle: maintenanceTitle || "Sedang Maintenance",
       maintenanceButtonLabel: maintenanceButtonLabel || "",

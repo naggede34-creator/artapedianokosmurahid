@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser, useBrand } from "@/app/providers";
+import { urlLogo } from "@/lib/brand";
 import ThemeToggle from "@/components/ThemeToggle";
 import Sidebar from "@/components/Sidebar";
 import InfoBell from "@/components/InfoBell";
@@ -25,6 +26,12 @@ const links = [
 const DARI = { xl: "hidden xl:inline-flex", "2xl": "hidden 2xl:inline-flex" };
 
 export function Logo({ size = 34 }) {
+  const brand = useBrand();
+  if (brand.logo?.ikon) {
+    // Logo unggahan admin (lihat Admin → Logo).
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={urlLogo(brand, "ikon", "")} alt="" width={size} height={size} className="shrink-0 rounded-[10px] object-contain" style={{ width: size, height: size }} />;
+  }
   return (
     <span
       className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-teal-bright text-white"

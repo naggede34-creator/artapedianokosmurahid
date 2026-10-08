@@ -4,6 +4,7 @@
 // Dibuat lewat app/manifest.js, bukan berkas statis: namanya ikut SITE_NAME
 // kalau suatu saat diganti, dan Next.js yang mengurus header tipe isinya.
 import { ambilBrand } from "@/lib/brandServer";
+import { urlLogo } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -25,13 +26,21 @@ export default async function manifest() {
     theme_color: "#0b162c",
     lang: "id",
     categories: ["shopping", "utilities"],
-    icons: [
-      { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-      // maskable terpisah dengan bantalan lebih besar: Android memotong ikon
-      // jadi bulat, dan ikon "any" yang dipakai untuk itu akan terpotong.
-      { src: "/icon-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" }
-    ],
+    icons: brand.logo.ikon
+      ? brand.logo.ikon.tipe === "image/svg+xml"
+        ? [{ src: urlLogo(brand, "ikon", "", "ikon"), sizes: "any", type: "image/svg+xml", purpose: "any" }]
+        : [
+            { src: urlLogo(brand, "ikon", "", "ikon-192"), sizes: "192x192", type: brand.logo.ikon.tipe, purpose: "any" },
+            { src: urlLogo(brand, "ikon", "", "ikon-512"), sizes: "512x512", type: brand.logo.ikon.tipe, purpose: "any" },
+            { src: urlLogo(brand, "ikon", "", "ikon-maskable"), sizes: "512x512", type: brand.logo.ikon.tipe, purpose: "maskable" }
+          ]
+      : [
+          { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          // maskable terpisah dengan bantalan lebih besar: Android memotong ikon
+          // jadi bulat, dan ikon "any" yang dipakai untuk itu akan terpotong.
+          { src: "/icon-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" }
+        ],
     shortcuts: [
       { name: "Beli Nokos", short_name: "Beli", url: "/otp" },
       { name: "Isi Saldo", short_name: "Deposit", url: "/deposit" },

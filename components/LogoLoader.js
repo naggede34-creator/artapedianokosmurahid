@@ -1,6 +1,7 @@
 "use client";
 
 import { useBrand } from "@/app/providers";
+import { urlLogo } from "@/lib/brand";
 
 import { useEffect, useRef, useState } from "react";
 import { markIntroDone } from "@/lib/introGate";
@@ -112,7 +113,7 @@ export default function LogoLoader() {
           <span className="apl-spark apl-spark-3" aria-hidden="true" />
 
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.svg" alt={brand.NAMA_LENGKAP} className="apl-logo" width="620" height="390" />
+          <img src={urlLogo(brand, "utama", "/logo.svg")} alt={brand.NAMA_LENGKAP} className="apl-logo" width="620" height="390" />
         </div>
       </div>
 

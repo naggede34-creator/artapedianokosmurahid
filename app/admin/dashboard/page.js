@@ -8,6 +8,7 @@ import { Suspense } from "react";
 import AdminSwitcher from "@/components/AdminSwitcher";
 import PanduanTab from "@/components/AdminPanduan";
 import AdminAlamatApi from "@/components/AdminAlamatApi";
+import AdminLogo from "@/components/AdminLogo";
 import { sesiHabis } from "@/components/AdminSesi";
 import { OTP_SERVERS } from "@/lib/otpServers";
 import { DAFTAR_PUBLIK, channelAktifUntuk } from "@/lib/channelNotifTypes";
@@ -5934,6 +5935,9 @@ export default function AdminDashboardPage() {
 
           {/* Alamat API untuk dokumentasi */}
           <AdminAlamatApi />
+
+          {/* Logo */}
+          <AdminLogo />
 
           {/* Pengaturan Situs */}
           <div className="glass rounded-2xl p-5 shadow-soft sm:p-6">

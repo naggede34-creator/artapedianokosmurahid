@@ -42,7 +42,11 @@ Website **beli nomor OTP (nokos)**, **QRIS gateway** untuk reseller/developer, *
 Bawaannya **Arta Pedia**. Admin → Pengaturan Umum → **Nama & merek** mengubah nama situs, akhiran (ID), slogan, nama
 maskot, dan nama fitur chat tanpa deploy ulang; kosong = kembali ke bawaan. Berlaku di judul tab, manifest PWA,
 navigasi, sapaan maskot, halaman syarat/panduan, dan bot toko. Satu sumber: `lib/brand.js` (`useBrand()` di klien,
-`ambilBrand()` di server). Gambar logo & ikon adalah berkas di `public/` dan tidak ikut berubah.
+`ambilBrand()` di server).
+
+**Logo** juga bisa diunggah dari Admin → Pengaturan Umum → 🎨 Logo (logo lebar + logo ikon persegi); tanpa unggahan
+memakai berkas bawaan di `public/`. Disajikan lewat `/api/logo/<jenis>` (`lib/logo.js`). Gambar bawaan di bot Telegram
+(`bot-welcome.jpg`) tetap berkas.
 
 ## Yang sengaja tidak ada
 Semua fitur **game** (duel, game solo, Arena Pendekar), **poin** & Toko Poin, **misi & tantangan**, **Pet Arta
