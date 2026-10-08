@@ -7,6 +7,7 @@ import { rwDariReq } from "@/lib/rwKonteks";
 import { hargaWeb } from "@/lib/webReseller";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
