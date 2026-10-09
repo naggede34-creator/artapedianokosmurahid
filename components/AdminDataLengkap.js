@@ -4,6 +4,7 @@
 // web reseller, bot reseller, transaksi, pengaturan). Unduh = satu berkas JSON;
 // Unggah = pulihkan, dikirim per batch supaya aman untuk berkas besar.
 import { useCallback, useEffect, useRef, useState } from "react";
+import { normalisasiBackup } from "@/lib/normalisasiBackup";
 
 const rp = (n) => "Rp" + Math.round(Number(n) || 0).toLocaleString("id-ID");
 const angka = (n) => (Number(n) || 0).toLocaleString("id-ID");
@@ -26,6 +27,7 @@ export default function AdminDataLengkap() {
   const [kredensial, setKredensial] = useState(false);
   const [mengunduh, setMengunduh] = useState(false);
 
+  const [tujuanLarik, setTujuanLarik] = useState("");
   const [berkas, setBerkas] = useState(null);
   const [isiBerkas, setIsiBerkas] = useState(null); // { koleksi, kelompokDiBerkas, ... }
   const [pilihImpor, setPilihImpor] = useState({}); // nama koleksi -> bool
@@ -87,13 +89,15 @@ export default function AdminDataLengkap() {
     try {
       const teks = await f.text();
       const data = JSON.parse(teks);
-      if (data?.format !== "artapedia-data-lengkap" || typeof data.koleksi !== "object") {
-        setGalatImpor("Bukan berkas Data Lengkap Artapedia. Ekspor dulu dari kartu di atas.");
+      const norm = normalisasiBackup(data);
+      if (!norm) {
+        setGalatImpor("Bentuk JSON tidak dikenali. Didukung: Data Lengkap, Backup Penuh lama, Database Akun, Backup Web/Bot Reseller, objek {koleksi:[...]}, atau larik dokumen.");
         return;
       }
-      setIsiBerkas(data);
+      setIsiBerkas({ ...norm, dibuat: norm.meta?.dibuat || data?.exportedAt || data?.dibuat || null, kredensialDisertakan: !!norm.meta?.kredensialDisertakan });
+      setTujuanLarik("");
       const awal = {};
-      for (const [nama, daftar] of Object.entries(data.koleksi)) awal[nama] = Array.isArray(daftar) && daftar.length > 0;
+      for (const [nama, daftar] of Object.entries(norm.koleksi)) awal[nama] = Array.isArray(daftar) && daftar.length > 0;
       setPilihImpor(awal);
     } catch {
       setGalatImpor("Berkas tidak bisa dibaca (JSON rusak atau terpotong).");
@@ -107,12 +111,17 @@ export default function AdminDataLengkap() {
     return d;
   }
 
+  // Larik polos: dokumennya dimasukkan ke koleksi yang dipilih admin.
+  const koleksiBerkas = isiBerkas
+    ? (isiBerkas.perluPilihKoleksi ? (tujuanLarik ? { [tujuanLarik]: isiBerkas.larikMentah } : {}) : isiBerkas.koleksi)
+    : {};
+
   // ── Impor ────────────────────────────────────────────────────────────────
   async function mulaiImpor() {
     if (!isiBerkas) return;
     const terpilih = Object.keys(pilihImpor).filter((n) => pilihImpor[n]);
     if (!terpilih.length) { setGalatImpor("Pilih minimal satu koleksi."); return; }
-    const totalDok = terpilih.reduce((a, n) => a + (isiBerkas.koleksi[n]?.length || 0), 0);
+    const totalDok = terpilih.reduce((a, n) => a + (koleksiBerkas[n]?.length || 0), 0);
 
     const peringatan =
       mode === "ganti"
@@ -139,7 +148,7 @@ export default function AdminDataLengkap() {
       let selesaiDok = 0;
       for (const nama of terpilih) {
         if (batalRef.current) throw new Error("Dibatalkan admin.");
-        const daftar = isiBerkas.koleksi[nama] || [];
+        const daftar = koleksiBerkas[nama] || [];
         const r = { ditambah: 0, diperbarui: 0, sama: 0, dilewati: 0, gagal: 0 };
 
         if (mode === "ganti") {
@@ -150,7 +159,7 @@ export default function AdminDataLengkap() {
           if (batalRef.current) throw new Error("Dibatalkan admin.");
           const potong = daftar.slice(i, i + UKURAN_BATCH);
           setProgres({ tahap: `${nama} (${angka(Math.min(i + UKURAN_BATCH, daftar.length))}/${angka(daftar.length)})`, persen: Math.round((selesaiDok / Math.max(1, totalDok)) * 100) });
-          const d = await panggil({ aksi: "isi", koleksi: nama, mode, dokumen: potong });
+          const d = await panggil({ aksi: "isi", koleksi: nama, mode, dokumen: potong, legacy: !!isiBerkas.legacy });
           for (const k of ["ditambah", "diperbarui", "sama", "dilewati", "gagal"]) r[k] += d[k] || 0;
           for (const c of d.contohGagal || []) if (ringkas.contoh.length < 5) ringkas.contoh.push(`${nama}: ${c}`);
           selesaiDok += potong.length;
@@ -242,17 +251,24 @@ export default function AdminDataLengkap() {
         <input ref={inputRef} type="file" accept=".json,application/json" className="hidden" onChange={(e) => pilihBerkas(e.target.files?.[0] || null)} />
         <button type="button" onClick={() => inputRef.current?.click()} disabled={berjalan}
           className="w-full rounded-xl border-2 border-dashed border-line py-3 text-xs text-muted hover:border-amber/50 press">
-          {berkas ? `📄 ${berkas.name} (${(berkas.size / 1024 / 1024).toFixed(2)} MB)` : "Pilih berkas data lengkap .json…"}
+          {berkas ? `📄 ${berkas.name} (${(berkas.size / 1024 / 1024).toFixed(2)} MB)` : "Pilih berkas backup .json (format apa pun)…"}
         </button>
 
         {isiBerkas && (
           <>
             <p className="text-[11px] text-muted">
-              Dibuat {isiBerkas.dibuat ? new Date(isiBerkas.dibuat).toLocaleString("id-ID") : "—"}
+              Terdeteksi: <b className="text-ink">{isiBerkas.label}</b> · Dibuat {isiBerkas.dibuat ? new Date(isiBerkas.dibuat).toLocaleString("id-ID") : "—"}
               {isiBerkas.kredensialDisertakan ? " · memuat kredensial" : ""}
             </p>
+            {isiBerkas.perluPilihKoleksi && (
+              <select value={tujuanLarik} disabled={berjalan} className="input w-full text-xs"
+                onChange={(e) => { setTujuanLarik(e.target.value); setPilihImpor(e.target.value ? { [e.target.value]: true } : {}); }}>
+                <option value="">Pilih koleksi tujuan untuk {angka(isiBerkas.larikMentah.length)} dokumen…</option>
+                {Object.values(info?.kelompok || {}).flatMap((g) => Object.keys(g.koleksi)).map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            )}
             <div className="max-h-56 overflow-y-auto space-y-1 rounded-lg border border-line p-2">
-              {Object.entries(isiBerkas.koleksi).map(([nama, daftar]) => (
+              {Object.entries(koleksiBerkas).map(([nama, daftar]) => (
                 <label key={nama} className="flex items-center gap-2 text-xs">
                   <input type="checkbox" checked={!!pilihImpor[nama]} disabled={berjalan || !daftar?.length}
                     onChange={(e) => setPilihImpor((p) => ({ ...p, [nama]: e.target.checked }))} />

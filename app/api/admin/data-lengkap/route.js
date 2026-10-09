@@ -73,7 +73,7 @@ export async function POST(req) {
     }
     if (body.aksi === "isi") {
       if (!MODE_IMPOR.includes(body.mode)) return NextResponse.json({ error: "Mode tidak valid." }, { status: 400 });
-      const r = await isiBatch({ koleksi, dokumen: body.dokumen, mode: body.mode });
+      const r = await isiBatch({ koleksi, dokumen: body.dokumen, mode: body.mode, legacy: body.legacy === true });
       return NextResponse.json({ ok: true, ...r });
     }
     return NextResponse.json({ error: "Aksi tidak dikenali." }, { status: 400 });

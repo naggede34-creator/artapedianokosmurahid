@@ -627,7 +627,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                     const isOpen = expandedCountry === c.number_id;
                     const dial = pick(c, ["dial_code", "phone_code", "calling_code", "code"], null);
                     const iso = pick(c, ["iso", "iso_code", "short_code", "country_code"], null);
-                    const stocks = list.map((p) => Number(p.stock)).filter((n) => Number.isFinite(n));
+                    const stocks = list.filter((p) => p.stock != null && Number.isFinite(Number(p.stock))).map((p) => Number(p.stock)); // stok null = provider tidak melapor (bukan 0)
                     const totalStock = stocks.length ? stocks.reduce((a, b) => a + b, 0) : null;
                     const maxStock = stocks.length ? Math.max(1, ...stocks) : 1;
                     return (
@@ -712,7 +712,7 @@ export default function BuySheet({ open, onClose, services, servicesLoading, tok
                               const providerLabel = pick(p, ["provider_name", "server_name", "name"], `Server ${p.provider_id}`);
                               const disabled = p.available === false || p.stock === 0;
                               const busy = buyingKey === p.provider_id;
-                              const ratio = p.stockRatio ?? (Number.isFinite(Number(p.stock)) ? Number(p.stock) / maxStock : null);
+                              const ratio = p.stockRatio ?? (p.stock != null && Number.isFinite(Number(p.stock)) ? Number(p.stock) / maxStock : null);
                               const cheapest = p.cheapest === true || (list.length > 1 && i === 0 && p.cheapest === undefined && minPrice === Number(p.sell_price ?? p.price));
                               return (
                                 <div
