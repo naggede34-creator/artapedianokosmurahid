@@ -135,14 +135,16 @@ export default function HargaPage() {
                       {filteredCountries.map((c, i) => {
                         const prices = (c.pricelist || []).map((p) => Number(p.sell_price ?? p.price ?? 0));
                         const minPrice = prices.length ? Math.min(...prices) : 0;
-                        const stock = (c.pricelist || []).reduce((sum, p) => sum + Number(p.stock || p.count || 0), 0);
+                        const dilapor = (c.pricelist || []).filter((p) => p.stock != null || p.count != null);
+                        const stock = dilapor.reduce((sum, p) => sum + Number(p.stock ?? p.count ?? 0), 0);
+                        const stokLabel = dilapor.length ? (stock > 0 ? stock.toLocaleString("id-ID") : "Habis") : "Tersedia";
                         return (
                           <tr key={i} className="transition-colors hover:bg-surface2/60">
                             <td className="px-4 py-2.5 text-ink">{c.name}</td>
                             <td className="px-4 py-2.5 font-medium text-amber-bright">
                               Rp{minPrice.toLocaleString("id-ID")}
                             </td>
-                            <td className="px-4 py-2.5 text-muted">{stock || "-"}</td>
+                            <td className="px-4 py-2.5 text-muted">{stokLabel}</td>
                           </tr>
                         );
                       })}
